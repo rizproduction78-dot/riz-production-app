@@ -1,0 +1,6 @@
+{
+  "name": "Logbook QC Harian Staff RIZ-PRODUCTION",
+  "description": "Aplikasi Logbook QC Harian dan Daily Report Staff Inhouse RIZ-PRODUCTION",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
