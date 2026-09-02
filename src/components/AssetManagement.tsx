@@ -6,9 +6,8 @@
 import React, { useState } from 'react';
 import { Asset, Division } from '../types';
 import { STAFF_LIST } from '../data';
-import { Search, Plus, Trash2, Edit2, Archive, MapPin, Wrench, CheckCircle, AlertTriangle, XCircle, Settings, ClipboardList, Globe, ExternalLink, BookOpen, Sparkles } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, Archive, MapPin, Wrench, CheckCircle, AlertTriangle, XCircle, Settings, ClipboardList, BookOpen, Sparkles } from 'lucide-react';
 import {
-  OFFICIAL_EQUIPMENT_SOURCES,
   OFFICIAL_EQUIPMENT_CATALOG,
   OfficialEquipmentItem
 } from '../data/officialEquipmentReference';
@@ -194,8 +193,8 @@ export default function AssetManagement({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Globe className="w-4 h-4" />
-            <span>🌐 Sumber Resmi & Katalog Peralatan (rizproduction.id)</span>
+            <BookOpen className="w-4 h-4" />
+            <span>📚 Katalog Standar Peralatan</span>
           </button>
         </div>
       </div>
@@ -625,75 +624,8 @@ export default function AssetManagement({
                 KATALOG STANDAR ALAT & INVENTARIS EVENT
               </h2>
               <p className="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
-                Referensi resmi peralatan rental, spesifikasi teknis, serta poin inspeksi SOP PT. RIZ PRODUCTION MULTI KREASI. Bersumber langsung dari portal resmi <strong>https://www.rizproduction.id</strong>.
+                Database master spesifikasi teknis, merek, kategori, serta standar poin inspeksi SOP peralatan PT. RIZ PRODUCTION MULTI KREASI. Tim dapat langsung mendaftarkan unit ke dalam Aset Gudang Aktif dengan satu klik.
               </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <a
-                href="https://www.rizproduction.id"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer shrink-0"
-              >
-                <Globe className="w-4 h-4" />
-                <span>Kunjungi Portal Utama</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </div>
-
-          {/* 6 Official Source Cards */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-indigo-600" />
-              <span>6 Sumber Resmi Halaman Rental (www.rizproduction.id)</span>
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {OFFICIAL_EQUIPMENT_SOURCES.map((source, sIdx) => (
-                <div
-                  key={sIdx}
-                  className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between group"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
-                        source.division === 'Audio' ? 'bg-blue-100 text-blue-800' :
-                        source.division === 'Lighting' ? 'bg-amber-100 text-amber-800' :
-                        source.division === 'Videotron' ? 'bg-cyan-100 text-cyan-800' :
-                        source.division === 'Multimedia' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        {source.division}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono font-semibold">Resmi</span>
-                    </div>
-
-                    <h4 className="font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">
-                      {source.title}
-                    </h4>
-
-                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
-                      {source.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-mono truncate max-w-[170px]">
-                      {source.url.replace('https://', '')}
-                    </span>
-                    <a
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
-                    >
-                      <span>Buka Link</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
