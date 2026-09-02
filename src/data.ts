@@ -31,9 +31,7 @@ export const STAFF_LIST: Staff[] = [
   { id: '15', name: 'Heri', division: 'Lighting', role: 'Team Leader' },
 
   // Multimedia
-  { id: '16', name: 'Ulloh', division: 'Multimedia', role: 'Team Leader' },
   { id: '17', name: 'Jay', division: 'Multimedia', role: 'Staff' },
-  { id: '18', name: 'Chandra', division: 'Multimedia', role: 'Staff' },
 
   // Videotron
   { id: '19', name: 'Ayong', division: 'Videotron', role: 'Team Leader' },

@@ -14,7 +14,7 @@ export const WAJIB_ABSEN_NAMES = [
   'Agus', 'Fahrul', 'Caca', 'Seno',
   'Mboh', 'Unyim', 'Dani', 'Butonk', 'Yudish', 'Opik', 'Buluk',
   'Heri',
-  'Ulloh', 'Jay', 'Chandra',
+  'Jay',
   'Ayong', 'Wigi', 'Irfan', 'Kharo',
   'Mang ube', 'Gatot', 'Abah Subur'
 ];
