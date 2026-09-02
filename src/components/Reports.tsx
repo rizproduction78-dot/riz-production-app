@@ -784,12 +784,13 @@ export default function Reports({
             <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">12. KPI STAFF</div>
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
               <div className="text-xs font-semibold text-slate-700">Kategori Evaluasi Kinerja Staff:</div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-center text-[10px] font-mono">
-                <div className="bg-white p-2 border rounded font-semibold">1. Kehadiran & Absen (20%)</div>
-                <div className="bg-white p-2 border rounded font-semibold">2. Uji Kompetensi (20%)</div>
-                <div className="bg-white p-2 border rounded font-semibold">3. Daily Report (25%)</div>
-                <div className="bg-white p-2 border rounded font-semibold">4. QC Checklist (20%)</div>
-                <div className="bg-white p-2 border rounded font-semibold">5. Work Order (15%)</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-center text-[10px] font-mono">
+                <div className="bg-white p-2 border rounded font-semibold">1. Disiplin & Tim (15%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">2. Daily Report (25%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">3. QC Checklist (20%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">4. Work Order (10%)</div>
+                <div className="bg-indigo-50 border border-indigo-200 p-2 rounded font-semibold text-indigo-800">+ 5. Absensi (15%)</div>
+                <div className="bg-amber-50 border border-amber-200 p-2 rounded font-semibold text-amber-800">+ 6. Uji Komp (15%)</div>
               </div>
               <div className="pt-2">
                 <div className="text-xs font-semibold text-slate-700 mb-2">Nilai Akhir Staff Periode Ini:</div>

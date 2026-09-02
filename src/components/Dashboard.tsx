@@ -1022,12 +1022,14 @@ export default function Dashboard({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4 text-xs">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider">Kategori Penilaian KPI</h3>
-                <ul className="space-y-2 text-slate-600">
-                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Kehadiran & Absensi</span> <strong className="text-slate-900 font-mono">Bobot 20%</strong></li>
-                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Uji Kompetensi yang Diikuti</span> <strong className="text-slate-900 font-mono">Bobot 20%</strong></li>
+                <ul className="space-y-1.5 text-slate-600">
+                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Disiplin Kerja</span> <strong className="text-slate-900 font-mono">Bobot 10%</strong></li>
                   <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Produktivitas (Daily Report)</span> <strong className="text-slate-900 font-mono">Bobot 25%</strong></li>
                   <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Kualitas Pemeriksaan QC</span> <strong className="text-slate-900 font-mono">Bobot 20%</strong></li>
-                  <li className="flex justify-between pb-1"><span>Work Order & Disiplin</span> <strong className="text-slate-900 font-mono">Bobot 15%</strong></li>
+                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Kompleksitas Tugas & Work Order</span> <strong className="text-slate-900 font-mono">Bobot 10%</strong></li>
+                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Kerja Sama Tim & Pengembangan</span> <strong className="text-slate-900 font-mono">Bobot 5%</strong></li>
+                  <li className="flex justify-between border-b border-slate-200/60 pb-1 text-indigo-700 font-semibold"><span>+ Jumlah Absensi (Kehadiran)</span> <strong className="font-mono">Bobot 15%</strong></li>
+                  <li className="flex justify-between pb-1 text-amber-700 font-semibold"><span>+ Uji Kompetensi yang Diikuti</span> <strong className="font-mono">Bobot 15%</strong></li>
                 </ul>
               </div>
 
