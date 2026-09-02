@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { LogbookEntry, DailyReport, Finding } from '../types';
 import { FileText, Printer, FileDown, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST } from '../data';
+import { calculateAllStaffKpis } from '../utils/kpiCalculator';
 
 interface ReportsProps {
   logbookEntries: LogbookEntry[];
@@ -47,44 +48,13 @@ export default function Reports({
   const solvedRepairs = findings.filter(f => f.status === 'Close').length;
   const pendingSpareparts = findings.filter(f => f.status === 'Open' && f.issue.toLowerCase().includes('sparepart')).length;
 
-  // Dynamic staff KPI performance scores for all 22 staff members calculated with a high-fidelity baseline plus real entries
-  const staffKpis = STAFF_LIST.map(staff => {
-    // Count real reports in current month/date
-    const reportsCount = dailyReports.filter(r => r.staffName.toLowerCase() === staff.name.toLowerCase()).length;
-    // Count real logbooks
-    const qcCount = logbookEntries.filter(e => e.staffName.toLowerCase() === staff.name.toLowerCase()).length;
-    // Count real findings PIC'd and closed
-    const woCount = findings.filter(f => f.pic.toLowerCase() === staff.name.toLowerCase() && f.status === 'Close').length;
-    
-    // Seed for deterministic high-fidelity baseline to prevent empty or zeroed metrics
-    const seed = staff.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    
-    const baseReports = (seed % 6) + 12; // 12 to 17
-    const baseQcs = (seed % 5) + 8; // 8 to 12
-    const baseWos = (seed % 4) + 4; // 4 to 7
-    
-    const actualReports = reportsCount + baseReports;
-    const actualQcs = ['Gudang', 'Admin'].includes(staff.division) ? 0 : (qcCount + baseQcs);
-    const actualWos = woCount + baseWos;
-    const baseHours = 160 + (seed % 25); // 160 to 184 hours
-    
-    // Calculate KPI Score:
-    const reportScore = Math.min(100, (actualReports / 18) * 100);
-    const qcScore = actualQcs === 0 ? 100 : Math.min(100, (actualQcs / 10) * 100);
-    const woScore = Math.min(100, (actualWos / 6) * 100);
-    const attendanceScore = 95 + (seed % 6); // 95% to 100%
-    
-    const kpiScore = Math.round((reportScore * 0.3) + (qcScore * 0.3) + (woScore * 0.2) + (attendanceScore * 0.2));
-    
-    return {
-      ...staff,
-      reports: actualReports,
-      qcs: actualQcs,
-      wos: actualWos,
-      hours: baseHours,
-      kpi: kpiScore,
-    };
-  }).sort((a, b) => b.kpi - a.kpi);
+  // Dynamic staff KPI performance scores for all staff members calculated with:
+  // - Kehadiran & Jumlah Absen (Bobot 20%)
+  // - Uji Kompetensi yang Diikuti (Bobot 20%)
+  // - Daily Task / Laporan Harian (Bobot 25%)
+  // - QC Checklist (Bobot 20%)
+  // - Work Order (Bobot 15%)
+  const staffKpis = calculateAllStaffKpis(STAFF_LIST, dailyReports, logbookEntries, findings);
 
   // Supervisor comment input state
   const [supervisorComment, setSupervisorComment] = useState('Semua divisi beroperasi secara aman. Beberapa item dalam masa perawatan berkala dan monitoring ketat.');
@@ -496,6 +466,8 @@ export default function Reports({
                     <th className="p-2 border-r border-slate-300">Divisi</th>
                     <th className="p-2 border-r border-slate-300 text-center">Daily Report</th>
                     <th className="p-2 border-r border-slate-300 text-center">QC</th>
+                    <th className="p-2 border-r border-slate-300 text-center">Absensi</th>
+                    <th className="p-2 border-r border-slate-300 text-center">Uji Komp.</th>
                     <th className="p-2 border-r border-slate-300 text-center">Jam Kerja</th>
                     <th className="p-2 text-center">Performance Score</th>
                   </tr>
@@ -507,6 +479,8 @@ export default function Reports({
                       <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.reports}</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.qcs}</td>
+                      <td className="p-2 border-r border-slate-300 text-center">{staff.attendanceCount} Hari</td>
+                      <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.hours} Jam</td>
                       <td className={`p-2 text-center font-bold ${
                         staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
@@ -810,11 +784,12 @@ export default function Reports({
             <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">12. KPI STAFF</div>
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
               <div className="text-xs font-semibold text-slate-700">Kategori Evaluasi Kinerja Staff:</div>
-              <div className="grid grid-cols-2 gap-3 text-center text-[11px] font-mono">
-                <div className="bg-white p-2 border rounded">Kehadiran & Absensi</div>
-                <div className="bg-white p-2 border rounded">Produktivitas Daily Report</div>
-                <div className="bg-white p-2 border rounded">Ketepatan QC Checklist</div>
-                <div className="bg-white p-2 border rounded">Disiplin Kerja & Tim</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-center text-[10px] font-mono">
+                <div className="bg-white p-2 border rounded font-semibold">1. Kehadiran & Absen (20%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">2. Uji Kompetensi (20%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">3. Daily Report (25%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">4. QC Checklist (20%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">5. Work Order (15%)</div>
               </div>
               <div className="pt-2">
                 <div className="text-xs font-semibold text-slate-700 mb-2">Nilai Akhir Staff Periode Ini:</div>
@@ -1032,6 +1007,8 @@ export default function Reports({
                     <th className="p-2 border-r border-slate-300">Divisi</th>
                     <th className="p-2 border-r border-slate-300 text-center">Daily Report</th>
                     <th className="p-2 border-r border-slate-300 text-center">QC Checklist</th>
+                    <th className="p-2 border-r border-slate-300 text-center">Kehadiran</th>
+                    <th className="p-2 border-r border-slate-300 text-center">Uji Komp.</th>
                     <th className="p-2 border-r border-slate-300 text-center">WO Selesai</th>
                     <th className="p-2 border-r border-slate-300 text-center">Jam Kerja</th>
                     <th className="p-2 text-center">Nilai KPI (%)</th>
@@ -1044,6 +1021,8 @@ export default function Reports({
                       <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.reports}</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.qcs}</td>
+                      <td className="p-2 border-r border-slate-300 text-center">{staff.attendanceCount} Hari</td>
+                      <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.wos}</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.hours} Jam</td>
                       <td className={`p-2 text-center font-bold ${

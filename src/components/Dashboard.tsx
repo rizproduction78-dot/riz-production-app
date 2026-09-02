@@ -29,6 +29,7 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { STAFF_LIST } from '../data';
+import { calculateAllStaffKpis } from '../utils/kpiCalculator';
 
 interface DashboardProps {
   logbookEntries: LogbookEntry[];
@@ -118,28 +119,8 @@ export default function Dashboard({
   const totalQCCount = logbookEntries.length + 85;
   const totalWorkOrdersCount = findings.length + workOrders.length + 12;
 
-  // Staff Productivity metrics with deterministic values
-  const staffProductivityData = STAFF_LIST.map((staff) => {
-    const seed = staff.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const baseReports = (seed % 6) + 12; 
-    const baseQcs = (seed % 5) + 8;
-    const baseWos = (seed % 4) + 4;
-    const actualReports = dailyReports.filter(r => r.staffName.toLowerCase() === staff.name.toLowerCase()).length + baseReports;
-    const actualQcs = ['Gudang', 'Admin'].includes(staff.division) ? 0 : (logbookEntries.filter(e => e.staffName.toLowerCase() === staff.name.toLowerCase()).length + baseQcs);
-    const actualWos = findings.filter(f => f.pic.toLowerCase() === staff.name.toLowerCase() && f.status === 'Close').length + baseWos;
-    const baseHours = 160 + (seed % 25);
-    const kpiScore = Math.min(100, Math.round(((actualReports / 18) * 30) + ((actualQcs === 0 ? 10 : actualQcs) / 10 * 30) + (actualWos / 6 * 20) + 18));
-    
-    return {
-      name: staff.name,
-      division: staff.division,
-      reports: actualReports,
-      qcs: actualQcs,
-      wos: actualWos,
-      hours: baseHours,
-      kpi: kpiScore
-    };
-  }).sort((a, b) => b.kpi - a.kpi);
+  // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
+  const staffProductivityData = calculateAllStaffKpis(STAFF_LIST, dailyReports, logbookEntries, findings);
 
   // Top 5 performers
   const topPerformers = staffProductivityData.slice(0, 5);
@@ -632,6 +613,8 @@ export default function Dashboard({
                       <th className="p-3">Divisi</th>
                       <th className="p-3 text-center">Daily Report</th>
                       <th className="p-3 text-center">QC Checked</th>
+                      <th className="p-3 text-center">Kehadiran</th>
+                      <th className="p-3 text-center">Uji Komp.</th>
                       <th className="p-3 text-center">Jam Kerja</th>
                       <th className="p-3 text-center">KPI Score</th>
                     </tr>
@@ -643,6 +626,8 @@ export default function Dashboard({
                         <td className="p-3 font-sans text-slate-600">{staff.division}</td>
                         <td className="p-3 text-center text-slate-700">{staff.reports}</td>
                         <td className="p-3 text-center text-slate-700">{staff.qcs}</td>
+                        <td className="p-3 text-center text-slate-700">{staff.attendanceCount} hr</td>
+                        <td className="p-3 text-center text-slate-700">{staff.competencyCount}/6</td>
                         <td className="p-3 text-center text-slate-700">{staff.hours} jam</td>
                         <td className="p-3 text-center">
                           <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold text-[11px]">
@@ -1038,10 +1023,11 @@ export default function Dashboard({
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4 text-xs">
                 <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider">Kategori Penilaian KPI</h3>
                 <ul className="space-y-2 text-slate-600">
-                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Kehadiran & Absensi</span> <strong className="text-slate-900 font-mono">Bobot 30%</strong></li>
-                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Produktivitas (Daily Report)</span> <strong className="text-slate-900 font-mono">Bobot 35%</strong></li>
-                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Kualitas Pemeriksaan QC</span> <strong className="text-slate-900 font-mono">Bobot 30%</strong></li>
-                  <li className="flex justify-between pb-1"><span>Disiplin & Kerja Sama Tim</span> <strong className="text-slate-900 font-mono">Bobot 5%</strong></li>
+                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Kehadiran & Absensi</span> <strong className="text-slate-900 font-mono">Bobot 20%</strong></li>
+                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Uji Kompetensi yang Diikuti</span> <strong className="text-slate-900 font-mono">Bobot 20%</strong></li>
+                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Produktivitas (Daily Report)</span> <strong className="text-slate-900 font-mono">Bobot 25%</strong></li>
+                  <li className="flex justify-between border-b border-slate-200/60 pb-1"><span>Kualitas Pemeriksaan QC</span> <strong className="text-slate-900 font-mono">Bobot 20%</strong></li>
+                  <li className="flex justify-between pb-1"><span>Work Order & Disiplin</span> <strong className="text-slate-900 font-mono">Bobot 15%</strong></li>
                 </ul>
               </div>
 

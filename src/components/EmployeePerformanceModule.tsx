@@ -33,6 +33,8 @@ import {
   ChevronDown
 } from 'lucide-react';
 
+import { calculateStaffKpi } from '../utils/kpiCalculator';
+
 interface EmployeePerformanceModuleProps {
   currentUser: Staff;
 }
@@ -46,6 +48,7 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
   const [selectedMonth, setSelectedMonth] = useState<string>('Juli 2026');
 
   const selectedStaff = STAFF_LIST.find(s => s.name === selectedStaffName) || currentUser;
+  const staffKpi = calculateStaffKpi(selectedStaff);
 
   // Dynamic division styling
   const divisionBadgeColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -235,25 +238,29 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
                       cx="50"
                       cy="50"
                       r="42"
-                      stroke="#10b981"
+                      stroke={staffKpi.kpi >= 90 ? '#10b981' : staffKpi.kpi >= 80 ? '#6366f1' : '#f59e0b'}
                       strokeWidth="8"
                       strokeDasharray={2 * Math.PI * 42}
-                      strokeDashoffset={2 * Math.PI * 42 * (1 - 0.91)}
+                      strokeDashoffset={2 * Math.PI * 42 * (1 - staffKpi.kpi / 100)}
                       strokeLinecap="round"
                       fill="transparent"
                     />
                   </svg>
                   <div className="absolute flex flex-col items-center">
-                    <span className="text-3xl font-black text-slate-900">91%</span>
-                    <span className="text-[10px] font-bold text-emerald-600">Sangat Baik</span>
+                    <span className="text-3xl font-black text-slate-900">{staffKpi.kpi}%</span>
+                    <span className={`text-[10px] font-bold ${
+                      staffKpi.kpi >= 90 ? 'text-emerald-600' : staffKpi.kpi >= 80 ? 'text-indigo-600' : 'text-amber-600'
+                    }`}>
+                      {staffKpi.grade === 'A' ? 'Sangat Baik' : staffKpi.grade === 'B' ? 'Baik' : staffKpi.grade === 'C' ? 'Cukup' : 'Kurang'}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 text-amber-400 mt-2">
                   <Star className="w-3.5 h-3.5 fill-amber-400" />
                   <Star className="w-3.5 h-3.5 fill-amber-400" />
                   <Star className="w-3.5 h-3.5 fill-amber-400" />
-                  <Star className="w-3.5 h-3.5 fill-amber-400" />
-                  <Star className="w-3.5 h-3.5 text-slate-200" />
+                  <Star className={`w-3.5 h-3.5 ${staffKpi.kpi >= 80 ? 'fill-amber-400' : 'text-slate-200'}`} />
+                  <Star className={`w-3.5 h-3.5 ${staffKpi.kpi >= 90 ? 'fill-amber-400' : 'text-slate-200'}`} />
                 </div>
               </div>
 
@@ -261,38 +268,38 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-                    <Shield className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Disiplin</span>
+                    <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Kehadiran ({staffKpi.attendanceCount} hr)</span>
                   </span>
-                  <span className="font-bold text-emerald-600">95%</span>
+                  <span className="font-bold text-indigo-600">{staffKpi.attendanceScore}%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                    <Award className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Uji Komp. ({staffKpi.competencyCount}/6)</span>
+                  </span>
+                  <span className="font-bold text-amber-600">{staffKpi.competencyScore}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-slate-600 font-medium">
                     <Laptop className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Produktivitas</span>
+                    <span>Daily Task</span>
                   </span>
-                  <span className="font-bold text-blue-600">93%</span>
+                  <span className="font-bold text-blue-600">{staffKpi.reportScore}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-slate-600 font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5 text-teal-500" />
-                    <span>Quality</span>
+                    <span>QC Checklist</span>
                   </span>
-                  <span className="font-bold text-teal-600">98%</span>
+                  <span className="font-bold text-teal-600">{staffKpi.qcScore}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-                    <Wrench className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Maintenance</span>
+                    <Wrench className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Work Order</span>
                   </span>
-                  <span className="font-bold text-amber-600">87%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-slate-600 font-medium">
-                    <Users className="w-3.5 h-3.5 text-teal-600" />
-                    <span>Teamwork</span>
-                  </span>
-                  <span className="font-bold text-teal-600">90%</span>
+                  <span className="font-bold text-emerald-600">{staffKpi.woScore}%</span>
                 </div>
               </div>
             </div>
@@ -448,68 +455,83 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
                 <div className="col-span-4 text-right">Skor Akhir</div>
               </div>
 
-              {/* KPI 1 */}
+              {/* KPI 1: Kehadiran & Jumlah Absen */}
               <div className="grid grid-cols-12 py-2.5 items-center">
-                <div className="col-span-4 font-bold text-slate-800">Disiplin</div>
-                <div className="col-span-2 text-center text-slate-500 font-mono">15%</div>
-                <div className="col-span-2 text-center font-bold text-emerald-600">95%</div>
+                <div className="col-span-4 font-bold text-slate-800">
+                  <span>Kehadiran & Absen</span>
+                  <span className="block text-[10px] text-slate-400 font-normal">{staffKpi.attendanceCount} / 24 Hari</span>
+                </div>
+                <div className="col-span-2 text-center text-slate-500 font-mono">20%</div>
+                <div className="col-span-2 text-center font-bold text-indigo-600">{staffKpi.attendanceScore}%</div>
                 <div className="col-span-4 flex items-center justify-end gap-3">
                   <div className="w-20 bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: '95%' }}></div>
+                    <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${staffKpi.attendanceScore}%` }}></div>
                   </div>
-                  <span className="font-mono font-bold text-slate-900 w-10 text-right">14.25</span>
+                  <span className="font-mono font-bold text-slate-900 w-10 text-right">{(staffKpi.attendanceScore * 0.20).toFixed(2)}</span>
                 </div>
               </div>
 
-              {/* KPI 2 */}
+              {/* KPI 2: Uji Kompetensi yang Diikuti */}
               <div className="grid grid-cols-12 py-2.5 items-center">
-                <div className="col-span-4 font-bold text-slate-800">Produktivitas</div>
-                <div className="col-span-2 text-center text-slate-500 font-mono">35%</div>
-                <div className="col-span-2 text-center font-bold text-blue-600">93%</div>
+                <div className="col-span-4 font-bold text-slate-800">
+                  <span>Uji Kompetensi</span>
+                  <span className="block text-[10px] text-slate-400 font-normal">{staffKpi.competencyCount} / 6 Unit Diuji</span>
+                </div>
+                <div className="col-span-2 text-center text-slate-500 font-mono">20%</div>
+                <div className="col-span-2 text-center font-bold text-amber-600">{staffKpi.competencyScore}%</div>
                 <div className="col-span-4 flex items-center justify-end gap-3">
                   <div className="w-20 bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div className="bg-blue-600 h-full rounded-full" style={{ width: '93%' }}></div>
+                    <div className="bg-amber-500 h-full rounded-full" style={{ width: `${staffKpi.competencyScore}%` }}></div>
                   </div>
-                  <span className="font-mono font-bold text-slate-900 w-10 text-right">32.55</span>
+                  <span className="font-mono font-bold text-slate-900 w-10 text-right">{(staffKpi.competencyScore * 0.20).toFixed(2)}</span>
                 </div>
               </div>
 
-              {/* KPI 3 */}
+              {/* KPI 3: Daily Task */}
               <div className="grid grid-cols-12 py-2.5 items-center">
-                <div className="col-span-4 font-bold text-slate-800">Quality</div>
+                <div className="col-span-4 font-bold text-slate-800">
+                  <span>Daily Task</span>
+                  <span className="block text-[10px] text-slate-400 font-normal">{staffKpi.reportsCount} Laporan</span>
+                </div>
                 <div className="col-span-2 text-center text-slate-500 font-mono">25%</div>
-                <div className="col-span-2 text-center font-bold text-teal-600">98%</div>
+                <div className="col-span-2 text-center font-bold text-blue-600">{staffKpi.reportScore}%</div>
                 <div className="col-span-4 flex items-center justify-end gap-3">
                   <div className="w-20 bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div className="bg-teal-500 h-full rounded-full" style={{ width: '98%' }}></div>
+                    <div className="bg-blue-600 h-full rounded-full" style={{ width: `${staffKpi.reportScore}%` }}></div>
                   </div>
-                  <span className="font-mono font-bold text-slate-900 w-10 text-right">24.50</span>
+                  <span className="font-mono font-bold text-slate-900 w-10 text-right">{(staffKpi.reportScore * 0.25).toFixed(2)}</span>
                 </div>
               </div>
 
-              {/* KPI 4 */}
+              {/* KPI 4: QC Checklist */}
               <div className="grid grid-cols-12 py-2.5 items-center">
-                <div className="col-span-4 font-bold text-slate-800">Kompleksitas Tugas</div>
+                <div className="col-span-4 font-bold text-slate-800">
+                  <span>QC Checklist</span>
+                  <span className="block text-[10px] text-slate-400 font-normal">{staffKpi.qcCount} Unit Diperiksa</span>
+                </div>
+                <div className="col-span-2 text-center text-slate-500 font-mono">20%</div>
+                <div className="col-span-2 text-center font-bold text-teal-600">{staffKpi.qcScore}%</div>
+                <div className="col-span-4 flex items-center justify-end gap-3">
+                  <div className="w-20 bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div className="bg-teal-500 h-full rounded-full" style={{ width: `${staffKpi.qcScore}%` }}></div>
+                  </div>
+                  <span className="font-mono font-bold text-slate-900 w-10 text-right">{(staffKpi.qcScore * 0.20).toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* KPI 5: Work Order & Disiplin */}
+              <div className="grid grid-cols-12 py-2.5 items-center">
+                <div className="col-span-4 font-bold text-slate-800">
+                  <span>Work Order & Disiplin</span>
+                  <span className="block text-[10px] text-slate-400 font-normal">{staffKpi.woCount} WO Selesai</span>
+                </div>
                 <div className="col-span-2 text-center text-slate-500 font-mono">15%</div>
-                <div className="col-span-2 text-center font-bold text-amber-600">87%</div>
+                <div className="col-span-2 text-center font-bold text-emerald-600">{staffKpi.woScore}%</div>
                 <div className="col-span-4 flex items-center justify-end gap-3">
                   <div className="w-20 bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div className="bg-amber-500 h-full rounded-full" style={{ width: '87%' }}></div>
+                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${staffKpi.woScore}%` }}></div>
                   </div>
-                  <span className="font-mono font-bold text-slate-900 w-10 text-right">13.05</span>
-                </div>
-              </div>
-
-              {/* KPI 5 */}
-              <div className="grid grid-cols-12 py-2.5 items-center">
-                <div className="col-span-4 font-bold text-slate-800">Pengembangan Diri & Teamwork</div>
-                <div className="col-span-2 text-center text-slate-500 font-mono">10%</div>
-                <div className="col-span-2 text-center font-bold text-emerald-600">90%</div>
-                <div className="col-span-4 flex items-center justify-end gap-3">
-                  <div className="w-20 bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: '90%' }}></div>
-                  </div>
-                  <span className="font-mono font-bold text-slate-900 w-10 text-right">9.00</span>
+                  <span className="font-mono font-bold text-slate-900 w-10 text-right">{(staffKpi.woScore * 0.15).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -517,7 +539,7 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
 
           <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
             <span className="font-black text-xs uppercase tracking-wider text-slate-800">TOTAL SCORE</span>
-            <span className="font-black text-blue-600 text-lg font-mono">93.35 / 100</span>
+            <span className="font-black text-blue-600 text-lg font-mono">{staffKpi.kpi} / 100</span>
           </div>
         </div>
       </div>

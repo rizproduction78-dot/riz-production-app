@@ -43,6 +43,7 @@ import {
   FileSpreadsheet,
   Trash2
 } from 'lucide-react';
+import { calculateStaffKpi } from '../utils/kpiCalculator';
 
 interface CareerCompetencyModuleProps {
   currentUser: Staff;
@@ -167,13 +168,14 @@ export default function CareerCompetencyModule({
 
   // Selected staff object for passport view
   const activeStaff = STAFF_LIST.find(s => s.id === selectedStaffId) || currentUser;
+  const activeStaffKpi = calculateStaffKpi(activeStaff);
   const activeRecord = careerRecords[activeStaff.id] || {
     staffId: activeStaff.id,
     currentStageId: 1,
     matrixLevelId: 1,
-    targetRole: 'Technician Specialist',
-    kpiScore: 75,
-    trainingHours: 20,
+    targetRole: 'Level 1 - Trainee / Operator Pemula',
+    kpiScore: activeStaffKpi.kpi,
+    trainingHours: 0,
     lastUpdated: new Date().toISOString().split('T')[0],
     skills: ['SOP Divisi']
   };
@@ -901,7 +903,7 @@ export default function CareerCompetencyModule({
                       <span>{PIPELINE_STAGES.find(s => s.id === activeRecord.currentStageId)?.name}</span>
                     </div>
                     <div className="text-[10px] font-mono text-emerald-400 mt-0.5">
-                      KPI Score: {activeRecord.kpiScore}%
+                      KPI Score: {activeStaffKpi.kpi}% ({activeStaffKpi.attendanceCount} Absen • {activeStaffKpi.competencyCount}/6 Uji Komp)
                     </div>
                   </div>
                 </div>
