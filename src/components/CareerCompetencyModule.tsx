@@ -40,7 +40,8 @@ import {
   Check,
   Compass,
   Target,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Trash2
 } from 'lucide-react';
 
 interface CareerCompetencyModuleProps {
@@ -110,66 +111,54 @@ export default function CareerCompetencyModule({
   // Selected level in matrix inspector
   const [selectedMatrixLevel, setSelectedMatrixLevel] = useState<number | null>(null);
 
-  // Persistent career records
-  const [careerRecords, setCareerRecords] = useState<Record<string, StaffCareerRecord>>(() => {
-    const saved = localStorage.getItem('riz_career_pipeline_records');
-    if (saved) return JSON.parse(saved);
-
-    // Initial default seeds based on STAFF_LIST
+  // Clean baseline initial records: ALL STAFF RESET TO STAGE 1 (TRAINING) & LEVEL 1
+  const getCleanInitialCareerRecords = (): Record<string, StaffCareerRecord> => {
     const initial: Record<string, StaffCareerRecord> = {};
     STAFF_LIST.forEach((s) => {
-      let stage = 3;
-      let matrixLvl = 3;
-      let kpi = 78;
-      let target = 'Senior Technician';
-
-      if (s.role === 'Team Leader') {
-        stage = 10;
-        matrixLvl = 7;
-        kpi = 96;
-        target = 'Supervisor / Chief Engineer';
-      } else if (s.role === 'Supervisor' || s.role === 'Manager' || s.role === 'Admin') {
-        stage = 10;
-        matrixLvl = 8;
-        kpi = 98;
-        target = 'Head of Department / Director';
-      } else if (s.name === 'Unyim' || s.name === 'Ayong' || s.name === 'Pak Joko') {
-        stage = 7;
-        matrixLvl = 5;
-        kpi = 89;
-        target = 'Specialist Audio Engineer';
-      } else if (s.division === 'Gudang') {
-        stage = 5;
-        matrixLvl = 3;
-        kpi = 84;
-        target = 'Warehouse Head Officer';
-      } else {
-        stage = 4;
-        matrixLvl = 2;
-        kpi = 80;
-        target = 'Division Specialist';
-      }
-
       initial[s.id] = {
         staffId: s.id,
-        currentStageId: stage,
-        matrixLevelId: matrixLvl,
-        targetRole: target,
-        kpiScore: kpi,
-        trainingHours: stage * 18,
-        certNumber: stage >= 5 ? `CERT-RP-${s.division.substring(0, 3).toUpperCase()}-2026-${s.id.padStart(3, '0')}` : undefined,
+        currentStageId: 1, // TRAINING (Tahap Pertama)
+        matrixLevelId: 1,  // Level 1 Dasar
+        targetRole: 'Level 1 - Trainee / Operator Pemula',
+        kpiScore: 0,
+        trainingHours: 0,
+        certNumber: undefined,
         lastUpdated: new Date().toISOString().split('T')[0],
-        verifiedBy: stage >= 4 ? 'Wahyu (Director)' : undefined,
-        skills: [
-          `SOP Operasional ${s.division}`,
-          'K3 & Distribusi Kelistrikan',
-          'Preventive Maintenance (PM)',
-          'Troubleshooting Unit NG'
-        ]
+        verifiedBy: undefined,
+        skills: [`Pengenalan Dasar SOP ${s.division}`]
       };
     });
     return initial;
+  };
+
+  // Persistent career records - RESET TO CLEAN ZERO
+  const [careerRecords, setCareerRecords] = useState<Record<string, StaffCareerRecord>>(() => {
+    const isReset = localStorage.getItem('riz_career_pipeline_reset_zero_v3');
+    if (!isReset) {
+      localStorage.setItem('riz_career_pipeline_reset_zero_v3', 'true');
+      const cleanData = getCleanInitialCareerRecords();
+      localStorage.setItem('riz_career_pipeline_records', JSON.stringify(cleanData));
+      return cleanData;
+    }
+    const saved = localStorage.getItem('riz_career_pipeline_records');
+    return saved ? JSON.parse(saved) : getCleanInitialCareerRecords();
   });
+
+  // Handler to reset all career records to Stage 1 (TRAINING)
+  const handleResetAllCareerRecords = () => {
+    if (!isManagement) {
+      alert('Akses Ditolak: Hanya Admin atau Manajemen yang berhak mereset seluruh pipeline karir & kompetensi.');
+      return;
+    }
+
+    if (window.confirm('PERINGATAN RESMI:\nApakah Anda yakin ingin MERESET SEMUA HASIL KOMPETENSI & KARIR STAFF?\n\nSeluruh staff akan dikembalikan ke Tahap 1 (TRAINING), Level 1 Matriks, KPI 0%, Jam Training 0 jam, dan seluruh nomor sertifikasi akan dicabut.')) {
+      const cleanData = getCleanInitialCareerRecords();
+      setCareerRecords(cleanData);
+      localStorage.setItem('riz_career_pipeline_records', JSON.stringify(cleanData));
+      onLogActivity(currentUser.name, currentUser.role, 'Admin / Manajemen melakukan RESET TOTAL seluruh jenjang karir & paspor kompetensi staff ke Tahap 1 (TRAINING)');
+      alert('Berhasil! Seluruh hasil kompetensi dan jenjang karir staff telah di-reset ke Tahap 1 (TRAINING).');
+    }
+  };
 
   // Save to localStorage
   useEffect(() => {
@@ -313,8 +302,20 @@ export default function CareerCompetencyModule({
           </div>
         </div>
 
-        {/* Print Button */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {isManagement && (
+            <button
+              type="button"
+              onClick={handleResetAllCareerRecords}
+              className="flex items-center gap-2 px-4 py-2.5 bg-rose-600/90 hover:bg-rose-700 text-white font-bold text-xs rounded-xl border border-rose-500 shadow-md cursor-pointer transition-all"
+              title="Reset seluruh karir, level matriks, dan paspor kompetensi semua staff ke Tahap 1 (TRAINING)"
+            >
+              <Trash2 className="w-4 h-4 text-white" />
+              <span>Reset Semua Kompetensi Staff</span>
+            </button>
+          )}
+
           <button
             onClick={() => window.print()}
             className="flex items-center gap-2 px-4 py-2.5 bg-slate-800/90 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 shadow-sm cursor-pointer transition-all"

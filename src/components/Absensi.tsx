@@ -125,159 +125,17 @@ export const QUIZ_QUESTIONS = [
 export const getInitialCompetencyData = () => {
   const data: { [staffId: string]: { [compKey: string]: { verified: boolean; verifiedBy?: string; dateVerified?: string } } } = {};
   
-  // Audio
-  data['8'] = { // Mboh
-    comp_safety: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-10' },
-    comp_multimeter: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-12' },
-    comp_soldering: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-15' },
-    comp_phase_load: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-18' },
-    comp_grounding: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-20' },
-    comp_troubleshoot: { verified: false }
-  };
-  data['9'] = { // Unyim
-    comp_safety: { verified: true, verifiedBy: 'Mboh', dateVerified: '2026-06-25' },
-    comp_multimeter: { verified: true, verifiedBy: 'Mboh', dateVerified: '2026-06-26' },
-    comp_soldering: { verified: true, verifiedBy: 'Mboh', dateVerified: '2026-06-28' },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-  data['10'] = { // Dani
-    comp_safety: { verified: true, verifiedBy: 'Mboh', dateVerified: '2026-06-27' },
-    comp_multimeter: { verified: false },
-    comp_soldering: { verified: true, verifiedBy: 'Mboh', dateVerified: '2026-06-29' },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-  data['11'] = { // Butonk
-    comp_safety: { verified: true, verifiedBy: 'Mboh', dateVerified: '2026-06-15' },
-    comp_multimeter: { verified: true, verifiedBy: 'Mboh', dateVerified: '2026-06-16' },
-    comp_soldering: { verified: true, verifiedBy: 'Mboh', dateVerified: '2026-06-20' },
-    comp_phase_load: { verified: true, verifiedBy: 'Mboh', dateVerified: '2026-06-22' },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-  data['12'] = { // Yudish
-    comp_safety: { verified: true, verifiedBy: 'Mboh', dateVerified: '2026-06-28' },
-    comp_multimeter: { verified: false },
-    comp_soldering: { verified: false },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-  data['13'] = { // Opik
-    comp_safety: { verified: false },
-    comp_multimeter: { verified: false },
-    comp_soldering: { verified: false },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-  data['14'] = { // Buluk
-    comp_safety: { verified: false },
-    comp_multimeter: { verified: false },
-    comp_soldering: { verified: false },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-
-  // Lighting
-  data['15'] = { // Heri
-    comp_safety: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-05-10' },
-    comp_multimeter: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-05-12' },
-    comp_soldering: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-05-15' },
-    comp_phase_load: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-05-18' },
-    comp_grounding: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-05-20' },
-    comp_troubleshoot: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-05-22' }
-  };
-
-  // Multimedia
-  data['16'] = { // Ulloh
-    comp_safety: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-01' },
-    comp_multimeter: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-03' },
-    comp_soldering: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-05' },
-    comp_phase_load: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-10' },
-    comp_grounding: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-12' },
-    comp_troubleshoot: { verified: false }
-  };
-  data['17'] = { // Jay
-    comp_safety: { verified: true, verifiedBy: 'Ulloh', dateVerified: '2026-06-20' },
-    comp_multimeter: { verified: true, verifiedBy: 'Ulloh', dateVerified: '2026-06-22' },
-    comp_soldering: { verified: false },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-  data['18'] = { // Chandra
-    comp_safety: { verified: true, verifiedBy: 'Ulloh', dateVerified: '2026-06-25' },
-    comp_multimeter: { verified: false },
-    comp_soldering: { verified: false },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-
-  // Videotron
-  data['19'] = { // Ayong
-    comp_safety: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-04-10' },
-    comp_multimeter: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-04-12' },
-    comp_soldering: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-04-15' },
-    comp_phase_load: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-04-18' },
-    comp_grounding: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-04-20' },
-    comp_troubleshoot: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-04-22' }
-  };
-  data['20'] = { // Wigi
-    comp_safety: { verified: true, verifiedBy: 'Ayong', dateVerified: '2026-06-15' },
-    comp_multimeter: { verified: true, verifiedBy: 'Ayong', dateVerified: '2026-06-18' },
-    comp_soldering: { verified: true, verifiedBy: 'Ayong', dateVerified: '2026-06-20' },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-  data['21'] = { // Irfan
-    comp_safety: { verified: true, verifiedBy: 'Ayong', dateVerified: '2026-06-19' },
-    comp_multimeter: { verified: false },
-    comp_soldering: { verified: false },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-  data['22'] = { // Kharo
-    comp_safety: { verified: false },
-    comp_multimeter: { verified: false },
-    comp_soldering: { verified: false },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-
-  // Gudang
-  data['1'] = { // Mang ube
-    comp_safety: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-20' },
-    comp_multimeter: { verified: false },
-    comp_soldering: { verified: false },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-  data['2'] = { // Gatot
-    comp_safety: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-21' },
-    comp_multimeter: { verified: true, verifiedBy: 'Agus', dateVerified: '2026-06-22' },
-    comp_soldering: { verified: false },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
-  data['3'] = { // Abah Subur
-    comp_safety: { verified: false },
-    comp_multimeter: { verified: false },
-    comp_soldering: { verified: false },
-    comp_phase_load: { verified: false },
-    comp_grounding: { verified: false },
-    comp_troubleshoot: { verified: false }
-  };
+  // RESET TOTAL SEMUA STAFF KE 0% (BELUM LULUS / UNVERIFIED)
+  MASTER_STAFF.forEach(staff => {
+    data[staff.id] = {
+      comp_safety: { verified: false },
+      comp_multimeter: { verified: false },
+      comp_soldering: { verified: false },
+      comp_phase_load: { verified: false },
+      comp_grounding: { verified: false },
+      comp_troubleshoot: { verified: false }
+    };
+  });
 
   return data;
 };
@@ -405,11 +263,34 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
   const [newDeadline, setNewDeadline] = useState('');
   const [newPriority, setNewPriority] = useState<'Tinggi' | 'Sedang' | 'Rendah'>('Sedang');
 
-  // Electrical Competencies State
+  // Electrical Competencies State - RESET ALL STAFF TO 0%
   const [electricalCompetencies, setElectricalCompetencies] = useState<{ [staffId: string]: { [compKey: string]: { verified: boolean; verifiedBy?: string; dateVerified?: string } } }>(() => {
+    const isReset = localStorage.getItem('riz_staff_competencies_reset_all_zero_v3');
+    if (!isReset) {
+      localStorage.setItem('riz_staff_competencies_reset_all_zero_v3', 'true');
+      const cleanData = getInitialCompetencyData();
+      localStorage.setItem('riz_staff_electrical_competencies', JSON.stringify(cleanData));
+      return cleanData;
+    }
     const saved = localStorage.getItem('riz_staff_electrical_competencies');
     return saved ? JSON.parse(saved) : getInitialCompetencyData();
   });
+
+  // Handler to reset all staff competencies to 0%
+  const handleResetAllCompetencies = () => {
+    if (currentUser.role !== 'Admin' && currentUser.role !== 'Supervisor' && currentUser.role !== 'Manager') {
+      alert('Hanya Admin atau Supervisor yang memiliki hak akses mereset kompetensi seluruh staff.');
+      return;
+    }
+
+    if (window.confirm('PERINGATAN RESMI:\nApakah Anda yakin ingin MERESET SEMUA HASIL KOMPETENSI STAFF ke 0%?\n\nSemua verifikasi kelayakan, status sertifikasi, dan centang uji kompetensi seluruh staff divisi akan dikosongkan kembali ke awal (0%).')) {
+      const cleanData = getInitialCompetencyData();
+      setElectricalCompetencies(cleanData);
+      localStorage.setItem('riz_staff_electrical_competencies', JSON.stringify(cleanData));
+      onLogActivity(currentUser.name, currentUser.role, 'Admin / Supervisor melakukan RESET TOTAL seluruh hasil kompetensi staff ke 0% (Clean Slate)');
+      alert('Berhasil! Seluruh hasil kompetensi staff telah di-reset ke 0%.');
+    }
+  };
 
   // Competency Progress tracking states
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
@@ -1785,14 +1666,28 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
 
             {/* HIERARCHICAL COMPETENCY DEVELOPMENT FLOW (ROADMAP) */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                <div className="p-1 bg-indigo-50 text-indigo-600 rounded">
-                  <Award className="w-4 h-4 text-indigo-500" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-slate-100 gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-indigo-50 text-indigo-600 rounded">
+                    <Award className="w-4 h-4 text-indigo-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">Alur Standardisasi Pelatihan & Sertifikasi</h3>
+                    <p className="text-[10px] text-slate-400">Kerangka Penilaian Kompetensi Kelistrikan Dasar RIZ-PRODUCTION</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 text-sm">Alur Standardisasi Pelatihan & Sertifikasi</h3>
-                  <p className="text-[10px] text-slate-400">Kerangka Penilaian Kompetensi Kelistrikan Dasar RIZ-PRODUCTION</p>
-                </div>
+
+                {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                  <button
+                    type="button"
+                    onClick={handleResetAllCompetencies}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto shadow-xs"
+                    title="Reset seluruh hasil kompetensi dan sertifikasi semua staff ke 0%"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Reset Semua Kompetensi Staff (0%)</span>
+                  </button>
+                )}
               </div>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-11 gap-2.5 items-stretch relative">
