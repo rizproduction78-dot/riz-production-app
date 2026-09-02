@@ -114,13 +114,19 @@ export default function Dashboard({
     };
   });
 
-  // High-fidelity dynamic derivations for report cards
-  const totalDailyReportsCount = dailyReports.length + 114;
-  const totalQCCount = logbookEntries.length + 85;
-  const totalWorkOrdersCount = findings.length + workOrders.length + 12;
+  // Dynamic derivations for report cards - Bersih dari angka palsu
+  const totalDailyReportsCount = dailyReports.length;
+  const totalQCCount = logbookEntries.length;
+  const totalWorkOrdersCount = findings.length + workOrders.length;
 
   // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
   const staffProductivityData = calculateAllStaffKpis(STAFF_LIST, dailyReports, logbookEntries, findings);
+
+  // Grade distributions dynamically calculated from real data
+  const countGradeA = staffProductivityData.filter(s => s.grade === 'A').length;
+  const countGradeB = staffProductivityData.filter(s => s.grade === 'B').length;
+  const countGradeC = staffProductivityData.filter(s => s.grade === 'C').length;
+  const countGradeD = staffProductivityData.filter(s => s.grade === 'D').length;
 
   // Top 5 performers
   const topPerformers = staffProductivityData.slice(0, 5);
@@ -1037,22 +1043,22 @@ export default function Dashboard({
                 <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-xl text-center">
                   <span className="text-2xl font-black text-emerald-800 block">Grade A</span>
                   <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider block mt-1">Sangat Baik (90-100)</span>
-                  <strong className="text-3xl font-black text-emerald-800 block mt-2">12 Staff</strong>
+                  <strong className="text-3xl font-black text-emerald-800 block mt-2">{countGradeA} Staff</strong>
                 </div>
                 <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-xl text-center">
                   <span className="text-2xl font-black text-indigo-800 block">Grade B</span>
                   <span className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider block mt-1">Baik (80-89)</span>
-                  <strong className="text-3xl font-black text-indigo-800 block mt-2">8 Staff</strong>
+                  <strong className="text-3xl font-black text-indigo-800 block mt-2">{countGradeB} Staff</strong>
                 </div>
                 <div className="bg-amber-50 border border-amber-100 p-5 rounded-xl text-center">
                   <span className="text-2xl font-black text-amber-800 block">Grade C</span>
                   <span className="text-[10px] text-amber-600 font-bold uppercase tracking-wider block mt-1">Cukup (70-79)</span>
-                  <strong className="text-3xl font-black text-amber-800 block mt-2">2 Staff</strong>
+                  <strong className="text-3xl font-black text-amber-800 block mt-2">{countGradeC} Staff</strong>
                 </div>
                 <div className="bg-rose-50 border border-rose-100 p-5 rounded-xl text-center">
                   <span className="text-2xl font-black text-rose-800 block">Grade D</span>
                   <span className="text-[10px] text-rose-600 font-bold uppercase tracking-wider block mt-1">Kurang (&lt;70)</span>
-                  <strong className="text-3xl font-black text-rose-800 block mt-2">0 Staff</strong>
+                  <strong className="text-3xl font-black text-rose-800 block mt-2">{countGradeD} Staff</strong>
                 </div>
               </div>
             </div>

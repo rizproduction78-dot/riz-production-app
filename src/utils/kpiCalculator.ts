@@ -146,49 +146,46 @@ export function calculateStaffKpi(
   const competencyScore = Math.round((competencyCount / competencyTotal) * 100);
 
   // ─────────────────────────────────────────────────────────────
-  // 3. DISIPLIN KERJA (TETAP ADA)
+  // 3. DISIPLIN KERJA (Dihitung dari kehadiran dan kepatuhan jam kerja)
   // ─────────────────────────────────────────────────────────────
-  const disciplineScore = Math.min(100, 92 + (seed % 7)); // 92 - 98%
+  const disciplineScore = attendanceCount > 0 ? Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100)) : 0;
 
   // ─────────────────────────────────────────────────────────────
-  // 4. PRODUKTIVITAS / DAILY TASK (TETAP ADA)
+  // 4. PRODUKTIVITAS / DAILY TASK (Murni dari laporan harian yang diinput)
   // ─────────────────────────────────────────────────────────────
   const realReportsCount = dailyReports.filter(
     r => r.staffName?.toLowerCase() === staff.name.toLowerCase()
   ).length;
-  const baseReports = (seed % 4) + 14;
-  const reportsCount = realReportsCount + baseReports;
+  const reportsCount = realReportsCount;
   const reportScore = Math.min(100, Math.round((reportsCount / 18) * 100));
 
   // ─────────────────────────────────────────────────────────────
-  // 5. QUALITY / QC CHECKLIST (TETAP ADA)
+  // 5. QUALITY / QC CHECKLIST (Murni dari checklist QC yang diinput)
   // ─────────────────────────────────────────────────────────────
   const isNonQcDivision = ['Gudang', 'Admin'].includes(staff.division);
   const realQcCount = logbookEntries.filter(
     e => e.staffName?.toLowerCase() === staff.name.toLowerCase()
   ).length;
-  const baseQcs = isNonQcDivision ? 0 : ((seed % 4) + 8);
-  const qcCount = isNonQcDivision ? 0 : (realQcCount + baseQcs);
-  const qcScore = isNonQcDivision ? 100 : Math.min(100, Math.round((qcCount / 10) * 100));
+  const qcCount = isNonQcDivision ? 0 : realQcCount;
+  const qcScore = isNonQcDivision ? 100 : (qcCount === 0 ? 0 : Math.min(100, Math.round((qcCount / 10) * 100)));
 
   // ─────────────────────────────────────────────────────────────
-  // 6. KOMPLEKSITAS TUGAS & WORK ORDER (TETAP ADA)
+  // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Murni dari WO yang diselesaikan)
   // ─────────────────────────────────────────────────────────────
   const realWoCount = findings.filter(
     f => f.pic?.toLowerCase() === staff.name.toLowerCase() && f.status === 'Close'
   ).length;
-  const baseWos = (seed % 3) + 4;
-  const woCount = realWoCount + baseWos;
+  const woCount = realWoCount;
   const woScore = Math.min(100, Math.round((woCount / 6) * 100));
-  const taskComplexityScore = Math.min(100, 85 + (seed % 10)); // 85 - 94%
+  const taskComplexityScore = woScore;
 
   // ─────────────────────────────────────────────────────────────
-  // 7. PENGEMBANGAN DIRI & TEAMWORK (TETAP ADA)
+  // 7. PENGEMBANGAN DIRI & TEAMWORK (Dari keaktifan uji kompetensi & laporan)
   // ─────────────────────────────────────────────────────────────
-  const teamworkScore = Math.min(100, 90 + (seed % 8)); // 90 - 97%
+  const teamworkScore = Math.round((competencyScore * 0.5) + (reportScore * 0.5));
 
-  // Jam kerja total
-  const baseHours = (attendanceCount * 8) + (seed % 10);
+  // Jam kerja total riil (shift kehadiran x 8 jam)
+  const baseHours = attendanceCount * 8;
 
   // ─────────────────────────────────────────────────────────────
   // 8. TOTAL NILAI KPI (SEMUA KOMPONEN LENGKAP & TIDAK DIHILANGKAN)

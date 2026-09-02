@@ -797,19 +797,19 @@ export default function Reports({
                 <div className="grid grid-cols-4 gap-4 text-center">
                   <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded">
                     <div className="text-lg font-bold text-emerald-700">A</div>
-                    <div className="text-[10px] text-emerald-600 mt-0.5">12 Staff (Sangat Baik)</div>
+                    <div className="text-[10px] text-emerald-600 mt-0.5">{staffKpis.filter(s => s.grade === 'A').length} Staff (Sangat Baik)</div>
                   </div>
                   <div className="bg-blue-50 border border-blue-200 p-2.5 rounded">
                     <div className="text-lg font-bold text-blue-700">B</div>
-                    <div className="text-[10px] text-blue-600 mt-0.5">8 Staff (Baik)</div>
+                    <div className="text-[10px] text-blue-600 mt-0.5">{staffKpis.filter(s => s.grade === 'B').length} Staff (Baik)</div>
                   </div>
                   <div className="bg-amber-50 border border-amber-200 p-2.5 rounded">
                     <div className="text-lg font-bold text-amber-700">C</div>
-                    <div className="text-[10px] text-amber-600 mt-0.5">2 Staff (Cukup)</div>
+                    <div className="text-[10px] text-amber-600 mt-0.5">{staffKpis.filter(s => s.grade === 'C').length} Staff (Cukup)</div>
                   </div>
                   <div className="bg-slate-50 border border-slate-200 p-2.5 rounded">
                     <div className="text-lg font-bold text-slate-700">D</div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">0 Staff (Kurang)</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">{staffKpis.filter(s => s.grade === 'D').length} Staff (Kurang)</div>
                   </div>
                 </div>
               </div>
