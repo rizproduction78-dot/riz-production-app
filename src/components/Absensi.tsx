@@ -15,7 +15,8 @@ export const WAJIB_ABSEN_NAMES = [
   'Mboh', 'Unyim', 'Dani', 'Butonk', 'Yudish', 'Opik', 'Buluk',
   'Heri',
   'Jay',
-  'Ayong', 'Wigi', 'Irfan', 'Kharo',
+  'Ayong', 'Wigi', 'Irfan',
+  'Mang Damri', 'Kharo',
   'Mang ube', 'Gatot', 'Abah Subur'
 ];
 
@@ -2154,7 +2155,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
       {/* VIEW 4: MAINTENANCE & SERVICE DASHBOARD */}
       {activeSubTab === 'maintenance_dashboard' && (() => {
         const isSvcDiv = (picName: string, divisionName?: string) => {
-          const svcNames = ['pak joko', 'slamet', 'muji', 'service'];
+          const svcNames = ['mang damri', 'damri', 'kharo', 'service'];
           return svcNames.includes((picName || '').toLowerCase()) || divisionName === 'Service';
         };
 
@@ -2296,7 +2297,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
             onLogActivity(currentUser.name, currentUser.role, `Menambahkan agenda Maintenance Rutin baru untuk ${newEquipName}`);
           } else {
             const isSvc = newType === 'Service';
-            const selectedPic = newPic || (isSvc ? 'Slamet' : currentUser.name);
+            const selectedPic = newPic || (isSvc ? 'Kharo' : currentUser.name);
             const newWO: any = {
               id: 'wo-' + Date.now(),
               title: `Perbaikan: ${newEquipName}`,

@@ -37,12 +37,10 @@ export const STAFF_LIST: Staff[] = [
   { id: '19', name: 'Ayong', division: 'Videotron', role: 'Team Leader' },
   { id: '20', name: 'Wigi', division: 'Videotron', role: 'Staff' },
   { id: '21', name: 'Irfan', division: 'Videotron', role: 'Staff' },
-  { id: '22', name: 'Kharo', division: 'Videotron', role: 'Staff' },
 
   // Service (Perbaikan)
-  { id: '23', name: 'Pak Joko', division: 'Service', role: 'Team Leader' },
-  { id: '24', name: 'Slamet', division: 'Service', role: 'Staff' },
-  { id: '25', name: 'Muji', division: 'Service', role: 'Staff' },
+  { id: '23', name: 'Mang Damri', division: 'Service', role: 'Team Leader' },
+  { id: '22', name: 'Kharo', division: 'Service', role: 'Staff' },
 ];
 
 export const MASTER_STAFF: Staff[] = [...STAFF_LIST];
