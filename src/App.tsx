@@ -28,7 +28,6 @@ import Absensi from './components/Absensi';
 import Gudang from './components/Gudang';
 import CareerCompetencyModule from './components/CareerCompetencyModule';
 import EmployeePerformanceModule from './components/EmployeePerformanceModule';
-import AgenticRAGModule from './components/AgenticRAGModule';
 
 import {
   LayoutDashboard,
@@ -724,20 +723,6 @@ export default function App() {
         </div>
 
         {/* Active view switcher */}
-        {activeTab === 'agentic_ai' && (
-          <AgenticRAGModule
-            currentUser={currentUser}
-            assets={assets}
-            logbookEntries={logbookEntries}
-            dailyReports={dailyReports}
-            findings={findings}
-            workOrders={workOrders}
-            attendanceLogs={[]}
-            warehouseLogs={[]}
-            onLogActivity={handleLogActivity}
-          />
-        )}
-
         {activeTab === 'dashboard' && (
           <Dashboard
             logbookEntries={logbookEntries}
