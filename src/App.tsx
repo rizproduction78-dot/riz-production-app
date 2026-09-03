@@ -84,7 +84,7 @@ export default function App() {
   const NAVIGATION_ITEMS = (() => {
     if (!currentUser) return [];
     const role = currentUser.role;
-    if (role === 'Admin') {
+    if (role === 'Admin' || currentUser.division === 'Admin') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders },
@@ -106,6 +106,7 @@ export default function App() {
     if (role === 'Manager') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -121,6 +122,7 @@ export default function App() {
     if (role === 'Supervisor') {
       return [
         { id: 'dashboard', label: 'Divisi Monitoring', icon: LayoutDashboard },
+        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
