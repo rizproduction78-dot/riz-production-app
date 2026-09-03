@@ -25,7 +25,10 @@ export default function Reports({
   onLogActivity,
 }: ReportsProps) {
   const [reportType, setReportType] = useState<'Harian' | 'Mingguan' | 'Bulanan'>('Harian');
-  const [targetMonth, setTargetMonth] = useState('2026-07');
+  const [targetMonth, setTargetMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Aggregate numbers

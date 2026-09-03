@@ -379,9 +379,15 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
       }
     });
 
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonthNum = String(now.getMonth() + 1).padStart(2, '0');
+    const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const currentMonthName = monthNames[now.getMonth()];
+
     const newSchedule: WorkSchedule = {
-      id: '2026-07',
-      monthLabel: 'Juli 2026',
+      id: `${currentYear}-${currentMonthNum}`,
+      monthLabel: `${currentMonthName} ${currentYear}`,
       scheduleData: defaultData
     };
 

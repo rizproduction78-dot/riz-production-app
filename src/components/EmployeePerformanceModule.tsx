@@ -142,6 +142,8 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
               onChange={(e) => setSelectedMonth(e.target.value)}
               className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer"
             >
+              <option value="September 2026">September 2026</option>
+              <option value="Agustus 2026">Agustus 2026</option>
               <option value="Juli 2026">Juli 2026</option>
               <option value="Juni 2026">Juni 2026</option>
               <option value="Mei 2026">Mei 2026</option>
