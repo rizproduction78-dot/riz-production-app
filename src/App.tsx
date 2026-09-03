@@ -87,7 +87,6 @@ export default function App() {
     if (role === 'Admin' || currentUser.division === 'Admin') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -98,7 +97,8 @@ export default function App() {
         { id: 'absensi_schedule', label: 'Penjadwalan (1-31)', icon: Calendar },
         { id: 'gudang', label: 'Manajemen Gudang', icon: Package },
         { id: 'reports', label: 'Laporan & Ekspor', icon: FileCheck },
-        { id: 'activities', label: 'Audit Activity', icon: History }
+        { id: 'activities', label: 'Audit Activity', icon: History },
+        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
       ];
     }
     
@@ -106,7 +106,6 @@ export default function App() {
     if (role === 'Manager') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -114,7 +113,8 @@ export default function App() {
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
         { id: 'absensi_schedule', label: 'Penjadwalan (1-31)', icon: Calendar },
         { id: 'reports', label: 'Laporan & Approval', icon: FileCheck },
-        { id: 'activities', label: 'Audit Activity', icon: History }
+        { id: 'activities', label: 'Audit Activity', icon: History },
+        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
       ];
     }
     
@@ -122,7 +122,6 @@ export default function App() {
     if (role === 'Supervisor') {
       return [
         { id: 'dashboard', label: 'Divisi Monitoring', icon: LayoutDashboard },
-        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -130,7 +129,8 @@ export default function App() {
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
         { id: 'absensi_schedule', label: 'Work Schedule (1-31)', icon: Calendar },
         { id: 'reports', label: 'Approval & Laporan', icon: FileCheck },
-        { id: 'activities', label: 'Audit Activity', icon: History }
+        { id: 'activities', label: 'Audit Activity', icon: History },
+        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
       ];
     }
     
