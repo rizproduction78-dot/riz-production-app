@@ -28,6 +28,7 @@ import Absensi from './components/Absensi';
 import Gudang from './components/Gudang';
 import CareerCompetencyModule from './components/CareerCompetencyModule';
 import EmployeePerformanceModule from './components/EmployeePerformanceModule';
+import AdminPanel from './components/AdminPanel';
 
 import {
   LayoutDashboard,
@@ -51,7 +52,8 @@ import {
   TrendingUp,
   RefreshCw,
   Bot,
-  Sparkles
+  Sparkles,
+  Sliders
 } from 'lucide-react';
 import {
   subscribeCloudCollection,
@@ -85,6 +87,7 @@ export default function App() {
     if (role === 'Admin') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -802,6 +805,13 @@ export default function App() {
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
             forceSubTab="maintenance_dashboard"
+          />
+        )}
+
+        {activeTab === 'admin_panel' && (
+          <AdminPanel
+            currentUser={currentUser}
+            onLogActivity={handleLogActivity}
           />
         )}
 
