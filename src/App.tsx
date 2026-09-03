@@ -419,6 +419,22 @@ export default function App() {
     saveCloudDoc('maintenance_schedules', newSch.id, newSch);
   };
 
+  const handleUpdateSchedule = (id: string, updatedFields: Partial<MaintenanceSchedule>) => {
+    setSchedules(prev => prev.map(s => {
+      if (s.id === id) {
+        const updated = { ...s, ...updatedFields };
+        saveCloudDoc('maintenance_schedules', id, updated);
+        return updated;
+      }
+      return s;
+    }));
+  };
+
+  const handleDeleteSchedule = (id: string) => {
+    setSchedules(prev => prev.filter(s => s.id !== id));
+    deleteCloudDoc('maintenance_schedules', id);
+  };
+
   const handleUpdateScheduleStatus = (
     id: string,
     status: 'Scheduled' | 'Done' | 'Overdue',
@@ -434,7 +450,7 @@ export default function App() {
           ...s,
           status,
           lastDate: new Date().toISOString().split('T')[0],
-          nextDate: status === 'Done' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : s.nextDate, // push by 30 days if completed
+          nextDate: status === 'Done' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : s.nextDate,
           notes: notes ? notes : s.notes,
           sparepart: sparepart !== undefined ? sparepart : s.sparepart,
           vendor: vendor !== undefined ? vendor : s.vendor,
@@ -457,6 +473,17 @@ export default function App() {
     };
     setAssets(prev => [newAsset, ...prev]);
     saveCloudDoc('assets', newAsset.id, newAsset);
+  };
+
+  const handleUpdateAsset = (id: string, updatedFields: Partial<Asset>) => {
+    setAssets(prev => prev.map(a => {
+      if (a.id === id) {
+        const updated = { ...a, ...updatedFields };
+        saveCloudDoc('assets', id, updated);
+        return updated;
+      }
+      return a;
+    }));
   };
 
   const handleUpdateAssetCondition = (id: string, condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat') => {
@@ -500,6 +527,18 @@ export default function App() {
     deleteCloudDoc('assets', id);
   };
 
+  // Findings functions
+  const handleUpdateFinding = (id: string, updatedFields: Partial<Finding>) => {
+    setFindings(prev => prev.map(f => {
+      if (f.id === id) {
+        const updated = { ...f, ...updatedFields };
+        saveCloudDoc('findings', id, updated);
+        return updated;
+      }
+      return f;
+    }));
+  };
+
   // Work Orders functions
   const handleAddWorkOrder = (wo: Omit<WorkOrder, 'id' | 'dateCreated'>) => {
     const newWO: WorkOrder = {
@@ -509,6 +548,17 @@ export default function App() {
     };
     setWorkOrders(prev => [newWO, ...prev]);
     saveCloudDoc('work_orders', newWO.id, newWO);
+  };
+
+  const handleUpdateWorkOrder = (id: string, updatedFields: Partial<WorkOrder>) => {
+    setWorkOrders(prev => prev.map(w => {
+      if (w.id === id) {
+        const updated = { ...w, ...updatedFields };
+        saveCloudDoc('work_orders', id, updated);
+        return updated;
+      }
+      return w;
+    }));
   };
 
   const handleUpdateWorkOrderProgress = (id: string, progress: number) => {
@@ -814,6 +864,22 @@ export default function App() {
           <AdminPanel
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
+            findings={findings}
+            onAddFinding={handleAddFinding}
+            onUpdateFinding={handleUpdateFinding}
+            onDeleteFinding={handleDeleteFinding}
+            workOrders={workOrders}
+            onAddWorkOrder={handleAddWorkOrder}
+            onUpdateWorkOrder={handleUpdateWorkOrder}
+            onDeleteWorkOrder={handleDeleteWorkOrder}
+            maintenanceSchedules={schedules}
+            onAddSchedule={handleAddSchedule}
+            onUpdateSchedule={handleUpdateSchedule}
+            onDeleteSchedule={handleDeleteSchedule}
+            assets={assets}
+            onAddAsset={handleAddAsset}
+            onUpdateAsset={handleUpdateAsset}
+            onDeleteAsset={handleDeleteAsset}
           />
         )}
 
