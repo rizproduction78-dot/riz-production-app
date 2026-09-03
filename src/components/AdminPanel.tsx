@@ -7,8 +7,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Staff, Division, QCItem, Finding, WorkOrder, MaintenanceSchedule, Asset } from '../types';
-import { STAFF_LIST, QC_ITEMS_BY_DIVISION } from '../data';
+import { Staff, Division, QCItem, Finding, WorkOrder, MaintenanceSchedule, Asset, VehicleMaster, FleetAssignment } from '../types';
+import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES } from '../data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 import {
   Users,
@@ -86,7 +86,7 @@ export default function AdminPanel({
   onDeleteAsset
 }: AdminPanelProps) {
   // Navigation Sub-tabs
-  const [activeTab, setActiveTab] = useState<'staff' | 'findings_wo' | 'maintenance' | 'gudang' | 'qc_checklist' | 'schedule' | 'database'>('staff');
+  const [activeTab, setActiveTab] = useState<'staff' | 'findings_wo' | 'maintenance' | 'gudang' | 'kendaraan' | 'qc_checklist' | 'schedule' | 'database'>('staff');
 
   // ─────────────────────────────────────────────────────────────
   // 1. MASTER STAF STATE
@@ -336,6 +336,227 @@ export default function AdminPanel({
   };
 
   // ─────────────────────────────────────────────────────────────
+  // 4B. TATA KELOLA KENDARAAN & ARMADA LOGISTIK STATE
+  // ─────────────────────────────────────────────────────────────
+  const [vehicles, setVehicles] = useState<VehicleMaster[]>(() => {
+    try {
+      const saved = localStorage.getItem('riz_master_vehicles');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_VEHICLES;
+  });
+
+  const [fleetAssignments, setFleetAssignments] = useState<FleetAssignment[]>(() => {
+    try {
+      const saved = localStorage.getItem('riz_fleet_assignments');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
+  const [kendaraanSubTab, setKendaraanSubTab] = useState<'vehicles' | 'trips'>('vehicles');
+  const [vehicleSearch, setVehicleSearch] = useState('');
+  const [fleetSearch, setFleetSearch] = useState('');
+
+  const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [showEditVehicleModal, setShowEditVehicleModal] = useState(false);
+  const [activeVehicleForEdit, setActiveVehicleForEdit] = useState<VehicleMaster | null>(null);
+
+  const [vehicleFormData, setVehicleFormData] = useState<Partial<VehicleMaster>>({
+    name: '',
+    ownership: 'Internal',
+    policeNumber: '',
+    vehicleType: 'Truk Box CDD (6 Roda)',
+    tonnageCapacity: 5.0,
+    cbmCapacity: 22.0,
+    odometerKM: 50000,
+    stnkTaxExpiry: new Date().toISOString().split('T')[0],
+    kirExpiry: new Date().toISOString().split('T')[0],
+    status: 'Siap Operasi'
+  });
+
+  const [showAddFleetModal, setShowAddFleetModal] = useState(false);
+  const [showEditFleetModal, setShowEditFleetModal] = useState(false);
+  const [activeFleetForEdit, setActiveFleetForEdit] = useState<FleetAssignment | null>(null);
+
+  const [fleetFormData, setFleetFormData] = useState<Partial<FleetAssignment>>({
+    spjNumber: '',
+    eventName: '',
+    tripType: 'Dalam Kota (Jabodetabek)',
+    vehicleType: 'Truk Box Mitsubishi Canter CDD (6 Roda)',
+    policeNumber: '',
+    driverName: '',
+    destination: '',
+    departureDate: new Date().toISOString().split('T')[0],
+    returnDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    totalCBM: 0,
+    p2hStatus: 'Laik Jalan',
+    approvalStatus: 'Approved',
+    status: 'Dijadwalkan',
+    budget: {
+      sewaVendor: 0,
+      bbmSolar: 0,
+      eToll: 0,
+      uangMakanDriver: 0,
+      biayaBongkarMuat: 0,
+      totalRAB: 0,
+      receiptVerified: true,
+      calculatedBy: 'Caca (Admin & Logistik)'
+    }
+  });
+
+  const saveVehicles = (updated: VehicleMaster[]) => {
+    setVehicles(updated);
+    localStorage.setItem('riz_master_vehicles', JSON.stringify(updated));
+    onLogActivity(currentUser.name, currentUser.role, 'Admin memperbarui database master kendaraan armada');
+  };
+
+  const saveFleetAssignments = (updated: FleetAssignment[]) => {
+    setFleetAssignments(updated);
+    localStorage.setItem('riz_fleet_assignments', JSON.stringify(updated));
+    onLogActivity(currentUser.name, currentUser.role, 'Admin memperbarui penugasan armada & SPJ');
+  };
+
+  const handleOpenEditVehicle = (v: VehicleMaster) => {
+    setActiveVehicleForEdit(v);
+    setVehicleFormData({ ...v });
+    setShowEditVehicleModal(true);
+  };
+
+  const handleSaveEditVehicle = () => {
+    if (!activeVehicleForEdit || !vehicleFormData.name || !vehicleFormData.policeNumber) return;
+    const updated = vehicles.map(v => v.id === activeVehicleForEdit.id ? { ...v, ...vehicleFormData } as VehicleMaster : v);
+    saveVehicles(updated);
+    setShowEditVehicleModal(false);
+    setActiveVehicleForEdit(null);
+  };
+
+  const handleCreateVehicle = () => {
+    if (!vehicleFormData.name || !vehicleFormData.policeNumber) return;
+    const newV: VehicleMaster = {
+      id: 'veh-' + Date.now(),
+      name: vehicleFormData.name,
+      ownership: vehicleFormData.ownership || 'Internal',
+      policeNumber: vehicleFormData.policeNumber.toUpperCase().trim(),
+      vehicleType: vehicleFormData.vehicleType || 'Truk Box CDD (6 Roda)',
+      tonnageCapacity: Number(vehicleFormData.tonnageCapacity || 3.0),
+      cbmCapacity: Number(vehicleFormData.cbmCapacity || 15.0),
+      odometerKM: Number(vehicleFormData.odometerKM || 0),
+      stnkTaxExpiry: vehicleFormData.stnkTaxExpiry || new Date().toISOString().split('T')[0],
+      kirExpiry: vehicleFormData.kirExpiry || new Date().toISOString().split('T')[0],
+      status: vehicleFormData.status || 'Siap Operasi'
+    };
+    saveVehicles([newV, ...vehicles]);
+    setShowAddVehicleModal(false);
+  };
+
+  const handleDeleteVehicle = (id: string) => {
+    if (confirm('Hapus unit armada ini dari master database oleh Admin?')) {
+      const updated = vehicles.filter(v => v.id !== id);
+      saveVehicles(updated);
+    }
+  };
+
+  const handleOpenEditFleet = (f: FleetAssignment) => {
+    setActiveFleetForEdit(f);
+    setFleetFormData({ ...f });
+    setShowEditFleetModal(true);
+  };
+
+  const handleSaveEditFleet = () => {
+    if (!activeFleetForEdit) return;
+    const b = fleetFormData.budget || {
+      sewaVendor: 0,
+      bbmSolar: 0,
+      eToll: 0,
+      uangMakanDriver: 0,
+      biayaBongkarMuat: 0,
+      totalRAB: 0,
+      receiptVerified: true,
+      calculatedBy: 'Caca'
+    };
+    const totalRAB = Number(b.sewaVendor || 0) + Number(b.bbmSolar || 0) + Number(b.eToll || 0) + Number(b.uangMakanDriver || 0) + Number(b.biayaBongkarMuat || 0);
+
+    const updated = fleetAssignments.map(f => {
+      if (f.id === activeFleetForEdit.id) {
+        return {
+          ...f,
+          ...fleetFormData,
+          budget: {
+            ...b,
+            totalRAB
+          }
+        } as FleetAssignment;
+      }
+      return f;
+    });
+    saveFleetAssignments(updated);
+    setShowEditFleetModal(false);
+    setActiveFleetForEdit(null);
+  };
+
+  const handleCreateFleet = () => {
+    if (!fleetFormData.policeNumber || !fleetFormData.driverName || !fleetFormData.destination) return;
+    const b = fleetFormData.budget || {
+      sewaVendor: 0,
+      bbmSolar: 0,
+      eToll: 0,
+      uangMakanDriver: 0,
+      biayaBongkarMuat: 0,
+      totalRAB: 0,
+      receiptVerified: true,
+      calculatedBy: 'Caca'
+    };
+    const totalRAB = Number(b.sewaVendor || 0) + Number(b.bbmSolar || 0) + Number(b.eToll || 0) + Number(b.uangMakanDriver || 0) + Number(b.biayaBongkarMuat || 0);
+
+    const newF: FleetAssignment = {
+      id: 'fleet-' + Date.now(),
+      spjNumber: fleetFormData.spjNumber || `SPJ/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(1000 + Math.random() * 9000)}`,
+      eventName: fleetFormData.eventName || 'Event Produksi',
+      tripType: fleetFormData.tripType || 'Dalam Kota (Jabodetabek)',
+      vehicleType: fleetFormData.vehicleType || 'Truk Box Mitsubishi Canter CDD (6 Roda)',
+      policeNumber: fleetFormData.policeNumber.toUpperCase().trim(),
+      driverName: fleetFormData.driverName.trim(),
+      destination: fleetFormData.destination.trim(),
+      departureDate: fleetFormData.departureDate || new Date().toISOString().split('T')[0],
+      returnDate: fleetFormData.returnDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      manifest: fleetFormData.manifest || [],
+      totalCBM: Number(fleetFormData.totalCBM || 0),
+      p2hStatus: fleetFormData.p2hStatus || 'Laik Jalan',
+      p2h: fleetFormData.p2h || {
+        banPsi: true,
+        oliMesin: true,
+        rem: true,
+        kelistrikanLampu: true,
+        radiatorCoolant: true,
+        ratchetLashingStrap: true,
+        legalitasSurat: true,
+        notes: 'Disetujui Admin Panel.',
+        inspector: 'Agus'
+      },
+      budget: {
+        ...b,
+        totalRAB,
+        calculatedBy: 'Caca (Admin & Logistik)'
+      },
+      approvalStatus: fleetFormData.approvalStatus || 'Approved',
+      approvedBy: 'Fahrul (Manager Operasional)',
+      approvedAt: new Date().toLocaleString('id-ID'),
+      status: fleetFormData.status || 'Dijadwalkan'
+    };
+
+    saveFleetAssignments([newF, ...fleetAssignments]);
+    setShowAddFleetModal(false);
+  };
+
+  const handleDeleteFleet = (id: string) => {
+    if (confirm('Hapus penugasan armada / SPJ ini dari sistem oleh Admin?')) {
+      const updated = fleetAssignments.filter(f => f.id !== id);
+      saveFleetAssignments(updated);
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
   // 5. QC CHECKLIST STATE
   // ─────────────────────────────────────────────────────────────
   const [selectedQcDivision, setSelectedQcDivision] = useState<Division>('Audio');
@@ -513,6 +734,15 @@ export default function AdminPanel({
           >
             <Package className="w-3.5 h-3.5" />
             <span>Gudang & Aset</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('kendaraan')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'kendaraan' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Truck className="w-3.5 h-3.5" />
+            <span>Tata Kelola Kendaraan</span>
           </button>
           <button
             onClick={() => setActiveTab('qc_checklist')}
@@ -974,6 +1204,288 @@ export default function AdminPanel({
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* TAB 4B: TATA KELOLA KENDARAAN & ARMADA LOGISTIK               */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'kendaraan' && (
+        <div className="space-y-6">
+          {/* Sub Navigation */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => setKendaraanSubTab('vehicles')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  kendaraanSubTab === 'vehicles' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span>Master Unit Armada ({vehicles.length})</span>
+              </button>
+              <button
+                onClick={() => setKendaraanSubTab('trips')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  kendaraanSubTab === 'trips' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Jadwal Penugasan & SPJ ({fleetAssignments.length})</span>
+              </button>
+            </div>
+
+            {kendaraanSubTab === 'vehicles' ? (
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari armada / plat..."
+                    value={vehicleSearch}
+                    onChange={(e) => setVehicleSearch(e.target.value)}
+                    className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-48"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveVehicleForEdit(null);
+                    setVehicleFormData({
+                      name: '',
+                      ownership: 'Internal',
+                      policeNumber: '',
+                      vehicleType: 'Truk Box CDD (6 Roda)',
+                      tonnageCapacity: 5.0,
+                      cbmCapacity: 22.0,
+                      odometerKM: 50000,
+                      stnkTaxExpiry: new Date().toISOString().split('T')[0],
+                      kirExpiry: new Date().toISOString().split('T')[0],
+                      status: 'Siap Operasi'
+                    });
+                    setShowAddVehicleModal(true);
+                  }}
+                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Unit Armada</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari SPJ / event / driver..."
+                    value={fleetSearch}
+                    onChange={(e) => setFleetSearch(e.target.value)}
+                    className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-48"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveFleetForEdit(null);
+                    setFleetFormData({
+                      spjNumber: `SPJ/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(1000 + Math.random() * 9000)}`,
+                      eventName: '',
+                      tripType: 'Dalam Kota (Jabodetabek)',
+                      vehicleType: 'Truk Box Mitsubishi Canter CDD (6 Roda)',
+                      policeNumber: 'B 9142 SXZ',
+                      driverName: '',
+                      destination: '',
+                      departureDate: new Date().toISOString().split('T')[0],
+                      returnDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                      totalCBM: 0,
+                      p2hStatus: 'Laik Jalan',
+                      approvalStatus: 'Approved',
+                      status: 'Dijadwalkan',
+                      budget: {
+                        sewaVendor: 0,
+                        bbmSolar: 0,
+                        eToll: 0,
+                        uangMakanDriver: 0,
+                        biayaBongkarMuat: 0,
+                        totalRAB: 0,
+                        receiptVerified: true,
+                        calculatedBy: 'Caca (Admin & Logistik)'
+                      }
+                    });
+                    setShowAddFleetModal(true);
+                  }}
+                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Terbitkan / Tambah SPJ</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* SUB-VIEW 1: MASTER UNIT ARMADA TABLE */}
+          {kendaraanSubTab === 'vehicles' && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse font-sans">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
+                      <th className="p-3.5">Nama Armada & Plat</th>
+                      <th className="p-3.5">Kepemilikan</th>
+                      <th className="p-3.5">Kapasitas Muat</th>
+                      <th className="p-3.5">Odometer KM</th>
+                      <th className="p-3.5">Legalitas & KIR</th>
+                      <th className="p-3.5">Status Unit</th>
+                      <th className="p-3.5 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {vehicles
+                      .filter(v => v.name.toLowerCase().includes(vehicleSearch.toLowerCase()) || v.policeNumber.toLowerCase().includes(vehicleSearch.toLowerCase()))
+                      .map((v) => (
+                        <tr key={v.id} className="hover:bg-slate-50/60">
+                          <td className="p-3.5">
+                            <div className="font-bold text-slate-900">{v.name}</div>
+                            <span className="font-mono text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                              {v.policeNumber}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              v.ownership === 'Internal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              {v.ownership}
+                            </span>
+                          </td>
+                          <td className="p-3.5 font-mono">
+                            <div><strong>{v.tonnageCapacity}</strong> Ton</div>
+                            <div className="text-[10px] text-slate-400"><strong>{v.cbmCapacity}</strong> CBM (m³)</div>
+                          </td>
+                          <td className="p-3.5 font-mono font-bold text-slate-800">
+                            {v.odometerKM.toLocaleString('id-ID')} KM
+                          </td>
+                          <td className="p-3.5 text-[11px] font-mono">
+                            <div>STNK: <span className="font-bold">{v.stnkTaxExpiry}</span></div>
+                            <div className="text-slate-500">KIR: <span className="font-bold text-slate-700">{v.kirExpiry}</span></div>
+                          </td>
+                          <td className="p-3.5">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              {v.status}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-right space-x-1">
+                            <button
+                              onClick={() => handleOpenEditVehicle(v)}
+                              className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                              title="Edit Data Armada"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteVehicle(v.id)}
+                              className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                              title="Hapus Unit Armada"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* SUB-VIEW 2: JADWAL & PENUGASAN SPJ TABLE */}
+          {kendaraanSubTab === 'trips' && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse font-sans">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
+                      <th className="p-3.5">No. SPJ & Event</th>
+                      <th className="p-3.5">Kategori Rute</th>
+                      <th className="p-3.5">Armada & Plat</th>
+                      <th className="p-3.5">Driver & Tujuan</th>
+                      <th className="p-3.5">P2H (Agus)</th>
+                      <th className="p-3.5">Status Alur</th>
+                      <th className="p-3.5">RAB Total</th>
+                      <th className="p-3.5 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {fleetAssignments.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-slate-400">
+                          Belum ada data penugasan armada SPJ. Klik <strong>"Terbitkan / Tambah SPJ"</strong> untuk menambahkan.
+                        </td>
+                      </tr>
+                    ) : (
+                      fleetAssignments
+                        .filter(f => f.spjNumber.toLowerCase().includes(fleetSearch.toLowerCase()) || (f.eventName || '').toLowerCase().includes(fleetSearch.toLowerCase()) || f.driverName.toLowerCase().includes(fleetSearch.toLowerCase()))
+                        .map((f) => (
+                          <tr key={f.id} className="hover:bg-slate-50/60">
+                            <td className="p-3.5 font-mono">
+                              <div className="font-bold text-slate-900">{f.spjNumber}</div>
+                              <div className="font-sans text-indigo-700 font-bold text-xs">{f.eventName || 'Event Produksi'}</div>
+                              <div className="text-[10px] text-slate-400">{f.departureDate} s/d {f.returnDate}</div>
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                f.tripType === 'Luar Kota (Tour / Festival)' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'
+                              }`}>
+                                {f.tripType || 'Dalam Kota (Jabodetabek)'}
+                              </span>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-bold text-slate-800">{f.vehicleType}</div>
+                              <span className="font-mono text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                                {f.policeNumber}
+                              </span>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-medium text-slate-800">{f.driverName}</div>
+                              <div className="text-[11px] text-slate-500 font-semibold">{f.destination}</div>
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                                f.p2hStatus === 'Laik Jalan' ? 'bg-emerald-100 text-emerald-800' :
+                                f.p2hStatus === 'Perlu Perbaikan' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {f.p2hStatus}
+                              </span>
+                            </td>
+                            <td className="p-3.5">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                                {f.status}
+                              </span>
+                            </td>
+                            <td className="p-3.5 font-mono font-black text-indigo-700 text-xs">
+                              Rp {(f.budget?.totalRAB || 0).toLocaleString('id-ID')}
+                            </td>
+                            <td className="p-3.5 text-right space-x-1">
+                              <button
+                                onClick={() => handleOpenEditFleet(f)}
+                                className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                                title="Edit SPJ & Anggaran"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteFleet(f.id)}
+                                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                                title="Hapus SPJ"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1824,6 +2336,396 @@ export default function AdminPanel({
           </div>
         </div>
       )}
+
+      {/* MODAL MASTER VEHICLE: TAMBAH / EDIT ARMADA */}
+      {(showAddVehicleModal || showEditVehicleModal) && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-base">
+                  {showAddVehicleModal ? 'Tambah Unit Armada Baru (Admin)' : 'Edit Data Unit Armada (Admin)'}
+                </h3>
+                <p className="text-[11px] text-slate-500 font-medium">Pengelolaan Master Inventaris Kendaraan Logistik</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAddVehicleModal(false);
+                  setShowEditVehicleModal(false);
+                  setActiveVehicleForEdit(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs font-sans">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama & Tipe Kendaraan *</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Truk Box Mitsubishi Canter CDD (6 Roda)"
+                  value={vehicleFormData.name}
+                  onChange={(e) => setVehicleFormData({ ...vehicleFormData, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nomor Polisi (Plat) *</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: B 9142 SXZ"
+                    value={vehicleFormData.policeNumber}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, policeNumber: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono font-bold"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Kepemilikan *</label>
+                  <select
+                    value={vehicleFormData.ownership}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, ownership: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                  >
+                    <option value="Internal">Internal PT RIZ</option>
+                    <option value="Sewa Mitra">Sewa Mitra</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tonase (Ton)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={vehicleFormData.tonnageCapacity}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, tonnageCapacity: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-center"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Kubikasi (m³)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={vehicleFormData.cbmCapacity}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, cbmCapacity: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-center"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Odometer KM</label>
+                  <input
+                    type="number"
+                    value={vehicleFormData.odometerKM}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, odometerKM: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-center"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Jatuh Tempo Pajak STNK</label>
+                  <input
+                    type="date"
+                    value={vehicleFormData.stnkTaxExpiry}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, stnkTaxExpiry: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Jatuh Tempo Uji KIR</label>
+                  <input
+                    type="date"
+                    value={vehicleFormData.kirExpiry}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, kirExpiry: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Status Operasional Unit *</label>
+                <select
+                  value={vehicleFormData.status}
+                  onChange={(e) => setVehicleFormData({ ...vehicleFormData, status: e.target.value as any })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                >
+                  <option value="Siap Operasi">Siap Operasi</option>
+                  <option value="Dalam Perjalanan">Dalam Perjalanan (On Trip)</option>
+                  <option value="Maintenance / Servis">Maintenance / Servis</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddVehicleModal(false);
+                  setShowEditVehicleModal(false);
+                  setActiveVehicleForEdit(null);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={showAddVehicleModal ? handleCreateVehicle : handleSaveEditVehicle}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer shadow-xs"
+              >
+                {showAddVehicleModal ? 'Simpan Unit Armada' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL FLEET ASSIGNMENT: TAMBAH / EDIT SPJ & ANGGARAN */}
+      {(showAddFleetModal || showEditFleetModal) && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-base">
+                  {showAddFleetModal ? 'Terbitkan SPJ / Penugasan Baru (Admin)' : 'Edit SPJ & Anggaran Armada (Admin)'}
+                </h3>
+                <p className="text-[11px] text-slate-500 font-medium">Pengelolaan Jadwal & Rencana Anggaran Logistik</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAddFleetModal(false);
+                  setShowEditFleetModal(false);
+                  setActiveFleetForEdit(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs font-sans">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nomor SPJ</label>
+                  <input
+                    type="text"
+                    value={fleetFormData.spjNumber}
+                    onChange={(e) => setFleetFormData({ ...fleetFormData, spjNumber: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Kategori Rute *</label>
+                  <select
+                    value={fleetFormData.tripType}
+                    onChange={(e) => setFleetFormData({ ...fleetFormData, tripType: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                  >
+                    <option value="Dalam Kota (Jabodetabek)">Dalam Kota (Jabodetabek)</option>
+                    <option value="Luar Kota (Tour / Festival)">Luar Kota (Tour / Festival)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Event / Proyek *</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Soundrenaline 2026 Stage 1"
+                  value={fleetFormData.eventName}
+                  onChange={(e) => setFleetFormData({ ...fleetFormData, eventName: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Unit Armada *</label>
+                  <select
+                    value={fleetFormData.policeNumber}
+                    onChange={(e) => {
+                      const selected = vehicles.find(v => v.policeNumber === e.target.value);
+                      if (selected) {
+                        setFleetFormData({
+                          ...fleetFormData,
+                          policeNumber: selected.policeNumber,
+                          vehicleType: selected.name
+                        });
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                  >
+                    {vehicles.map(v => (
+                      <option key={v.id} value={v.policeNumber}>{v.name} ({v.policeNumber})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nama Driver *</label>
+                  <input
+                    type="text"
+                    value={fleetFormData.driverName}
+                    onChange={(e) => setFleetFormData({ ...fleetFormData, driverName: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Destinasi / Lokasi Venue *</label>
+                <input
+                  type="text"
+                  value={fleetFormData.destination}
+                  onChange={(e) => setFleetFormData({ ...fleetFormData, destination: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tanggal Berangkat</label>
+                  <input
+                    type="date"
+                    value={fleetFormData.departureDate}
+                    onChange={(e) => setFleetFormData({ ...fleetFormData, departureDate: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Estimasi Kembali</label>
+                  <input
+                    type="date"
+                    value={fleetFormData.returnDate}
+                    onChange={(e) => setFleetFormData({ ...fleetFormData, returnDate: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Status Kelaikan P2H</label>
+                  <select
+                    value={fleetFormData.p2hStatus}
+                    onChange={(e) => setFleetFormData({ ...fleetFormData, p2hStatus: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold"
+                  >
+                    <option value="Laik Jalan">Laik Jalan</option>
+                    <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                    <option value="Tidak Laik">Tidak Laik</option>
+                    <option value="Pending">Pending</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Status Alur Penugasan</label>
+                  <select
+                    value={fleetFormData.status}
+                    onChange={(e) => setFleetFormData({ ...fleetFormData, status: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold"
+                  >
+                    <option value="Draft">Draft</option>
+                    <option value="Menunggu Approval Fahrul">Menunggu Approval Fahrul</option>
+                    <option value="Disetujui">Disetujui</option>
+                    <option value="Dalam Perjalanan (On Trip)">Dalam Perjalanan (On Trip)</option>
+                    <option value="Selesai">Selesai</option>
+                    <option value="Dibatalkan">Dibatalkan</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Rincian Biaya RAB */}
+              <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
+                <span className="font-bold text-indigo-900 block text-xs">Rincian Anggaran (RAB):</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-slate-600 block">Sewa Vendor (Rp)</label>
+                    <input
+                      type="number"
+                      value={fleetFormData.budget?.sewaVendor || 0}
+                      onChange={(e) => setFleetFormData({
+                        ...fleetFormData,
+                        budget: { ...fleetFormData.budget!, sewaVendor: Number(e.target.value) }
+                      })}
+                      className="w-full bg-white border border-slate-300 rounded p-1 text-xs font-mono font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-600 block">BBM Solar (Rp)</label>
+                    <input
+                      type="number"
+                      value={fleetFormData.budget?.bbmSolar || 0}
+                      onChange={(e) => setFleetFormData({
+                        ...fleetFormData,
+                        budget: { ...fleetFormData.budget!, bbmSolar: Number(e.target.value) }
+                      })}
+                      className="w-full bg-white border border-slate-300 rounded p-1 text-xs font-mono font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-600 block">e-Toll (Rp)</label>
+                    <input
+                      type="number"
+                      value={fleetFormData.budget?.eToll || 0}
+                      onChange={(e) => setFleetFormData({
+                        ...fleetFormData,
+                        budget: { ...fleetFormData.budget!, eToll: Number(e.target.value) }
+                      })}
+                      className="w-full bg-white border border-slate-300 rounded p-1 text-xs font-mono font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-600 block">Uang Jalan Driver (Rp)</label>
+                    <input
+                      type="number"
+                      value={fleetFormData.budget?.uangMakanDriver || 0}
+                      onChange={(e) => setFleetFormData({
+                        ...fleetFormData,
+                        budget: { ...fleetFormData.budget!, uangMakanDriver: Number(e.target.value) }
+                      })}
+                      className="w-full bg-white border border-slate-300 rounded p-1 text-xs font-mono font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddFleetModal(false);
+                  setShowEditFleetModal(false);
+                  setActiveFleetForEdit(null);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={showAddFleetModal ? handleCreateFleet : handleSaveEditFleet}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer shadow-xs"
+              >
+                {showAddFleetModal ? 'Terbitkan SPJ' : 'Simpan Perubahan SPJ'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
