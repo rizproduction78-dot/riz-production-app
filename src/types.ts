@@ -42,6 +42,47 @@ export interface WorkSchedule {
   };
 }
 
+export interface P2HChecklist {
+  banPsi: boolean; // Ban (105 PSI)
+  oliMesin: boolean; // Oli/Mesin
+  rem: boolean; // Rem
+  kelistrikanLampu: boolean; // Sistem Kelistrikan/Lampu
+  radiatorCoolant: boolean; // Radiator/Coolant
+  ratchetLashingStrap: boolean; // Pengikatan Muatan (Ratchet Lashing Strap)
+  legalitasSurat: boolean; // Legalitas Surat (STNK/KIR/SIM)
+  notes?: string;
+  inspector: string; // Agus (Supervisor Teknis)
+  inspectedAt?: string;
+}
+
+export interface FleetBudgetRAB {
+  sewaVendor: number; // Biaya sewa armada vendor eksternal
+  bbmSolar: number; // BBM Solar/Bensin
+  eToll: number; // e-Toll
+  uangMakanDriver: number; // Uang makan pengemudi
+  totalRAB: number;
+  receiptVerified: boolean; // Verifikasi kuitansi oleh Caca
+  calculatedBy: string; // Caca (Admin & Logistik)
+}
+
+export interface FleetAssignment {
+  id: string;
+  spjNumber: string; // Nomor SPJ (Surat Perintah Jalan)
+  vehicleType: string; // Truk Fuso, CDD Long, Blind Van, GrandMax, dsb.
+  policeNumber: string; // Plat Nomor
+  driverName: string;
+  destination: string; // Lokasi Event / Tujuan
+  departureDate: string;
+  returnDate: string;
+  p2hStatus: 'Pending' | 'Passed' | 'Failed';
+  p2h: P2HChecklist;
+  budget: FleetBudgetRAB;
+  approvalStatus: 'Draft' | 'Menunggu Approval Fahrul' | 'Approved' | 'Rejected';
+  approvedBy?: string; // Fahrul (Manager Operasional)
+  approvedAt?: string;
+  status: 'Dijadwalkan' | 'Berangkat' | 'Selesai' | 'Dibatalkan';
+}
+
 export interface WarehouseLog {
   id: string;
   type: 'Masuk' | 'Keluar' | 'Loading' | 'Unloading' | 'Servis Keluar' | 'Servis Masuk';

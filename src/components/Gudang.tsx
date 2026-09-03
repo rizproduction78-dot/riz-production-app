@@ -1,7 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Staff, Asset, WarehouseLog } from '../types';
+import { Staff, Asset, WarehouseLog, FleetAssignment, P2HChecklist, FleetBudgetRAB } from '../types';
 import { INITIAL_ASSETS } from '../data';
-import { Package, ArrowDownLeft, ArrowUpRight, Truck, Database, Search, Plus, Camera, CheckCircle, FileText, Smartphone, RefreshCw, Layers, Wrench } from 'lucide-react';
+import {
+  Package,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Truck,
+  Database,
+  Search,
+  Plus,
+  Camera,
+  CheckCircle,
+  FileText,
+  Smartphone,
+  RefreshCw,
+  Layers,
+  Wrench,
+  ShieldCheck,
+  DollarSign,
+  UserCheck,
+  CheckSquare,
+  AlertOctagon,
+  Clock,
+  Printer,
+  Trash2,
+  X
+} from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc } from '../lib/cloudSync';
 
 interface GudangProps {
@@ -37,6 +61,15 @@ export default function Gudang({
     return [];
   });
 
+  // Fleet Assignments State (Tata Kelola Armada Tri-Party)
+  const [fleetAssignments, setFleetAssignments] = useState<FleetAssignment[]>(() => {
+    try {
+      const saved = localStorage.getItem('riz_fleet_assignments');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
   // Assets database matching
   const [localAssets, setLocalAssets] = useState<Asset[]>(() => {
     const saved = localStorage.getItem('riz_assets');
@@ -47,8 +80,8 @@ export default function Gudang({
     setLocalAssets(assets);
   }, [assets]);
 
-  // Tab views within warehouse: 'logs' or 'scanner'
-  const [warehouseSubTab, setWarehouseSubTab] = useState<'logs' | 'scanner'>('logs');
+  // Tab views within warehouse: 'logs' | 'scanner' | 'armada_governance'
+  const [warehouseSubTab, setWarehouseSubTab] = useState<'logs' | 'scanner' | 'armada_governance'>('logs');
 
   // New action form state
   const [showLogForm, setShowLogForm] = useState(false);
@@ -59,6 +92,44 @@ export default function Gudang({
   const [notes, setNotes] = useState('');
   const [assetCodeInput, setAssetCodeInput] = useState('');
   const [scannedPhoto, setScannedPhoto] = useState('');
+
+  // Fleet Governance Form & Modal State
+  const [showNewFleetModal, setShowNewFleetModal] = useState(false);
+  const [showP2HModal, setShowP2HModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [selectedFleet, setSelectedFleet] = useState<FleetAssignment | null>(null);
+
+  // Caca's New SPJ / RAB Form
+  const [newFleetData, setNewFleetData] = useState<Partial<FleetAssignment>>({
+    vehicleType: 'Truk CDD Long Box',
+    policeNumber: '',
+    driverName: '',
+    destination: '',
+    departureDate: new Date().toISOString().split('T')[0],
+    returnDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    budget: {
+      sewaVendor: 0,
+      bbmSolar: 0,
+      eToll: 0,
+      uangMakanDriver: 0,
+      totalRAB: 0,
+      receiptVerified: false,
+      calculatedBy: currentUser.name === 'Caca' ? 'Caca' : currentUser.name
+    }
+  });
+
+  // Agus's P2H Form
+  const [p2hData, setP2HData] = useState<P2HChecklist>({
+    banPsi: true,
+    oliMesin: true,
+    rem: true,
+    kelistrikanLampu: true,
+    radiatorCoolant: true,
+    ratchetLashingStrap: true,
+    legalitasSurat: true,
+    notes: '',
+    inspector: currentUser.name === 'Agus' ? 'Agus' : currentUser.name
+  });
 
   // Scanner Simulator State
   const [scannedAsset, setScannedAsset] = useState<Asset | null>(null);
@@ -146,6 +217,151 @@ export default function Gudang({
     setShowLogForm(false);
   };
 
+  // Fleet Subscription
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<FleetAssignment>(
+      'fleet_assignments',
+      'riz_fleet_assignments',
+      setFleetAssignments,
+      []
+    );
+    return () => unsub();
+  }, []);
+
+  const saveFleetAssignments = (updated: FleetAssignment[]) => {
+    setFleetAssignments(updated);
+    localStorage.setItem('riz_fleet_assignments', JSON.stringify(updated));
+  };
+
+  const handleCreateFleetAssignment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFleetData.policeNumber || !newFleetData.driverName || !newFleetData.destination) {
+      alert('Lengkapi Plat Nomor, Nama Pengemudi, dan Lokasi Tujuan!');
+      return;
+    }
+
+    const b = newFleetData.budget || {
+      sewaVendor: 0,
+      bbmSolar: 0,
+      eToll: 0,
+      uangMakanDriver: 0,
+      totalRAB: 0,
+      receiptVerified: false,
+      calculatedBy: 'Caca'
+    };
+    const totalRAB = Number(b.sewaVendor || 0) + Number(b.bbmSolar || 0) + Number(b.eToll || 0) + Number(b.uangMakanDriver || 0);
+
+    const newAssignment: FleetAssignment = {
+      id: 'fleet-' + Date.now(),
+      spjNumber: `SPJ/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(1000 + Math.random() * 9000)}`,
+      vehicleType: newFleetData.vehicleType || 'Truk CDD Long Box',
+      policeNumber: newFleetData.policeNumber.toUpperCase().trim(),
+      driverName: newFleetData.driverName.trim(),
+      destination: newFleetData.destination.trim(),
+      departureDate: newFleetData.departureDate || new Date().toISOString().split('T')[0],
+      returnDate: newFleetData.returnDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      p2hStatus: 'Pending',
+      p2h: {
+        banPsi: false,
+        oliMesin: false,
+        rem: false,
+        kelistrikanLampu: false,
+        radiatorCoolant: false,
+        ratchetLashingStrap: false,
+        legalitasSurat: false,
+        notes: 'Belum dilakukan pemeriksaan fisik pra-keberangkatan oleh Agus (Supervisor).',
+        inspector: 'Agus'
+      },
+      budget: {
+        ...b,
+        totalRAB,
+        calculatedBy: 'Caca (Admin & Logistik)'
+      },
+      approvalStatus: 'Menunggu Approval Fahrul',
+      status: 'Dijadwalkan'
+    };
+
+    const updated = [newAssignment, ...fleetAssignments];
+    saveFleetAssignments(updated);
+    saveCloudDoc('fleet_assignments', newAssignment.id, newAssignment);
+    onLogActivity(currentUser.name, currentUser.role, `Caca menerbitkan SPJ baru [${newAssignment.spjNumber}] ke ${newAssignment.destination} (RAB: Rp ${totalRAB.toLocaleString('id-ID')})`);
+    
+    setShowNewFleetModal(false);
+    setNewFleetData({
+      vehicleType: 'Truk CDD Long Box',
+      policeNumber: '',
+      driverName: '',
+      destination: '',
+      departureDate: new Date().toISOString().split('T')[0],
+      returnDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      budget: {
+        sewaVendor: 0,
+        bbmSolar: 0,
+        eToll: 0,
+        uangMakanDriver: 0,
+        totalRAB: 0,
+        receiptVerified: false,
+        calculatedBy: 'Caca'
+      }
+    });
+  };
+
+  const handleSaveP2HInspection = () => {
+    if (!selectedFleet) return;
+    const isAllPassed = p2hData.banPsi && p2hData.oliMesin && p2hData.rem &&
+      p2hData.kelistrikanLampu && p2hData.radiatorCoolant && p2hData.ratchetLashingStrap && p2hData.legalitasSurat;
+
+    const p2hStatus = isAllPassed ? 'Passed' : 'Failed';
+    const updated = fleetAssignments.map(f => {
+      if (f.id === selectedFleet.id) {
+        return {
+          ...f,
+          p2hStatus: p2hStatus as any,
+          p2h: {
+            ...p2hData,
+            inspector: 'Agus (Supervisor Teknis)',
+            inspectedAt: new Date().toLocaleString('id-ID')
+          }
+        };
+      }
+      return f;
+    });
+
+    saveFleetAssignments(updated);
+    saveCloudDoc('fleet_assignments', selectedFleet.id, updated.find(f => f.id === selectedFleet.id));
+    onLogActivity(currentUser.name, currentUser.role, `Agus menyelesaikan inspeksi P2H 7-Item untuk SPJ [${selectedFleet.spjNumber}] dengan hasil: ${isAllPassed ? 'LULUS / LAIK JALAN' : 'TIDAK LULUS'}`);
+    setShowP2HModal(false);
+    setSelectedFleet(null);
+  };
+
+  const handleApprovalFahrul = (fleetId: string, isApproved: boolean) => {
+    const updated = fleetAssignments.map(f => {
+      if (f.id === fleetId) {
+        return {
+          ...f,
+          approvalStatus: (isApproved ? 'Approved' : 'Rejected') as any,
+          approvedBy: 'Fahrul (Manager Operasional)',
+          approvedAt: new Date().toLocaleString('id-ID'),
+          status: (isApproved ? 'Dijadwalkan' : 'Dibatalkan') as any
+        };
+      }
+      return f;
+    });
+
+    saveFleetAssignments(updated);
+    saveCloudDoc('fleet_assignments', fleetId, updated.find(f => f.id === fleetId));
+    onLogActivity(currentUser.name, currentUser.role, `Fahrul menetapkan keputusan ${isApproved ? 'APPROVAL (SETUJU)' : 'REJECT (TOLAK)'} untuk penugasan armada SPJ ID [${fleetId}]`);
+    setShowApprovalModal(false);
+    setSelectedFleet(null);
+  };
+
+  const handleDeleteFleetAssignment = (id: string) => {
+    if (confirm('Hapus penugasan armada ini dari sistem?')) {
+      const updated = fleetAssignments.filter(f => f.id !== id);
+      saveFleetAssignments(updated);
+    }
+  };
+
   // Asset scanning with camera / input
   const handleSimulateQRScan = (codeToScan?: string) => {
     const targetCode = (codeToScan || scanSearchInput || '').trim();
@@ -196,13 +412,11 @@ export default function Gudang({
     setLocalAssets(updated);
     localStorage.setItem('riz_assets', JSON.stringify(updated));
 
-    // Propagate up if prop handler is provided
     if (onUpdateAssetLocation) onUpdateAssetLocation(scannedAsset.id, newLoc);
     if (onUpdateAssetCondition) onUpdateAssetCondition(scannedAsset.id, newCond);
 
     onLogActivity(currentUser.name, currentUser.role, `Gudang mengupdate lokasi asset ${scannedAsset.code} menjadi [${newLoc}] & kondisi [${newCond}]`);
     
-    // Refresh scanned asset in display
     setScannedAsset({
       ...scannedAsset,
       location: newLoc,
@@ -217,14 +431,14 @@ export default function Gudang({
       {/* Title Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display font-bold text-slate-900 tracking-tight">Manajemen Logistik Gudang</h1>
+          <h1 className="text-2xl font-display font-bold text-slate-900 tracking-tight">Manajemen Logistik & Gudang</h1>
           <p className="text-xs text-slate-500">
-            Pencatatan alur logistik logistik barang masuk, barang keluar, loading dan unloading, serta scan barcode/QR asset terpadu.
+            Pencatatan alur logistik barang masuk/keluar, scan barcode/QR asset, dan tata kelola armada serta biaya sewa operasional.
           </p>
         </div>
 
         {/* Action Toggle Tabs */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg self-start">
+        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-lg self-start">
           <button
             onClick={() => setWarehouseSubTab('logs')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
@@ -245,6 +459,16 @@ export default function Gudang({
             }`}
           >
             Scan Asset (Barcode/QR)
+          </button>
+
+          <button
+            onClick={() => setWarehouseSubTab('armada_governance')}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+              warehouseSubTab === 'armada_governance' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+            }`}
+          >
+            <Truck className="w-3.5 h-3.5" />
+            <span>Tata Kelola Armada & Biaya Sewa</span>
           </button>
         </div>
       </div>
@@ -852,6 +1076,556 @@ export default function Gudang({
                 </div>
               )}
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 3: TATA KELOLA PENGGUNAAN KENDARAAN & BIAYA SEWA ANGKUT LOGISTIK (TRI-PARTY GOVERNANCE) */}
+      {warehouseSubTab === 'armada_governance' && (
+        <div className="space-y-6">
+          {/* Tri-Party Governance Structure Banners */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Role 1: Fahrul */}
+            <div className="p-5 bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl border border-indigo-700/50 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-mono font-bold bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded">
+                  Otorisasi Akhir
+                </span>
+                <ShieldCheck className="w-5 h-5 text-indigo-400" />
+              </div>
+              <h2 className="text-base font-black">Fahrul</h2>
+              <p className="text-xs text-indigo-200 font-semibold">Manager Operasional</p>
+              <ul className="text-[11px] text-slate-300 space-y-1 pt-2 border-t border-indigo-800/60">
+                <li>• Otorisasi dan persetujuan akhir (*approval*) penugasan armada.</li>
+                <li>• Keputusan anggaran sewa vendor eksternal & batas toleransi BBM / uang jalan.</li>
+              </ul>
+            </div>
+
+            {/* Role 2: Agus */}
+            <div className="p-5 bg-gradient-to-br from-blue-900 to-slate-900 text-white rounded-2xl border border-blue-700/50 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-mono font-bold bg-blue-500/30 text-blue-200 px-2 py-0.5 rounded">
+                  Inspeksi Kelaikan P2H
+                </span>
+                <CheckSquare className="w-5 h-5 text-blue-400" />
+              </div>
+              <h2 className="text-base font-black">Agus</h2>
+              <p className="text-xs text-blue-200 font-semibold">Supervisor Teknis</p>
+              <ul className="text-[11px] text-slate-300 space-y-1 pt-2 border-t border-blue-800/60">
+                <li>• Pemeriksaan 7 Item Vital P2H: Ban 105 PSI, Oli, Rem, Kelistrikan, Radiator, Lashing Strap, Surat STNK/KIR/SIM.</li>
+                <li>• Koordinasi pengemudi (*driver*) & kru loading di lapangan.</li>
+              </ul>
+            </div>
+
+            {/* Role 3: Caca */}
+            <div className="p-5 bg-gradient-to-br from-emerald-900 to-slate-900 text-white rounded-2xl border border-emerald-700/50 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-mono font-bold bg-emerald-500/30 text-emerald-200 px-2 py-0.5 rounded">
+                  Penyusunan SPJ & RAB
+                </span>
+                <FileText className="w-5 h-5 text-emerald-400" />
+              </div>
+              <h2 className="text-base font-black">Caca</h2>
+              <p className="text-xs text-emerald-200 font-semibold">Admin & Logistik</p>
+              <ul className="text-[11px] text-slate-300 space-y-1 pt-2 border-t border-emerald-800/60">
+                <li>• Penyusunan jadwal keberangkatan & penerbitan SPJ (Surat Perintah Jalan).</li>
+                <li>• Kalkulasi RAB sewa vendor, BBM, e-Toll, uang makan & verifikasi kuitansi.</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Quick Metrics & Actions */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap text-xs">
+              <div>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Total Armada Ditugaskan</span>
+                <span className="font-extrabold text-base text-slate-900">{fleetAssignments.length} Penugasan</span>
+              </div>
+              <div className="border-l border-slate-200 pl-4">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Menunggu Approval Fahrul</span>
+                <span className="font-extrabold text-base text-amber-600">
+                  {fleetAssignments.filter(f => f.approvalStatus === 'Menunggu Approval Fahrul').length} SPJ
+                </span>
+              </div>
+              <div className="border-l border-slate-200 pl-4">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Lulus Uji P2H Agus</span>
+                <span className="font-extrabold text-base text-emerald-600">
+                  {fleetAssignments.filter(f => f.p2hStatus === 'Passed').length} Armada
+                </span>
+              </div>
+              <div className="border-l border-slate-200 pl-4">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Total Anggaran RAB (Caca)</span>
+                <span className="font-extrabold text-base text-indigo-700 font-mono">
+                  Rp {fleetAssignments.reduce((acc, f) => acc + (f.budget?.totalRAB || 0), 0).toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowNewFleetModal(true)}
+              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer shadow-xs shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Terbitkan SPJ & Hitung RAB (Caca)</span>
+            </button>
+          </div>
+
+          {/* Table Fleet Assignments */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse font-sans">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
+                    <th className="p-3.5">No. SPJ & Tanggal</th>
+                    <th className="p-3.5">Jenis Armada & Plat</th>
+                    <th className="p-3.5">Pengemudi (Driver)</th>
+                    <th className="p-3.5">Tujuan Event</th>
+                    <th className="p-3.5">Inspeksi P2H (Agus)</th>
+                    <th className="p-3.5">RAB Logistik (Caca)</th>
+                    <th className="p-3.5">Otorisasi (Fahrul)</th>
+                    <th className="p-3.5 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {fleetAssignments.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="p-8 text-center text-slate-400">
+                        Belum ada jadwal penugasan armada yang diterbitkan. Klik tombol <strong>"Terbitkan SPJ & Hitung RAB (Caca)"</strong> untuk memulai.
+                      </td>
+                    </tr>
+                  ) : (
+                    fleetAssignments.map((f) => (
+                      <tr key={f.id} className="hover:bg-slate-50/60">
+                        <td className="p-3.5 font-mono">
+                          <div className="font-bold text-slate-900">{f.spjNumber}</div>
+                          <div className="text-[10px] text-slate-400">{f.departureDate} s/d {f.returnDate}</div>
+                        </td>
+                        <td className="p-3.5">
+                          <div className="font-bold text-slate-800">{f.vehicleType}</div>
+                          <span className="font-mono text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                            {f.policeNumber}
+                          </span>
+                        </td>
+                        <td className="p-3.5 font-medium text-slate-800">{f.driverName}</td>
+                        <td className="p-3.5 font-semibold text-slate-700 max-w-xs">{f.destination}</td>
+                        <td className="p-3.5">
+                          <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] inline-flex items-center gap-1 ${
+                            f.p2hStatus === 'Passed' ? 'bg-emerald-100 text-emerald-800' :
+                            f.p2hStatus === 'Failed' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {f.p2hStatus === 'Passed' ? '✓ Lulus 7-P2H' : f.p2hStatus === 'Failed' ? '✕ Tidak Lulus' : '⏳ Belum P2H'}
+                          </span>
+                        </td>
+                        <td className="p-3.5 font-mono">
+                          <div className="font-black text-indigo-700 text-xs">
+                            Rp {(f.budget?.totalRAB || 0).toLocaleString('id-ID')}
+                          </div>
+                          <div className="text-[10px] text-slate-400">
+                            Sewa: Rp {(f.budget?.sewaVendor || 0).toLocaleString('id-ID')} | BBM: Rp {(f.budget?.bbmSolar || 0).toLocaleString('id-ID')}
+                          </div>
+                        </td>
+                        <td className="p-3.5">
+                          <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                            f.approvalStatus === 'Approved' ? 'bg-emerald-100 text-emerald-800' :
+                            f.approvalStatus === 'Rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {f.approvalStatus}
+                          </span>
+                          {f.approvedBy && (
+                            <div className="text-[10px] text-slate-400 font-medium mt-0.5">Oleh: {f.approvedBy}</div>
+                          )}
+                        </td>
+                        <td className="p-3.5 text-right space-x-1.5">
+                          <button
+                            onClick={() => {
+                              setSelectedFleet(f);
+                              setP2HData(f.p2h || {
+                                banPsi: true,
+                                oliMesin: true,
+                                rem: true,
+                                kelistrikanLampu: true,
+                                radiatorCoolant: true,
+                                ratchetLashingStrap: true,
+                                legalitasSurat: true,
+                                notes: '',
+                                inspector: 'Agus'
+                              });
+                              setShowP2HModal(true);
+                            }}
+                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                            title="Inspeksi P2H Agus"
+                          >
+                            <CheckSquare className="w-3 h-3" /> P2H Agus
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setSelectedFleet(f);
+                              setShowApprovalModal(true);
+                            }}
+                            className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                            title="Otorisasi Fahrul"
+                          >
+                            <ShieldCheck className="w-3 h-3" /> Otorisasi Fahrul
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteFleetAssignment(f.id)}
+                            className="text-slate-400 hover:text-rose-600 p-1 rounded cursor-pointer"
+                            title="Hapus SPJ"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: TERBITKAN SPJ & KALKULASI RAB (CACA) */}
+      {showNewFleetModal && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-base">Penerbitan SPJ & Rencana Anggaran (RAB)</h3>
+                <p className="text-[11px] text-slate-500 font-medium">Disusun & Dikelola oleh Caca (Admin & Logistik)</p>
+              </div>
+              <button onClick={() => setShowNewFleetModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateFleetAssignment} className="space-y-4 text-xs font-sans">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Jenis Armada *</label>
+                  <select
+                    value={newFleetData.vehicleType}
+                    onChange={(e) => setNewFleetData({ ...newFleetData, vehicleType: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                  >
+                    <option value="Truk CDD Long Box">Truk CDD Long Box</option>
+                    <option value="Truk Fuso 8 Meter">Truk Fuso 8 Meter</option>
+                    <option value="Truk Tronton Box">Truk Tronton Box</option>
+                    <option value="Blind Van Logistik">Blind Van Logistik</option>
+                    <option value="GranMax Pickup Box">GranMax Pickup Box</option>
+                    <option value="Armada Vendor Eksternal">Armada Vendor Eksternal</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nomor Polisi (Plat) *</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: B 9123 KBC"
+                    value={newFleetData.policeNumber}
+                    onChange={(e) => setNewFleetData({ ...newFleetData, policeNumber: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nama Pengemudi (Driver) *</label>
+                  <input
+                    type="text"
+                    placeholder="Nama Driver"
+                    value={newFleetData.driverName}
+                    onChange={(e) => setNewFleetData({ ...newFleetData, driverName: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Lokasi Tujuan / Event *</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: JCC Senayan Hall A"
+                    value={newFleetData.destination}
+                    onChange={(e) => setNewFleetData({ ...newFleetData, destination: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tanggal Berangkat</label>
+                  <input
+                    type="date"
+                    value={newFleetData.departureDate}
+                    onChange={(e) => setNewFleetData({ ...newFleetData, departureDate: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Estimasi Kembali</label>
+                  <input
+                    type="date"
+                    value={newFleetData.returnDate}
+                    onChange={(e) => setNewFleetData({ ...newFleetData, returnDate: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Kalkulasi RAB Logistik */}
+              <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3">
+                <span className="font-black text-indigo-900 block text-xs uppercase tracking-wider">
+                  💰 Kalkulasi Anggaran Biaya Logistik (RAB)
+                </span>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-0.5">Biaya Sewa Vendor (Rp)</label>
+                    <input
+                      type="number"
+                      value={newFleetData.budget?.sewaVendor || 0}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setNewFleetData({
+                          ...newFleetData,
+                          budget: { ...newFleetData.budget!, sewaVendor: val }
+                        });
+                      }}
+                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-mono font-bold text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-0.5">BBM Solar / Bensin (Rp)</label>
+                    <input
+                      type="number"
+                      value={newFleetData.budget?.bbmSolar || 0}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setNewFleetData({
+                          ...newFleetData,
+                          budget: { ...newFleetData.budget!, bbmSolar: val }
+                        });
+                      }}
+                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-mono font-bold text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-0.5">e-Toll Jalan Tol (Rp)</label>
+                    <input
+                      type="number"
+                      value={newFleetData.budget?.eToll || 0}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setNewFleetData({
+                          ...newFleetData,
+                          budget: { ...newFleetData.budget!, eToll: val }
+                        });
+                      }}
+                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-mono font-bold text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-0.5">Uang Makan Driver (Rp)</label>
+                    <input
+                      type="number"
+                      value={newFleetData.budget?.uangMakanDriver || 0}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setNewFleetData({
+                          ...newFleetData,
+                          budget: { ...newFleetData.budget!, uangMakanDriver: val }
+                        });
+                      }}
+                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-mono font-bold text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-indigo-200 flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-700">Total Rencana Anggaran (RAB):</span>
+                  <span className="font-black text-indigo-900 font-mono text-sm">
+                    Rp {(
+                      Number(newFleetData.budget?.sewaVendor || 0) +
+                      Number(newFleetData.budget?.bbmSolar || 0) +
+                      Number(newFleetData.budget?.eToll || 0) +
+                      Number(newFleetData.budget?.uangMakanDriver || 0)
+                    ).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowNewFleetModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer shadow-xs"
+                >
+                  Terbitkan SPJ & Ajukan ke Fahrul
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: INSPEKSI KELAIKAN 7-ITEM P2H (AGUS) */}
+      {showP2HModal && selectedFleet && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-base">Pemeriksaan Pra-Harian (P2H)</h3>
+                <p className="text-[11px] text-slate-500 font-medium">Inspektur: Agus (Supervisor Teknis)</p>
+              </div>
+              <button onClick={() => setShowP2HModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+              <div><strong>Armada:</strong> {selectedFleet.vehicleType} ({selectedFleet.policeNumber})</div>
+              <div><strong>Driver:</strong> {selectedFleet.driverName} | <strong>Tujuan:</strong> {selectedFleet.destination}</div>
+            </div>
+
+            <div className="space-y-2.5 text-xs font-sans">
+              <span className="font-black text-slate-800 uppercase block tracking-wider text-[11px]">
+                7 Item Vital Pemeriksaan Fisik:
+              </span>
+
+              {[
+                { key: 'banPsi', label: '1. Tekanan & Kondisi Ban (Standar 105 PSI)' },
+                { key: 'oliMesin', label: '2. Level & Kualitas Oli Mesin' },
+                { key: 'rem', label: '3. Fungsi Sistem Pengereman (Minyak & Kampas)' },
+                { key: 'kelistrikanLampu', label: '4. Sistem Kelistrikan & Lampu Utama/Sein' },
+                { key: 'radiatorCoolant', label: '5. Level Air Radiator / Coolant Mesin' },
+                { key: 'ratchetLashingStrap', label: '6. Pengikatan Muatan (Ratchet Lashing Strap)' },
+                { key: 'legalitasSurat', label: '7. Kelengkapan Dokumen (STNK, Buku KIR, SIM Driver)' }
+              ].map(item => (
+                <label key={item.key} className="flex items-center gap-3 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={(p2hData as any)[item.key]}
+                    onChange={(e) => setP2HData({ ...p2hData, [item.key]: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="font-semibold text-slate-800 text-xs">{item.label}</span>
+                </label>
+              ))}
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Catatan Khusus Supervisor (Agus)</label>
+                <textarea
+                  rows={2}
+                  placeholder="Catatan kondisi fisik ban, kelistrikan, muatan..."
+                  value={p2hData.notes || ''}
+                  onChange={(e) => setP2HData({ ...p2hData, notes: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => setShowP2HModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSaveP2HInspection}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all cursor-pointer shadow-xs"
+              >
+                Simpan Hasil Inspeksi P2H
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: OTORISASI & APPROVAL ANGGARAN (FAHRUL) */}
+      {showApprovalModal && selectedFleet && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-base">Otorisasi & Persetujuan Penugasan</h3>
+                <p className="text-[11px] text-slate-500 font-medium">Pengambil Keputusan: Fahrul (Manager Operasional)</p>
+              </div>
+              <button onClick={() => setShowApprovalModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs font-sans">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <div><strong>No. SPJ:</strong> {selectedFleet.spjNumber}</div>
+                <div><strong>Armada & Plat:</strong> {selectedFleet.vehicleType} ({selectedFleet.policeNumber})</div>
+                <div><strong>Driver:</strong> {selectedFleet.driverName}</div>
+                <div><strong>Destinasi:</strong> {selectedFleet.destination}</div>
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 space-y-1">
+                <span className="font-bold text-blue-950 block">Status Kelaikan Fisik (P2H Agus):</span>
+                <span className={`font-black ${selectedFleet.p2hStatus === 'Passed' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  {selectedFleet.p2hStatus === 'Passed' ? '✓ LULUS 7-Item Vital (Laik Jalan)' : '⏳ Belum / Tidak Lulus P2H'}
+                </span>
+              </div>
+
+              <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-200 space-y-1">
+                <span className="font-bold text-indigo-950 block">RAB Biaya Logistik (Caca):</span>
+                <div className="flex justify-between">
+                  <span>Biaya Sewa Vendor:</span>
+                  <span className="font-mono font-bold">Rp {(selectedFleet.budget?.sewaVendor || 0).toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>BBM Solar / Bensin:</span>
+                  <span className="font-mono font-bold">Rp {(selectedFleet.budget?.bbmSolar || 0).toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>e-Toll & Uang Makan Driver:</span>
+                  <span className="font-mono font-bold">
+                    Rp {((selectedFleet.budget?.eToll || 0) + (selectedFleet.budget?.uangMakanDriver || 0)).toLocaleString('id-ID')}
+                  </span>
+                </div>
+                <div className="pt-1 border-t border-indigo-200 flex justify-between font-black text-indigo-900 text-sm">
+                  <span>Total Anggaran:</span>
+                  <span className="font-mono">Rp {(selectedFleet.budget?.totalRAB || 0).toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => handleApprovalFahrul(selectedFleet.id, false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 transition-all cursor-pointer"
+              >
+                Tolak (Reject)
+              </button>
+              <button
+                onClick={() => handleApprovalFahrul(selectedFleet.id, true)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer shadow-xs"
+              >
+                Setujui (Approve SPJ)
+              </button>
             </div>
           </div>
         </div>
