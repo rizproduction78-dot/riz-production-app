@@ -4,10 +4,11 @@
  */
 
 import React, { useState } from 'react';
-import { LogbookEntry, DailyReport, Finding } from '../types';
+import { LogbookEntry, DailyReport, Finding, AttendanceLog } from '../types';
 import { FileText, Printer, FileDown, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST } from '../data';
 import { calculateAllStaffKpis } from '../utils/kpiCalculator';
+import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 
 interface ReportsProps {
   logbookEntries: LogbookEntry[];
@@ -105,6 +106,77 @@ export default function Reports({
     .map(([name, data]) => ({ name, ...data }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
+
+  // Dynamic Attendance Statistics per Division for Reports
+  const reportAttendanceDivisions = [
+    { key: 'Audio', label: 'Divisi Sound (Audio)' },
+    { key: 'Lighting', label: 'Divisi Lighting' },
+    { key: 'Videotron', label: 'Divisi Videotron' },
+    { key: 'Multimedia', label: 'Divisi Multimedia' },
+    { key: 'Gudang', label: 'Gudang (Warehouse)' },
+    { key: 'Service', label: 'Divisi Service (Perbaikan)' },
+    { key: 'Admin', label: 'Administrasi & Management' },
+  ];
+
+  let rawAttendanceLogs: AttendanceLog[] = [];
+  try {
+    const saved = localStorage.getItem('riz_attendance_logs');
+    if (saved) rawAttendanceLogs = JSON.parse(saved);
+  } catch (e) {}
+
+  let septemberSchedule: StaffScheduleRow[] = OFFICIAL_SEPTEMBER_2026_SCHEDULE;
+  try {
+    const savedSched = localStorage.getItem('riz_september_2026_schedule');
+    if (savedSched) septemberSchedule = JSON.parse(savedSched);
+  } catch (e) {}
+
+  const divisionAttendanceStats = reportAttendanceDivisions.map(div => {
+    const staffInDiv = septemberSchedule.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
+    let hadirCount = 0;
+    let terlambatCount = 0;
+    let izinCount = 0;
+    let sakitCount = 0;
+    let alphaCount = 0;
+
+    staffInDiv.forEach(s => {
+      Object.values(s.shifts || {}).forEach(shift => {
+        const up = shift.toUpperCase();
+        if (['P', 'MD', 'M', 'PM', 'MASUK'].includes(up)) {
+          hadirCount++;
+        } else if (up === 'IZIN') {
+          izinCount++;
+        } else if (up === 'SAKIT') {
+          sakitCount++;
+        } else if (up === 'ALPHA') {
+          alphaCount++;
+        }
+      });
+    });
+
+    const divLogs = rawAttendanceLogs.filter(l => l.division?.toLowerCase() === div.key.toLowerCase());
+    divLogs.forEach(l => {
+      if (l.isLate) terlambatCount++;
+      else if (l.status === 'Izin') izinCount++;
+      else if (l.status === 'Sakit') sakitCount++;
+      else if (l.status === 'Alpha') alphaCount++;
+    });
+
+    return {
+      label: div.label,
+      hadir: hadirCount,
+      terlambat: terlambatCount,
+      izin: izinCount,
+      sakit: sakitCount,
+      alpha: alphaCount,
+      total: hadirCount + terlambatCount + izinCount + sakitCount + alphaCount
+    };
+  });
+
+  const totalHadirAll = divisionAttendanceStats.reduce((acc, d) => acc + d.hadir, 0);
+  const totalTerlambatAll = divisionAttendanceStats.reduce((acc, d) => acc + d.terlambat, 0);
+  const totalSlotsAll = divisionAttendanceStats.reduce((acc, d) => acc + d.total, 0);
+  const avgAttendancePercent = totalSlotsAll > 0 ? ((totalHadirAll / totalSlotsAll) * 100).toFixed(1) : '0.0';
+  const avgLatePercent = totalSlotsAll > 0 ? ((totalTerlambatAll / totalSlotsAll) * 100).toFixed(1) : '0.0';
 
   // Supervisor comment input state (default bersih dari teks asumsi)
   const [supervisorComment, setSupervisorComment] = useState('');
@@ -353,62 +425,16 @@ export default function Reports({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Sound</td>
-                    <td className="p-2 border-r border-slate-300 text-center">162</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">4</td>
-                    <td className="p-2 border-r border-slate-300 text-center">2</td>
-                    <td className="p-2 border-r border-slate-300 text-center">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Lighting</td>
-                    <td className="p-2 border-r border-slate-300 text-center">25</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Videotron</td>
-                    <td className="p-2 border-r border-slate-300 text-center">102</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">3</td>
-                    <td className="p-2 border-r border-slate-300 text-center">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Multimedia</td>
-                    <td className="p-2 border-r border-slate-300 text-center">73</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">2</td>
-                    <td className="p-2 border-r border-slate-300 text-center">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Gudang (Warehouse)</td>
-                    <td className="p-2 border-r border-slate-300 text-center">75</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Service (Perbaikan)</td>
-                    <td className="p-2 border-r border-slate-300 text-center">42</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Administrasi & Management</td>
-                    <td className="p-2 border-r border-slate-300 text-center">98</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                  </tr>
+                  {divisionAttendanceStats.map((d, idx) => (
+                    <tr key={idx}>
+                      <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">{d.label}</td>
+                      <td className="p-2 border-r border-slate-300 text-center">{d.hadir}</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-amber-600">{d.terlambat}</td>
+                      <td className="p-2 border-r border-slate-300 text-center">{d.izin}</td>
+                      <td className="p-2 border-r border-slate-300 text-center">{d.sakit}</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-rose-600">{d.alpha}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -418,18 +444,18 @@ export default function Reports({
                 <div className="font-semibold text-slate-600">Persentase Kehadiran</div>
                 <div className="flex items-center gap-3 mt-1.5">
                   <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: '97.4%' }}></div>
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${avgAttendancePercent}%` }}></div>
                   </div>
-                  <strong className="text-slate-800 font-mono text-xs shrink-0">97.4%</strong>
+                  <strong className="text-slate-800 font-mono text-xs shrink-0">{avgAttendancePercent}%</strong>
                 </div>
               </div>
               <div className="p-3 border border-slate-200 bg-slate-50/50 rounded">
                 <div className="font-semibold text-slate-600">Persentase Keterlambatan</div>
                 <div className="flex items-center gap-3 mt-1.5">
                   <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-500 rounded-full" style={{ width: '2.2%' }}></div>
+                    <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, parseFloat(avgLatePercent) * 10)}%` }}></div>
                   </div>
-                  <strong className="text-slate-800 font-mono text-xs shrink-0">2.2%</strong>
+                  <strong className="text-slate-800 font-mono text-xs shrink-0">{avgLatePercent}%</strong>
                 </div>
               </div>
             </div>

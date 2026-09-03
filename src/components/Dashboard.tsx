@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { LogbookEntry, DailyReport, Finding, WorkOrder } from '../types';
+import { LogbookEntry, DailyReport, Finding, WorkOrder, AttendanceLog } from '../types';
 import { 
   Play, 
   CheckCircle2, 
@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { STAFF_LIST } from '../data';
 import { calculateAllStaffKpis } from '../utils/kpiCalculator';
+import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 
 interface DashboardProps {
   logbookEntries: LogbookEntry[];
@@ -208,6 +209,77 @@ export default function Dashboard({
       total: okCount + ngCount
     };
   });
+
+  // Dynamic Attendance Statistics per Division for September 2026
+  const divisionsAttendanceList = [
+    { key: 'Audio', label: 'Audio (Sound)' },
+    { key: 'Lighting', label: 'Lighting' },
+    { key: 'Videotron', label: 'Videotron' },
+    { key: 'Multimedia', label: 'Multimedia' },
+    { key: 'Gudang', label: 'Gudang Logistik' },
+    { key: 'Service', label: 'Service (Perbaikan)' },
+    { key: 'Admin', label: 'Administrasi (Admin)' },
+  ];
+
+  let rawAttendanceLogs: AttendanceLog[] = [];
+  try {
+    const saved = localStorage.getItem('riz_attendance_logs');
+    if (saved) rawAttendanceLogs = JSON.parse(saved);
+  } catch (e) {}
+
+  let septemberSchedule: StaffScheduleRow[] = OFFICIAL_SEPTEMBER_2026_SCHEDULE;
+  try {
+    const savedSched = localStorage.getItem('riz_september_2026_schedule');
+    if (savedSched) septemberSchedule = JSON.parse(savedSched);
+  } catch (e) {}
+
+  const divisionAttendanceStats = divisionsAttendanceList.map(div => {
+    const staffInDiv = septemberSchedule.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
+    let hadirCount = 0;
+    let terlambatCount = 0;
+    let izinCount = 0;
+    let sakitCount = 0;
+    let alphaCount = 0;
+
+    staffInDiv.forEach(s => {
+      Object.values(s.shifts || {}).forEach(shift => {
+        const up = shift.toUpperCase();
+        if (['P', 'MD', 'M', 'PM', 'MASUK'].includes(up)) {
+          hadirCount++;
+        } else if (up === 'IZIN') {
+          izinCount++;
+        } else if (up === 'SAKIT') {
+          sakitCount++;
+        } else if (up === 'ALPHA') {
+          alphaCount++;
+        }
+      });
+    });
+
+    const divLogs = rawAttendanceLogs.filter(l => l.division?.toLowerCase() === div.key.toLowerCase());
+    divLogs.forEach(l => {
+      if (l.isLate) terlambatCount++;
+      else if (l.status === 'Izin') izinCount++;
+      else if (l.status === 'Sakit') sakitCount++;
+      else if (l.status === 'Alpha') alphaCount++;
+    });
+
+    return {
+      label: div.label,
+      hadir: hadirCount,
+      terlambat: terlambatCount,
+      izin: izinCount,
+      sakit: sakitCount,
+      alpha: alphaCount,
+      total: hadirCount + terlambatCount + izinCount + sakitCount + alphaCount
+    };
+  });
+
+  const totalHadirAll = divisionAttendanceStats.reduce((acc, d) => acc + d.hadir, 0);
+  const totalTerlambatAll = divisionAttendanceStats.reduce((acc, d) => acc + d.terlambat, 0);
+  const totalSlotsAll = divisionAttendanceStats.reduce((acc, d) => acc + d.total, 0);
+  const avgAttendancePercent = totalSlotsAll > 0 ? ((totalHadirAll / totalSlotsAll) * 100).toFixed(1) : '0.0';
+  const avgLatePercent = totalSlotsAll > 0 ? ((totalTerlambatAll / totalSlotsAll) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="space-y-6 font-sans">
@@ -470,62 +542,16 @@ export default function Dashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-mono">
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Audio (Sound)</td>
-                      <td className="p-3 text-center text-emerald-600 font-bold">156</td>
-                      <td className="p-3 text-center text-amber-600">3</td>
-                      <td className="p-3 text-center text-slate-500">2</td>
-                      <td className="p-3 text-center text-indigo-500">1</td>
-                      <td className="p-3 text-center text-rose-600">0</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Lighting</td>
-                      <td className="p-3 text-center text-emerald-600 font-bold">26</td>
-                      <td className="p-3 text-center text-amber-600">1</td>
-                      <td className="p-3 text-center text-slate-500">0</td>
-                      <td className="p-3 text-center text-indigo-500">0</td>
-                      <td className="p-3 text-center text-rose-600">0</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Videotron</td>
-                      <td className="p-3 text-center text-emerald-600 font-bold">78</td>
-                      <td className="p-3 text-center text-amber-600">2</td>
-                      <td className="p-3 text-center text-slate-500">1</td>
-                      <td className="p-3 text-center text-indigo-500">1</td>
-                      <td className="p-3 text-center text-rose-600">0</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Multimedia</td>
-                      <td className="p-3 text-center text-emerald-600 font-bold">78</td>
-                      <td className="p-3 text-center text-amber-600">1</td>
-                      <td className="p-3 text-center text-slate-500">0</td>
-                      <td className="p-3 text-center text-indigo-500">0</td>
-                      <td className="p-3 text-center text-rose-600">0</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Gudang Logistik</td>
-                      <td className="p-3 text-center text-emerald-600 font-bold">78</td>
-                      <td className="p-3 text-center text-amber-600">4</td>
-                      <td className="p-3 text-center text-slate-500">2</td>
-                      <td className="p-3 text-center text-indigo-500">1</td>
-                      <td className="p-3 text-center text-rose-600">0</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Service (Perbaikan)</td>
-                      <td className="p-3 text-center text-emerald-600 font-bold">52</td>
-                      <td className="p-3 text-center text-amber-600">1</td>
-                      <td className="p-3 text-center text-slate-500">1</td>
-                      <td className="p-3 text-center text-indigo-500">0</td>
-                      <td className="p-3 text-center text-rose-600">0</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Administrasi (Admin)</td>
-                      <td className="p-3 text-center text-emerald-600 font-bold">104</td>
-                      <td className="p-3 text-center text-amber-600">2</td>
-                      <td className="p-3 text-center text-slate-500">1</td>
-                      <td className="p-3 text-center text-indigo-500">0</td>
-                      <td className="p-3 text-center text-rose-600">0</td>
-                    </tr>
+                    {divisionAttendanceStats.map((d, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50">
+                        <td className="p-3 font-sans font-bold text-slate-800">{d.label}</td>
+                        <td className="p-3 text-center text-emerald-600 font-bold">{d.hadir}</td>
+                        <td className="p-3 text-center text-amber-600 font-bold">{d.terlambat}</td>
+                        <td className="p-3 text-center text-slate-500">{d.izin}</td>
+                        <td className="p-3 text-center text-indigo-500">{d.sakit}</td>
+                        <td className="p-3 text-center text-rose-600 font-bold">{d.alpha}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -537,10 +563,10 @@ export default function Dashboard({
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-[11px]">
                       <span>Rata-rata Kehadiran Tim</span>
-                      <span className="font-extrabold text-emerald-600">97.6%</span>
+                      <span className="font-extrabold text-emerald-600">{avgAttendancePercent}%</span>
                     </div>
                     <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '97.6%' }}></div>
+                      <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${avgAttendancePercent}%` }}></div>
                     </div>
                   </div>
                 </div>
@@ -550,10 +576,10 @@ export default function Dashboard({
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-[11px]">
                       <span>Toleransi Maksimal 3%</span>
-                      <span className="font-extrabold text-amber-600">1.9%</span>
+                      <span className="font-extrabold text-amber-600">{avgLatePercent}%</span>
                     </div>
                     <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-500 rounded-full" style={{ width: '63.3%' }}></div>
+                      <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${Math.min(100, parseFloat(avgLatePercent) * 10)}%` }}></div>
                     </div>
                   </div>
                 </div>
