@@ -10,6 +10,9 @@ export interface Staff {
   name: string;
   division: Division;
   role: 'Admin' | 'Supervisor' | 'Team Leader' | 'Staff' | 'Gudang' | 'Manager';
+  avatar?: string;
+  phone?: string;
+  email?: string;
 }
 
 export interface AttendanceLog {

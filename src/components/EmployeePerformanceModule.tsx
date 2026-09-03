@@ -52,15 +52,24 @@ export default function EmployeePerformanceModule({
 }: EmployeePerformanceModuleProps) {
   const isManagement = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
 
+  // Load Master Staff List from localStorage or default
+  const [masterStaffList, setMasterStaffList] = useState<Staff[]>(() => {
+    try {
+      const saved = localStorage.getItem('riz_master_staff_list');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return STAFF_LIST;
+  });
+
   // Selected Employee (Default to Opik if available, or currentUser)
-  const defaultStaff = STAFF_LIST.find(s => s.name === 'Opik') || currentUser;
+  const defaultStaff = masterStaffList.find(s => s.name === 'Opik') || currentUser;
   const [selectedStaffName, setSelectedStaffName] = useState<string>(isManagement ? defaultStaff.name : currentUser.name);
   const [selectedMonth, setSelectedMonth] = useState<string>('September 2026');
 
-  const selectedStaff = STAFF_LIST.find(s => s.name === selectedStaffName) || currentUser;
+  const selectedStaff = masterStaffList.find(s => s.name === selectedStaffName) || currentUser;
   
   // Real dynamic KPI scores
-  const allStaffKpis = calculateAllStaffKpis(STAFF_LIST, dailyReports, logbookEntries, findings);
+  const allStaffKpis = calculateAllStaffKpis(masterStaffList, dailyReports, logbookEntries, findings);
   const staffKpi = calculateStaffKpi(selectedStaff, dailyReports, logbookEntries, findings);
 
   // Dynamic ranking
@@ -180,12 +189,18 @@ export default function EmployeePerformanceModule({
         <div className="lg:col-span-3 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-500/30 p-0.5 shadow-sm shrink-0">
-                <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"
-                  alt={selectedStaff.name}
-                  className="w-full h-full object-cover rounded-full"
-                />
+              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-500/30 p-0.5 shadow-sm shrink-0 bg-slate-100 flex items-center justify-center">
+                {selectedStaff.avatar ? (
+                  <img
+                    src={selectedStaff.avatar}
+                    alt={selectedStaff.name}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <span className="font-mono font-bold text-slate-700 text-lg">
+                    {selectedStaff.name.substring(0, 2).toUpperCase()}
+                  </span>
+                )}
               </div>
               <div>
                 <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">{selectedStaff.name}</h2>
@@ -213,24 +228,21 @@ export default function EmployeePerformanceModule({
               </div>
               <div className="flex items-center justify-between text-slate-500">
                 <span className="flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Bergabung</span>
-                </span>
-                <span className="font-bold text-slate-800">12 Januari 2023</span>
-              </div>
-              <div className="flex items-center justify-between text-slate-500">
-                <span className="flex items-center gap-2">
                   <span className="text-slate-400 font-bold">@</span>
                   <span>Email</span>
                 </span>
-                <span className="font-medium text-slate-700 lowercase">{selectedStaff.name.toLowerCase().replace(/\s/g, '')}@rizproduction.com</span>
+                <span className="font-medium text-slate-700">
+                  {selectedStaff.email || `${selectedStaff.name.toLowerCase().replace(/\s/g, '')}@rizproduction.com`}
+                </span>
               </div>
               <div className="flex items-center justify-between text-slate-500">
                 <span className="flex items-center gap-2">
                   <span className="text-slate-400 font-bold">#</span>
-                  <span>No. HP</span>
+                  <span>No. HP / WA</span>
                 </span>
-                <span className="font-mono font-bold text-slate-800">0812-3456-7890</span>
+                <span className="font-mono font-bold text-slate-800">
+                  {selectedStaff.phone || '- Belum diisi -'}
+                </span>
               </div>
             </div>
           </div>

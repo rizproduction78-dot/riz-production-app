@@ -28,7 +28,11 @@ import {
   AlertTriangle,
   Sliders,
   X,
-  FileText
+  FileText,
+  Phone,
+  Mail,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 import { forceSyncAllModules } from '../lib/cloudSync';
 
@@ -42,7 +46,7 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
   const [activeTab, setActiveTab] = useState<'staff' | 'qc_checklist' | 'schedule' | 'database'>('staff');
 
   // ─────────────────────────────────────────────────────────────
-  // 1. STAFF MANAGEMENT STATE
+  // 1. MASTER STAF MANAGEMENT STATE
   // ─────────────────────────────────────────────────────────────
   const [staffList, setStaffList] = useState<Staff[]>(() => {
     try {
@@ -52,19 +56,35 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
     return STAFF_LIST;
   });
 
-  const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
+  const [staffSearch, setStaffSearch] = useState('');
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+  const [showEditStaffModal, setShowEditStaffModal] = useState(false);
+  const [activeStaffForEdit, setActiveStaffForEdit] = useState<Staff | null>(null);
+
   const [staffFormData, setStaffFormData] = useState<Partial<Staff>>({
     name: '',
     division: 'Audio',
-    role: 'Staff'
+    role: 'Staff',
+    phone: '',
+    email: '',
+    avatar: ''
   });
-  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
-  const [staffSearch, setStaffSearch] = useState('');
 
   const saveStaffList = (updated: Staff[]) => {
     setStaffList(updated);
     localStorage.setItem('riz_master_staff_list', JSON.stringify(updated));
     onLogActivity(currentUser.name, currentUser.role, 'Memperbarui master data staf karyawan');
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setStaffFormData(prev => ({ ...prev, avatar: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAddStaff = () => {
@@ -73,18 +93,49 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
       id: `staff-${Date.now()}`,
       name: staffFormData.name.trim(),
       division: (staffFormData.division as Division) || 'Audio',
-      role: (staffFormData.role as any) || 'Staff'
+      role: (staffFormData.role as any) || 'Staff',
+      phone: staffFormData.phone?.trim() || '',
+      email: staffFormData.email?.trim() || '',
+      avatar: staffFormData.avatar || ''
     };
     const updated = [...staffList, newStaff];
     saveStaffList(updated);
-    setStaffFormData({ name: '', division: 'Audio', role: 'Staff' });
+    setStaffFormData({ name: '', division: 'Audio', role: 'Staff', phone: '', email: '', avatar: '' });
     setShowAddStaffModal(false);
   };
 
-  const handleUpdateStaff = (id: string) => {
-    const updated = staffList.map(s => s.id === id ? { ...s, ...staffFormData } as Staff : s);
+  const handleOpenEditStaff = (staff: Staff) => {
+    setActiveStaffForEdit(staff);
+    setStaffFormData({
+      name: staff.name,
+      division: staff.division,
+      role: staff.role,
+      phone: staff.phone || '',
+      email: staff.email || '',
+      avatar: staff.avatar || ''
+    });
+    setShowEditStaffModal(true);
+  };
+
+  const handleSaveEditStaff = () => {
+    if (!activeStaffForEdit || !staffFormData.name?.trim()) return;
+    const updated = staffList.map(s => {
+      if (s.id === activeStaffForEdit.id) {
+        return {
+          ...s,
+          name: staffFormData.name!.trim(),
+          division: (staffFormData.division as Division) || s.division,
+          role: (staffFormData.role as any) || s.role,
+          phone: staffFormData.phone?.trim() || '',
+          email: staffFormData.email?.trim() || '',
+          avatar: staffFormData.avatar || s.avatar || ''
+        };
+      }
+      return s;
+    });
     saveStaffList(updated);
-    setEditingStaffId(null);
+    setShowEditStaffModal(false);
+    setActiveStaffForEdit(null);
   };
 
   const handleDeleteStaff = (id: string) => {
@@ -157,7 +208,6 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
     } catch (e) {}
     return OFFICIAL_SEPTEMBER_2026_SCHEDULE;
   });
-  const [selectedStaffSchedule, setSelectedStaffSchedule] = useState<StaffScheduleRow | null>(null);
 
   const saveSchedule = (updated: StaffScheduleRow[]) => {
     setSeptemberSchedule(updated);
@@ -184,7 +234,6 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
   // ─────────────────────────────────────────────────────────────
   // 4. DATABASE & BACKUP STATE
   // ─────────────────────────────────────────────────────────────
-  const [backupJson, setBackupJson] = useState('');
   const [syncMessage, setSyncMessage] = useState('');
 
   const handleExportAllData = () => {
@@ -232,7 +281,7 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
             </span>
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Panel Pengelolaan Admin</h1>
-              <p className="text-xs text-slate-500 font-medium">Pengelolaan Master Data, Checklist QC, Jadwal Roster & Sinkronisasi</p>
+              <p className="text-xs text-slate-500 font-medium">Pengelolaan Master Data Staf, Foto Profil, No Telp, Checklist QC & Roster Shift</p>
             </div>
           </div>
         </div>
@@ -285,11 +334,11 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
         <div className="space-y-4">
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-64">
+              <div className="relative flex-1 sm:w-72">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
-                  placeholder="Cari staf / divisi..."
+                  placeholder="Cari nama staf / no telp / divisi..."
                   value={staffSearch}
                   onChange={(e) => setStaffSearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
@@ -298,7 +347,10 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
             </div>
 
             <button
-              onClick={() => setShowAddStaffModal(true)}
+              onClick={() => {
+                setStaffFormData({ name: '', division: 'Audio', role: 'Staff', phone: '', email: '', avatar: '' });
+                setShowAddStaffModal(true);
+              }}
               className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
             >
               <Plus className="w-4 h-4" />
@@ -312,10 +364,11 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
               <table className="w-full text-left text-xs border-collapse font-sans">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
-                    <th className="p-3.5">ID Staf</th>
+                    <th className="p-3.5">Foto Profil</th>
                     <th className="p-3.5">Nama Lengkap</th>
                     <th className="p-3.5">Divisi</th>
                     <th className="p-3.5">Role / Jabatan</th>
+                    <th className="p-3.5">No. Telp / WA</th>
                     <th className="p-3.5 text-right">Aksi</th>
                   </tr>
                 </thead>
@@ -324,86 +377,59 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
                     .filter(s => 
                       s.name.toLowerCase().includes(staffSearch.toLowerCase()) ||
                       s.division.toLowerCase().includes(staffSearch.toLowerCase()) ||
-                      s.role.toLowerCase().includes(staffSearch.toLowerCase())
+                      s.role.toLowerCase().includes(staffSearch.toLowerCase()) ||
+                      (s.phone && s.phone.includes(staffSearch))
                     )
                     .map(staff => (
                       <tr key={staff.id} className="hover:bg-slate-50/60">
-                        <td className="p-3.5 font-mono text-slate-500 font-bold">{staff.id}</td>
+                        <td className="p-3.5">
+                          <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center shrink-0">
+                            {staff.avatar ? (
+                              <img src={staff.avatar} alt={staff.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="font-bold text-slate-600 font-mono text-xs">
+                                {staff.name.substring(0, 2).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="p-3.5 font-bold text-slate-900">
-                          {editingStaffId === staff.id ? (
-                            <input
-                              type="text"
-                              value={staffFormData.name}
-                              onChange={(e) => setStaffFormData({ ...staffFormData, name: e.target.value })}
-                              className="bg-white border border-indigo-300 rounded px-2 py-1 text-xs font-bold text-slate-900 focus:outline-none"
-                            />
-                          ) : (
-                            staff.name
-                          )}
+                          <div>{staff.name}</div>
+                          <div className="text-[10px] text-slate-400 font-mono font-normal">ID: {staff.id}</div>
                         </td>
                         <td className="p-3.5">
-                          {editingStaffId === staff.id ? (
-                            <select
-                              value={staffFormData.division}
-                              onChange={(e) => setStaffFormData({ ...staffFormData, division: e.target.value as Division })}
-                              className="bg-white border border-indigo-300 rounded px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none"
-                            >
-                              <option value="Audio">Audio</option>
-                              <option value="Lighting">Lighting</option>
-                              <option value="Videotron">Videotron</option>
-                              <option value="Multimedia">Multimedia</option>
-                              <option value="Gudang">Gudang</option>
-                              <option value="Service">Service</option>
-                              <option value="Admin">Admin</option>
-                            </select>
-                          ) : (
-                            <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md font-bold text-[10px]">
-                              {staff.division}
+                          <span className="bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-md font-bold text-[10px]">
+                            {staff.division}
+                          </span>
+                        </td>
+                        <td className="p-3.5">
+                          <span className="text-slate-700 font-semibold">{staff.role}</span>
+                        </td>
+                        <td className="p-3.5 font-mono text-slate-600">
+                          {staff.phone ? (
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3 h-3 text-emerald-600" />
+                              {staff.phone}
                             </span>
+                          ) : (
+                            <span className="text-slate-400 italic text-[11px]">- Belum ada -</span>
                           )}
                         </td>
-                        <td className="p-3.5">
-                          {editingStaffId === staff.id ? (
-                            <select
-                              value={staffFormData.role}
-                              onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value as any })}
-                              className="bg-white border border-indigo-300 rounded px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none"
-                            >
-                              <option value="Admin">Admin</option>
-                              <option value="Supervisor">Supervisor</option>
-                              <option value="Manager">Manager</option>
-                              <option value="Team Leader">Team Leader</option>
-                              <option value="Staff">Staff</option>
-                              <option value="Gudang">Gudang</option>
-                            </select>
-                          ) : (
-                            <span className="text-slate-600 font-semibold">{staff.role}</span>
-                          )}
-                        </td>
-                        <td className="p-3.5 text-right space-x-2">
-                          {editingStaffId === staff.id ? (
-                            <button
-                              onClick={() => handleUpdateStaff(staff.id)}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
-                            >
-                              <Save className="w-3 h-3" /> Simpan
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setEditingStaffId(staff.id);
-                                setStaffFormData({ name: staff.name, division: staff.division, role: staff.role });
-                              }}
-                              className="text-slate-400 hover:text-indigo-600 p-1 rounded cursor-pointer"
-                            >
-                              <Edit2 className="w-3.5 h-3.5 inline" />
-                            </button>
-                          )}
+                        <td className="p-3.5 text-right space-x-1.5">
+                          <button
+                            onClick={() => handleOpenEditStaff(staff)}
+                            className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 font-bold text-[11px]"
+                            title="Edit Staf"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
                           <button
                             onClick={() => handleDeleteStaff(staff.id)}
-                            className="text-slate-400 hover:text-rose-600 p-1 rounded cursor-pointer"
+                            className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                            title="Hapus Staf"
                           >
-                            <Trash2 className="w-3.5 h-3.5 inline" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </td>
                       </tr>
@@ -633,7 +659,7 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
       {/* MODAL TAMBAH STAF */}
       {showAddStaffModal && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-slate-900 text-base">Tambah Staf Karyawan Baru</h3>
               <button onClick={() => setShowAddStaffModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
@@ -641,9 +667,28 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
               </button>
             </div>
 
-            <div className="space-y-3 text-xs font-sans">
+            <div className="space-y-4 text-xs font-sans">
+              {/* Photo Preview & Upload */}
+              <div className="flex items-center gap-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-500 bg-white flex items-center justify-center shrink-0">
+                  {staffFormData.avatar ? (
+                    <img src={staffFormData.avatar} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-6 h-6 text-slate-400" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <label className="font-bold text-slate-700 block">Foto Profil</label>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-xs font-bold text-indigo-700 cursor-pointer transition-all shadow-2xs">
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Pilih Foto</span>
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                  </label>
+                </div>
+              </div>
+
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Nama Lengkap</label>
+                <label className="font-bold text-slate-700 block mb-1">Nama Lengkap *</label>
                 <input
                   type="text"
                   placeholder="Contoh: Budi Santoso"
@@ -653,37 +698,67 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
                 />
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Divisi</label>
-                <select
-                  value={staffFormData.division}
-                  onChange={(e) => setStaffFormData({ ...staffFormData, division: e.target.value as Division })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
-                >
-                  <option value="Audio">Audio</option>
-                  <option value="Lighting">Lighting</option>
-                  <option value="Videotron">Videotron</option>
-                  <option value="Multimedia">Multimedia</option>
-                  <option value="Gudang">Gudang</option>
-                  <option value="Service">Service</option>
-                  <option value="Admin">Admin</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Divisi *</label>
+                  <select
+                    value={staffFormData.division}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, division: e.target.value as Division })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                  >
+                    <option value="Audio">Audio</option>
+                    <option value="Lighting">Lighting</option>
+                    <option value="Videotron">Videotron</option>
+                    <option value="Multimedia">Multimedia</option>
+                    <option value="Gudang">Gudang</option>
+                    <option value="Service">Service</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Role / Jabatan *</label>
+                  <select
+                    value={staffFormData.role}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                  >
+                    <option value="Staff">Staff</option>
+                    <option value="Team Leader">Team Leader</option>
+                    <option value="Supervisor">Supervisor</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Gudang">Gudang</option>
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Role / Jabatan</label>
-                <select
-                  value={staffFormData.role}
-                  onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value as any })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
-                >
-                  <option value="Staff">Staff</option>
-                  <option value="Team Leader">Team Leader</option>
-                  <option value="Supervisor">Supervisor</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Gudang">Gudang</option>
-                </select>
+                <label className="font-bold text-slate-700 block mb-1">No. Telepon / WhatsApp</label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="tel"
+                    placeholder="Contoh: 0812-3456-7890"
+                    value={staffFormData.phone}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, phone: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Email Resmi (Opsional)</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="email"
+                    placeholder="nama@rizproduction.com"
+                    value={staffFormData.email}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, email: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
               </div>
             </div>
 
@@ -699,6 +774,140 @@ export default function AdminPanel({ currentUser, onLogActivity }: AdminPanelPro
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer shadow-xs"
               >
                 Simpan Staf
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDIT STAF */}
+      {showEditStaffModal && activeStaffForEdit && (
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <h3 className="font-extrabold text-slate-900 text-base">Ubah / Edit Data Staf</h3>
+              <button onClick={() => setShowEditStaffModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs font-sans">
+              {/* Photo Preview & Upload */}
+              <div className="flex items-center gap-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-500 bg-white flex items-center justify-center shrink-0">
+                  {staffFormData.avatar ? (
+                    <img src={staffFormData.avatar} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-bold text-slate-600 font-mono text-sm">
+                      {staffFormData.name?.substring(0, 2).toUpperCase() || 'ST'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <label className="font-bold text-slate-700 block">Ubah Foto Profil</label>
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg text-xs font-bold text-indigo-700 cursor-pointer transition-all shadow-2xs">
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Ganti Foto</span>
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                  </label>
+                  {staffFormData.avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setStaffFormData(prev => ({ ...prev, avatar: '' }))}
+                      className="block text-[10px] text-rose-600 font-bold hover:underline cursor-pointer"
+                    >
+                      Hapus Foto
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Lengkap *</label>
+                <input
+                  type="text"
+                  value={staffFormData.name}
+                  onChange={(e) => setStaffFormData({ ...staffFormData, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Divisi *</label>
+                  <select
+                    value={staffFormData.division}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, division: e.target.value as Division })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                  >
+                    <option value="Audio">Audio</option>
+                    <option value="Lighting">Lighting</option>
+                    <option value="Videotron">Videotron</option>
+                    <option value="Multimedia">Multimedia</option>
+                    <option value="Gudang">Gudang</option>
+                    <option value="Service">Service</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Role / Jabatan *</label>
+                  <select
+                    value={staffFormData.role}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                  >
+                    <option value="Staff">Staff</option>
+                    <option value="Team Leader">Team Leader</option>
+                    <option value="Supervisor">Supervisor</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Gudang">Gudang</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">No. Telepon / WhatsApp</label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="tel"
+                    placeholder="Contoh: 0812-3456-7890"
+                    value={staffFormData.phone}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, phone: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Email Resmi (Opsional)</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="email"
+                    placeholder="nama@rizproduction.com"
+                    value={staffFormData.email}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, email: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                onClick={() => setShowEditStaffModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSaveEditStaff}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer shadow-xs"
+              >
+                Simpan Perubahan
               </button>
             </div>
           </div>
