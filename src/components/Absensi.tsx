@@ -9,6 +9,7 @@ import {
   StaffScheduleRow
 } from '../data/september2026Schedule';
 import { Calendar, Clock, MapPin, Camera, UserCheck, AlertTriangle, RefreshCw, Check, Edit, CheckCircle, Search, User, Zap, Award, BookOpen, CheckSquare, Square, ThumbsUp, HelpCircle, Wrench, Plus, Trash2, Printer } from 'lucide-react';
+import { subscribeCloudCollection, saveCloudDoc } from '../lib/cloudSync';
 
 export const WAJIB_ABSEN_NAMES = [
   'Agus', 'Fahrul', 'Caca', 'Seno',
@@ -342,6 +343,17 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
   // Pagination or filters for schedule grid
   const [scheduleSearch, setScheduleSearch] = useState('');
 
+  // Real-time Cloud Firestore Attendance Subscription
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<AttendanceLog>(
+      'attendance_logs',
+      'riz_attendance_logs',
+      setAttendanceLogs,
+      []
+    );
+    return () => unsub();
+  }, []);
+
   // Save states to localStorage
   useEffect(() => {
     localStorage.setItem('riz_attendance_logs', JSON.stringify(attendanceLogs));
@@ -499,6 +511,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
     };
 
     setAttendanceLogs(prev => [newLog, ...prev]);
+    saveCloudDoc('attendance_logs', newLog.id, newLog);
     onLogActivity(currentUser.name, currentUser.role, `Berhasil melakukan Check In pada jam ${checkInTimeStr} (${isLate ? 'Terlambat' : 'Tepat Waktu'})`);
     
     // Reset form helper states
@@ -526,21 +539,19 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
 
     const checkOutTimeStr = simulatedTime || new Date().toTimeString().split(' ')[0].substring(0, 5); // HH:MM
 
-    setAttendanceLogs(prev => prev.map(log => {
-      if (log.id === userTodayLog.id) {
-        return {
-          ...log,
-          checkOutTime: checkOutTimeStr,
-          checkOutPhoto: isTeamLeader 
-            ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' 
-            : photoSimulated,
-          checkOutGps: isTeamLeader 
-            ? 'Office - HQ (Bypass Team Leader)' 
-            : gpsSimulated
-        };
-      }
-      return log;
-    }));
+    const updatedLog: AttendanceLog = {
+      ...userTodayLog,
+      checkOutTime: checkOutTimeStr,
+      checkOutPhoto: isTeamLeader 
+        ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' 
+        : photoSimulated,
+      checkOutGps: isTeamLeader 
+        ? 'Office - HQ (Bypass Team Leader)' 
+        : gpsSimulated
+    };
+
+    setAttendanceLogs(prev => prev.map(log => log.id === userTodayLog.id ? updatedLog : log));
+    saveCloudDoc('attendance_logs', updatedLog.id, updatedLog);
 
     onLogActivity(currentUser.name, currentUser.role, `Berhasil melakukan Check Out pada jam ${checkOutTimeStr}`);
     

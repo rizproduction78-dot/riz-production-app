@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Staff, Asset, WarehouseLog } from '../types';
 import { INITIAL_ASSETS } from '../data';
 import { Package, ArrowDownLeft, ArrowUpRight, Truck, Database, Search, Plus, Camera, CheckCircle, FileText, Smartphone, RefreshCw, Layers, Wrench } from 'lucide-react';
+import { subscribeCloudCollection, saveCloudDoc } from '../lib/cloudSync';
 
 interface GudangProps {
   currentUser: Staff;
@@ -74,6 +75,17 @@ export default function Gudang({
   const [scanSearchInput, setScanSearchInput] = useState('');
   const [scanMessage, setScanMessage] = useState('');
 
+  // Real-time Cloud Subscription
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<WarehouseLog>(
+      'warehouse_logs',
+      'riz_warehouse_logs',
+      setWarehouseLogs,
+      []
+    );
+    return () => unsub();
+  }, []);
+
   // Save states
   useEffect(() => {
     localStorage.setItem('riz_warehouse_logs', JSON.stringify(warehouseLogs));
@@ -96,6 +108,7 @@ export default function Gudang({
     };
 
     setWarehouseLogs(prev => [newLog, ...prev]);
+    saveCloudDoc('warehouse_logs', newLog.id, newLog);
     onLogActivity(currentUser.name, currentUser.role, `Mencatat log gudang: ${type} - ${itemName} sebanyak ${qty} Unit`);
     
     // Auto-update asset status & location if matched

@@ -48,8 +48,17 @@ import {
   Zap,
   Calendar,
   Award,
-  TrendingUp
+  TrendingUp,
+  RefreshCw
 } from 'lucide-react';
+import {
+  subscribeCloudCollection,
+  saveCloudDoc,
+  deleteCloudDoc,
+  forceSyncAllModules,
+  subscribeSyncStatus,
+  SyncStatus
+} from './lib/cloudSync';
 
 export default function App() {
   // Session State
@@ -234,7 +243,88 @@ export default function App() {
     ];
   });
 
-  // Persistence hooks
+  // Cloud Sync State
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+    isSyncing: false,
+    lastSyncedAt: null,
+    syncedCollections: {}
+  });
+
+  // Real-time Cloud Subscriptions
+  useEffect(() => {
+    const unsubStatus = subscribeSyncStatus(setSyncStatus);
+
+    const unsubLogbook = subscribeCloudCollection<LogbookEntry>(
+      'logbook_entries',
+      'riz_logbook_entries',
+      setLogbookEntries,
+      INITIAL_LOGBOOK_ENTRIES
+    );
+
+    const unsubReports = subscribeCloudCollection<DailyReportType>(
+      'daily_reports',
+      'riz_daily_reports',
+      setDailyReports,
+      INITIAL_DAILY_REPORTS
+    );
+
+    const unsubTasks = subscribeCloudCollection<DailyTask>(
+      'daily_tasks',
+      'riz_daily_tasks',
+      setDailyTasks,
+      INITIAL_DAILY_TASKS
+    );
+
+    const unsubFindings = subscribeCloudCollection<Finding>(
+      'findings',
+      'riz_findings',
+      setFindings,
+      INITIAL_FINDINGS
+    );
+
+    const unsubAssets = subscribeCloudCollection<Asset>(
+      'assets',
+      'riz_assets',
+      setAssets,
+      INITIAL_ASSETS
+    );
+
+    const unsubWO = subscribeCloudCollection<WorkOrder>(
+      'work_orders',
+      'riz_work_orders',
+      setWorkOrders,
+      INITIAL_WORK_ORDERS
+    );
+
+    const unsubSchedules = subscribeCloudCollection<MaintenanceSchedule>(
+      'maintenance_schedules',
+      'riz_schedules',
+      setSchedules,
+      INITIAL_MAINTENANCE_SCHEDULES
+    );
+
+    const unsubActivities = subscribeCloudCollection<UserActivity>(
+      'activities',
+      'riz_activities',
+      setActivities,
+      []
+    );
+
+    return () => {
+      unsubStatus();
+      unsubLogbook();
+      unsubReports();
+      unsubTasks();
+      unsubFindings();
+      unsubAssets();
+      unsubWO();
+      unsubSchedules();
+      unsubActivities();
+    };
+  }, []);
+
+  // Persistence hooks for user and tab
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('riz_current_user', JSON.stringify(currentUser));
@@ -247,38 +337,6 @@ export default function App() {
     localStorage.setItem('riz_active_tab', activeTab);
   }, [activeTab]);
 
-  useEffect(() => {
-    localStorage.setItem('riz_logbook_entries', JSON.stringify(logbookEntries));
-  }, [logbookEntries]);
-
-  useEffect(() => {
-    localStorage.setItem('riz_daily_reports', JSON.stringify(dailyReports));
-  }, [dailyReports]);
-
-  useEffect(() => {
-    localStorage.setItem('riz_daily_tasks', JSON.stringify(dailyTasks));
-  }, [dailyTasks]);
-
-  useEffect(() => {
-    localStorage.setItem('riz_findings', JSON.stringify(findings));
-  }, [findings]);
-
-  useEffect(() => {
-    localStorage.setItem('riz_assets', JSON.stringify(assets));
-  }, [assets]);
-
-  useEffect(() => {
-    localStorage.setItem('riz_work_orders', JSON.stringify(workOrders));
-  }, [workOrders]);
-
-  useEffect(() => {
-    localStorage.setItem('riz_schedules', JSON.stringify(schedules));
-  }, [schedules]);
-
-  useEffect(() => {
-    localStorage.setItem('riz_activities', JSON.stringify(activities));
-  }, [activities]);
-
   // Logging Activity helper
   const handleLogActivity = (username: string, role: string, action: string) => {
     const newAct: UserActivity = {
@@ -289,6 +347,7 @@ export default function App() {
       action
     };
     setActivities(prev => [newAct, ...prev]);
+    saveCloudDoc('activities', newAct.id, newAct);
   };
 
   // Logbook functions
@@ -298,6 +357,7 @@ export default function App() {
       id: 'lg-' + Date.now()
     };
     setLogbookEntries(prev => [newEntry, ...prev]);
+    saveCloudDoc('logbook_entries', newEntry.id, newEntry);
   };
 
   // Daily Report functions
@@ -307,10 +367,12 @@ export default function App() {
       id: 'dr-' + Date.now()
     };
     setDailyReports(prev => [newRep, ...prev]);
+    saveCloudDoc('daily_reports', newRep.id, newRep);
   };
 
   const handleDeleteReport = (id: string) => {
     setDailyReports(prev => prev.filter(r => r.id !== id));
+    deleteCloudDoc('daily_reports', id);
   };
 
   // Findings functions
@@ -321,14 +383,23 @@ export default function App() {
       dateCreated: new Date().toISOString().split('T')[0]
     };
     setFindings(prev => [newFinding, ...prev]);
+    saveCloudDoc('findings', newFinding.id, newFinding);
   };
 
   const handleUpdateFindingStatus = (id: string, status: 'Open' | 'Close') => {
-    setFindings(prev => prev.map(f => f.id === id ? { ...f, status } : f));
+    setFindings(prev => prev.map(f => {
+      if (f.id === id) {
+        const updated = { ...f, status };
+        saveCloudDoc('findings', id, updated);
+        return updated;
+      }
+      return f;
+    }));
   };
 
   const handleDeleteFinding = (id: string) => {
     setFindings(prev => prev.filter(f => f.id !== id));
+    deleteCloudDoc('findings', id);
   };
 
   // Maintenance functions
@@ -338,6 +409,7 @@ export default function App() {
       id: 'ms-' + Date.now()
     };
     setSchedules(prev => [newSch, ...prev]);
+    saveCloudDoc('maintenance_schedules', newSch.id, newSch);
   };
 
   const handleUpdateScheduleStatus = (
@@ -351,7 +423,7 @@ export default function App() {
   ) => {
     setSchedules(prev => prev.map(s => {
       if (s.id === id) {
-        return {
+        const updated = {
           ...s,
           status,
           lastDate: new Date().toISOString().split('T')[0],
@@ -362,6 +434,8 @@ export default function App() {
           biaya: biaya !== undefined ? biaya : s.biaya,
           photoUrl: photoUrl !== undefined ? photoUrl : s.photoUrl
         };
+        saveCloudDoc('maintenance_schedules', id, updated);
+        return updated;
       }
       return s;
     }));
@@ -375,23 +449,40 @@ export default function App() {
       repairHistory: []
     };
     setAssets(prev => [newAsset, ...prev]);
+    saveCloudDoc('assets', newAsset.id, newAsset);
   };
 
   const handleUpdateAssetCondition = (id: string, condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat') => {
-    setAssets(prev => prev.map(a => a.id === id ? { ...a, condition } : a));
+    setAssets(prev => prev.map(a => {
+      if (a.id === id) {
+        const updated = { ...a, condition };
+        saveCloudDoc('assets', id, updated);
+        return updated;
+      }
+      return a;
+    }));
   };
 
   const handleUpdateAssetLocation = (id: string, location: string) => {
-    setAssets(prev => prev.map(a => a.id === id ? { ...a, location } : a));
+    setAssets(prev => prev.map(a => {
+      if (a.id === id) {
+        const updated = { ...a, location };
+        saveCloudDoc('assets', id, updated);
+        return updated;
+      }
+      return a;
+    }));
   };
 
   const handleAddRepairRecord = (id: string, record: { date: string; description: string; cost: number; PIC: string }) => {
     setAssets(prev => prev.map(a => {
       if (a.id === id) {
-        return {
+        const updated = {
           ...a,
           repairHistory: [record, ...a.repairHistory]
         };
+        saveCloudDoc('assets', id, updated);
+        return updated;
       }
       return a;
     }));
@@ -399,6 +490,7 @@ export default function App() {
 
   const handleDeleteAsset = (id: string) => {
     setAssets(prev => prev.filter(a => a.id !== id));
+    deleteCloudDoc('assets', id);
   };
 
   // Work Orders functions
@@ -409,23 +501,45 @@ export default function App() {
       dateCreated: new Date().toISOString().split('T')[0]
     };
     setWorkOrders(prev => [newWO, ...prev]);
+    saveCloudDoc('work_orders', newWO.id, newWO);
   };
 
   const handleUpdateWorkOrderProgress = (id: string, progress: number) => {
-    setWorkOrders(prev => prev.map(w => w.id === id ? { ...w, progress } : w));
+    setWorkOrders(prev => prev.map(w => {
+      if (w.id === id) {
+        const updated = { ...w, progress };
+        saveCloudDoc('work_orders', id, updated);
+        return updated;
+      }
+      return w;
+    }));
   };
 
   const handleUpdateWorkOrderStatus = (id: string, status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled') => {
-    setWorkOrders(prev => prev.map(w => w.id === id ? { ...w, status, progress: status === 'Completed' ? 100 : w.progress } : w));
+    setWorkOrders(prev => prev.map(w => {
+      if (w.id === id) {
+        const updated = { ...w, status, progress: status === 'Completed' ? 100 : w.progress };
+        saveCloudDoc('work_orders', id, updated);
+        return updated;
+      }
+      return w;
+    }));
   };
 
   const handleDeleteWorkOrder = (id: string) => {
     setWorkOrders(prev => prev.filter(w => w.id !== id));
+    deleteCloudDoc('work_orders', id);
   };
 
   // Activities functions
   const handleClearActivities = () => {
     setActivities([]);
+  };
+
+  // Manual Full Sync Trigger
+  const handleManualSync = async () => {
+    const res = await forceSyncAllModules();
+    alert(res.message);
   };
 
   const handleLogout = () => {
@@ -565,6 +679,41 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 p-4 md:p-8 overflow-y-auto max-w-full font-sans">
         
+        {/* Real-time Cloud Sync Header Status Bar */}
+        <div className="no-print mb-6 bg-white/95 backdrop-blur-xs p-3 px-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                syncStatus.isOnline ? 'bg-emerald-400' : 'bg-rose-400'
+              }`}></span>
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                syncStatus.isOnline ? 'bg-emerald-500' : 'bg-rose-500'
+              }`}></span>
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-800">
+                {syncStatus.isOnline ? 'Cloud Firestore Realtime' : 'Offline Mode (Local Cache)'}
+              </span>
+              <span className="text-[11px] text-slate-400 font-mono hidden md:inline">
+                {syncStatus.lastSyncedAt
+                  ? `• Terakhir sync: ${syncStatus.lastSyncedAt.toLocaleTimeString('id-ID')}`
+                  : '• Sinkronisasi otomatis aktif'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleManualSync}
+              disabled={syncStatus.isSyncing}
+              className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
+              <span>{syncStatus.isSyncing ? 'Menyinkronkan...' : 'Sync Cloud Sekarang'}</span>
+            </button>
+          </div>
+        </div>
+
         {/* Active view switcher */}
         {activeTab === 'dashboard' && (
           <Dashboard
