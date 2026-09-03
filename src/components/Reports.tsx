@@ -56,14 +56,61 @@ export default function Reports({
   // - Work Order (Bobot 15%)
   const staffKpis = calculateAllStaffKpis(STAFF_LIST, dailyReports, logbookEntries, findings);
 
-  // Supervisor comment input state
-  const [supervisorComment, setSupervisorComment] = useState('Semua divisi beroperasi secara aman. Beberapa item dalam masa perawatan berkala dan monitoring ketat.');
+  // Dynamic metrics per division
+  const reportDivisions = [
+    { name: 'Divisi Sound (Audio)', key: 'Audio' },
+    { name: 'Divisi Lighting', key: 'Lighting' },
+    { name: 'Divisi Videotron', key: 'Videotron' },
+    { name: 'Divisi Multimedia', key: 'Multimedia' },
+    { name: 'Gudang (Warehouse)', key: 'Gudang' },
+    { name: 'Divisi Service (Perbaikan)', key: 'Service' }
+  ];
+
+  const reportDivisionDamageStats = reportDivisions.map(d => {
+    const divFindings = findings.filter(f => f.equipment?.toLowerCase().includes(d.key.toLowerCase()));
+    const ringan = divFindings.filter(f => f.priority === 'Rendah').length;
+    const sedang = divFindings.filter(f => f.priority === 'Sedang').length;
+    const berat = divFindings.filter(f => f.priority === 'Tinggi').length;
+    const total = divFindings.length;
+    
+    // Divisi KPI
+    const divStaff = staffKpis.filter(s => s.division === d.key);
+    const avgKpi = divStaff.length > 0
+      ? Math.round(divStaff.reduce((acc, s) => acc + s.kpi, 0) / divStaff.length)
+      : 0;
+
+    return { ...d, ringan, sedang, berat, total, avgKpi };
+  });
+
+  // Dynamic Top 10 equipment with issues
+  const reportEquipmentFrequency: Record<string, { count: number; lastStatus: string }> = {};
+  findings.forEach(f => {
+    const name = f.equipment || 'Unknown';
+    if (!reportEquipmentFrequency[name]) {
+      reportEquipmentFrequency[name] = {
+        count: 0,
+        lastStatus: f.status === 'Close' ? 'Baik / Selesai Diperbaiki' : `Perlu Perbaikan - ${f.issue || 'Masalah Terdeteksi'}`
+      };
+    }
+    reportEquipmentFrequency[name].count++;
+    if (f.status === 'Open') {
+      reportEquipmentFrequency[name].lastStatus = `Rusak - ${f.issue || 'Dalam Perbaikan'}`;
+    }
+  });
+
+  const reportTopEquipments = Object.entries(reportEquipmentFrequency)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Supervisor comment input state (default bersih dari teks asumsi)
+  const [supervisorComment, setSupervisorComment] = useState('');
   
   // Signature input state
-  const [disusunOleh, setDisusunOleh] = useState('Mang ube');
-  const [diperiksaSupervisor, setDiperiksaSupervisor] = useState('Agus');
-  const [mengetahuiManager, setMengetahuiManager] = useState('Fahrul');
-  const [mengetahuiDirektur, setMengetahuiDirektur] = useState('Wahyu');
+  const [disusunOleh, setDisusunOleh] = useState(currentUser?.name || '');
+  const [diperiksaSupervisor, setDiperiksaSupervisor] = useState('');
+  const [mengetahuiManager, setMengetahuiManager] = useState('');
+  const [mengetahuiDirektur, setMengetahuiDirektur] = useState('');
 
   // Print Report Handler
   const handlePrint = () => {
@@ -561,55 +608,24 @@ export default function Reports({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-semibold">Divisi Sound</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-yellow-600">2</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                    <td className="p-2 text-center font-bold">3</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-semibold">Divisi Lighting</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-yellow-600">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">1</td>
-                    <td className="p-2 text-center font-bold">3</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-semibold">Divisi Videotron</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-yellow-600">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                    <td className="p-2 text-center font-bold">1</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-semibold">Divisi Multimedia</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-yellow-600">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                    <td className="p-2 text-center font-bold">1</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-semibold">Gudang (Warehouse)</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-yellow-600">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                    <td className="p-2 text-center font-bold">0</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-semibold">Divisi Service (Perbaikan)</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-yellow-600">1</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-amber-600">0</td>
-                    <td className="p-2 border-r border-slate-300 text-center text-rose-600">0</td>
-                    <td className="p-2 text-center font-bold">1</td>
-                  </tr>
+                  {reportDivisionDamageStats.map((d, idx) => (
+                    <tr key={idx}>
+                      <td className="p-2 border-r border-slate-300 font-sans font-semibold">{d.name}</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-yellow-600">{d.ringan}</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-amber-600">{d.sedang}</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-rose-600">{d.berat}</td>
+                      <td className="p-2 text-center font-bold">{d.total}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
             <div className="p-3 border border-slate-200 bg-slate-50/30 rounded text-xs">
-              <strong className="block text-slate-700">Trend Kerusakan Terpantau:</strong>
+              <strong className="block text-slate-700">Ringkasan Temuan Kerusakan:</strong>
               <p className="text-[11px] text-slate-500 mt-1 font-sans">
-                Fokus utama perbaikan berada pada Divisi Lighting akibat intensitas penggunaan Moving Head BSW 380W yang tinggi di outdoor event.
+                {findings.length > 0 
+                  ? `Total ${findings.length} temuan kerusakan tercatat di sistem (${findings.filter(f => f.status === 'Close').length} selesai, ${findings.filter(f => f.status === 'Open').length} dalam penanganan).`
+                  : 'Belum ada data kerusakan peralatan yang tercatat pada sistem.'}
               </p>
             </div>
           </div>
@@ -628,36 +644,21 @@ export default function Reports({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 text-center font-bold">1</td>
-                    <td className="p-2 border-r border-slate-300 font-sans">Moving Head BSW 380W</td>
-                    <td className="p-2 border-r border-slate-300 text-center">3 kali</td>
-                    <td className="p-2 text-center font-sans text-rose-700 font-semibold bg-rose-50/50">Rusak Ringan - Kalibrasi Sensor</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 text-center font-bold">2</td>
-                    <td className="p-2 border-r border-slate-300 font-sans">Digital Mixer CL5</td>
-                    <td className="p-2 border-r border-slate-300 text-center">2 kali</td>
-                    <td className="p-2 text-center font-sans text-emerald-700 font-semibold bg-emerald-50/50">Baik - Firmware Diupdate</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 text-center font-bold">3</td>
-                    <td className="p-2 border-r border-slate-300 font-sans">LED Cabinet P3.9 Outdoor</td>
-                    <td className="p-2 border-r border-slate-300 text-center">2 kali</td>
-                    <td className="p-2 text-center font-sans text-emerald-700 font-semibold bg-emerald-50/50">Baik - Modul Pixel Diganti</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 text-center font-bold">4</td>
-                    <td className="p-2 border-r border-slate-300 font-sans">Video Switcher V-60HD</td>
-                    <td className="p-2 border-r border-slate-300 text-center">1 kali</td>
-                    <td className="p-2 text-center font-sans text-emerald-700 font-semibold bg-emerald-50/50">Baik - Pembersihan Kipas</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 text-center font-bold">5</td>
-                    <td className="p-2 border-r border-slate-300 font-sans">Wireless Microphone UR4D</td>
-                    <td className="p-2 border-r border-slate-300 text-center">1 kali</td>
-                    <td className="p-2 text-center font-sans text-emerald-700 font-semibold bg-emerald-50/50">Baik - Port Konektor Dibersihkan</td>
-                  </tr>
+                  {reportTopEquipments.map((eq, idx) => (
+                    <tr key={idx}>
+                      <td className="p-2 border-r border-slate-300 text-center font-bold">{idx + 1}</td>
+                      <td className="p-2 border-r border-slate-300 font-sans">{eq.name}</td>
+                      <td className="p-2 border-r border-slate-300 text-center">{eq.count} kali</td>
+                      <td className="p-2 text-center font-sans font-semibold text-slate-700">{eq.lastStatus}</td>
+                    </tr>
+                  ))}
+                  {reportTopEquipments.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="p-4 text-center text-slate-400 font-sans">
+                        Belum ada data temuan peralatan bermasalah.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -669,50 +670,46 @@ export default function Reports({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-sans">
               <div className="p-3 border border-slate-200 rounded">
                 <span className="text-slate-400 block font-bold text-[9px] uppercase">Jadwal PM</span>
-                <strong className="text-lg text-slate-800">12 Kegiatan</strong>
+                <strong className="text-lg text-slate-800">0 Kegiatan</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-emerald-50/20 rounded">
                 <span className="text-emerald-500 block font-bold text-[9px] uppercase">PM Tepat Waktu</span>
-                <strong className="text-lg text-emerald-700">10 Kegiatan</strong>
+                <strong className="text-lg text-emerald-700">0 Kegiatan</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-amber-50/20 rounded">
                 <span className="text-amber-500 block font-bold text-[9px] uppercase">PM Terlambat</span>
-                <strong className="text-lg text-amber-700">1 Kegiatan</strong>
+                <strong className="text-lg text-amber-700">0 Kegiatan</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-rose-50/20 rounded">
                 <span className="text-rose-500 block font-bold text-[9px] uppercase">PM Belum Selesai</span>
-                <strong className="text-lg text-rose-700">1 Kegiatan</strong>
+                <strong className="text-lg text-rose-700">0 Kegiatan</strong>
               </div>
             </div>
             <div className="p-3 border border-slate-200 bg-slate-50/50 rounded flex justify-between items-center text-xs font-sans">
               <span>Persentase Kepatuhan PM Bulan Ini:</span>
-              <strong className="text-indigo-700 text-sm font-mono">83.3%</strong>
+              <strong className="text-indigo-700 text-sm font-mono">0.0%</strong>
             </div>
           </div>
 
           {/* 9. CORRECTIVE MAINTENANCE */}
           <div className="space-y-4">
             <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">9. CORRECTIVE MAINTENANCE</div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs font-sans">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-sans">
               <div className="p-3 border border-slate-200 rounded flex flex-col justify-between">
                 <span className="text-slate-400 font-bold text-[9px] uppercase">Total Repair</span>
-                <strong className="text-lg text-slate-800 mt-1">{findings.length + 4} Kasus</strong>
+                <strong className="text-lg text-slate-800 mt-1">{findings.length} Kasus</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-emerald-50/20 rounded flex flex-col justify-between">
-                <span className="text-emerald-500 font-bold text-[9px] uppercase">Selesai</span>
-                <strong className="text-lg text-emerald-700 mt-1">{findings.filter(f=>f.status==='Close').length + 3} Unit</strong>
+                <span className="text-emerald-500 font-bold text-[9px] uppercase">Selesai (Close)</span>
+                <strong className="text-lg text-emerald-700 mt-1">{findings.filter(f=>f.status==='Close').length} Unit</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-amber-50/20 rounded flex flex-col justify-between">
-                <span className="text-amber-500 font-bold text-[9px] uppercase">Pending Repair</span>
-                <strong className="text-lg text-amber-700 mt-1">{findings.filter(f=>f.status==='Open').length + 1} Unit</strong>
+                <span className="text-amber-500 font-bold text-[9px] uppercase">Pending (Open)</span>
+                <strong className="text-lg text-amber-700 mt-1">{findings.filter(f=>f.status==='Open').length} Unit</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-rose-50/20 rounded flex flex-col justify-between">
                 <span className="text-rose-500 font-bold text-[9px] uppercase">Menunggu Sparepart</span>
-                <strong className="text-lg text-rose-700 mt-1">1 Unit</strong>
-              </div>
-              <div className="p-3 border border-slate-200 bg-indigo-50/20 rounded flex flex-col justify-between">
-                <span className="text-indigo-500 font-bold text-[9px] uppercase">Rata-rata Waktu</span>
-                <strong className="text-lg text-indigo-700 mt-1">2 Hari</strong>
+                <strong className="text-lg text-rose-700 mt-1">{pendingSpareparts} Unit</strong>
               </div>
             </div>
           </div>
@@ -721,69 +718,17 @@ export default function Reports({
           <div className="space-y-4">
             <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">11. KPI DIVISI</div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-sans">
-              <div className="p-3 border border-slate-200 rounded space-y-2">
-                <div className="flex justify-between font-semibold">
-                  <span>Divisi Sound</span>
-                  <span className="text-emerald-600">95%</span>
+              {reportDivisionDamageStats.map((d, idx) => (
+                <div key={idx} className="p-3 border border-slate-200 rounded space-y-2">
+                  <div className="flex justify-between font-semibold">
+                    <span>{d.name}</span>
+                    <span className="text-indigo-600">{d.avgKpi}%</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${d.avgKpi}%` }}></div>
+                  </div>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '95%' }}></div>
-                </div>
-              </div>
-              <div className="p-3 border border-slate-200 rounded space-y-2">
-                <div className="flex justify-between font-semibold">
-                  <span>Divisi Lighting</span>
-                  <span className="text-emerald-600">92%</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '92%' }}></div>
-                </div>
-              </div>
-              <div className="p-3 border border-slate-200 rounded space-y-2">
-                <div className="flex justify-between font-semibold">
-                  <span>Divisi Videotron</span>
-                  <span className="text-emerald-600">94%</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '94%' }}></div>
-                </div>
-              </div>
-              <div className="p-3 border border-slate-200 rounded space-y-2">
-                <div className="flex justify-between font-semibold">
-                  <span>Divisi Multimedia</span>
-                  <span className="text-emerald-600">90%</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '90%' }}></div>
-                </div>
-              </div>
-              <div className="p-3 border border-slate-200 rounded space-y-2">
-                <div className="flex justify-between font-semibold">
-                  <span>Gudang (Warehouse)</span>
-                  <span className="text-emerald-600">96%</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '96%' }}></div>
-                </div>
-              </div>
-              <div className="p-3 border border-slate-200 rounded space-y-2">
-                <div className="flex justify-between font-semibold">
-                  <span>Divisi Service (Perbaikan)</span>
-                  <span className="text-emerald-600">95%</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '95%' }}></div>
-                </div>
-              </div>
-              <div className="p-3 border border-slate-200 rounded space-y-2">
-                <div className="flex justify-between font-semibold">
-                  <span>Administrasi & Data</span>
-                  <span className="text-emerald-600">98%</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: '98%' }}></div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 

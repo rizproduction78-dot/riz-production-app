@@ -19,31 +19,10 @@ export default function Gudang({
   onUpdateAssetCondition,
   onLogActivity
 }: GudangProps) {
-  // Warehouse Logs State
+  // Warehouse Logs State - Bersih dari data dummy
   const [warehouseLogs, setWarehouseLogs] = useState<WarehouseLog[]>(() => {
     const saved = localStorage.getItem('riz_warehouse_logs');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'wl-1',
-        type: 'Masuk',
-        date: '2026-07-01',
-        itemName: 'Digital Mixer CL5',
-        qty: 1,
-        pic: 'Mang ube',
-        notes: 'Asset baru masuk dari main vendor Yamaha, siap QC',
-        assetCode: 'AST-AUD-001'
-      },
-      {
-        id: 'wl-2',
-        type: 'Loading',
-        date: '2026-07-02',
-        itemName: 'Beam BSW 550 & Fresnel',
-        qty: 12,
-        pic: 'Gatot',
-        notes: 'Loading out untuk Event Wedding Hall Ritz-Carlton',
-        assetCode: 'AST-LGT-001'
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   // Assets database matching
@@ -155,9 +134,13 @@ export default function Gudang({
     setShowLogForm(false);
   };
 
-  // Simulating Asset scanning with camera
+  // Asset scanning with camera / input
   const handleSimulateQRScan = (codeToScan?: string) => {
-    const targetCode = codeToScan || scanSearchInput || 'AST-AUD-001';
+    const targetCode = (codeToScan || scanSearchInput || '').trim();
+    if (!targetCode) {
+      alert('Silakan ketik kode asset atau pilih dari daftar asset!');
+      return;
+    }
     setIsScanningSimulated(true);
     setScanMessage('Mengaktifkan kamera scanner...');
     setScannedAsset(null);

@@ -45,7 +45,7 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
   // Selected Employee (Default to Opik if available, or currentUser)
   const defaultStaff = STAFF_LIST.find(s => s.name === 'Opik') || currentUser;
   const [selectedStaffName, setSelectedStaffName] = useState<string>(isManagement ? defaultStaff.name : currentUser.name);
-  const [selectedMonth, setSelectedMonth] = useState<string>('Juli 2026');
+  const [selectedMonth, setSelectedMonth] = useState<string>('September 2026');
 
   const selectedStaff = STAFF_LIST.find(s => s.name === selectedStaffName) || currentUser;
   const staffKpi = calculateStaffKpi(selectedStaff);

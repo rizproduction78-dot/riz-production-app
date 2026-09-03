@@ -51,20 +51,12 @@ export default function Dashboard({
   // State for switching dashboard modes
   const [activeTab, setActiveTab] = React.useState<'harian' | 'monthly_report'>('monthly_report');
   
-  // Custom states for the report period & editable notes
-  const [periode, setPeriode] = React.useState('Juli 2026');
-  const [notesKendala, setNotesKendala] = React.useState(
-    '1. Fluktuasi tegangan listrik di lokasi event sering memicu overload pada system LED Processor.\n2. Jadwal maintenance speaker FOH agak mundur dikarenakan kepadatan event mingguan.'
-  );
-  const [notesAkar, setNotesAkar] = React.useState(
-    '1. Tidak adanya stabilizer eksternal berkapasitas besar untuk memfilter power supply utama videotron.\n2. Keterbatasan tim cadangan (back-up) di gudang saat mobilisasi alat serentak.'
-  );
-  const [notesSolusi, setNotesSolusi] = React.useState(
-    '1. Pengajuan pembelian 2 unit stabilizer 10KVA baru khusus untuk line videotron.\n2. Penjadwalan ulang giliran standby staff di setiap divisi untuk menjaga kesiapan fisik.'
-  );
-  const [notesTarget, setNotesTarget] = React.useState(
-    '1. Capaian kepatuhan Preventive Maintenance (PM) naik ke level minimum 95%.\n2. Zero failure/kejadian alat NG di area panggung selama event berlangsung.'
-  );
+  // Custom states for the report period & editable notes (Bersih dari teks buatan)
+  const [periode, setPeriode] = React.useState('September 2026');
+  const [notesKendala, setNotesKendala] = React.useState('');
+  const [notesAkar, setNotesAkar] = React.useState('');
+  const [notesSolusi, setNotesSolusi] = React.useState('');
+  const [notesTarget, setNotesTarget] = React.useState('');
 
   // States for interactive approvals
   const [approvedSupervisor, setApprovedSupervisor] = React.useState(false);
@@ -94,26 +86,6 @@ export default function Dashboard({
   const openIssues = findings.filter(f => f.status === 'Open').length;
   const closedIssues = findings.filter(f => f.status === 'Close').length;
 
-  // Chart data: count how many QC checklist items are checked per division
-  const divisionsList = ['Audio', 'Lighting', 'Videotron', 'Multimedia', 'Service'] as const;
-  const divisionStats = divisionsList.map(div => {
-    const divEntries = logbookEntries.filter(e => e.division === div);
-    let okCount = 0;
-    let ngCount = 0;
-    divEntries.forEach(e => {
-      Object.values(e.checklists).forEach(ch => {
-        if (ch.status === 'OK') okCount++;
-        if (ch.status === 'NG') ngCount++;
-      });
-    });
-    return {
-      name: div,
-      ok: okCount,
-      ng: ngCount,
-      total: okCount + ngCount
-    };
-  });
-
   // Dynamic derivations for report cards - Bersih dari angka palsu
   const totalDailyReportsCount = dailyReports.length;
   const totalQCCount = logbookEntries.length;
@@ -130,6 +102,112 @@ export default function Dashboard({
 
   // Top 5 performers
   const topPerformers = staffProductivityData.slice(0, 5);
+
+  // 100% Dynamic Division Metrics
+  const divisionListConfig = [
+    { label: 'Audio (Sound)', key: 'Audio' },
+    { label: 'Lighting', key: 'Lighting' },
+    { label: 'Videotron', key: 'Videotron' },
+    { label: 'Multimedia', key: 'Multimedia' },
+    { label: 'Gudang Logistik', key: 'Gudang' },
+    { label: 'Service (Perbaikan)', key: 'Service' },
+    { label: 'Administrasi (Admin)', key: 'Office' }
+  ];
+
+  const divisionStatsDynamic = divisionListConfig.map(d => {
+    const dr = dailyReports.filter(r => r.division === d.key).length;
+    const qc = logbookEntries.filter(e => e.division === d.key).length;
+    const wo = workOrders.filter(w => w.division === d.key).length;
+    const totalActs = dr + qc + wo;
+    
+    // Dynamic KPI for this division
+    const divStaff = staffProductivityData.filter(s => s.division === d.key);
+    const avgKpi = divStaff.length > 0 
+      ? Math.round(divStaff.reduce((acc, s) => acc + s.kpi, 0) / divStaff.length)
+      : 0;
+
+    // Damage statistics for this division
+    const divFindings = findings.filter(f => f.equipment?.toLowerCase().includes(d.key.toLowerCase()));
+    const ringan = divFindings.filter(f => f.priority === 'Rendah').length;
+    const sedang = divFindings.filter(f => f.priority === 'Sedang').length;
+    const berat = divFindings.filter(f => f.priority === 'Tinggi').length;
+    const totalDamages = divFindings.length;
+
+    return {
+      ...d,
+      dr,
+      qc,
+      wo,
+      totalActs,
+      avgKpi,
+      ringan,
+      sedang,
+      berat,
+      totalDamages
+    };
+  });
+
+  const maxDivisionActs = Math.max(...divisionStatsDynamic.map(d => d.totalActs), 1);
+
+  // Dynamic QC metrics
+  const totalQC = logbookEntries.length;
+  const totalOK = logbookEntries.filter(e => e.result === 'OK').length;
+  const totalNG = logbookEntries.filter(e => e.result === 'NG').length;
+  const percentOK = totalQC > 0 ? ((totalOK / totalQC) * 100).toFixed(1) : '0.0';
+  const percentNG = totalQC > 0 ? ((totalNG / totalQC) * 100).toFixed(1) : '0.0';
+
+  // Dynamic Top 10 Equipment with Issues
+  const equipmentFrequencyMap: Record<string, { count: number; lastStatus: string }> = {};
+  findings.forEach(f => {
+    const name = f.equipment || 'Unknown';
+    if (!equipmentFrequencyMap[name]) {
+      equipmentFrequencyMap[name] = {
+        count: 0,
+        lastStatus: f.status === 'Close' ? 'Selesai Diperbaiki' : 'Dalam Perbaikan'
+      };
+    }
+    equipmentFrequencyMap[name].count++;
+    if (f.status === 'Open') {
+      equipmentFrequencyMap[name].lastStatus = 'Dalam Perbaikan';
+    }
+  });
+
+  const topEquipmentsWithIssues = Object.entries(equipmentFrequencyMap)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Dynamic PM metrics
+  const totalPM = workOrders.filter(w => w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive')).length;
+  const donePM = workOrders.filter(w => (w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive')) && w.status === 'Completed').length;
+  const pendingPM = totalPM - donePM;
+  const kepatuhanPM = totalPM > 0 ? ((donePM / totalPM) * 100).toFixed(1) : '0.0';
+
+  // Dynamic CM / Repair metrics
+  const totalRepair = findings.length;
+  const doneRepair = findings.filter(f => f.status === 'Close').length;
+  const pendingRepair = findings.filter(f => f.status === 'Open').length;
+  const waitingSparepart = findings.filter(f => f.status === 'Open' && f.issue?.toLowerCase().includes('sparepart')).length;
+
+  // Chart data: count how many QC checklist items are checked per division
+  const divisionsList = ['Audio', 'Lighting', 'Videotron', 'Multimedia', 'Service'] as const;
+  const divisionStats = divisionsList.map(div => {
+    const divEntries = logbookEntries.filter(e => e.division === div);
+    let okCount = 0;
+    let ngCount = 0;
+    divEntries.forEach(e => {
+      Object.values(e.checklists || {}).forEach(ch => {
+        if (ch.status === 'OK') okCount++;
+        if (ch.status === 'NG') ngCount++;
+      });
+    });
+    return {
+      name: div,
+      ok: okCount,
+      ng: ngCount,
+      total: okCount + ngCount
+    };
+  });
 
   return (
     <div className="space-y-6 font-sans">
@@ -503,48 +581,14 @@ export default function Dashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-mono">
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Audio (Sound)</td>
-                      <td className="p-3 text-center">54</td>
-                      <td className="p-3 text-center">32</td>
-                      <td className="p-3 text-center">4</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Lighting</td>
-                      <td className="p-3 text-center">24</td>
-                      <td className="p-3 text-center">12</td>
-                      <td className="p-3 text-center">2</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Videotron</td>
-                      <td className="p-3 text-center">38</td>
-                      <td className="p-3 text-center">24</td>
-                      <td className="p-3 text-center">3</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Multimedia</td>
-                      <td className="p-3 text-center">28</td>
-                      <td className="p-3 text-center">18</td>
-                      <td className="p-3 text-center">2</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Gudang Logistik</td>
-                      <td className="p-3 text-center">48</td>
-                      <td className="p-3 text-center">42</td>
-                      <td className="p-3 text-center">1</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Service (Perbaikan)</td>
-                      <td className="p-3 text-center">18</td>
-                      <td className="p-3 text-center">0</td>
-                      <td className="p-3 text-center">0</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Administrasi (Admin)</td>
-                      <td className="p-3 text-center">32</td>
-                      <td className="p-3 text-center">0</td>
-                      <td className="p-3 text-center">0</td>
-                    </tr>
+                    {divisionStatsDynamic.map((d, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50">
+                        <td className="p-3 font-sans font-bold text-slate-800">{d.label}</td>
+                        <td className="p-3 text-center">{d.dr}</td>
+                        <td className="p-3 text-center">{d.qc}</td>
+                        <td className="p-3 text-center">{d.wo}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -554,47 +598,34 @@ export default function Dashboard({
                 <div>
                   <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-2">Produktivitas per Divisi</h3>
                   <div className="space-y-1.5 font-mono text-[10px]">
-                    <div className="flex justify-between items-center">
-                      <span>Audio (103 acts)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-[#3b82f6]" style={{ width: '100%' }}></div></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Gudang (95 acts)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-[#3b82f6]" style={{ width: '92%' }}></div></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Videotron (76 acts)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-[#3b82f6]" style={{ width: '74%' }}></div></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Multimedia (56 acts)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-[#3b82f6]" style={{ width: '54%' }}></div></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Service (18 acts)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-[#3b82f6]" style={{ width: '18%' }}></div></div>
-                    </div>
+                    {divisionStatsDynamic.map((d, idx) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <span>{d.label} ({d.totalActs} acts)</span>
+                        <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[#3b82f6]"
+                            style={{ width: `${maxDivisionActs > 0 ? (d.totalActs / maxDivisionActs) * 100 : 0}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-2">Produktivitas Mingguan</h3>
-                  <div className="space-y-1.5 font-mono text-[10px]">
-                    <div className="flex justify-between items-center">
-                      <span>Minggu 1</span>
-                      <div className="h-1.5 w-28 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: '85%' }}></div></div>
+                  <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-2">Aktivitas Operasi</h3>
+                  <div className="space-y-1 font-mono text-[10px] text-slate-500">
+                    <div className="flex justify-between">
+                      <span>Total Daily Report:</span>
+                      <strong className="text-slate-800">{dailyReports.length}</strong>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span>Minggu 2</span>
-                      <div className="h-1.5 w-28 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: '95%' }}></div></div>
+                    <div className="flex justify-between">
+                      <span>Total QC Log:</span>
+                      <strong className="text-slate-800">{logbookEntries.length}</strong>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span>Minggu 3</span>
-                      <div className="h-1.5 w-28 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: '100%' }}></div></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Minggu 4</span>
-                      <div className="h-1.5 w-28 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: '78%' }}></div></div>
+                    <div className="flex justify-between">
+                      <span>Total Work Order / Temuan:</span>
+                      <strong className="text-slate-800">{findings.length + workOrders.length}</strong>
                     </div>
                   </div>
                 </div>
@@ -691,31 +722,31 @@ export default function Dashboard({
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total QC Checklist</span>
-                <strong className="text-2xl font-bold text-slate-950 block mt-1">150</strong>
+                <strong className="text-2xl font-bold text-slate-950 block mt-1">{totalQC}</strong>
               </div>
               <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Kondisi OK</span>
-                <strong className="text-2xl font-bold text-emerald-600 block mt-1">138</strong>
+                <strong className="text-2xl font-bold text-emerald-600 block mt-1">{totalOK}</strong>
               </div>
               <div className="bg-rose-50/50 border border-rose-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider block">Kondisi NG (Perbaikan)</span>
-                <strong className="text-2xl font-bold text-rose-600 block mt-1">12</strong>
+                <strong className="text-2xl font-bold text-rose-600 block mt-1">{totalNG}</strong>
               </div>
               <div className="bg-indigo-50/50 border border-indigo-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">Persentase Kelulusan</span>
-                <strong className="text-2xl font-bold text-indigo-600 block mt-1">92.0%</strong>
+                <strong className="text-2xl font-bold text-indigo-600 block mt-1">{percentOK}%</strong>
               </div>
             </div>
 
             {/* OK vs NG visual comparison */}
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
               <div className="flex justify-between items-center text-xs font-mono font-bold text-slate-700">
-                <span className="text-emerald-600">✓ OK (138 Unit - 92%)</span>
-                <span className="text-rose-600">⚠ NG (12 Unit - 8%)</span>
+                <span className="text-emerald-600">✓ OK ({totalOK} Unit - {percentOK}%)</span>
+                <span className="text-rose-600">⚠ NG ({totalNG} Unit - {percentNG}%)</span>
               </div>
-              <div className="h-3 w-full bg-rose-200 rounded-full overflow-hidden flex">
-                <div className="h-full bg-emerald-500 rounded-l" style={{ width: '92%' }}></div>
-                <div className="h-full bg-rose-500 rounded-r" style={{ width: '8%' }}></div>
+              <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden flex">
+                <div className="h-full bg-emerald-500 rounded-l" style={{ width: `${percentOK}%` }}></div>
+                <div className="h-full bg-rose-500 rounded-r" style={{ width: `${percentNG}%` }}></div>
               </div>
             </div>
           </div>
@@ -741,48 +772,15 @@ export default function Dashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-mono">
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Audio (Sound)</td>
-                      <td className="p-3 text-center text-amber-600 font-bold">4</td>
-                      <td className="p-3 text-center text-orange-600 font-bold">2</td>
-                      <td className="p-3 text-center text-rose-600 font-bold">1</td>
-                      <td className="p-3 text-center text-slate-900 font-bold">7</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Lighting</td>
-                      <td className="p-3 text-center text-amber-600 font-bold">3</td>
-                      <td className="p-3 text-center text-orange-600 font-bold">1</td>
-                      <td className="p-3 text-center text-rose-600 font-bold">0</td>
-                      <td className="p-3 text-center text-slate-900 font-bold">4</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Videotron</td>
-                      <td className="p-3 text-center text-amber-600 font-bold">2</td>
-                      <td className="p-3 text-center text-orange-600 font-bold">2</td>
-                      <td className="p-3 text-center text-rose-600 font-bold">1</td>
-                      <td className="p-3 text-center text-slate-900 font-bold">5</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Multimedia</td>
-                      <td className="p-3 text-center text-amber-600 font-bold">1</td>
-                      <td className="p-3 text-center text-orange-600 font-bold">1</td>
-                      <td className="p-3 text-center text-rose-600 font-bold">0</td>
-                      <td className="p-3 text-center text-slate-900 font-bold">2</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Gudang Logistik</td>
-                      <td className="p-3 text-center text-amber-600 font-bold">2</td>
-                      <td className="p-3 text-center text-orange-600 font-bold">0</td>
-                      <td className="p-3 text-center text-rose-600 font-bold">0</td>
-                      <td className="p-3 text-center text-slate-900 font-bold">2</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/50">
-                      <td className="p-3 font-sans font-bold text-slate-800">Service (Perbaikan)</td>
-                      <td className="p-3 text-center text-amber-600 font-bold">1</td>
-                      <td className="p-3 text-center text-orange-600 font-bold">0</td>
-                      <td className="p-3 text-center text-rose-600 font-bold">0</td>
-                      <td className="p-3 text-center text-slate-900 font-bold">1</td>
-                    </tr>
+                    {divisionStatsDynamic.map((d, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50">
+                        <td className="p-3 font-sans font-bold text-slate-800">{d.label}</td>
+                        <td className="p-3 text-center text-amber-600 font-bold">{d.ringan}</td>
+                        <td className="p-3 text-center text-orange-600 font-bold">{d.sedang}</td>
+                        <td className="p-3 text-center text-rose-600 font-bold">{d.berat}</td>
+                        <td className="p-3 text-center text-slate-900 font-bold">{d.totalDamages}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -792,39 +790,34 @@ export default function Dashboard({
                 <div>
                   <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-2">Kerusakan per Divisi</h3>
                   <div className="space-y-1.5 font-mono text-[10px]">
-                    <div className="flex justify-between items-center">
-                      <span>Audio (7 unit)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{ width: '100%' }}></div></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Videotron (5 unit)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{ width: '71%' }}></div></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Lighting (4 unit)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{ width: '57%' }}></div></div>
-                    </div>
+                    {divisionStatsDynamic.filter(d => d.totalDamages > 0).map((d, idx) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <span>{d.label} ({d.totalDamages} unit)</span>
+                        <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-rose-500" style={{ width: `${findings.length > 0 ? (d.totalDamages / findings.length) * 100 : 0}%` }}></div>
+                        </div>
+                      </div>
+                    ))}
+                    {findings.length === 0 && (
+                      <div className="text-slate-400 text-xs text-center py-2">Belum ada temuan kerusakan tercatat.</div>
+                    )}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-2">Trend Kerusakan Bulanan</h3>
-                  <div className="space-y-1.5 font-mono text-[10px]">
-                    <div className="flex justify-between items-center">
-                      <span>Minggu 1 (8 unit)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-amber-500" style={{ width: '100%' }}></div></div>
+                  <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-2">Status Temuan Kerusakan</h3>
+                  <div className="space-y-1 font-mono text-[10px] text-slate-500">
+                    <div className="flex justify-between">
+                      <span>Total Temuan:</span>
+                      <strong className="text-slate-800">{findings.length}</strong>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span>Minggu 2 (5 unit)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-amber-500" style={{ width: '62%' }}></div></div>
+                    <div className="flex justify-between">
+                      <span>Selesai (Close):</span>
+                      <strong className="text-emerald-600">{findings.filter(f => f.status === 'Close').length}</strong>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span>Minggu 3 (4 unit)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-amber-500" style={{ width: '50%' }}></div></div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Minggu 4 (3 unit)</span>
-                      <div className="h-1.5 w-24 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-amber-500" style={{ width: '37%' }}></div></div>
+                    <div className="flex justify-between">
+                      <span>Masih Terbuka (Open):</span>
+                      <strong className="text-rose-600">{findings.filter(f => f.status === 'Open').length}</strong>
                     </div>
                   </div>
                 </div>
@@ -850,66 +843,25 @@ export default function Dashboard({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  <tr className="hover:bg-slate-50/50">
-                    <td className="p-3 text-center font-bold text-slate-500">1</td>
-                    <td className="p-3 font-sans font-bold text-slate-800">Wireless Mic Shure QLXD4</td>
-                    <td className="p-3 text-center text-rose-600 font-bold">5 Kali</td>
-                    <td className="p-3 text-center"><span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">Selesai Diperbaiki</span></td>
-                  </tr>
-                  <tr className="hover:bg-slate-50/50">
-                    <td className="p-3 text-center font-bold text-slate-500">2</td>
-                    <td className="p-3 font-sans font-bold text-slate-800">Moving Head Beam 380W</td>
-                    <td className="p-3 text-center text-rose-600 font-bold">4 Kali</td>
-                    <td className="p-3 text-center"><span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">Selesai Diperbaiki</span></td>
-                  </tr>
-                  <tr className="hover:bg-slate-50/50">
-                    <td className="p-3 text-center font-bold text-slate-500">3</td>
-                    <td className="p-3 font-sans font-bold text-slate-800">Digital Stagebox DL32 Midas</td>
-                    <td className="p-3 text-center text-rose-600 font-bold">3 Kali</td>
-                    <td className="p-3 text-center"><span className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-bold">Menunggu Sparepart</span></td>
-                  </tr>
-                  <tr className="hover:bg-slate-50/50">
-                    <td className="p-3 text-center font-bold text-slate-500">4</td>
-                    <td className="p-3 font-sans font-bold text-slate-800">Active Speaker Monitor RCF 12"</td>
-                    <td className="p-3 text-center text-rose-600 font-bold">3 Kali</td>
-                    <td className="p-3 text-center"><span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">Selesai Diperbaiki</span></td>
-                  </tr>
-                  <tr className="hover:bg-slate-50/50">
-                    <td className="p-3 text-center font-bold text-slate-500">5</td>
-                    <td className="p-3 font-sans font-bold text-slate-800">LED Processor Novastar VX600</td>
-                    <td className="p-3 text-center text-rose-600 font-bold">2 Kali</td>
-                    <td className="p-3 text-center"><span className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-bold">Dalam Perbaikan</span></td>
-                  </tr>
-                  <tr className="hover:bg-slate-50/50">
-                    <td className="p-3 text-center font-bold text-slate-500">6</td>
-                    <td className="p-3 font-sans font-bold text-slate-800">Power Amplifier Lab Gruppen FP10000Q</td>
-                    <td className="p-3 text-center text-rose-600 font-bold">2 Kali</td>
-                    <td className="p-3 text-center"><span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">Selesai Diperbaiki</span></td>
-                  </tr>
-                  <tr className="hover:bg-slate-50/50">
-                    <td className="p-3 text-center font-bold text-slate-500">7</td>
-                    <td className="p-3 font-sans font-bold text-slate-800">HDMI/SDI Converter Blackmagic</td>
-                    <td className="p-3 text-center text-rose-600 font-bold">2 Kali</td>
-                    <td className="p-3 text-center"><span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">Selesai Diperbaiki</span></td>
-                  </tr>
-                  <tr className="hover:bg-slate-50/50">
-                    <td className="p-3 text-center font-bold text-slate-500">8</td>
-                    <td className="p-3 font-sans font-bold text-slate-800">Video Switcher Roland V-60HD</td>
-                    <td className="p-3 text-center text-rose-600 font-bold">1 Kali</td>
-                    <td className="p-3 text-center"><span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">Selesai Diperbaiki</span></td>
-                  </tr>
-                  <tr className="hover:bg-slate-50/50">
-                    <td className="p-3 text-center font-bold text-slate-500">9</td>
-                    <td className="p-3 font-sans font-bold text-slate-800">LAN Cable Cat6 Shielded 100m</td>
-                    <td className="p-3 text-center text-rose-600 font-bold">1 Kali</td>
-                    <td className="p-3 text-center"><span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">Selesai Diperbaiki</span></td>
-                  </tr>
-                  <tr className="hover:bg-slate-50/50">
-                    <td className="p-3 text-center font-bold text-slate-500">10</td>
-                    <td className="p-3 font-sans font-bold text-slate-800">Lighting Console grandMA2 Light</td>
-                    <td className="p-3 text-center text-rose-600 font-bold">1 Kali</td>
-                    <td className="p-3 text-center"><span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">Selesai Diperbaiki</span></td>
-                  </tr>
+                  {topEquipmentsWithIssues.map((eq, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="p-3 text-center font-bold text-slate-500">{idx + 1}</td>
+                      <td className="p-3 font-sans font-bold text-slate-800">{eq.name}</td>
+                      <td className="p-3 text-center text-rose-600 font-bold">{eq.count} Kali</td>
+                      <td className="p-3 text-center">
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${eq.lastStatus === 'Selesai Diperbaiki' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                          {eq.lastStatus}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {topEquipmentsWithIssues.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="p-6 text-center text-slate-400 font-sans">
+                        Belum ada data temuan peralatan bermasalah.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -922,26 +874,22 @@ export default function Dashboard({
               <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">PREVENTIVE MAINTENANCE</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Jadwal PM</span>
-                <strong className="text-xl font-bold text-slate-950 block mt-1">20 Event</strong>
+                <strong className="text-xl font-bold text-slate-950 block mt-1">{totalPM} Kegiatan</strong>
               </div>
               <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">PM Tepat Waktu</span>
-                <strong className="text-xl font-bold text-emerald-600 block mt-1">17 Event</strong>
+                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">PM Selesai</span>
+                <strong className="text-xl font-bold text-emerald-600 block mt-1">{donePM} Kegiatan</strong>
               </div>
               <div className="bg-amber-50/50 border border-amber-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">PM Terlambat</span>
-                <strong className="text-xl font-bold text-amber-600 block mt-1">2 Event</strong>
-              </div>
-              <div className="bg-slate-100 border border-slate-200 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Belum Dilaksanakan</span>
-                <strong className="text-xl font-bold text-slate-700 block mt-1">1 Event</strong>
+                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">PM Belum Selesai</span>
+                <strong className="text-xl font-bold text-amber-600 block mt-1">{pendingPM} Kegiatan</strong>
               </div>
               <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">Kepatuhan PM</span>
-                <strong className="text-xl font-bold text-indigo-600 block mt-1">85.0%</strong>
+                <strong className="text-xl font-bold text-indigo-600 block mt-1">{kepatuhanPM}%</strong>
               </div>
             </div>
           </div>
@@ -953,26 +901,22 @@ export default function Dashboard({
               <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">CORRECTIVE MAINTENANCE</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Repair</span>
-                <strong className="text-xl font-bold text-slate-950 block mt-1">15 Kasus</strong>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Perbaikan</span>
+                <strong className="text-xl font-bold text-slate-950 block mt-1">{totalRepair} Kasus</strong>
               </div>
               <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Selesai</span>
-                <strong className="text-xl font-bold text-emerald-600 block mt-1">11 Kasus</strong>
+                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Selesai (Close)</span>
+                <strong className="text-xl font-bold text-emerald-600 block mt-1">{doneRepair} Kasus</strong>
               </div>
               <div className="bg-amber-50/50 border border-amber-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">Pending / Proses</span>
-                <strong className="text-xl font-bold text-amber-600 block mt-1">3 Kasus</strong>
+                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">Pending (Open)</span>
+                <strong className="text-xl font-bold text-amber-600 block mt-1">{pendingRepair} Kasus</strong>
               </div>
               <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider block">Menunggu Sparepart</span>
-                <strong className="text-xl font-bold text-rose-600 block mt-1">1 Kasus</strong>
-              </div>
-              <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">Rata-rata Resolusi</span>
-                <strong className="text-xl font-bold text-indigo-600 block mt-1">4.5 Jam</strong>
+                <strong className="text-xl font-bold text-rose-600 block mt-1">{waitingSparepart} Kasus</strong>
               </div>
             </div>
           </div>
@@ -985,36 +929,15 @@ export default function Dashboard({
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Audio</span>
-                <strong className="text-xl font-bold text-slate-900 block mt-1">94%</strong>
-                <div className="h-1.5 w-full bg-slate-200 rounded-full mt-2 overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: '94%' }}></div></div>
-              </div>
-              <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Lighting</span>
-                <strong className="text-xl font-bold text-slate-900 block mt-1">92%</strong>
-                <div className="h-1.5 w-full bg-slate-200 rounded-full mt-2 overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: '92%' }}></div></div>
-              </div>
-              <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Videotron</span>
-                <strong className="text-xl font-bold text-slate-900 block mt-1">95%</strong>
-                <div className="h-1.5 w-full bg-slate-200 rounded-full mt-2 overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: '95%' }}></div></div>
-              </div>
-              <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Multimedia</span>
-                <strong className="text-xl font-bold text-slate-900 block mt-1">93%</strong>
-                <div className="h-1.5 w-full bg-slate-200 rounded-full mt-2 overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: '93%' }}></div></div>
-              </div>
-              <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Gudang</span>
-                <strong className="text-xl font-bold text-slate-900 block mt-1">91%</strong>
-                <div className="h-1.5 w-full bg-slate-200 rounded-full mt-2 overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: '91%' }}></div></div>
-              </div>
-              <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Admin</span>
-                <strong className="text-xl font-bold text-slate-900 block mt-1">96%</strong>
-                <div className="h-1.5 w-full bg-slate-200 rounded-full mt-2 overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: '96%' }}></div></div>
-              </div>
+              {divisionStatsDynamic.map((d, idx) => (
+                <div key={idx} className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">{d.label}</span>
+                  <strong className="text-xl font-bold text-slate-900 block mt-1">{d.avgKpi}%</strong>
+                  <div className="h-1.5 w-full bg-slate-200 rounded-full mt-2 overflow-hidden">
+                    <div className="h-full bg-indigo-500" style={{ width: `${d.avgKpi}%` }}></div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

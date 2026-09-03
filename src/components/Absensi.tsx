@@ -160,96 +160,15 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
     }
   }, [forceSubTab]);
 
-  // Maintenance & Repair states
+  // Maintenance & Repair states - Bersih dari data dummy
   const [maintenanceSchedules, setMaintenanceSchedules] = useState<any[]>(() => {
     const saved = localStorage.getItem('riz_schedules');
-    if (saved) return JSON.parse(saved);
-    return [
-      {
-        id: 'ms-1',
-        assetName: 'Digital Mixer CL5',
-        assetCode: 'AST-AUD-001',
-        type: 'Preventive',
-        frequency: 'Bulanan',
-        lastDate: '2026-06-15',
-        nextDate: '2026-07-15',
-        status: 'Scheduled',
-        notes: 'Pemeriksaan rutin fader motor dan update firmware'
-      },
-      {
-        id: 'ms-2',
-        assetName: 'Moving Head BSW 380W',
-        assetCode: 'AST-LGT-002',
-        type: 'Corrective',
-        frequency: 'Insidental',
-        lastDate: '2026-06-10',
-        nextDate: '2026-07-02',
-        status: 'Scheduled',
-        notes: 'Kalibrasi sensor pan-tilt'
-      },
-      {
-        id: 'ms-3',
-        assetName: 'LED Cabinet P3.9 Outdoor',
-        assetCode: 'AST-VID-001',
-        type: 'Preventive',
-        frequency: 'Bulanan',
-        lastDate: '2026-06-15',
-        nextDate: '2026-07-15',
-        status: 'Scheduled',
-        notes: 'Pemeriksaan modul pixel mati dan refresh rate'
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [localWorkOrders, setLocalWorkOrders] = useState<any[]>(() => {
     const saved = localStorage.getItem('riz_work_orders');
-    if (saved) return JSON.parse(saved);
-    return [
-      {
-        id: 'wo-1',
-        title: 'Perbaikan Indikator Voltage Power Condition',
-        description: 'Pengecekan Power Condition: Voltage Indikatornya ga kebaca.',
-        pic: 'Mboh',
-        division: 'Audio',
-        deadline: '2026-06-15',
-        progress: 0,
-        status: 'Pending',
-        dateCreated: '2026-06-03'
-      },
-      {
-        id: 'wo-2',
-        title: 'Servis Lampu Beam BSW 550',
-        description: 'Pengecekan Beam BSW 550: no. 1,8,13,16 ( Warm Separo ).',
-        pic: 'Heri',
-        division: 'Lighting',
-        deadline: '2026-06-18',
-        progress: 20,
-        status: 'In Progress',
-        dateCreated: '2026-06-04'
-      },
-      {
-        id: 'wo-3',
-        title: 'Ganti Power Supply Freshnell 200',
-        description: 'Pengecekan Freshnell 200 No. 13 ( Power Supply ).',
-        pic: 'Heri',
-        division: 'Lighting',
-        deadline: '2026-06-15',
-        progress: 50,
-        status: 'In Progress',
-        dateCreated: '2026-06-04'
-      },
-      {
-        id: 'wo-4',
-        title: 'Ganti Mika Blinder no.2',
-        description: 'Pengecekan Blinder: Blinder no.2 Mika Meleleh 1 Mata.',
-        pic: 'Heri',
-        division: 'Lighting',
-        deadline: '2026-06-20',
-        progress: 100,
-        status: 'Completed',
-        dateCreated: '2026-06-08'
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [maintenanceSearch, setMaintenanceSearch] = useState('');
