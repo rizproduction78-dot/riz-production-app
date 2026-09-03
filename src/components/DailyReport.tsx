@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { DailyReport as DailyReportType, Division, Finding } from '../types';
 import { STAFF_LIST } from '../data';
-import { FileText, Plus, Calendar, User, Briefcase, CheckCircle2, Clipboard, Image as ImageIcon, Trash2, Search, Send, AlertOctagon } from 'lucide-react';
+import { FileText, Plus, Calendar, User, Briefcase, CheckCircle2, Clipboard, Image as ImageIcon, Trash2, Search, Send, AlertOctagon, Eye, X, Upload } from 'lucide-react';
 
 interface DailyReportProps {
   reports: DailyReportType[];
@@ -44,6 +44,8 @@ export default function DailyReport({
   const [photoUrl, setPhotoUrl] = useState('');
   const [uploadOption, setUploadOption] = useState<'file' | 'preset' | 'none'>('preset');
   const [customFileBase64, setCustomFileBase64] = useState('');
+  const [customFilesBase64, setCustomFilesBase64] = useState<string[]>([]);
+  const [previewModalImg, setPreviewModalImg] = useState<string | null>(null);
 
   // Faulty Unit Reporting States
   const [hasFaultyUnit, setHasFaultyUnit] = useState(false);
@@ -55,17 +57,26 @@ export default function DailyReport({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDivision, setFilterDivision] = useState<string>(isManagement ? 'All' : currentUser.division);
 
-  // Handle Photo Upload Conversion
+  // Handle Photo Upload Conversion (Multiple files supported)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCustomFileBase64(reader.result as string);
-        setPhotoUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files) as File[];
+      const readPromises = fileArray.map((file: File) => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(readPromises).then(newImages => {
+        setCustomFilesBase64(prev => [...prev, ...newImages]);
+      });
     }
+    e.target.value = '';
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -82,7 +93,8 @@ export default function DailyReport({
       division,
       activity,
       notes: finalNotes,
-      photoUrl: uploadOption === 'none' ? undefined : photoUrl,
+      photoUrl: uploadOption === 'none' ? undefined : (customFilesBase64[0] || photoUrl || undefined),
+      photos: uploadOption === 'none' ? undefined : (customFilesBase64.length > 0 ? customFilesBase64 : (photoUrl ? [photoUrl] : undefined)),
       status,
     });
 
@@ -104,6 +116,7 @@ export default function DailyReport({
     setActivity('');
     setNotes('');
     setPhotoUrl('');
+    setCustomFilesBase64([]);
     setCustomFileBase64('');
     setHasFaultyUnit(false);
     setFaultyUnitName('');
@@ -360,15 +373,81 @@ export default function DailyReport({
               )}
 
               {uploadOption === 'file' && (
-                <div className="space-y-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="block w-full text-xs text-slate-500 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                  />
-                  {customFileBase64 && (
-                    <img src={customFileBase64} alt="preview" className="rounded-lg h-16 w-full object-cover border border-slate-100" referrerPolicy="no-referrer" />
+                <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-700">Foto Terpilih ({customFilesBase64.length})</span>
+                    {customFilesBase64.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomFilesBase64([])}
+                        className="text-[10px] text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
+                      >
+                        Hapus Semua
+                      </button>
+                    )}
+                  </div>
+
+                  {customFilesBase64.length === 0 ? (
+                    <div className="border border-dashed border-indigo-200 hover:border-indigo-400 bg-white rounded-lg p-3 text-center transition-colors">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="daily-report-file-multi"
+                      />
+                      <label htmlFor="daily-report-file-multi" className="cursor-pointer flex flex-col items-center gap-1 text-xs font-semibold text-indigo-600">
+                        <Upload className="w-4 h-4" />
+                        <span>Pilih Beberapa Foto dari Perangkat / Kamera</span>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {customFilesBase64.map((imgSrc, idx) => (
+                          <div key={idx} className="relative group rounded-lg overflow-hidden border border-slate-200 bg-white shadow-xs">
+                            <img src={imgSrc} alt={`Foto ${idx + 1}`} className="w-full h-16 object-cover" />
+                            <span className="absolute top-1 left-1 px-1 py-0.2 rounded bg-black/65 text-white font-mono text-[8px] font-bold">
+                              #{idx + 1}
+                            </span>
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewModalImg(imgSrc)}
+                                className="p-1 bg-white/95 text-slate-800 rounded text-[9px] cursor-pointer"
+                                title="Lihat Penuh"
+                              >
+                                <Eye className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCustomFilesBase64(prev => prev.filter((_, i) => i !== idx))}
+                                className="p-1 bg-rose-600 text-white rounded text-[9px] cursor-pointer"
+                                title="Hapus"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="border border-dashed border-indigo-200 hover:border-indigo-400 rounded-lg flex items-center justify-center bg-white cursor-pointer min-h-[64px] transition-colors">
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="hidden"
+                            id="daily-report-file-multi-add"
+                          />
+                          <label htmlFor="daily-report-file-multi-add" className="cursor-pointer flex flex-col items-center gap-0.5 text-indigo-600 text-[10px] font-bold p-1">
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>+ Foto</span>
+                          </label>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-emerald-600 font-bold block">✓ {customFilesBase64.length} foto siap dilampirkan</span>
+                    </div>
                   )}
                 </div>
               )}
@@ -524,19 +603,32 @@ export default function DailyReport({
                 </div>
 
                 {/* Photo attachment if available */}
-                {report.photoUrl && (
-                  <div className="pt-2">
-                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                      <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Lampiran Foto Lapangan</span>
+                {((report.photos && report.photos.length > 0) || report.photoUrl) && (
+                  <div className="pt-2 space-y-1.5">
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Lampiran Foto Lapangan</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-bold">
+                        {(report.photos && report.photos.length > 0) ? `${report.photos.length} Foto` : '1 Foto'}
+                      </span>
                     </div>
-                    <div className="max-w-md rounded-lg overflow-hidden border border-slate-100 bg-slate-50">
-                      <img
-                        src={report.photoUrl}
-                        alt="attachment"
-                        className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
-                        referrerPolicy="no-referrer"
-                      />
+                    <div className="flex flex-wrap gap-2">
+                      {(report.photos && report.photos.length > 0 ? report.photos : [report.photoUrl!]).map((photoSrc, pIdx) => (
+                        <div
+                          key={pIdx}
+                          className="rounded-lg overflow-hidden border border-slate-200 bg-slate-50 cursor-pointer shadow-xs"
+                          onClick={() => setPreviewModalImg(photoSrc)}
+                        >
+                          <img
+                            src={photoSrc}
+                            alt={`attachment ${pIdx + 1}`}
+                            className="h-28 w-36 sm:w-44 object-cover hover:scale-105 transition-transform duration-300"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -551,6 +643,31 @@ export default function DailyReport({
           </div>
         </div>
       </div>
+
+      {/* Modal Preview Foto Ukuran Penuh */}
+      {previewModalImg && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs"
+          onClick={() => setPreviewModalImg(null)}
+        >
+          <div className="relative max-w-3xl max-h-[90vh] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl p-2 border border-slate-800" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewModalImg(null)}
+              className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-black/90 text-white rounded-full z-10 cursor-pointer transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={previewModalImg}
+              alt="Foto Dokumentasi Lapangan"
+              className="max-h-[80vh] w-auto mx-auto object-contain rounded-xl"
+            />
+            <div className="p-3 text-center text-xs text-slate-300 font-mono">
+              Foto Bukti Dokumentasi Daily Report
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

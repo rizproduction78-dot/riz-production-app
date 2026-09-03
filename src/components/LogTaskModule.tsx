@@ -128,6 +128,7 @@ export default function LogTaskModule({
   const [logNotes, setLogNotes] = useState('');
   const [logStatus, setLogStatus] = useState<'Submitted' | 'Draft'>('Submitted');
   const [logPhotoUrl, setLogPhotoUrl] = useState('');
+  const [logPhotoUrls, setLogPhotoUrls] = useState<string[]>([]);
   const [uploadOption, setUploadOption] = useState<'preset' | 'file' | 'none'>('preset');
   const [hasFaultyUnit, setHasFaultyUnit] = useState(false);
   const [faultyUnitName, setFaultyUnitName] = useState('');
@@ -147,21 +148,37 @@ export default function LogTaskModule({
   const [qcActivityType, setQcActivityType] = useState('Cleaning / Check / Test');
   const [qcFollowUp, setQcFollowUp] = useState('');
   const [qcStatus, setQcStatus] = useState<'Open' | 'Close'>('Open');
-  const [qcPhotoUrl, setQcPhotoUrl] = useState<string>('');
-  const [qcPhotoFileName, setQcPhotoFileName] = useState<string>('');
+  const [qcPhotoUrls, setQcPhotoUrls] = useState<string[]>([]);
   const [previewModalImg, setPreviewModalImg] = useState<string | null>(null);
   const [qcChecklistState, setQcChecklistState] = useState<Record<string, QcItemState>>({});
 
   const handleQcPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setQcPhotoFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setQcPhotoUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files) as File[];
+      const readPromises = fileArray.map((file: File) => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(readPromises).then(newImages => {
+        setQcPhotoUrls(prev => [...prev, ...newImages]);
+      });
     }
+    e.target.value = '';
+  };
+
+  const handleRemoveQcPhoto = (idxToRemove: number) => {
+    setQcPhotoUrls(prev => prev.filter((_, idx) => idx !== idxToRemove));
+  };
+
+  const handleClearQcPhotos = () => {
+    setQcPhotoUrls([]);
   };
 
   // Reset/Initialize checklist items when qcDivision changes
@@ -222,7 +239,8 @@ export default function LogTaskModule({
         status: qcStatus,
         verification: verificationStr,
         checklists: qcChecklistState,
-        photoUrl: qcPhotoUrl || undefined
+        photoUrl: qcPhotoUrls[0] || undefined,
+        photos: qcPhotoUrls.length > 0 ? qcPhotoUrls : undefined
       });
     }
 
@@ -233,7 +251,8 @@ export default function LogTaskModule({
       division: qcDivision,
       activity: `[QC Checklist] ${qcActivityType} - ${qcEquipmentArea}`,
       notes: `Hasil Inspeksi: ${overallResult}. Catatan: ${qcFollowUp || 'Sesuai checklist SOP'}.`,
-      photoUrl: qcPhotoUrl || undefined,
+      photoUrl: qcPhotoUrls[0] || undefined,
+      photos: qcPhotoUrls.length > 0 ? qcPhotoUrls : undefined,
       status: 'Submitted'
     });
 
@@ -262,8 +281,7 @@ export default function LogTaskModule({
     } else {
       alert('Checklist QC berhasil disimpan! Semua item berstatus OK.');
     }
-    setQcPhotoUrl('');
-    setQcPhotoFileName('');
+    setQcPhotoUrls([]);
   };
 
   // 1. Firebase Real-time Listener for Tasks
@@ -421,7 +439,8 @@ export default function LogTaskModule({
       division: logDivision,
       activity: logActivity,
       notes: finalNotes,
-      photoUrl: uploadOption === 'none' ? undefined : logPhotoUrl,
+      photoUrl: uploadOption === 'none' ? undefined : (logPhotoUrls[0] || logPhotoUrl || undefined),
+      photos: uploadOption === 'none' ? undefined : (logPhotoUrls.length > 0 ? logPhotoUrls : (logPhotoUrl ? [logPhotoUrl] : undefined)),
       status: logStatus,
     });
 
@@ -443,6 +462,7 @@ export default function LogTaskModule({
     setLogActivity('');
     setLogNotes('');
     setLogPhotoUrl('');
+    setLogPhotoUrls([]);
     setHasFaultyUnit(false);
     setFaultyUnitName('');
     setFaultyUnitIssue('');
@@ -934,58 +954,85 @@ export default function LogTaskModule({
                   </div>
                 </div>
 
-                {/* Lampiran Foto Hasil QC / Bukti Pemeriksaan */}
+                {/* Lampiran Foto Hasil QC / Bukti Pemeriksaan (Bisa Beberapa Foto) */}
                 <div className="p-3.5 bg-indigo-50/20 border border-indigo-100 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold text-slate-700 uppercase flex items-center gap-1.5">
                       <Camera className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>Lampiran Foto Bukti QC / Kondisi Alat</span>
+                      <span>Lampiran Foto Bukti QC ({qcPhotoUrls.length} Foto)</span>
                     </label>
-                    {qcPhotoUrl && (
+                    {qcPhotoUrls.length > 0 && (
                       <button
                         type="button"
-                        onClick={() => { setQcPhotoUrl(''); setQcPhotoFileName(''); }}
+                        onClick={handleClearQcPhotos}
                         className="text-[11px] text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
                       >
-                        Hapus Foto
+                        Hapus Semua ({qcPhotoUrls.length})
                       </button>
                     )}
                   </div>
 
-                  {!qcPhotoUrl ? (
-                    <div className="border border-dashed border-indigo-200 hover:border-indigo-400 bg-white rounded-xl p-3 text-center transition-colors">
+                  {qcPhotoUrls.length === 0 ? (
+                    <div className="border border-dashed border-indigo-200 hover:border-indigo-400 bg-white rounded-xl p-4 text-center transition-colors">
                       <input
                         type="file"
+                        multiple
                         accept="image/*"
                         onChange={handleQcPhotoUpload}
                         className="hidden"
                         id="tab-qc-photo-upload"
                       />
-                      <label htmlFor="tab-qc-photo-upload" className="cursor-pointer flex items-center justify-center gap-2 text-xs font-semibold text-indigo-600">
+                      <label htmlFor="tab-qc-photo-upload" className="cursor-pointer flex flex-col items-center justify-center gap-1.5 text-xs font-semibold text-indigo-600">
                         <Upload className="w-4 h-4" />
-                        <span>Upload Foto Bukti QC dari Perangkat / Kamera</span>
+                        <span>Upload Beberapa Foto dari Perangkat / Kamera</span>
+                        <span className="text-[10px] text-slate-400 font-normal">Pilih 1 atau beberapa foto sekaligus (JPG, PNG, WEBP)</span>
                       </label>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200">
-                      <img
-                        src={qcPhotoUrl}
-                        alt="Preview QC"
-                        onClick={() => setPreviewModalImg(qcPhotoUrl)}
-                        className="w-14 h-14 object-cover rounded-lg border border-slate-200 shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-800 truncate">{qcPhotoFileName || 'Foto Bukti QC Terlampir'}</p>
-                        <p className="text-[10px] text-emerald-600 font-bold mt-0.5">✓ Foto siap dilampirkan</p>
-                        <button
-                          type="button"
-                          onClick={() => setPreviewModalImg(qcPhotoUrl)}
-                          className="text-[11px] text-indigo-600 hover:underline cursor-pointer flex items-center gap-1 mt-0.5"
-                        >
-                          <Eye className="w-3 h-3" />
-                          <span>Lihat Penuh</span>
-                        </button>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {qcPhotoUrls.map((qUrl, qIdx) => (
+                          <div key={qIdx} className="relative group rounded-xl overflow-hidden border border-slate-200 bg-white shadow-xs">
+                            <img src={qUrl} alt={`Foto QC ${qIdx + 1}`} className="w-full h-20 object-cover" />
+                            <span className="absolute top-1 left-1 px-1.5 py-0.2 rounded bg-black/65 text-white font-mono text-[8px] font-bold">
+                              #{qIdx + 1}
+                            </span>
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewModalImg(qUrl)}
+                                className="p-1 bg-white/95 text-slate-800 rounded shadow-xs cursor-pointer hover:bg-white"
+                                title="Lihat Penuh"
+                              >
+                                <Eye className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveQcPhoto(qIdx)}
+                                className="p-1 bg-rose-600 text-white rounded shadow-xs cursor-pointer hover:bg-rose-700"
+                                title="Hapus"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 rounded-xl flex items-center justify-center bg-white cursor-pointer min-h-[80px] transition-colors">
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleQcPhotoUpload}
+                            className="hidden"
+                            id="tab-qc-photo-upload-more"
+                          />
+                          <label htmlFor="tab-qc-photo-upload-more" className="cursor-pointer flex flex-col items-center gap-0.5 text-indigo-600 text-[10px] font-bold p-2">
+                            <Plus className="w-4 h-4" />
+                            <span>+ Foto</span>
+                          </label>
+                        </div>
                       </div>
+                      <p className="text-[10px] text-emerald-600 font-bold">✓ {qcPhotoUrls.length} foto siap dilampirkan</p>
                     </div>
                   )}
                 </div>
@@ -1076,16 +1123,24 @@ export default function LogTaskModule({
                         <div className="text-[11px] text-slate-600 line-clamp-1">
                           {entry.activity} • {entry.division}
                         </div>
-                        {entry.photoUrl && (
-                          <div
-                            className="relative group rounded-lg overflow-hidden border border-slate-200 h-28 cursor-pointer mt-1"
-                            onClick={() => setPreviewModalImg(entry.photoUrl || null)}
-                          >
-                            <img src={entry.photoUrl} alt="Foto QC" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold gap-1">
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>Lihat Foto QC</span>
-                            </div>
+                        {((entry.photos && entry.photos.length > 0) || entry.photoUrl) && (
+                          <div className={`grid gap-1 mt-1.5 ${
+                            (entry.photos && entry.photos.length > 1) ? 'grid-cols-3' : 'grid-cols-1'
+                          }`}>
+                            {(entry.photos && entry.photos.length > 0 ? entry.photos : [entry.photoUrl!]).map((imgSrc, imgIdx) => (
+                              <div
+                                key={imgIdx}
+                                className={`relative group rounded-lg overflow-hidden border border-slate-200 cursor-pointer ${
+                                  (entry.photos && entry.photos.length > 1) ? 'h-16' : 'h-28'
+                                }`}
+                                onClick={() => setPreviewModalImg(imgSrc)}
+                              >
+                                <img src={imgSrc} alt={`Foto QC ${imgIdx + 1}`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
+                                  <Eye className="w-3 h-3" />
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                         <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1 border-t border-slate-200/60">
@@ -1278,26 +1333,118 @@ export default function LogTaskModule({
                 </div>
 
                 {uploadOption === 'file' && (
-                  <div className="space-y-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl mb-2">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setLogPhotoUrl(reader.result as string);
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                    />
-                    {logPhotoUrl && (
-                      <div className="flex items-center gap-2">
-                        <img src={logPhotoUrl} alt="Preview" className="w-14 h-14 object-cover rounded-lg border border-slate-200" />
-                        <span className="text-[11px] text-emerald-600 font-semibold">✓ Foto siap disimpan ke logbook</span>
+                  <div className="space-y-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl mb-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-700">Foto Terpilih ({logPhotoUrls.length})</span>
+                      {logPhotoUrls.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setLogPhotoUrls([])}
+                          className="text-[10px] text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
+                        >
+                          Hapus Semua
+                        </button>
+                      )}
+                    </div>
+
+                    {logPhotoUrls.length === 0 ? (
+                      <div className="border border-dashed border-blue-200 hover:border-blue-400 bg-white rounded-lg p-3 text-center transition-colors">
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            const files = e.target.files;
+                            if (files && files.length > 0) {
+                              const fileArray = Array.from(files) as File[];
+                              const readPromises = fileArray.map((file: File) => {
+                                return new Promise<string>((resolve) => {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    resolve(reader.result as string);
+                                  };
+                                  reader.readAsDataURL(file);
+                                });
+                              });
+
+                              Promise.all(readPromises).then(newImages => {
+                                setLogPhotoUrls(prev => [...prev, ...newImages]);
+                              });
+                            }
+                            e.target.value = '';
+                          }}
+                          className="hidden"
+                          id="logbook-file-multi"
+                        />
+                        <label htmlFor="logbook-file-multi" className="cursor-pointer flex flex-col items-center gap-1 text-xs font-semibold text-blue-600">
+                          <Upload className="w-4 h-4" />
+                          <span>Pilih Beberapa Foto dari Perangkat / Kamera</span>
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {logPhotoUrls.map((imgSrc, idx) => (
+                            <div key={idx} className="relative group rounded-lg overflow-hidden border border-slate-200 bg-white shadow-xs">
+                              <img src={imgSrc} alt={`Foto ${idx + 1}`} className="w-full h-16 object-cover" />
+                              <span className="absolute top-1 left-1 px-1 py-0.2 rounded bg-black/65 text-white font-mono text-[8px] font-bold">
+                                #{idx + 1}
+                              </span>
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewModalImg(imgSrc)}
+                                  className="p-1 bg-white/95 text-slate-800 rounded text-[9px] cursor-pointer"
+                                  title="Lihat Penuh"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setLogPhotoUrls(prev => prev.filter((_, i) => i !== idx))}
+                                  className="p-1 bg-rose-600 text-white rounded text-[9px] cursor-pointer"
+                                  title="Hapus"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="border border-dashed border-blue-200 hover:border-blue-400 rounded-lg flex items-center justify-center bg-white cursor-pointer min-h-[64px] transition-colors">
+                            <input
+                              type="file"
+                              multiple
+                              accept="image/*"
+                              onChange={(e) => {
+                                const files = e.target.files;
+                                if (files && files.length > 0) {
+                                  const fileArray = Array.from(files) as File[];
+                                  const readPromises = fileArray.map((file: File) => {
+                                    return new Promise<string>((resolve) => {
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        resolve(reader.result as string);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    });
+                                  });
+
+                                  Promise.all(readPromises).then(newImages => {
+                                    setLogPhotoUrls(prev => [...prev, ...newImages]);
+                                  });
+                                }
+                                e.target.value = '';
+                              }}
+                              className="hidden"
+                              id="logbook-file-multi-add"
+                            />
+                            <label htmlFor="logbook-file-multi-add" className="cursor-pointer flex flex-col items-center gap-0.5 text-blue-600 text-[10px] font-bold p-1">
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>+ Foto</span>
+                            </label>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-emerald-600 font-bold block">✓ {logPhotoUrls.length} foto siap disimpan</span>
                       </div>
                     )}
                   </div>
@@ -1379,13 +1526,23 @@ export default function LogTaskModule({
                       </div>
                     )}
 
-                    {rep.photoUrl && (
-                      <div className="pt-1">
-                        <img
-                          src={rep.photoUrl}
-                          alt="foto kegiatan"
-                          className="h-44 w-full md:w-80 object-cover rounded-xl border border-slate-200"
-                        />
+                    {((rep.photos && rep.photos.length > 0) || rep.photoUrl) && (
+                      <div className="pt-1 space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                          <span>Dokumentasi Foto</span>
+                          <span>{(rep.photos && rep.photos.length > 0) ? `${rep.photos.length} Foto` : '1 Foto'}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {(rep.photos && rep.photos.length > 0 ? rep.photos : [rep.photoUrl!]).map((pImg, pI) => (
+                            <img
+                              key={pI}
+                              src={pImg}
+                              alt={`foto kegiatan ${pI + 1}`}
+                              onClick={() => setPreviewModalImg(pImg)}
+                              className="h-28 w-36 sm:w-44 object-cover rounded-xl border border-slate-200 cursor-pointer hover:opacity-90 transition-opacity shadow-xs"
+                            />
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

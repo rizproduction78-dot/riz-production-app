@@ -918,10 +918,14 @@ export default function Reports({
                       <td className="p-2 border-r border-slate-300 font-sans">{e.staffName}</td>
                       <td className="p-2 border-r border-slate-300 font-sans">
                         <div>{e.activity}</div>
-                        {e.photoUrl && (
-                          <div className="mt-1 flex items-center gap-1.5">
-                            <img src={e.photoUrl} alt="Bukti QC" className="w-8 h-8 object-cover rounded border border-slate-300 shadow-xs" />
-                            <span className="text-[10px] text-indigo-700 font-bold">[Foto Bukti QC]</span>
+                        {((e.photos && e.photos.length > 0) || e.photoUrl) && (
+                          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                            {(e.photos && e.photos.length > 0 ? e.photos : [e.photoUrl!]).map((pSrc, pI) => (
+                              <img key={pI} src={pSrc} alt="Bukti QC" className="w-8 h-8 object-cover rounded border border-slate-300 shadow-xs" />
+                            ))}
+                            <span className="text-[10px] text-indigo-700 font-bold">
+                              [{(e.photos && e.photos.length > 0) ? `${e.photos.length} Foto Bukti` : 'Foto Bukti'}]
+                            </span>
                           </div>
                         )}
                       </td>

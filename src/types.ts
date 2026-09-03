@@ -72,7 +72,8 @@ export interface LogbookEntry {
   status: 'Open' | 'Close';
   verification: string; // Supervisor verification name/status
   checklists: { [key: string]: { status: 'OK' | 'NG'; notes: string } };
-  photoUrl?: string; // Foto bukti inspeksi / QC
+  photoUrl?: string; // Foto bukti inspeksi / QC (single/thumbnail)
+  photos?: string[]; // Mendukung beberapa foto bukti sekaligus
 }
 
 export interface DailyReport {
@@ -83,6 +84,7 @@ export interface DailyReport {
   activity: string;
   notes: string;
   photoUrl?: string;
+  photos?: string[]; // Mendukung beberapa foto dokumentasi
   status: 'Draft' | 'Submitted';
 }
 

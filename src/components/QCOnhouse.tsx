@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { LogbookEntry, Division, Finding } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION } from '../data';
-import { Check, X, Shield, Calendar, User, Briefcase, ChevronRight, ClipboardCheck, AlertOctagon, Save, Activity, Award, CheckCircle, Camera, Upload, Trash2, Eye } from 'lucide-react';
+import { Check, X, Shield, Calendar, User, Briefcase, ChevronRight, ClipboardCheck, AlertOctagon, Save, Activity, Award, CheckCircle, Camera, Upload, Trash2, Eye, Plus } from 'lucide-react';
 
 interface QCOnhouseProps {
   logbookEntries: LogbookEntry[];
@@ -70,26 +70,37 @@ export default function QCOnhouse({
   const [followUp, setFollowUp] = useState('');
   const [status, setStatus] = useState<'Open' | 'Close'>('Open');
 
-  // Photo upload state for QC / Logbook
-  const [photoUrl, setPhotoUrl] = useState<string>('');
-  const [photoFileName, setPhotoFileName] = useState<string>('');
+  // Photo upload state for QC / Logbook (Mendukung beberapa foto)
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [previewModalImg, setPreviewModalImg] = useState<string | null>(null);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files) as File[];
+      const readPromises = fileArray.map((file: File) => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(readPromises).then(newImages => {
+        setPhotoUrls(prev => [...prev, ...newImages]);
+      });
     }
+    e.target.value = '';
   };
 
-  const handleRemovePhoto = () => {
-    setPhotoUrl('');
-    setPhotoFileName('');
+  const handleRemovePhoto = (indexToRemove: number) => {
+    setPhotoUrls(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleClearAllPhotos = () => {
+    setPhotoUrls([]);
   };
 
   // Checklist items values: key is item name, value is { status: 'OK' | 'NG', notes: string }
@@ -149,7 +160,8 @@ export default function QCOnhouse({
       status,
       verification: verificationStr,
       checklists: checklistState,
-      photoUrl: photoUrl || undefined
+      photoUrl: photoUrls[0] || undefined,
+      photos: photoUrls.length > 0 ? photoUrls : undefined
     });
 
     onLogActivity(currentUser.name, currentUser.role, `Melakukan Checklist QC Divisi ${selectedDivision} dengan hasil ${overallResult}`);
@@ -184,8 +196,7 @@ export default function QCOnhouse({
     });
     setChecklistState(resetChecklist);
     setFollowUp('');
-    setPhotoUrl('');
-    setPhotoFileName('');
+    setPhotoUrls([]);
   };
 
   return (
@@ -440,29 +451,30 @@ export default function QCOnhouse({
               </table>
             </div>
 
-            {/* Foto Dokumentasi QC / Bukti Pemeriksaan */}
+            {/* Foto Dokumentasi QC / Bukti Pemeriksaan (Bisa Beberapa Foto) */}
             <div className="p-4 border border-indigo-100 rounded-xl bg-indigo-50/20 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                   <Camera className="w-4 h-4 text-indigo-600" />
-                  <span>Foto Bukti Fisik / Dokumentasi QC</span>
+                  <span>Foto Bukti Fisik / Dokumentasi QC ({photoUrls.length} Foto)</span>
                 </label>
-                {photoUrl && (
+                {photoUrls.length > 0 && (
                   <button
                     type="button"
-                    onClick={handleRemovePhoto}
+                    onClick={handleClearAllPhotos}
                     className="text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Hapus Foto</span>
+                    <span>Hapus Semua ({photoUrls.length})</span>
                   </button>
                 )}
               </div>
 
-              {!photoUrl ? (
-                <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-4 text-center transition-colors bg-white">
+              {photoUrls.length === 0 ? (
+                <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-5 text-center transition-colors bg-white">
                   <input
                     type="file"
+                    multiple
                     accept="image/*"
                     onChange={handlePhotoUpload}
                     className="hidden"
@@ -472,42 +484,59 @@ export default function QCOnhouse({
                     <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full">
                       <Upload className="w-5 h-5" />
                     </div>
-                    <span className="text-xs font-semibold text-indigo-600">Klik untuk Upload Foto dari Perangkat / Kamera</span>
-                    <span className="text-[11px] text-slate-400">Mendukung format JPG, PNG, WEBP, HEIC</span>
+                    <span className="text-xs font-semibold text-indigo-600">Klik untuk Upload Beberapa Foto dari Perangkat / Kamera</span>
+                    <span className="text-[11px] text-slate-400">Dapat memilih 1 atau sekaligus beberapa foto (JPG, PNG, WEBP, HEIC)</span>
                   </label>
                 </div>
               ) : (
-                <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
-                  <img
-                    src={photoUrl}
-                    alt="Preview QC"
-                    onClick={() => setPreviewModalImg(photoUrl)}
-                    className="w-20 h-20 object-cover rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-800 truncate">{photoFileName || 'Foto Bukti QC Terlampir'}</p>
-                    <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">✓ Foto siap dilampirkan ke logbook</p>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewModalImg(photoUrl)}
-                        className="text-xs text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <Eye className="w-3 h-3" />
-                        <span>Lihat Ukuran Penuh</span>
-                      </button>
-                      <label htmlFor="qc-photo-upload-replace" className="text-xs text-slate-500 hover:text-slate-800 underline cursor-pointer">
-                        Ganti Foto
-                      </label>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {photoUrls.map((pUrl, pIdx) => (
+                      <div key={pIdx} className="relative group rounded-xl overflow-hidden border border-slate-200 bg-white shadow-xs">
+                        <img
+                          src={pUrl}
+                          alt={`Foto QC ${pIdx + 1}`}
+                          className="w-full h-24 object-cover"
+                        />
+                        <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/65 text-white font-mono text-[9px] font-bold">
+                          Foto #{pIdx + 1}
+                        </span>
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewModalImg(pUrl)}
+                            className="p-1.5 bg-white/95 text-slate-800 hover:bg-white rounded-lg cursor-pointer transition-colors shadow-xs"
+                            title="Lihat Penuh"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(pIdx)}
+                            className="p-1.5 bg-rose-600/95 text-white hover:bg-rose-700 rounded-lg cursor-pointer transition-colors shadow-xs"
+                            title="Hapus Foto Ini"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 rounded-xl p-3 flex flex-col items-center justify-center text-center bg-white transition-colors cursor-pointer min-h-[96px]">
                       <input
                         type="file"
+                        multiple
                         accept="image/*"
                         onChange={handlePhotoUpload}
                         className="hidden"
-                        id="qc-photo-upload-replace"
+                        id="qc-photo-upload-more"
                       />
+                      <label htmlFor="qc-photo-upload-more" className="cursor-pointer flex flex-col items-center gap-1">
+                        <Plus className="w-5 h-5 text-indigo-600" />
+                        <span className="text-[11px] font-bold text-indigo-600">+ Tambah Foto</span>
+                      </label>
                     </div>
                   </div>
+                  <p className="text-[11px] text-emerald-600 font-semibold">✓ {photoUrls.length} foto siap dilampirkan ke logbook QC</p>
                 </div>
               )}
             </div>
@@ -569,16 +598,34 @@ export default function QCOnhouse({
                 <div className="text-xs text-slate-600">
                   <span className="font-semibold text-slate-700">Divisi {entry.division}:</span> {entry.activity}
                 </div>
-                {entry.photoUrl && (
-                  <div className="relative group rounded-lg overflow-hidden border border-slate-200 cursor-pointer" onClick={() => setPreviewModalImg(entry.photoUrl || null)}>
-                    <img
-                      src={entry.photoUrl}
-                      alt="Foto QC"
-                      className="w-full h-36 object-cover transition-transform group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold gap-1.5">
-                      <Eye className="w-4 h-4" />
-                      <span>Lihat Foto Penuh</span>
+                {((entry.photos && entry.photos.length > 0) || entry.photoUrl) && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                      <span>Bukti Foto</span>
+                      <span>{(entry.photos && entry.photos.length > 0) ? `${entry.photos.length} Foto` : '1 Foto'}</span>
+                    </div>
+                    <div className={`grid gap-1.5 ${
+                      (entry.photos && entry.photos.length > 1) ? 'grid-cols-3' : 'grid-cols-1'
+                    }`}>
+                      {(entry.photos && entry.photos.length > 0 ? entry.photos : [entry.photoUrl!]).map((imgSrc, imgIdx) => (
+                        <div
+                          key={imgIdx}
+                          className={`relative group rounded-lg overflow-hidden border border-slate-200 cursor-pointer ${
+                            (entry.photos && entry.photos.length > 1) ? 'h-20' : 'h-36'
+                          }`}
+                          onClick={() => setPreviewModalImg(imgSrc)}
+                        >
+                          <img
+                            src={imgSrc}
+                            alt={`Foto QC ${imgIdx + 1}`}
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold gap-1">
+                            <Eye className="w-3 h-3" />
+                            {(entry.photos && entry.photos.length > 1) ? null : <span>Lihat Foto Penuh</span>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
