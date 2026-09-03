@@ -28,6 +28,7 @@ import Absensi from './components/Absensi';
 import Gudang from './components/Gudang';
 import CareerCompetencyModule from './components/CareerCompetencyModule';
 import EmployeePerformanceModule from './components/EmployeePerformanceModule';
+import AgenticRAGModule from './components/AgenticRAGModule';
 
 import {
   LayoutDashboard,
@@ -49,7 +50,9 @@ import {
   Calendar,
   Award,
   TrendingUp,
-  RefreshCw
+  RefreshCw,
+  Bot,
+  Sparkles
 } from 'lucide-react';
 import {
   subscribeCloudCollection,
@@ -83,6 +86,7 @@ export default function App() {
     if (role === 'Admin') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'agentic_ai', label: 'Agentic AI (RAG)', icon: Bot },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -101,6 +105,7 @@ export default function App() {
     if (role === 'Manager') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'agentic_ai', label: 'Agentic AI (RAG)', icon: Bot },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -116,6 +121,7 @@ export default function App() {
     if (role === 'Supervisor') {
       return [
         { id: 'dashboard', label: 'Divisi Monitoring', icon: LayoutDashboard },
+        { id: 'agentic_ai', label: 'Agentic AI (RAG)', icon: Bot },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -130,6 +136,7 @@ export default function App() {
     // Team Leader
     if (role === 'Team Leader') {
       return [
+        { id: 'agentic_ai', label: 'Agentic AI (RAG)', icon: Bot },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -141,6 +148,7 @@ export default function App() {
     // Staff
     if (role === 'Staff') {
       return [
+        { id: 'agentic_ai', label: 'Agentic AI (RAG)', icon: Bot },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -152,6 +160,7 @@ export default function App() {
     // Gudang
     if (role === 'Gudang') {
       return [
+        { id: 'agentic_ai', label: 'Agentic AI (RAG)', icon: Bot },
         { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
@@ -163,6 +172,7 @@ export default function App() {
     
     return [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'agentic_ai', label: 'Agentic AI (RAG)', icon: Bot },
       { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList },
       { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
       { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
@@ -709,18 +719,45 @@ export default function App() {
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setActiveTab('agentic_ai')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                activeTab === 'agentic_ai'
+                  ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
+                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+              }`}
+              title="Buka Asisten Cerdas Agentic AI & RAG Vector"
+            >
+              <Bot className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Agentic AI (RAG)</span>
+            </button>
+
+            <button
               onClick={handleManualSync}
               disabled={syncStatus.isSyncing}
-              className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+              className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
               title="Klik untuk menyinkronkan data seketika"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-600 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
               <span>{syncStatus.isSyncing ? 'Menyinkronkan...' : 'Auto-Sync Sekarang'}</span>
             </button>
           </div>
         </div>
 
         {/* Active view switcher */}
+        {activeTab === 'agentic_ai' && (
+          <AgenticRAGModule
+            currentUser={currentUser}
+            assets={assets}
+            logbookEntries={logbookEntries}
+            dailyReports={dailyReports}
+            findings={findings}
+            workOrders={workOrders}
+            attendanceLogs={[]}
+            warehouseLogs={[]}
+            onLogActivity={handleLogActivity}
+          />
+        )}
+
         {activeTab === 'dashboard' && (
           <Dashboard
             logbookEntries={logbookEntries}

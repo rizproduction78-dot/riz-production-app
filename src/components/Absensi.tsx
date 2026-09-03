@@ -163,12 +163,36 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
   // Maintenance & Repair states - Bersih dari data dummy
   const [maintenanceSchedules, setMaintenanceSchedules] = useState<any[]>(() => {
     const saved = localStorage.getItem('riz_schedules');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed: any[] = JSON.parse(saved);
+        const cleaned = parsed.filter(s => !['ms-1', 'ms-2', 'ms-3'].includes(s.id));
+        if (cleaned.length !== parsed.length) {
+          localStorage.setItem('riz_schedules', JSON.stringify(cleaned));
+        }
+        return cleaned;
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
   });
 
   const [localWorkOrders, setLocalWorkOrders] = useState<any[]>(() => {
     const saved = localStorage.getItem('riz_work_orders');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed: any[] = JSON.parse(saved);
+        const cleaned = parsed.filter(w => !['wo-1', 'wo-2', 'wo-3', 'wo-4'].includes(w.id));
+        if (cleaned.length !== parsed.length) {
+          localStorage.setItem('riz_work_orders', JSON.stringify(cleaned));
+        }
+        return cleaned;
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
   });
 
   const [maintenanceSearch, setMaintenanceSearch] = useState('');

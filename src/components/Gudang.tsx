@@ -22,7 +22,19 @@ export default function Gudang({
   // Warehouse Logs State - Bersih dari data dummy
   const [warehouseLogs, setWarehouseLogs] = useState<WarehouseLog[]>(() => {
     const saved = localStorage.getItem('riz_warehouse_logs');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed: WarehouseLog[] = JSON.parse(saved);
+        const cleaned = parsed.filter(l => l.id !== 'wl-1' && l.id !== 'wl-2');
+        if (cleaned.length !== parsed.length) {
+          localStorage.setItem('riz_warehouse_logs', JSON.stringify(cleaned));
+        }
+        return cleaned;
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
   });
 
   // Assets database matching
