@@ -53,7 +53,8 @@ import {
   RefreshCw,
   Bot,
   Sparkles,
-  Sliders
+  Sliders,
+  Truck
 } from 'lucide-react';
 import {
   subscribeCloudCollection,
@@ -96,6 +97,7 @@ export default function App() {
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
         { id: 'absensi_schedule', label: 'Penjadwalan (1-31)', icon: Calendar },
         { id: 'gudang', label: 'Manajemen Gudang', icon: Package },
+        { id: 'armada', label: 'Kelola Armada', icon: Truck },
         { id: 'reports', label: 'Laporan & Ekspor', icon: FileCheck },
         { id: 'activities', label: 'Audit Activity', icon: History },
         { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
@@ -112,6 +114,7 @@ export default function App() {
         { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
         { id: 'absensi_schedule', label: 'Penjadwalan (1-31)', icon: Calendar },
+        { id: 'armada', label: 'Kelola Armada', icon: Truck },
         { id: 'reports', label: 'Laporan & Approval', icon: FileCheck },
         { id: 'activities', label: 'Audit Activity', icon: History },
         { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
@@ -128,6 +131,7 @@ export default function App() {
         { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
         { id: 'absensi_schedule', label: 'Work Schedule (1-31)', icon: Calendar },
+        { id: 'armada', label: 'Kelola Armada', icon: Truck },
         { id: 'reports', label: 'Approval & Laporan', icon: FileCheck },
         { id: 'activities', label: 'Audit Activity', icon: History },
         { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
@@ -141,6 +145,7 @@ export default function App() {
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
         { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
+        { id: 'armada', label: 'Kelola Armada', icon: Truck },
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck }
       ];
     }
@@ -152,6 +157,7 @@ export default function App() {
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
         { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
+        { id: 'armada', label: 'Kelola Armada', icon: Truck },
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck }
       ];
     }
@@ -163,6 +169,7 @@ export default function App() {
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
         { id: 'gudang', label: 'Manajemen Gudang', icon: Package },
+        { id: 'armada', label: 'Kelola Armada', icon: Truck },
         { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck }
       ];
@@ -173,6 +180,7 @@ export default function App() {
       { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList },
       { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
       { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
+      { id: 'armada', label: 'Kelola Armada', icon: Truck },
       { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck }
     ];
   })();
@@ -907,6 +915,17 @@ export default function App() {
             onUpdateAssetLocation={handleUpdateAssetLocation}
             onUpdateAssetCondition={handleUpdateAssetCondition}
             onLogActivity={handleLogActivity}
+          />
+        )}
+
+        {activeTab === 'armada' && (
+          <Gudang
+            currentUser={currentUser}
+            assets={assets}
+            onUpdateAssetLocation={handleUpdateAssetLocation}
+            onUpdateAssetCondition={handleUpdateAssetCondition}
+            onLogActivity={handleLogActivity}
+            forceSubTab="armada_governance"
           />
         )}
 

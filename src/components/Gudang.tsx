@@ -50,6 +50,7 @@ interface GudangProps {
   onUpdateAssetLocation?: (id: string, newLocation: string) => void;
   onUpdateAssetCondition?: (id: string, condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat') => void;
   onLogActivity: (username: string, role: string, action: string) => void;
+  forceSubTab?: 'logs' | 'scanner' | 'armada_governance';
 }
 
 export default function Gudang({
@@ -57,7 +58,8 @@ export default function Gudang({
   assets,
   onUpdateAssetLocation,
   onUpdateAssetCondition,
-  onLogActivity
+  onLogActivity,
+  forceSubTab
 }: GudangProps) {
   // Warehouse Logs State - Bersih dari data dummy
   const [warehouseLogs, setWarehouseLogs] = useState<WarehouseLog[]>(() => {
@@ -106,7 +108,13 @@ export default function Gudang({
   }, [assets]);
 
   // Tab views within warehouse: 'logs' | 'scanner' | 'armada_governance'
-  const [warehouseSubTab, setWarehouseSubTab] = useState<'logs' | 'scanner' | 'armada_governance'>('logs');
+  const [warehouseSubTab, setWarehouseSubTab] = useState<'logs' | 'scanner' | 'armada_governance'>(() => forceSubTab || 'logs');
+
+  useEffect(() => {
+    if (forceSubTab) {
+      setWarehouseSubTab(forceSubTab);
+    }
+  }, [forceSubTab]);
 
   // Subtab inside Armada Governance: 'trips' | 'vehicles' | 'costs'
   const [fleetSection, setFleetSection] = useState<'trips' | 'vehicles' | 'costs'>('trips');
