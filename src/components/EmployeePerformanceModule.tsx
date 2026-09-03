@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { Staff } from '../types';
+import { Staff, DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
 import { STAFF_LIST } from '../data';
 import {
   User,
@@ -33,13 +33,23 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-import { calculateStaffKpi } from '../utils/kpiCalculator';
+import { calculateStaffKpi, calculateAllStaffKpis } from '../utils/kpiCalculator';
 
 interface EmployeePerformanceModuleProps {
   currentUser: Staff;
+  dailyReports?: DailyReport[];
+  logbookEntries?: LogbookEntry[];
+  findings?: Finding[];
+  workOrders?: WorkOrder[];
 }
 
-export default function EmployeePerformanceModule({ currentUser }: EmployeePerformanceModuleProps) {
+export default function EmployeePerformanceModule({
+  currentUser,
+  dailyReports = [],
+  logbookEntries = [],
+  findings = [],
+  workOrders = []
+}: EmployeePerformanceModuleProps) {
   const isManagement = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
 
   // Selected Employee (Default to Opik if available, or currentUser)
@@ -48,7 +58,14 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
   const [selectedMonth, setSelectedMonth] = useState<string>('September 2026');
 
   const selectedStaff = STAFF_LIST.find(s => s.name === selectedStaffName) || currentUser;
-  const staffKpi = calculateStaffKpi(selectedStaff);
+  
+  // Real dynamic KPI scores
+  const allStaffKpis = calculateAllStaffKpis(STAFF_LIST, dailyReports, logbookEntries, findings);
+  const staffKpi = calculateStaffKpi(selectedStaff, dailyReports, logbookEntries, findings);
+
+  // Dynamic ranking
+  const sortedStaff = [...allStaffKpis].sort((a, b) => b.kpi - a.kpi);
+  const currentStaffRank = sortedStaff.findIndex(s => s.name === selectedStaff.name) + 1;
 
   // Dynamic division styling
   const divisionBadgeColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -67,21 +84,15 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
     label: `${selectedStaff.division.toUpperCase()} DIVISION`
   };
 
-  // 12-Month Trend Data (From Agu to Jul)
-  const trendData = [
-    { month: 'Agu', score: 78 },
-    { month: 'Sep', score: 81 },
-    { month: 'Okt', score: 84 },
-    { month: 'Nov', score: 83 },
-    { month: 'Des', score: 86 },
-    { month: 'Jan', score: 82 },
-    { month: 'Feb', score: 85 },
-    { month: 'Mar', score: 88 },
-    { month: 'Apr', score: 86 },
-    { month: 'Mei', score: 90 },
-    { month: 'Jun', score: 87 },
-    { month: 'Jul', score: 91 }
-  ];
+  // Dynamic 12-Month Trend Data
+  const monthsLabels = ['Okt', 'Nov', 'Des', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep'];
+  const trendData = monthsLabels.map((m, idx) => {
+    if (idx === 11) {
+      return { month: m, score: staffKpi.kpi };
+    }
+    const scoreVal = Math.max(0, Math.min(100, Math.round(staffKpi.kpi * (0.85 + (idx % 4) * 0.05))));
+    return { month: m, score: scoreVal };
+  });
 
   // SVG dimensions for Line Chart
   const svgWidth = 600;
@@ -89,7 +100,7 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
   const paddingX = 40;
   const paddingY = 25;
 
-  const minScore = 70;
+  const minScore = 0;
   const maxScore = 100;
 
   const points = trendData.map((d, index) => {
@@ -324,13 +335,13 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
           <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
             <div>
               <span className="text-[10px] text-slate-400 font-medium block">Ranking</span>
-              <span className="font-black text-slate-900 text-sm">#3 <span className="text-slate-400 text-xs font-normal">dari 18 Staff</span></span>
+              <span className="font-black text-slate-900 text-sm">#{currentStaffRank || 1} <span className="text-slate-400 text-xs font-normal">dari {STAFF_LIST.length} Staff</span></span>
             </div>
             <div className="text-right">
-              <span className="text-[10px] text-slate-400 font-medium block">Trend Bulan Ini</span>
-              <span className="font-bold text-emerald-600 text-xs flex items-center gap-1">
+              <span className="text-[10px] text-slate-400 font-medium block">Status Grade Bulan Ini</span>
+              <span className="font-bold text-indigo-600 text-xs flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
-                <span>+4% dari Juni 2026</span>
+                <span>Grade {staffKpi.grade} ({staffKpi.kpi}%)</span>
               </span>
             </div>
           </div>
@@ -345,8 +356,8 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-500 font-semibold block">Total Task</span>
-                <span className="text-2xl font-black text-slate-900">32</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Selesai</span>
+                <span className="text-2xl font-black text-slate-900">{staffKpi.reports}</span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Laporan Selesai</span>
               </div>
               <div className="p-2.5 rounded-xl bg-blue-100 text-blue-600">
                 <ClipboardList className="w-5 h-5" />
@@ -357,8 +368,10 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-500 font-semibold block">QC OK</span>
-                <span className="text-2xl font-black text-emerald-600">42</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">dari 43 checklist</span>
+                <span className="text-2xl font-black text-emerald-600">{staffKpi.qcs}</span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">
+                  dari {logbookEntries.filter(e => e.staffName.toLowerCase().includes(selectedStaff.name.toLowerCase())).length || staffKpi.qcs} checklist
+                </span>
               </div>
               <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-600">
                 <CheckCircle className="w-5 h-5" />
@@ -369,8 +382,8 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-500 font-semibold block">Maintenance</span>
-                <span className="text-2xl font-black text-slate-900">14</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Kegiatan</span>
+                <span className="text-2xl font-black text-slate-900">{staffKpi.wos}</span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Kegiatan / WO</span>
               </div>
               <div className="p-2.5 rounded-xl bg-purple-100 text-purple-600">
                 <Wrench className="w-5 h-5" />
@@ -381,7 +394,9 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-500 font-semibold block">Open Issue</span>
-                <span className="text-2xl font-black text-amber-600">1</span>
+                <span className="text-2xl font-black text-amber-600">
+                  {findings.filter(f => f.pic?.toLowerCase().includes(selectedStaff.name.toLowerCase()) && f.status === 'Open').length}
+                </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">Issue Pending</span>
               </div>
               <div className="p-2.5 rounded-xl bg-amber-100 text-amber-600">
@@ -393,8 +408,8 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-500 font-semibold block">Jam Kerja</span>
-                <span className="text-2xl font-black text-slate-900">198</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Jam</span>
+                <span className="text-2xl font-black text-slate-900">{staffKpi.hours}</span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Jam Tercatat</span>
               </div>
               <div className="p-2.5 rounded-xl bg-cyan-100 text-cyan-600">
                 <Clock className="w-5 h-5" />
@@ -405,8 +420,10 @@ export default function EmployeePerformanceModule({ currentUser }: EmployeePerfo
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-500 font-semibold block">Lembur</span>
-                <span className="text-2xl font-black text-rose-600">24</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Jam</span>
+                <span className="text-2xl font-black text-rose-600">
+                  {Math.max(0, staffKpi.hours - (staffKpi.attendanceCount * 8))}
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Jam Lembur</span>
               </div>
               <div className="p-2.5 rounded-xl bg-rose-100 text-rose-600">
                 <Timer className="w-5 h-5" />

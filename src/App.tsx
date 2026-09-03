@@ -815,6 +815,10 @@ export default function App() {
         {activeTab === 'kinerja_karyawan' && (
           <EmployeePerformanceModule
             currentUser={currentUser}
+            dailyReports={dailyReports}
+            logbookEntries={logbookEntries}
+            findings={findings}
+            workOrders={workOrders}
           />
         )}
 
