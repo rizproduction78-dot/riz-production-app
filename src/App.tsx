@@ -679,9 +679,9 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 p-4 md:p-8 overflow-y-auto max-w-full font-sans">
         
-        {/* Real-time Cloud Sync Header Status Bar */}
+        {/* Real-time Cloud Auto-Sync Header Status Bar */}
         <div className="no-print mb-6 bg-white/95 backdrop-blur-xs p-3 px-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <span className="relative flex h-2.5 w-2.5">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                 syncStatus.isOnline ? 'bg-emerald-400' : 'bg-rose-400'
@@ -690,14 +690,19 @@ export default function App() {
                 syncStatus.isOnline ? 'bg-emerald-500' : 'bg-rose-500'
               }`}></span>
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-slate-800">
-                {syncStatus.isOnline ? 'Cloud Firestore Realtime' : 'Offline Mode (Local Cache)'}
+                {syncStatus.isOnline ? 'Cloud Firestore: Auto-Sync Aktif' : 'Mode Offline (Penyimpanan Lokal)'}
               </span>
+              {syncStatus.pendingQueueCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                  {syncStatus.pendingQueueCount} antrean menunggu sync
+                </span>
+              )}
               <span className="text-[11px] text-slate-400 font-mono hidden md:inline">
                 {syncStatus.lastSyncedAt
                   ? `• Terakhir sync: ${syncStatus.lastSyncedAt.toLocaleTimeString('id-ID')}`
-                  : '• Sinkronisasi otomatis aktif'}
+                  : '• Auto-sync setiap terhubung internet'}
               </span>
             </div>
           </div>
@@ -707,9 +712,10 @@ export default function App() {
               onClick={handleManualSync}
               disabled={syncStatus.isSyncing}
               className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+              title="Klik untuk menyinkronkan data seketika"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
-              <span>{syncStatus.isSyncing ? 'Menyinkronkan...' : 'Sync Cloud Sekarang'}</span>
+              <span>{syncStatus.isSyncing ? 'Menyinkronkan...' : 'Auto-Sync Sekarang'}</span>
             </button>
           </div>
         </div>
