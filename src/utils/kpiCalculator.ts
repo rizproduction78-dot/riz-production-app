@@ -77,11 +77,8 @@ export function calculateStaffKpi(
   electricalCompetenciesOverride?: Record<string, Record<string, { verified: boolean }>>,
   septemberScheduleOverride?: StaffScheduleRow[]
 ): StaffKpiResult {
-  // Deterministic seed berdasarkan nama untuk baseline stabil
-  const seed = staff.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
   // ─────────────────────────────────────────────────────────────
-  // 1. MENGHITUNG JUMLAH ABSEN (KEHADIRAN) - DITAMBAHKAN
+  // 1. MENGHITUNG JUMLAH ABSEN (KEHADIRAN) - DATA RESMI
   // ─────────────────────────────────────────────────────────────
   let realLogs: AttendanceLog[] = attendanceLogsOverride || [];
   if (!attendanceLogsOverride && typeof window !== 'undefined') {
@@ -93,13 +90,14 @@ export function calculateStaffKpi(
     }
   }
   const staffLogsCount = realLogs.filter(
-    l => (l.staffId === staff.id || l.staffName?.toLowerCase() === staff.name.toLowerCase()) &&
+    l => (l.staffId === staff.id || l.staffName?.toLowerCase().trim() === staff.name.toLowerCase().trim()) &&
          (l.status === 'Hadir' || l.checkInTime)
   ).length;
 
   const scheduleRows = septemberScheduleOverride || OFFICIAL_SEPTEMBER_2026_SCHEDULE;
   const staffScheduleRow = scheduleRows.find(
-    r => r.name.toLowerCase().includes(staff.name.toLowerCase()) ||
+    r => r.name.toLowerCase().trim() === staff.name.toLowerCase().trim() ||
+         r.name.toLowerCase().includes(staff.name.toLowerCase()) ||
          staff.name.toLowerCase().includes(r.name.toLowerCase())
   );
 
@@ -107,17 +105,16 @@ export function calculateStaffKpi(
   if (staffScheduleRow && staffScheduleRow.shifts) {
     for (let day = 1; day <= 30; day++) {
       const shift = staffScheduleRow.shifts[day];
-      if (shift && shift !== 'L' && shift !== 'Cuti' && shift !== '-') {
+      if (shift && shift !== 'L' && shift !== 'Cuti' && shift !== '-' && shift !== 'Libur') {
         scheduledWorkingDays++;
       }
     }
-  } else {
-    scheduledWorkingDays = 22 + (seed % 3);
   }
 
-  const attendanceCount = Math.max(staffLogsCount, scheduledWorkingDays);
-  const attendanceTarget = 24;
-  const attendanceScore = Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100));
+  // Kehadiran riil: jika ada log presensi gunakan log, jika tidak gunakan total jadwal dinas resmi
+  const attendanceCount = staffLogsCount > 0 ? staffLogsCount : scheduledWorkingDays;
+  const attendanceTarget = scheduledWorkingDays > 0 ? scheduledWorkingDays : 24;
+  const attendanceScore = attendanceTarget > 0 ? Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100)) : 0;
 
   // ─────────────────────────────────────────────────────────────
   // 2. MENGHITUNG UJI KOMPETENSI YANG DIIKUTI - DITAMBAHKAN
