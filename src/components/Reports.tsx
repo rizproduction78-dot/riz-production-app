@@ -259,28 +259,28 @@ export default function Reports({
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Staff Aktif</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">22 Orang</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">{STAFF_LIST.length} Orang</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Daily Report</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">{dailyReports.length + 98} Laporan</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">{dailyReports.length} Laporan</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total QC</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">{logbookEntries.length + 84} Pemeriksaan</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">{logbookEntries.length} Pemeriksaan</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total PM</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">12 Kegiatan</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">{logbookEntries.filter(e => e.activity.includes('PM') || e.activity.includes('Preventive')).length} Kegiatan</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
-                  <div className="text-slate-400 text-[10px] uppercase font-bold">Total CM</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">{findings.length + 6} Kasus</div>
+                  <div className="text-slate-400 text-[10px] uppercase font-bold">Total CM / Temuan</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">{findings.length} Kasus</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Kelulusan QC</div>
                   <div className="text-lg font-bold text-emerald-600 mt-0.5">
-                    {Math.round((totalOkItems / (totalCheckedItems || 1)) * 100) || 92}%
+                    {totalCheckedItems > 0 ? Math.round((totalOkItems / totalCheckedItems) * 100) : 100}%
                   </div>
                 </div>
               </div>
@@ -401,45 +401,45 @@ export default function Reports({
                 <tbody className="divide-y divide-slate-300 font-mono">
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Sound</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Audio').length + 34}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Audio').length + 42}</td>
-                    <td className="p-2 text-center">12</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Audio').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Audio').length}</td>
+                    <td className="p-2 text-center">{findings.filter(f => f.equipment.toLowerCase().includes('audio') || f.issue.toLowerCase().includes('audio')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Lighting</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Lighting').length + 12}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Lighting').length + 18}</td>
-                    <td className="p-2 text-center">6</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Lighting').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Lighting').length}</td>
+                    <td className="p-2 text-center">{findings.filter(f => f.equipment.toLowerCase().includes('light') || f.issue.toLowerCase().includes('light')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Videotron</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Videotron').length + 10}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Videotron').length + 15}</td>
-                    <td className="p-2 text-center">5</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Videotron').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Videotron').length}</td>
+                    <td className="p-2 text-center">{findings.filter(f => f.equipment.toLowerCase().includes('video') || f.equipment.toLowerCase().includes('led')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Multimedia</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Multimedia').length + 14}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Multimedia').length + 12}</td>
-                    <td className="p-2 text-center">4</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Multimedia').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Multimedia').length}</td>
+                    <td className="p-2 text-center">{findings.filter(f => f.equipment.toLowerCase().includes('multi') || f.issue.toLowerCase().includes('multi')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Gudang (Warehouse)</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Gudang').length + 22}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Gudang').length}</td>
                     <td className="p-2 border-r border-slate-300 text-center">0</td>
-                    <td className="p-2 text-center">2</td>
+                    <td className="p-2 text-center">{findings.filter(f => f.equipment.toLowerCase().includes('gudang')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Administrasi</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Admin').length + 30}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Admin').length}</td>
                     <td className="p-2 border-r border-slate-300 text-center">0</td>
-                    <td className="p-2 text-center">1</td>
+                    <td className="p-2 text-center">0</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Service (Perbaikan)</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Service').length + 8}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Service').length + 6}</td>
-                    <td className="p-2 text-center">1</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Service').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Service').length}</td>
+                    <td className="p-2 text-center">{findings.filter(f => f.status === 'Close').length}</td>
                   </tr>
                 </tbody>
               </table>
@@ -509,30 +509,38 @@ export default function Reports({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-sans">
               <div className="p-3 border border-slate-200 rounded">
                 <span className="text-slate-400 block font-bold text-[9px] uppercase">Total QC</span>
-                <strong className="text-lg text-slate-800">{logbookEntries.length + 84} Pemeriksaan</strong>
+                <strong className="text-lg text-slate-800">{logbookEntries.length} Pemeriksaan</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-emerald-50/20 rounded">
                 <span className="text-emerald-500 block font-bold text-[9px] uppercase">OK (Lulus QC)</span>
-                <strong className="text-lg text-emerald-700">{logbookEntries.length + 78} Unit</strong>
+                <strong className="text-lg text-emerald-700">{logbookEntries.filter(e => e.result === 'OK').length} Unit</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-rose-50/20 rounded">
                 <span className="text-rose-500 block font-bold text-[9px] uppercase">NG (Not Good)</span>
-                <strong className="text-lg text-rose-700">6 Unit</strong>
+                <strong className="text-lg text-rose-700">{logbookEntries.filter(e => e.result === 'NG').length} Unit</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-indigo-50/20 rounded">
                 <span className="text-indigo-600 block font-bold text-[9px] uppercase">Persentase Kelulusan</span>
-                <strong className="text-lg text-indigo-700">93.2%</strong>
+                <strong className="text-lg text-indigo-700">
+                  {logbookEntries.length > 0 ? Math.round((logbookEntries.filter(e => e.result === 'OK').length / logbookEntries.length) * 100) : 100}%
+                </strong>
               </div>
             </div>
 
             <div className="p-3 border border-slate-200 bg-slate-50/50 rounded space-y-2 text-xs font-sans">
               <div className="font-semibold text-slate-600">Visualisasi Kelulusan QC (OK vs NG)</div>
               <div className="h-6 w-full rounded bg-rose-500 overflow-hidden flex font-mono text-white text-[10px] font-bold">
-                <div className="h-full bg-emerald-500 flex items-center justify-center" style={{ width: '93.2%' }}>
-                  OK (93.2%)
+                <div
+                  className="h-full bg-emerald-500 flex items-center justify-center transition-all"
+                  style={{ width: `${logbookEntries.length > 0 ? Math.round((logbookEntries.filter(e => e.result === 'OK').length / logbookEntries.length) * 100) : 100}%` }}
+                >
+                  OK ({logbookEntries.length > 0 ? Math.round((logbookEntries.filter(e => e.result === 'OK').length / logbookEntries.length) * 100) : 100}%)
                 </div>
-                <div className="h-full flex items-center justify-center" style={{ width: '6.8%' }}>
-                  NG (6.8%)
+                <div
+                  className="h-full flex items-center justify-center"
+                  style={{ width: `${logbookEntries.length > 0 ? 100 - Math.round((logbookEntries.filter(e => e.result === 'OK').length / logbookEntries.length) * 100) : 0}%` }}
+                >
+                  NG ({logbookEntries.length > 0 ? 100 - Math.round((logbookEntries.filter(e => e.result === 'OK').length / logbookEntries.length) * 100) : 0}%)
                 </div>
               </div>
             </div>
@@ -908,7 +916,15 @@ export default function Reports({
                       <td className="p-2 border-r border-slate-300">{e.date}</td>
                       <td className="p-2 border-r border-slate-300 font-sans font-semibold text-indigo-700">{e.division}</td>
                       <td className="p-2 border-r border-slate-300 font-sans">{e.staffName}</td>
-                      <td className="p-2 border-r border-slate-300 font-sans">{e.activity}</td>
+                      <td className="p-2 border-r border-slate-300 font-sans">
+                        <div>{e.activity}</div>
+                        {e.photoUrl && (
+                          <div className="mt-1 flex items-center gap-1.5">
+                            <img src={e.photoUrl} alt="Bukti QC" className="w-8 h-8 object-cover rounded border border-slate-300 shadow-xs" />
+                            <span className="text-[10px] text-indigo-700 font-bold">[Foto Bukti QC]</span>
+                          </div>
+                        )}
+                      </td>
                       <td className="p-2 border-r border-slate-300 text-center font-bold">
                         <span className={`px-1.5 py-0.5 rounded text-[11px] ${e.result === 'OK' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                           {e.result === 'OK' ? '✓ OK' : '✗ NG'}

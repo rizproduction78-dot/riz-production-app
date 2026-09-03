@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { LogbookEntry, Division, Finding } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION } from '../data';
-import { Check, X, Shield, Calendar, User, Briefcase, ChevronRight, ClipboardCheck, AlertOctagon, Save, Activity, Award, CheckCircle } from 'lucide-react';
+import { Check, X, Shield, Calendar, User, Briefcase, ChevronRight, ClipboardCheck, AlertOctagon, Save, Activity, Award, CheckCircle, Camera, Upload, Trash2, Eye } from 'lucide-react';
 
 interface QCOnhouseProps {
   logbookEntries: LogbookEntry[];
@@ -70,6 +70,28 @@ export default function QCOnhouse({
   const [followUp, setFollowUp] = useState('');
   const [status, setStatus] = useState<'Open' | 'Close'>('Open');
 
+  // Photo upload state for QC / Logbook
+  const [photoUrl, setPhotoUrl] = useState<string>('');
+  const [photoFileName, setPhotoFileName] = useState<string>('');
+  const [previewModalImg, setPreviewModalImg] = useState<string | null>(null);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoUrl('');
+    setPhotoFileName('');
+  };
+
   // Checklist items values: key is item name, value is { status: 'OK' | 'NG', notes: string }
   const [checklistState, setChecklistState] = useState<{ [key: string]: { status: 'OK' | 'NG'; notes: string } }>({});
 
@@ -126,7 +148,8 @@ export default function QCOnhouse({
       followUp: followUp || (hasNG ? 'Terdapat beberapa kendala item NG yang perlu tindak lanjut.' : 'Semua item dalam kondisi OK dan aman.'),
       status,
       verification: verificationStr,
-      checklists: checklistState
+      checklists: checklistState,
+      photoUrl: photoUrl || undefined
     });
 
     onLogActivity(currentUser.name, currentUser.role, `Melakukan Checklist QC Divisi ${selectedDivision} dengan hasil ${overallResult}`);
@@ -153,7 +176,7 @@ export default function QCOnhouse({
       alert('Berhasil menyimpan Logbook QC Harian. Semua peralatan berfungsi dengan baik (OK).');
     }
 
-    // Reset Checklist state to default OK
+    // Reset Checklist state to default OK and clear photo
     const items = QC_ITEMS_BY_DIVISION[selectedDivision];
     const resetChecklist: typeof checklistState = {};
     items.forEach(item => {
@@ -161,6 +184,8 @@ export default function QCOnhouse({
     });
     setChecklistState(resetChecklist);
     setFollowUp('');
+    setPhotoUrl('');
+    setPhotoFileName('');
   };
 
   return (
@@ -415,6 +440,78 @@ export default function QCOnhouse({
               </table>
             </div>
 
+            {/* Foto Dokumentasi QC / Bukti Pemeriksaan */}
+            <div className="p-4 border border-indigo-100 rounded-xl bg-indigo-50/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-indigo-600" />
+                  <span>Foto Bukti Fisik / Dokumentasi QC</span>
+                </label>
+                {photoUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Hapus Foto</span>
+                  </button>
+                )}
+              </div>
+
+              {!photoUrl ? (
+                <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-4 text-center transition-colors bg-white">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                    id="qc-photo-upload"
+                  />
+                  <label htmlFor="qc-photo-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-semibold text-indigo-600">Klik untuk Upload Foto dari Perangkat / Kamera</span>
+                    <span className="text-[11px] text-slate-400">Mendukung format JPG, PNG, WEBP, HEIC</span>
+                  </label>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200">
+                  <img
+                    src={photoUrl}
+                    alt="Preview QC"
+                    onClick={() => setPreviewModalImg(photoUrl)}
+                    className="w-20 h-20 object-cover rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-800 truncate">{photoFileName || 'Foto Bukti QC Terlampir'}</p>
+                    <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">✓ Foto siap dilampirkan ke logbook</p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewModalImg(photoUrl)}
+                        className="text-xs text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Lihat Ukuran Penuh</span>
+                      </button>
+                      <label htmlFor="qc-photo-upload-replace" className="text-xs text-slate-500 hover:text-slate-800 underline cursor-pointer">
+                        Ganti Foto
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                        id="qc-photo-upload-replace"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* General Follow Up & Comments */}
             <div className="space-y-2 pt-4 border-t border-slate-100">
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -433,7 +530,7 @@ export default function QCOnhouse({
             <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
               <button
                 type="submit"
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition-all"
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 <span>Simpan Logbook QC Harian</span>
@@ -442,6 +539,83 @@ export default function QCOnhouse({
           </form>
         </div>
       </div>
+
+      {/* Riwayat Logbook QC & Bukti Foto */}
+      <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="w-5 h-5 text-indigo-600" />
+            <h3 className="font-bold text-sm text-slate-900">Riwayat Entri Logbook QC ({logbookEntries.length})</h3>
+          </div>
+          <span className="text-xs text-slate-400 font-mono">Real-time log</span>
+        </div>
+
+        {logbookEntries.length === 0 ? (
+          <div className="text-center py-10 text-slate-400 text-xs italic">
+            Belum ada entri logbook QC yang tercatat. Silakan input formulir di atas untuk menambahkan laporan inspeksi baru dengan foto bukti.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {logbookEntries.map((entry) => (
+              <div key={entry.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900">{entry.staffName}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                    entry.result === 'OK' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                  }`}>
+                    {entry.result}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-600">
+                  <span className="font-semibold text-slate-700">Divisi {entry.division}:</span> {entry.activity}
+                </div>
+                {entry.photoUrl && (
+                  <div className="relative group rounded-lg overflow-hidden border border-slate-200 cursor-pointer" onClick={() => setPreviewModalImg(entry.photoUrl || null)}>
+                    <img
+                      src={entry.photoUrl}
+                      alt="Foto QC"
+                      className="w-full h-36 object-cover transition-transform group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold gap-1.5">
+                      <Eye className="w-4 h-4" />
+                      <span>Lihat Foto Penuh</span>
+                    </div>
+                  </div>
+                )}
+                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                  <span>{entry.date}</span>
+                  <span>{entry.verification || 'Verified'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal Preview Foto Ukuran Penuh */}
+      {previewModalImg && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs"
+          onClick={() => setPreviewModalImg(null)}
+        >
+          <div className="relative max-w-3xl max-h-[90vh] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl p-2 border border-slate-800" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewModalImg(null)}
+              className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-black/90 text-white rounded-full z-10 cursor-pointer transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={previewModalImg}
+              alt="Foto QC Ukuran Penuh"
+              className="max-h-[80vh] w-auto mx-auto object-contain rounded-xl"
+            />
+            <div className="p-3 text-center text-xs text-slate-300 font-mono">
+              Foto Bukti Pemeriksaan QC / Logbook
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
