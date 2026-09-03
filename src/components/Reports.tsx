@@ -372,12 +372,14 @@ export default function Reports({
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                 <div className="bg-white p-3 border border-slate-200 rounded">
-                  <div className="text-slate-400 text-[10px] uppercase font-bold">Total Event</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">14 Event</div>
+                  <div className="text-slate-400 text-[10px] uppercase font-bold">Total Jenis Aktivitas</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">
+                    {new Set(dailyReports.map(r => r.activity).filter(Boolean)).size} Aktivitas
+                  </div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Hari Kerja</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">26 Hari</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">30 Hari</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Staff Aktif</div>
@@ -523,10 +525,30 @@ export default function Reports({
             <div className="p-3 border border-slate-200 bg-slate-50/30 rounded text-xs space-y-1">
               <strong className="block text-slate-700">Produktivitas Mingguan Teranalisis:</strong>
               <div className="grid grid-cols-4 gap-2 text-center text-[11px] pt-1 font-mono">
-                <div className="bg-white p-2 border rounded"><strong>Minggu 1</strong><div className="text-indigo-600">22% Beban</div></div>
-                <div className="bg-white p-2 border rounded"><strong>Minggu 2</strong><div className="text-indigo-600">28% Beban</div></div>
-                <div className="bg-white p-2 border rounded"><strong>Minggu 3</strong><div className="text-indigo-600">32% Beban</div></div>
-                <div className="bg-white p-2 border rounded"><strong>Minggu 4</strong><div className="text-indigo-600">18% Beban</div></div>
+                <div className="bg-white p-2 border rounded">
+                  <strong>Minggu 1 (1-7)</strong>
+                  <div className="text-indigo-600">
+                    {dailyReports.length > 0 ? Math.round((dailyReports.filter(r => { const d = parseInt(r.date.split('-')[2] || '1', 10); return d >= 1 && d <= 7; }).length / dailyReports.length) * 100) : 0}% Beban
+                  </div>
+                </div>
+                <div className="bg-white p-2 border rounded">
+                  <strong>Minggu 2 (8-14)</strong>
+                  <div className="text-indigo-600">
+                    {dailyReports.length > 0 ? Math.round((dailyReports.filter(r => { const d = parseInt(r.date.split('-')[2] || '1', 10); return d >= 8 && d <= 14; }).length / dailyReports.length) * 100) : 0}% Beban
+                  </div>
+                </div>
+                <div className="bg-white p-2 border rounded">
+                  <strong>Minggu 3 (15-21)</strong>
+                  <div className="text-indigo-600">
+                    {dailyReports.length > 0 ? Math.round((dailyReports.filter(r => { const d = parseInt(r.date.split('-')[2] || '1', 10); return d >= 15 && d <= 21; }).length / dailyReports.length) * 100) : 0}% Beban
+                  </div>
+                </div>
+                <div className="bg-white p-2 border rounded">
+                  <strong>Minggu 4 (22-30)</strong>
+                  <div className="text-indigo-600">
+                    {dailyReports.length > 0 ? Math.round((dailyReports.filter(r => { const d = parseInt(r.date.split('-')[2] || '1', 10); return d >= 22; }).length / dailyReports.length) * 100) : 0}% Beban
+                  </div>
+                </div>
               </div>
             </div>
           </div>

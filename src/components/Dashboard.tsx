@@ -494,11 +494,11 @@ export default function Dashboard({
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-5">
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Hari Kerja</span>
-                  <strong className="text-base text-slate-900 block mt-1 font-sans">26 Hari</strong>
+                  <strong className="text-base text-slate-900 block mt-1 font-sans">30 Hari</strong>
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Staff Aktif</span>
-                  <strong className="text-base text-slate-900 block mt-1 font-sans">22 Staff</strong>
+                  <strong className="text-base text-slate-900 block mt-1 font-sans">{STAFF_LIST.length} Staff</strong>
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Daily Report</span>
@@ -510,11 +510,11 @@ export default function Dashboard({
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Prev. Main</span>
-                  <strong className="text-base text-blue-600 block mt-1 font-sans">18</strong>
+                  <strong className="text-base text-blue-600 block mt-1 font-sans">{totalPM}</strong>
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Corr. Main</span>
-                  <strong className="text-base text-rose-600 block mt-1 font-sans">12</strong>
+                  <strong className="text-base text-rose-600 block mt-1 font-sans">{totalRepair}</strong>
                 </div>
               </div>
             </div>
