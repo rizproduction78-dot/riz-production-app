@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Staff, Asset, MaintenanceSchedule, WorkOrder, Finding, LogbookEntry, DailyReport, DailyTask } from './types';
+import { Staff, Asset, MaintenanceSchedule, WorkOrder, Finding, LogbookEntry, DailyReport, DailyTask, VehicleMaster } from './types';
 
 export const STAFF_LIST: Staff[] = [
   // Staff Gudang
@@ -133,3 +133,98 @@ export const INITIAL_FINDINGS: Finding[] = [];
 export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [];
 export const INITIAL_DAILY_REPORTS: DailyReport[] = [];
 export const INITIAL_DAILY_TASKS: DailyTask[] = [];
+
+// Master Inventaris Armada Kendaraan Resmi PT RIZ-PRODUCTION
+export const INITIAL_VEHICLES: VehicleMaster[] = [
+  {
+    id: 'veh-1',
+    name: 'Truk Box Mitsubishi Canter CDD (6 Roda)',
+    ownership: 'Internal',
+    policeNumber: 'B 9142 SXZ',
+    vehicleType: 'Truk Box CDD (6 Roda)',
+    tonnageCapacity: 5.0,
+    cbmCapacity: 22.5,
+    odometerKM: 64200,
+    stnkTaxExpiry: '2026-11-18',
+    kirExpiry: '2026-09-30',
+    status: 'Siap Operasi'
+  },
+  {
+    id: 'veh-2',
+    name: 'Truk Box Hino Dutro CDE Engkel (4 Roda)',
+    ownership: 'Internal',
+    policeNumber: 'B 9804 UYA',
+    vehicleType: 'Truk Box CDE Engkel (4 Roda)',
+    tonnageCapacity: 3.0,
+    cbmCapacity: 14.0,
+    odometerKM: 81500,
+    stnkTaxExpiry: '2026-10-05',
+    kirExpiry: '2026-10-12',
+    status: 'Siap Operasi'
+  },
+  {
+    id: 'veh-3',
+    name: 'Daihatsu Gran Max Blindvan',
+    ownership: 'Internal',
+    policeNumber: 'B 2319 POX',
+    vehicleType: 'Blindvan Logistik',
+    tonnageCapacity: 1.0,
+    cbmCapacity: 5.5,
+    odometerKM: 43200,
+    stnkTaxExpiry: '2027-01-22',
+    kirExpiry: '2027-01-20',
+    status: 'Siap Operasi'
+  },
+  {
+    id: 'veh-4',
+    name: 'Mitsubishi L300 Pick-Up Box',
+    ownership: 'Internal',
+    policeNumber: 'B 9043 TQB',
+    vehicleType: 'Pick-Up Box',
+    tonnageCapacity: 1.5,
+    cbmCapacity: 7.2,
+    odometerKM: 112000,
+    stnkTaxExpiry: '2026-12-10',
+    kirExpiry: '2026-10-28',
+    status: 'Siap Operasi'
+  },
+  {
+    id: 'veh-5',
+    name: 'Toyota Avanza Tim Operasional',
+    ownership: 'Internal',
+    policeNumber: 'B 1874 RIZ',
+    vehicleType: 'Mobil Kru / Operasional',
+    tonnageCapacity: 0.6,
+    cbmCapacity: 2.8,
+    odometerKM: 52100,
+    stnkTaxExpiry: '2027-04-14',
+    kirExpiry: '2027-04-14',
+    status: 'Siap Operasi'
+  },
+  {
+    id: 'veh-6',
+    name: 'Truk Wingbox Mitra Logistik 9.5M',
+    ownership: 'Sewa Mitra',
+    policeNumber: 'B 9552 KTN',
+    vehicleType: 'Truk Wingbox Tronton',
+    tonnageCapacity: 15.0,
+    cbmCapacity: 48.0,
+    odometerKM: 145000,
+    stnkTaxExpiry: '2027-02-10',
+    kirExpiry: '2027-01-15',
+    status: 'Siap Operasi'
+  },
+  {
+    id: 'veh-7',
+    name: 'Truk CDD Long Mitra Logistik',
+    ownership: 'Sewa Mitra',
+    policeNumber: 'B 9331 JXQ',
+    vehicleType: 'Truk CDD Long Box',
+    tonnageCapacity: 6.0,
+    cbmCapacity: 28.0,
+    odometerKM: 98000,
+    stnkTaxExpiry: '2026-11-30',
+    kirExpiry: '2026-11-15',
+    status: 'Siap Operasi'
+  }
+];

@@ -42,6 +42,29 @@ export interface WorkSchedule {
   };
 }
 
+export interface VehicleMaster {
+  id: string;
+  name: string;
+  ownership: 'Internal' | 'Sewa Mitra';
+  policeNumber: string;
+  vehicleType: string;
+  tonnageCapacity: number; // Ton
+  cbmCapacity: number; // m3
+  odometerKM: number;
+  stnkTaxExpiry: string; // YYYY-MM-DD
+  kirExpiry: string; // YYYY-MM-DD
+  status: 'Siap Operasi' | 'Dalam Perjalanan' | 'Maintenance / Servis';
+}
+
+export interface ManifestCargoItem {
+  id: string;
+  division: 'Audio' | 'Lighting' | 'Videotron' | 'Rigging' | 'Genset / Power' | 'Umum';
+  itemDescription: string;
+  qty: number;
+  unit: 'Flightcase' | 'Pcs' | 'Pallet' | 'Roll' | 'Box';
+  estimatedCBM: number;
+}
+
 export interface P2HChecklist {
   banPsi: boolean; // Ban (105 PSI)
   oliMesin: boolean; // Oli/Mesin
@@ -60,6 +83,7 @@ export interface FleetBudgetRAB {
   bbmSolar: number; // BBM Solar/Bensin
   eToll: number; // e-Toll
   uangMakanDriver: number; // Uang makan pengemudi
+  biayaBongkarMuat: number; // Biaya bongkar muat crew
   totalRAB: number;
   receiptVerified: boolean; // Verifikasi kuitansi oleh Caca
   calculatedBy: string; // Caca (Admin & Logistik)
@@ -67,20 +91,25 @@ export interface FleetBudgetRAB {
 
 export interface FleetAssignment {
   id: string;
-  spjNumber: string; // Nomor SPJ (Surat Perintah Jalan)
-  vehicleType: string; // Truk Fuso, CDD Long, Blind Van, GrandMax, dsb.
+  spjNumber: string; // Nomor SPJ
+  eventName: string; // Nama Event / Project
+  tripType: 'Dalam Kota (Jabodetabek)' | 'Luar Kota (Tour / Festival)';
+  vehicleId?: string;
+  vehicleType: string; // Truk Box Mitsubishi Canter CDD, dsb.
   policeNumber: string; // Plat Nomor
   driverName: string;
-  destination: string; // Lokasi Event / Tujuan
+  destination: string; // Lokasi Venue / Rute
   departureDate: string;
   returnDate: string;
-  p2hStatus: 'Pending' | 'Passed' | 'Failed';
+  manifest: ManifestCargoItem[];
+  totalCBM: number;
+  p2hStatus: 'Laik Jalan' | 'Perlu Perbaikan' | 'Tidak Laik' | 'Pending';
   p2h: P2HChecklist;
   budget: FleetBudgetRAB;
   approvalStatus: 'Draft' | 'Menunggu Approval Fahrul' | 'Approved' | 'Rejected';
   approvedBy?: string; // Fahrul (Manager Operasional)
   approvedAt?: string;
-  status: 'Dijadwalkan' | 'Berangkat' | 'Selesai' | 'Dibatalkan';
+  status: 'Draft' | 'Menunggu Approval Fahrul' | 'Disetujui' | 'Dalam Perjalanan (On Trip)' | 'Selesai' | 'Dibatalkan';
 }
 
 export interface WarehouseLog {
