@@ -1089,7 +1089,7 @@ export default function Reports({
                 IV. LAPORAN KPI & KINERJA ALL STAFF ({reportType === 'Harian' ? `HARIAN: ${targetDate}` : reportType === 'Mingguan' ? `MINGGUAN: ${targetStartDate} s/d ${targetEndDate}` : `BULANAN: ${targetMonth}`})
               </div>
               <span className="text-[10px] font-mono text-indigo-600 font-semibold">
-                Prioritas: Daily Report • QC Checklist • WO Selesai
+                Prioritas: Daily Report • QC Checklist • WO Selesai • Uji Komp. • Kehadiran
               </span>
             </div>
             <div className="overflow-x-auto max-h-[350px] overflow-y-auto border border-slate-300 rounded">
@@ -1140,7 +1140,7 @@ export default function Reports({
                 <span className="text-[10px] font-mono text-slate-600 uppercase font-bold tracking-wider block">
                   🏆 TOP 3 PERFORMER {reportType.toUpperCase()} ({reportType === 'Harian' ? targetDate : reportType === 'Mingguan' ? `${targetStartDate} s/d ${targetEndDate}` : targetMonth})
                 </span>
-                <span className="text-[9px] font-mono text-slate-400">Peringkat Berdasarkan Total Penyelesaian Daily Report, QC Checklist & WO</span>
+                <span className="text-[9px] font-mono text-slate-400">Peringkat Berdasarkan: Daily Report, QC Checklist, WO Selesai, Uji Komp, Kehadiran</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {staffKpis.slice(0, 3).map((staff, idx) => (

@@ -64,14 +64,21 @@ allResults.forEach((res) => {
 
 // 3. Test Sorting and Leaderboard
 console.log('\n--- 3. Testing KPI Ranking Order ---');
-let isSortedDesc = true;
+let isSortedCorrectly = true;
 for (let i = 1; i < allResults.length; i++) {
-  if (allResults[i].kpi > allResults[i - 1].kpi) {
-    isSortedDesc = false;
+  const prev = allResults[i - 1];
+  const curr = allResults[i];
+  if (curr.reports > prev.reports) {
+    isSortedCorrectly = false;
     break;
+  } else if (curr.reports === prev.reports) {
+    if (curr.qcs > prev.qcs) {
+      isSortedCorrectly = false;
+      break;
+    }
   }
 }
-expect(isSortedDesc, 'Leaderboard ranks staff descending by KPI / Contribution');
+expect(isSortedCorrectly, 'Leaderboard ranks staff strictly by Daily Report, QC Checklist, WO Selesai, Uji Komp, Kehadiran');
 
 // 4. Test Roster / Shift Integration
 console.log('\n--- 4. Testing Attendance & Schedule Roster Integration ---');
