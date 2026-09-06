@@ -64,11 +64,15 @@ export default function Dashboard({
     return () => unsub();
   }, []);
 
-  // State for switching dashboard modes
-  const [activeTab, setActiveTab] = React.useState<'harian' | 'monthly_report'>('monthly_report');
+  // State for switching dashboard modes: 'harian' (ringkasan), 'daily_report', 'weekly_report', 'monthly_report'
+  const [activeTab, setActiveTab] = React.useState<'harian' | 'daily_report' | 'weekly_report' | 'monthly_report'>('monthly_report');
   
-  // Custom states for the report period & editable notes (Bersih dari teks buatan)
-  const [periode, setPeriode] = React.useState('September 2026');
+  // Custom states for the report period & editable notes
+  const [targetDate, setTargetDate] = React.useState('2026-09-05');
+  const [targetStartDate, setTargetStartDate] = React.useState('2026-09-01');
+  const [targetEndDate, setTargetEndDate] = React.useState('2026-09-07');
+  const [targetMonth, setTargetMonth] = React.useState('September 2026');
+
   const [notesKendala, setNotesKendala] = React.useState('');
   const [notesAkar, setNotesAkar] = React.useState('');
   const [notesSolusi, setNotesSolusi] = React.useState('');
@@ -87,11 +91,36 @@ export default function Dashboard({
     dailyReports.filter(r => r.date === today).length + 
     logbookEntries.filter(e => e.date === today).length;
 
+  // Filtered operational datasets based on chosen report type
+  const activeDailyReports = React.useMemo(() => {
+    if (activeTab === 'daily_report') return dailyReports.filter(r => r.date === targetDate);
+    if (activeTab === 'weekly_report') return dailyReports.filter(r => r.date >= targetStartDate && r.date <= targetEndDate);
+    return dailyReports; // monthly_report
+  }, [dailyReports, activeTab, targetDate, targetStartDate, targetEndDate]);
+
+  const activeLogbookEntries = React.useMemo(() => {
+    if (activeTab === 'daily_report') return logbookEntries.filter(e => e.date === targetDate);
+    if (activeTab === 'weekly_report') return logbookEntries.filter(e => e.date >= targetStartDate && e.date <= targetEndDate);
+    return logbookEntries; // monthly_report
+  }, [logbookEntries, activeTab, targetDate, targetStartDate, targetEndDate]);
+
+  const activeFindings = React.useMemo(() => {
+    if (activeTab === 'daily_report') return findings.filter(f => f.dateCreated === targetDate || f.targetDate === targetDate);
+    if (activeTab === 'weekly_report') return findings.filter(f => (f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate >= targetStartDate && f.targetDate <= targetEndDate));
+    return findings; // monthly_report
+  }, [findings, activeTab, targetDate, targetStartDate, targetEndDate]);
+
+  const activeWorkOrders = React.useMemo(() => {
+    if (activeTab === 'daily_report') return workOrders.filter(w => w.date === targetDate || w.createdAt === targetDate);
+    if (activeTab === 'weekly_report') return workOrders.filter(w => (w.date >= targetStartDate && w.date <= targetEndDate) || (w.createdAt >= targetStartDate && w.createdAt <= targetEndDate));
+    return workOrders; // monthly_report
+  }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate]);
+
   // QC Stats from all logbooks
   let totalQCOk = 0;
   let totalQCNg = 0;
 
-  logbookEntries.forEach(entry => {
+  activeLogbookEntries.forEach(entry => {
     Object.values(entry.checklists).forEach(ch => {
       if (ch.status === 'OK') totalQCOk++;
       if (ch.status === 'NG') totalQCNg++;
@@ -99,16 +128,16 @@ export default function Dashboard({
   });
 
   // Findings/Issues Stats
-  const openIssues = findings.filter(f => f.status === 'Open').length;
-  const closedIssues = findings.filter(f => f.status === 'Close').length;
+  const openIssues = activeFindings.filter(f => f.status === 'Open').length;
+  const closedIssues = activeFindings.filter(f => f.status === 'Close').length;
 
-  // Dynamic derivations for report cards - Bersih dari angka palsu
-  const totalDailyReportsCount = dailyReports.length;
-  const totalQCCount = logbookEntries.length;
-  const totalWorkOrdersCount = findings.length + workOrders.length;
+  // Dynamic derivations for report cards
+  const totalDailyReportsCount = activeDailyReports.length;
+  const totalQCCount = activeLogbookEntries.length;
+  const totalWorkOrdersCount = activeFindings.length + activeWorkOrders.length;
 
   // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
-  const staffProductivityData = calculateAllStaffKpis(staffList, dailyReports, logbookEntries, findings);
+  const staffProductivityData = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings);
   
   // Filter hanya staf yang memiliki aktifitas riil (laporan, QC, atau WO)
   const activeStaffProductivityData = staffProductivityData.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);
@@ -134,19 +163,19 @@ export default function Dashboard({
   ];
 
   const divisionStatsDynamic = divisionListConfig.map(d => {
-    const dr = dailyReports.filter(r => r.division === d.key).length;
-    const qc = logbookEntries.filter(e => e.division === d.key).length;
-    const wo = workOrders.filter(w => w.division === d.key).length;
+    const dr = activeDailyReports.filter(r => r.division === d.key).length;
+    const qc = activeLogbookEntries.filter(e => e.division === d.key).length;
+    const wo = activeWorkOrders.filter(w => w.division === d.key).length;
     const totalActs = dr + qc + wo;
     
     // Dynamic KPI for this division
-    const divStaff = staffProductivityData.filter(s => s.division === d.key);
+    const divStaff = activeStaffProductivityData.filter(s => s.division === d.key);
     const avgKpi = divStaff.length > 0 
       ? Math.round(divStaff.reduce((acc, s) => acc + s.kpi, 0) / divStaff.length)
       : 0;
 
     // Damage statistics for this division
-    const divFindings = findings.filter(f => f.equipment?.toLowerCase().includes(d.key.toLowerCase()));
+    const divFindings = activeFindings.filter(f => f.equipment?.toLowerCase().includes(d.key.toLowerCase()));
     const ringan = divFindings.filter(f => f.priority === 'Rendah').length;
     const sedang = divFindings.filter(f => f.priority === 'Sedang').length;
     const berat = divFindings.filter(f => f.priority === 'Tinggi').length;
@@ -169,15 +198,15 @@ export default function Dashboard({
   const maxDivisionActs = Math.max(...divisionStatsDynamic.map(d => d.totalActs), 1);
 
   // Dynamic QC metrics
-  const totalQC = logbookEntries.length;
-  const totalOK = logbookEntries.filter(e => e.result === 'OK').length;
-  const totalNG = logbookEntries.filter(e => e.result === 'NG').length;
+  const totalQC = activeLogbookEntries.length;
+  const totalOK = activeLogbookEntries.filter(e => e.result === 'OK').length;
+  const totalNG = activeLogbookEntries.filter(e => e.result === 'NG').length;
   const percentOK = totalQC > 0 ? ((totalOK / totalQC) * 100).toFixed(1) : '0.0';
   const percentNG = totalQC > 0 ? ((totalNG / totalQC) * 100).toFixed(1) : '0.0';
 
   // Dynamic Top 10 Equipment with Issues
   const equipmentFrequencyMap: Record<string, { count: number; lastStatus: string }> = {};
-  findings.forEach(f => {
+  activeFindings.forEach(f => {
     const name = f.equipment || 'Unknown';
     if (!equipmentFrequencyMap[name]) {
       equipmentFrequencyMap[name] = {
@@ -197,21 +226,21 @@ export default function Dashboard({
     .slice(0, 10);
 
   // Dynamic PM metrics
-  const totalPM = workOrders.filter(w => w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive')).length;
-  const donePM = workOrders.filter(w => (w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive')) && w.status === 'Completed').length;
+  const totalPM = activeWorkOrders.filter(w => w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive')).length;
+  const donePM = activeWorkOrders.filter(w => (w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive')) && w.status === 'Completed').length;
   const pendingPM = totalPM - donePM;
   const kepatuhanPM = totalPM > 0 ? ((donePM / totalPM) * 100).toFixed(1) : '0.0';
 
   // Dynamic CM / Repair metrics
-  const totalRepair = findings.length;
-  const doneRepair = findings.filter(f => f.status === 'Close').length;
-  const pendingRepair = findings.filter(f => f.status === 'Open').length;
-  const waitingSparepart = findings.filter(f => f.status === 'Open' && f.issue?.toLowerCase().includes('sparepart')).length;
+  const totalRepair = activeFindings.length;
+  const doneRepair = activeFindings.filter(f => f.status === 'Close').length;
+  const pendingRepair = activeFindings.filter(f => f.status === 'Open').length;
+  const waitingSparepart = activeFindings.filter(f => f.status === 'Open' && f.issue?.toLowerCase().includes('sparepart')).length;
 
   // Chart data: count how many QC checklist items are checked per division
   const divisionsList = ['Audio', 'Lighting', 'Videotron', 'Multimedia', 'Service'] as const;
   const divisionStats = divisionsList.map(div => {
-    const divEntries = logbookEntries.filter(e => e.division === div);
+    const divEntries = activeLogbookEntries.filter(e => e.division === div);
     let okCount = 0;
     let ngCount = 0;
     divEntries.forEach(e => {
@@ -299,27 +328,48 @@ export default function Dashboard({
   const avgAttendancePercent = totalSlotsAll > 0 ? ((totalHadirAll / totalSlotsAll) * 100).toFixed(1) : '0.0';
   const avgLatePercent = totalSlotsAll > 0 ? ((totalTerlambatAll / totalSlotsAll) * 100).toFixed(1) : '0.0';
 
+  const reportTypeName = activeTab === 'daily_report' ? 'Harian' : activeTab === 'weekly_report' ? 'Mingguan' : 'Bulanan';
+  const reportBadgeText = activeTab === 'daily_report' ? 'Laporan Resmi Harian' : activeTab === 'weekly_report' ? 'Laporan Resmi Mingguan' : 'Laporan Resmi Bulanan';
+  const reportMainTitle = activeTab === 'daily_report' ? 'DAILY OPERATION REPORT' : activeTab === 'weekly_report' ? 'WEEKLY OPERATION REPORT' : 'MONTHLY OPERATION REPORT';
+  const periodDisplay = activeTab === 'daily_report' ? targetDate : activeTab === 'weekly_report' ? `${targetStartDate} s/d ${targetEndDate}` : targetMonth;
+
   return (
     <div className="space-y-6 font-sans">
       {/* Tab Switcher / Control bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
         <div>
           <h1 className="text-lg font-bold text-slate-900 tracking-tight">Navigasi Dashboard</h1>
-          <p className="text-[11px] text-slate-500">Pilih tampilan dashboard harian atau laporan bulanan operasi</p>
+          <p className="text-[11px] text-slate-500">Pilih tampilan dashboard harian atau semua jenis pelaporan operasi (Harian, Mingguan, Bulanan)</p>
         </div>
-        <div className="flex bg-slate-100 p-1 rounded-lg w-full md:w-auto">
+        <div className="flex flex-wrap bg-slate-100 p-1 rounded-lg w-full md:w-auto gap-1">
           <button
             onClick={() => setActiveTab('harian')}
-            className={`flex-1 md:flex-none px-4 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
               activeTab === 'harian' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Ringkasan Harian
           </button>
           <button
+            onClick={() => setActiveTab('daily_report')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+              activeTab === 'daily_report' ? 'bg-white text-indigo-700 shadow-sm font-extrabold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            Daily Operation Report
+          </button>
+          <button
+            onClick={() => setActiveTab('weekly_report')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+              activeTab === 'weekly_report' ? 'bg-white text-indigo-700 shadow-sm font-extrabold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            Weekly Operation Report
+          </button>
+          <button
             onClick={() => setActiveTab('monthly_report')}
-            className={`flex-1 md:flex-none px-4 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              activeTab === 'monthly_report' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+              activeTab === 'monthly_report' ? 'bg-white text-indigo-700 shadow-sm font-extrabold' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Monthly Operation Report
@@ -477,23 +527,54 @@ export default function Dashboard({
           </div>
         </>
       ) : (
-        /* 15 SECTIONS MONTHLY OPERATION REPORT */
+        /* 15 SECTIONS OPERATION REPORT (HARIAN, MINGGUAN, BULANAN) */
         <div id="monthly-operation-report-view" className="space-y-8 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
           {/* Title Header */}
           <div className="border-b-2 border-slate-100 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Laporan Resmi Bulanan</span>
-              <h1 className="text-2xl font-extrabold text-slate-950 mt-1.5 tracking-tight font-sans">MONTHLY OPERATION REPORT</h1>
+              <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                {reportBadgeText}
+              </span>
+              <h1 className="text-2xl font-extrabold text-slate-950 mt-1.5 tracking-tight font-sans">
+                {reportMainTitle}
+              </h1>
               <p className="text-xs text-slate-500 mt-1 font-medium">PT RIZ-PRODUCTION • Sistem Informasi Manajemen Operational QC & Maintenance</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
               <label className="text-xs font-bold text-slate-700 font-mono">PERIODE :</label>
-              <input
-                type="text"
-                value={periode}
-                onChange={(e) => setPeriode(e.target.value)}
-                className="bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              />
+              {activeTab === 'daily_report' && (
+                <input
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => setTargetDate(e.target.value)}
+                  className="bg-white border border-slate-300 text-xs font-bold text-slate-800 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              )}
+              {activeTab === 'weekly_report' && (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="date"
+                    value={targetStartDate}
+                    onChange={(e) => setTargetStartDate(e.target.value)}
+                    className="bg-white border border-slate-300 text-[11px] font-bold text-slate-800 px-2 py-1 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <span className="text-xs text-slate-400 font-bold">s/d</span>
+                  <input
+                    type="date"
+                    value={targetEndDate}
+                    onChange={(e) => setTargetEndDate(e.target.value)}
+                    className="bg-white border border-slate-300 text-[11px] font-bold text-slate-800 px-2 py-1 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+              )}
+              {activeTab === 'monthly_report' && (
+                <input
+                  type="text"
+                  value={targetMonth}
+                  onChange={(e) => setTargetMonth(e.target.value)}
+                  className="bg-white border border-slate-300 text-xs font-bold text-slate-800 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              )}
             </div>
           </div>
 
@@ -506,17 +587,21 @@ export default function Dashboard({
             
             <div className="bg-slate-50/50 rounded-xl p-5 border border-slate-100">
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Penyusunan laporan bulanan operasi periode <strong className="text-slate-900">{periode}</strong> ini mencakup performa kerja tim teknis harian (Sound, Lighting, Videotron, Multimedia) serta kepatuhan Preventive Maintenance (PM).
+                Penyusunan laporan {reportTypeName.toLowerCase()} operasi periode <strong className="text-slate-900">{periodDisplay}</strong> ini mencakup performa kerja tim teknis harian (Sound, Lighting, Videotron, Multimedia) serta kepatuhan Preventive Maintenance (PM).
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-5">
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Hari Kerja</span>
-                  <strong className="text-base text-slate-900 block mt-1 font-sans">30 Hari</strong>
+                  <strong className="text-base text-slate-900 block mt-1 font-sans">
+                    {activeTab === 'daily_report' ? '1 Hari' : activeTab === 'weekly_report' ? '7 Hari' : '30 Hari'}
+                  </strong>
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Staff Aktif</span>
-                  <strong className="text-base text-slate-900 block mt-1 font-sans">{staffList.length} Staff</strong>
+                  <strong className="text-base text-slate-900 block mt-1 font-sans">
+                    {activeStaffProductivityData.length} Staff
+                  </strong>
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Daily Report</span>
