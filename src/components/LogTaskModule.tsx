@@ -5,10 +5,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Staff, Division, DailyReport as DailyReportType, DailyTask, Finding, LogbookEntry } from '../types';
-import { STAFF_LIST, QC_ITEMS_BY_DIVISION } from '../data';
+import { STAFF_LIST, QC_ITEMS_BY_DIVISION, getMasterStaffList } from '../data';
 import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { saveCloudDoc, deleteCloudDoc, subscribeCloudCollection } from '../lib/cloudSync';
 import {
   ClipboardList,
   CheckCircle2,
@@ -97,6 +98,19 @@ export default function LogTaskModule({
 
   // Active sub-tab
   const [subTab, setSubTab] = useState<'kanban' | 'qc_checklist' | 'logbook' | 'rekap'>(initialSubTab);
+
+  // Dynamic Master Staff List with Cloud Subscription
+  const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setStaffList,
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
 
   // Tasks state (synced with Firebase if possible, fallback to local)
   const [tasks, setTasks] = useState<DailyTask[]>(() => {
@@ -353,19 +367,8 @@ export default function LogTaskModule({
         dueDate: taskDueDate,
       };
       setTasks(prev => prev.map(t => t.id === editingTask.id ? updated : t));
+      saveCloudDoc('daily_tasks', editingTask.id, updated, currentUser.name);
       onLogActivity(currentUser.name, currentUser.role, `Memperbarui daily task "${taskTitle}"`);
-
-      // Try update Firestore
-      try {
-        await updateDoc(doc(db, 'daily_tasks', editingTask.id), {
-          title: taskTitle,
-          description: taskDesc,
-          division: taskDivision,
-          priority: taskPriority,
-          assignedName: taskAssignee,
-          dueDate: taskDueDate,
-        });
-      } catch (err) { /* silent local fallback */ }
     } else {
       const newTask: DailyTask = {
         id: 'task-' + Date.now(),
@@ -380,48 +383,33 @@ export default function LogTaskModule({
         createdBy: currentUser.name
       };
       setTasks(prev => [newTask, ...prev]);
+      saveCloudDoc('daily_tasks', newTask.id, newTask, currentUser.name);
       onLogActivity(currentUser.name, currentUser.role, `Menambahkan daily task baru "${taskTitle}" [${taskDivision}]`);
-
-      // Try push to Firestore
-      try {
-        await addDoc(collection(db, 'daily_tasks'), {
-          title: taskTitle,
-          description: taskDesc,
-          division: taskDivision,
-          priority: taskPriority,
-          status: 'Pending',
-          assignedName: taskAssignee,
-          dueDate: taskDueDate,
-          createdAt: serverTimestamp(),
-          createdBy: currentUser.name
-        });
-      } catch (err) { /* silent local fallback */ }
     }
 
     setShowTaskModal(false);
   };
 
   const handleUpdateStatus = async (taskId: string, newStatus: 'Pending' | 'In Progress' | 'Done') => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        const updated = { ...t, status: newStatus };
+        saveCloudDoc('daily_tasks', taskId, updated, currentUser.name);
+        return updated;
+      }
+      return t;
+    }));
     const target = tasks.find(t => t.id === taskId);
     if (target) {
       onLogActivity(currentUser.name, currentUser.role, `Ubah status task "${target.title}" jadi ${newStatus}`);
     }
-
-    // Try Firestore
-    try {
-      await updateDoc(doc(db, 'daily_tasks', taskId), { status: newStatus });
-    } catch (err) { /* silent fallback */ }
   };
 
   const handleDeleteTask = async (taskId: string) => {
     if (!confirm('Hapus task ini?')) return;
     setTasks(prev => prev.filter(t => t.id !== taskId));
+    deleteCloudDoc('daily_tasks', taskId);
     onLogActivity(currentUser.name, currentUser.role, `Menghapus task id ${taskId}`);
-
-    try {
-      await deleteDoc(doc(db, 'daily_tasks', taskId));
-    } catch (err) { /* silent fallback */ }
   };
 
   // Submit Logbook
@@ -843,7 +831,7 @@ export default function LogTaskModule({
                         onChange={(e) => setQcStaffName(e.target.value)}
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
                       >
-                        {STAFF_LIST.map(s => (
+                        {staffList.map(s => (
                           <option key={s.id} value={s.name}>{s.name} ({s.division})</option>
                         ))}
                       </select>
@@ -1194,12 +1182,12 @@ export default function LogTaskModule({
                       value={logStaffName}
                       onChange={(e) => {
                         setLogStaffName(e.target.value);
-                        const sel = STAFF_LIST.find(s => s.name === e.target.value);
+                        const sel = staffList.find(s => s.name === e.target.value);
                         if (sel) setLogDivision(sel.division);
                       }}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
                     >
-                      {STAFF_LIST.map(s => (
+                      {staffList.map(s => (
                         <option key={s.id} value={s.name}>{s.name} ({s.division})</option>
                       ))}
                     </select>
@@ -1767,7 +1755,7 @@ export default function LogTaskModule({
                     onChange={(e) => setTaskAssignee(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
                   >
-                    {STAFF_LIST.filter(s => isManagement || s.division === currentUser.division).map(s => (
+                    {staffList.filter(s => isManagement || s.division === currentUser.division).map(s => (
                       <option key={s.id} value={s.name}>{s.name} ({s.division})</option>
                     ))}
                   </select>

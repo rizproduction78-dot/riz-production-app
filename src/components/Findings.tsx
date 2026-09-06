@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Finding, Division } from '../types';
-import { STAFF_LIST } from '../data';
+import React, { useState, useEffect } from 'react';
+import { Finding, Division, Staff } from '../types';
+import { STAFF_LIST, getMasterStaffList } from '../data';
 import { AlertTriangle, Plus, Search, Trash2, CheckCircle, Clock, Check, X, ShieldAlert, ChevronDown } from 'lucide-react';
+import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface FindingsProps {
   findings: Finding[];
@@ -25,6 +26,19 @@ export default function Findings({
   currentUser,
   onLogActivity,
 }: FindingsProps) {
+  // Master Staff Dynamic State with Cloud Subscription
+  const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setStaffList,
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
+
   // Filter/Search State
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('All');
@@ -160,7 +174,7 @@ export default function Findings({
                 required
               >
                 <option value="">-- Pilih PIC Staff --</option>
-                {STAFF_LIST.map(s => (
+                {staffList.map(s => (
                   <option key={s.id} value={s.name}>{s.name} ({s.division})</option>
                 ))}
               </select>

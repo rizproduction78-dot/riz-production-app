@@ -3,20 +3,47 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { STAFF_LIST } from '../data';
+import React, { useState, useEffect } from 'react';
+import { STAFF_LIST, getMasterStaffList } from '../data';
 import { Staff } from '../types';
 import { LogIn, Shield, Users, User, Key } from 'lucide-react';
+import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface LoginScreenProps {
   onLogin: (staff: Staff) => void;
   onLogActivity: (username: string, role: string, action: string) => void;
+  staffList?: Staff[];
 }
 
-export default function LoginScreen({ onLogin, onLogActivity }: LoginScreenProps) {
+export default function LoginScreen({ onLogin, onLogActivity, staffList: propsStaffList }: LoginScreenProps) {
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  const [localStaffList, setLocalStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  // Keep synced with Firestore and prop updates
+  useEffect(() => {
+    if (propsStaffList && propsStaffList.length > 0) {
+      setLocalStaffList(propsStaffList);
+    }
+  }, [propsStaffList]);
+
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      (items) => {
+        if (Array.isArray(items)) {
+          setLocalStaffList(items);
+        }
+      },
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
+
+  const activeStaffList = (propsStaffList && propsStaffList.length > 0) ? propsStaffList : localStaffList;
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +52,7 @@ export default function LoginScreen({ onLogin, onLogActivity }: LoginScreenProps
       return;
     }
 
-    const staff = STAFF_LIST.find((s) => s.id === selectedStaffId);
+    const staff = activeStaffList.find((s) => s.id === selectedStaffId);
     if (!staff) {
       setError('Staff tidak ditemukan.');
       return;
@@ -66,7 +93,7 @@ export default function LoginScreen({ onLogin, onLogActivity }: LoginScreenProps
           <div className="rounded-md space-y-4">
             <div>
               <label htmlFor="staff-select" className="block text-sm font-medium text-slate-700 mb-1">
-                Pilih Nama Staff
+                Pilih Nama Staff ({activeStaffList.length} Personel Terdaftar)
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -83,52 +110,25 @@ export default function LoginScreen({ onLogin, onLogActivity }: LoginScreenProps
                 >
                   <option value="">-- Pilih Anggota Staff --</option>
                   
-                  <optgroup label="ADMIN / MANAGEMENT">
-                    {STAFF_LIST.filter(s => s.division === 'Admin').map(s => {
-                      let displayRole: string = s.role;
-                      if (s.name === 'Wahyu') displayRole = 'Director';
-                      if (s.name === 'Caca' || s.name === 'Seno') displayRole = 'Staff Admin';
-                      return (
-                        <option key={s.id} value={s.id}>{s.name} ({displayRole})</option>
-                      );
-                    })}
-                  </optgroup>
-
-                  <optgroup label="STAFF GUDANG">
-                    {STAFF_LIST.filter(s => s.division === 'Gudang').map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-                    ))}
-                  </optgroup>
-
-                  <optgroup label="SOUND (AUDIO) DIVISION">
-                    {STAFF_LIST.filter(s => s.division === 'Audio').map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-                    ))}
-                  </optgroup>
-
-                  <optgroup label="LIGHTING DIVISION">
-                    {STAFF_LIST.filter(s => s.division === 'Lighting').map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-                    ))}
-                  </optgroup>
-
-                  <optgroup label="MULTIMEDIA DIVISION">
-                    {STAFF_LIST.filter(s => s.division === 'Multimedia').map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-                    ))}
-                  </optgroup>
-
-                  <optgroup label="VIDEOTRON DIVISION">
-                    {STAFF_LIST.filter(s => s.division === 'Videotron').map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-                    ))}
-                  </optgroup>
-
-                  <optgroup label="SERVICE DIVISION">
-                    {STAFF_LIST.filter(s => s.division === 'Service').map(s => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.role})</option>
-                    ))}
-                  </optgroup>
+                  {['Admin', 'Gudang', 'Audio', 'Lighting', 'Multimedia', 'Videotron', 'Service'].map(divName => {
+                    const staffInDiv = activeStaffList.filter(s => s && s.division === divName);
+                    if (staffInDiv.length === 0) return null;
+                    const groupLabel = divName === 'Admin' ? 'ADMIN / MANAGEMENT'
+                      : divName === 'Gudang' ? 'STAFF GUDANG'
+                      : divName === 'Audio' ? 'SOUND (AUDIO) DIVISION'
+                      : `${divName.toUpperCase()} DIVISION`;
+                    return (
+                      <optgroup key={divName} label={groupLabel}>
+                        {staffInDiv.map(s => {
+                          let displayRole: string = s.role || 'Staff';
+                          if (s.name.toLowerCase() === 'wahyu') displayRole = 'Director';
+                          return (
+                            <option key={s.id} value={s.id}>{s.name} ({displayRole} - {s.division})</option>
+                          );
+                        })}
+                      </optgroup>
+                    );
+                  })}
                 </select>
               </div>
             </div>

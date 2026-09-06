@@ -7,9 +7,10 @@ import {
   P2HChecklist,
   FleetBudgetRAB,
   VehicleMaster,
-  ManifestCargoItem
+  ManifestCargoItem,
+  FleetDriver
 } from '../types';
-import { INITIAL_ASSETS, INITIAL_VEHICLES } from '../data';
+import { INITIAL_ASSETS, INITIAL_VEHICLES, INITIAL_FLEET_DRIVERS } from '../data';
 import {
   Package,
   ArrowDownLeft,
@@ -39,10 +40,13 @@ import {
   Navigation,
   FileSpreadsheet,
   Edit3,
+  Edit2,
   AlertTriangle,
-  FileCheck
+  FileCheck,
+  Users,
+  Phone
 } from 'lucide-react';
-import { subscribeCloudCollection, saveCloudDoc } from '../lib/cloudSync';
+import { subscribeCloudCollection, saveCloudDoc, pushCollectionToCloud } from '../lib/cloudSync';
 
 interface GudangProps {
   currentUser: Staff;
@@ -63,19 +67,19 @@ export default function Gudang({
 }: GudangProps) {
   // Warehouse Logs State - Bersih dari data dummy
   const [warehouseLogs, setWarehouseLogs] = useState<WarehouseLog[]>(() => {
-    const saved = localStorage.getItem('riz_warehouse_logs');
-    if (saved) {
-      try {
-        const parsed: WarehouseLog[] = JSON.parse(saved);
-        const cleaned = parsed.filter(l => l.id !== 'wl-1' && l.id !== 'wl-2');
-        if (cleaned.length !== parsed.length) {
-          localStorage.setItem('riz_warehouse_logs', JSON.stringify(cleaned));
+    try {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        const saved = localStorage.getItem('riz_warehouse_logs');
+        if (saved) {
+          const parsed: WarehouseLog[] = JSON.parse(saved);
+          const cleaned = parsed.filter(l => l.id !== 'wl-1' && l.id !== 'wl-2');
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem('riz_warehouse_logs', JSON.stringify(cleaned));
+          }
+          return cleaned;
         }
-        return cleaned;
-      } catch (e) {
-        return [];
       }
-    }
+    } catch (e) {}
     return [];
   });
 
@@ -83,7 +87,14 @@ export default function Gudang({
   const [fleetAssignments, setFleetAssignments] = useState<FleetAssignment[]>(() => {
     try {
       const saved = localStorage.getItem('riz_fleet_assignments');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const flat = parsed.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
+          const valid = flat.filter(f => Boolean(f && typeof f === 'object' && (f.spjNumber || f.driverName)));
+          return valid;
+        }
+      }
     } catch (e) {}
     return [];
   });
@@ -92,23 +103,39 @@ export default function Gudang({
   const [vehicles, setVehicles] = useState<VehicleMaster[]>(() => {
     try {
       const saved = localStorage.getItem('riz_master_vehicles');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const flat = parsed.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
+          const valid = flat.filter(v => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
+          if (valid.length > 0) return valid;
+        }
+      }
     } catch (e) {}
     return INITIAL_VEHICLES;
   });
 
   // Assets database matching
   const [localAssets, setLocalAssets] = useState<Asset[]>(() => {
-    const saved = localStorage.getItem('riz_assets');
-    return saved ? JSON.parse(saved) : INITIAL_ASSETS;
+    try {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        const saved = localStorage.getItem('riz_assets');
+        if (saved) return JSON.parse(saved);
+      }
+    } catch (e) {}
+    return INITIAL_ASSETS;
   });
 
   useEffect(() => {
     setLocalAssets(assets);
   }, [assets]);
 
+  const isAdminDivision = true; // Allow viewing and managing fleet/armada
+
   // Tab views within warehouse: 'logs' | 'scanner' | 'armada_governance'
-  const [warehouseSubTab, setWarehouseSubTab] = useState<'logs' | 'scanner' | 'armada_governance'>(() => forceSubTab || 'logs');
+  const [warehouseSubTab, setWarehouseSubTab] = useState<'logs' | 'scanner' | 'armada_governance'>(() => {
+    return forceSubTab || 'logs';
+  });
 
   useEffect(() => {
     if (forceSubTab) {
@@ -116,8 +143,85 @@ export default function Gudang({
     }
   }, [forceSubTab]);
 
-  // Subtab inside Armada Governance: 'trips' | 'vehicles' | 'costs'
-  const [fleetSection, setFleetSection] = useState<'trips' | 'vehicles' | 'costs'>('trips');
+  // Subtab inside Armada Governance: 'trips' | 'vehicles' | 'drivers' | 'costs'
+  const [fleetSection, setFleetSection] = useState<'trips' | 'vehicles' | 'drivers' | 'costs'>('trips');
+
+  // Master Driver Armada State in Gudang
+  const [driverList, setDriverList] = useState<FleetDriver[]>(() => {
+    try {
+      const saved = localStorage.getItem('riz_fleet_drivers');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const flat = parsed.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
+          const valid = flat.filter(d => Boolean(d && typeof d === 'object' && d.name));
+          if (valid.length > 0) return valid;
+        }
+      }
+    } catch (e) {}
+    return INITIAL_FLEET_DRIVERS;
+  });
+
+  const [showAddDriverModal, setShowAddDriverModal] = useState(false);
+  const [showEditDriverModal, setShowEditDriverModal] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<FleetDriver | null>(null);
+  const [driverFormData, setDriverFormData] = useState<Partial<FleetDriver>>({
+    name: '',
+    phone: '',
+    driverType: 'Internal',
+    simType: 'SIM B1',
+    simExpiry: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
+    idCardNumber: '',
+    assignedVehicle: 'Truk Box Mitsubishi Canter CDD (6 Roda)',
+    status: 'Siap Jalan',
+    emergencyContact: '',
+    address: '',
+    notes: ''
+  });
+
+  const saveDriverList = (updated: FleetDriver[]) => {
+    setDriverList(updated);
+    localStorage.setItem('riz_fleet_drivers', JSON.stringify(updated));
+    pushCollectionToCloud('fleet_drivers', updated, currentUser.name);
+    onLogActivity(currentUser.name, currentUser.role, 'Gudang memperbarui master data driver armada');
+  };
+
+  const handleAddDriver = () => {
+    if (!driverFormData.name?.trim()) return;
+    const newDrv: FleetDriver = {
+      id: `drv-${Date.now()}`,
+      name: driverFormData.name.trim(),
+      phone: driverFormData.phone?.trim() || '',
+      driverType: (driverFormData.driverType as any) || 'Internal',
+      simType: (driverFormData.simType as any) || 'SIM B1',
+      simExpiry: driverFormData.simExpiry || new Date().toISOString().split('T')[0],
+      idCardNumber: driverFormData.idCardNumber?.trim() || '',
+      assignedVehicle: driverFormData.assignedVehicle || '',
+      status: (driverFormData.status as any) || 'Siap Jalan',
+      emergencyContact: driverFormData.emergencyContact?.trim() || '',
+      address: driverFormData.address?.trim() || '',
+      notes: driverFormData.notes?.trim() || '',
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    const updated = [...driverList, newDrv];
+    saveDriverList(updated);
+    setShowAddDriverModal(false);
+  };
+
+  const handleSaveEditDriver = () => {
+    if (!selectedDriver || !driverFormData.name?.trim()) return;
+    const updated = driverList.map(d => d.id === selectedDriver.id ? { ...d, ...driverFormData } as FleetDriver : d);
+    saveDriverList(updated);
+    setShowEditDriverModal(false);
+    setSelectedDriver(null);
+  };
+
+  const handleDeleteDriver = (id: string) => {
+    if (confirm('Yakin ingin menghapus data pengemudi (driver) ini?')) {
+      const updated = driverList.filter(d => d.id !== id);
+      saveDriverList(updated);
+    }
+  };
 
   // New action form state
   const [showLogForm, setShowLogForm] = useState(false);
@@ -138,6 +242,7 @@ export default function Gudang({
   const [showCostRecapModal, setShowCostRecapModal] = useState(false);
 
   const [selectedFleet, setSelectedFleet] = useState<FleetAssignment | null>(null);
+
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleMaster | null>(null);
 
   // Manifest items in creation modal
@@ -286,27 +391,59 @@ export default function Gudang({
     setShowLogForm(false);
   };
 
-  // Fleet Subscription
+  // Fleet, Drivers, and Vehicles Subscriptions
   useEffect(() => {
-    const unsub = subscribeCloudCollection<FleetAssignment>(
+    const unsubAssignments = subscribeCloudCollection<FleetAssignment>(
       'fleet_assignments',
       'riz_fleet_assignments',
-      setFleetAssignments,
+      (rawItems) => {
+        const flat = (rawItems || []).flatMap(item => (item && Array.isArray((item as any).list)) ? (item as any).list : [item]);
+        const valid = flat.filter((f): f is FleetAssignment => Boolean(f && typeof f === 'object' && (f.spjNumber || f.driverName)));
+        setFleetAssignments(valid);
+      },
       []
     );
-    return () => unsub();
+    const unsubVehicles = subscribeCloudCollection<VehicleMaster>(
+      'master_vehicles',
+      'riz_master_vehicles',
+      (rawItems) => {
+        const flat = (rawItems || []).flatMap(item => (item && Array.isArray((item as any).list)) ? (item as any).list : [item]);
+        const valid = flat.filter((v): v is VehicleMaster => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
+        setVehicles(valid.length > 0 ? valid : INITIAL_VEHICLES);
+      },
+      INITIAL_VEHICLES
+    );
+    const unsubDrivers = subscribeCloudCollection<FleetDriver>(
+      'fleet_drivers',
+      'riz_fleet_drivers',
+      (rawItems) => {
+        const flat = (rawItems || []).flatMap(item => (item && Array.isArray((item as any).list)) ? (item as any).list : [item]);
+        const valid = flat.filter((d): d is FleetDriver => Boolean(d && typeof d === 'object' && d.name));
+        setDriverList(valid.length > 0 ? valid : INITIAL_FLEET_DRIVERS);
+      },
+      INITIAL_FLEET_DRIVERS
+    );
+
+    return () => {
+      unsubAssignments();
+      unsubVehicles();
+      unsubDrivers();
+    };
   }, []);
 
   const saveFleetAssignments = (updated: FleetAssignment[]) => {
     setFleetAssignments(updated);
     localStorage.setItem('riz_fleet_assignments', JSON.stringify(updated));
+    pushCollectionToCloud('fleet_assignments', updated, currentUser.name);
+    onLogActivity(currentUser.name, currentUser.role, 'Gudang memperbarui penugasan armada');
   };
 
   // Master Vehicles Subscription / Persistence
   const saveVehicles = (updated: VehicleMaster[]) => {
     setVehicles(updated);
     localStorage.setItem('riz_master_vehicles', JSON.stringify(updated));
-    saveCloudDoc('master_vehicles', 'vehicles_list', { list: updated });
+    pushCollectionToCloud('master_vehicles', updated, currentUser.name);
+    onLogActivity(currentUser.name, currentUser.role, 'Gudang memperbarui database kendaraan armada');
   };
 
   const handleSaveVehicle = (e: React.FormEvent) => {
@@ -628,15 +765,17 @@ export default function Gudang({
             Scan Asset (Barcode/QR)
           </button>
 
-          <button
-            onClick={() => setWarehouseSubTab('armada_governance')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
-              warehouseSubTab === 'armada_governance' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
-            }`}
-          >
-            <Truck className="w-3.5 h-3.5" />
-            <span>Tata Kelola Armada & Biaya Sewa</span>
-          </button>
+          {isAdminDivision && (
+            <button
+              onClick={() => setWarehouseSubTab('armada_governance')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                warehouseSubTab === 'armada_governance' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+              }`}
+            >
+              <Truck className="w-3.5 h-3.5" />
+              <span>Tata Kelola Armada & Biaya Sewa</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1321,7 +1460,16 @@ export default function Gudang({
                 }`}
               >
                 <Truck className="w-3.5 h-3.5" />
-                <span>Data Master Inventaris Armada ({vehicles.length})</span>
+                <span>Master Unit Armada ({vehicles.length})</span>
+              </button>
+              <button
+                onClick={() => setFleetSection('drivers')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  fleetSection === 'drivers' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Master Driver Armada ({driverList.length})</span>
               </button>
               <button
                 onClick={() => setFleetSection('costs')}
@@ -1351,6 +1499,32 @@ export default function Gudang({
                   <span>Terbitkan SPJ & RAB (Caca)</span>
                 </button>
               )}
+              {fleetSection === 'drivers' && (
+                <button
+                  onClick={() => {
+                    setSelectedDriver(null);
+                    setDriverFormData({
+                      name: '',
+                      phone: '',
+                      driverType: 'Internal',
+                      simType: 'SIM B1',
+                      simExpiry: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
+                      idCardNumber: '',
+                      assignedVehicle: vehicles[0]?.name || 'Truk Box Mitsubishi Canter CDD (6 Roda)',
+                      status: 'Siap Jalan',
+                      emergencyContact: '',
+                      address: '',
+                      notes: ''
+                    });
+                    setShowAddDriverModal(true);
+                  }}
+                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Input Driver Baru</span>
+                </button>
+              )}
+
               {fleetSection === 'vehicles' && (
                 <button
                   onClick={() => {
@@ -1530,49 +1704,49 @@ export default function Gudang({
           {fleetSection === 'vehicles' && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {vehicles.map((v) => (
-                  <div key={v.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                {vehicles.filter(v => v && (v.name || v.policeNumber)).map((v) => (
+                  <div key={v.id || v.policeNumber} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
                         <span className={`text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded ${
-                          v.ownership === 'Internal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                          (v.ownership || 'Internal') === 'Internal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
                         }`}>
-                          {v.ownership}
+                          {v.ownership || 'Internal'}
                         </span>
-                        <h3 className="font-extrabold text-slate-900 text-sm mt-1">{v.name}</h3>
+                        <h3 className="font-extrabold text-slate-900 text-sm mt-1">{v.name || 'Unit Armada'}</h3>
                       </div>
                       <span className="font-mono text-xs font-black bg-slate-100 text-slate-800 px-2.5 py-1 rounded-lg border border-slate-200">
-                        {v.policeNumber}
+                        {v.policeNumber || '-'}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100 font-sans">
                       <div>
                         <span className="text-slate-400 block text-[10px]">Kapasitas Tonase</span>
-                        <span className="font-bold text-slate-800">{v.tonnageCapacity} Ton</span>
+                        <span className="font-bold text-slate-800">{v.tonnageCapacity ?? 0} Ton</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-[10px]">Kubikasi (CBM)</span>
-                        <span className="font-bold text-slate-800">{v.cbmCapacity} m³</span>
+                        <span className="font-bold text-slate-800">{v.cbmCapacity ?? 0} m³</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-[10px]">Odometer KM</span>
-                        <span className="font-mono font-bold text-slate-800">{v.odometerKM.toLocaleString('id-ID')} KM</span>
+                        <span className="font-mono font-bold text-slate-800">{(Number(v.odometerKM) || 0).toLocaleString('id-ID')} KM</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-[10px]">Status Unit</span>
-                        <span className="font-bold text-emerald-700">{v.status}</span>
+                        <span className="font-bold text-emerald-700">{v.status || 'Siap Operasi'}</span>
                       </div>
                     </div>
 
                     <div className="text-[11px] space-y-1 pt-2 border-t border-slate-100 font-mono">
                       <div className="flex justify-between">
                         <span className="text-slate-500">Pajak STNK:</span>
-                        <span className="font-bold text-slate-800">{v.stnkTaxExpiry}</span>
+                        <span className="font-bold text-slate-800">{v.stnkTaxExpiry || '-'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-500">Uji KIR Dishub:</span>
-                        <span className="font-bold text-slate-800">{v.kirExpiry}</span>
+                        <span className="font-bold text-slate-800">{v.kirExpiry || '-'}</span>
                       </div>
                     </div>
 
@@ -1596,6 +1770,142 @@ export default function Gudang({
                     </div>
                   </div>
                 ))}
+              </div>
+              {vehicles.filter(v => v && (v.name || v.policeNumber)).length === 0 && (
+                <div className="p-8 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">
+                  Belum ada data unit armada kendaraan. Klik "Tambah Unit Armada" untuk memasukkan unit baru.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SECTION: MASTER DRIVER ARMADA TABLE */}
+          {fleetSection === 'drivers' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Total Driver Armada</span>
+                  <span className="font-black text-slate-900 text-lg font-mono mt-1 block">{driverList.filter(Boolean).length} Pengemudi</span>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-emerald-100 bg-emerald-50/20 shadow-xs">
+                  <span className="text-[10px] text-emerald-600 uppercase font-bold block">Status Siap Jalan</span>
+                  <span className="font-black text-emerald-700 text-lg font-mono mt-1 block">
+                    {driverList.filter(d => d && d.status === 'Siap Jalan').length}
+                  </span>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-blue-100 bg-blue-50/20 shadow-xs">
+                  <span className="text-[10px] text-blue-600 uppercase font-bold block">Sedang On Trip</span>
+                  <span className="font-black text-blue-700 text-lg font-mono mt-1 block">
+                    {driverList.filter(d => d && d.status === 'On Trip').length}
+                  </span>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-amber-100 bg-amber-50/20 shadow-xs">
+                  <span className="text-[10px] text-amber-600 uppercase font-bold block">Driver Internal PT RIZ</span>
+                  <span className="font-black text-amber-700 text-lg font-mono mt-1 block">
+                    {driverList.filter(d => d && d.driverType === 'Internal').length} Driver
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse font-sans">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
+                        <th className="p-3.5">Nama Pengemudi</th>
+                        <th className="p-3.5">Tipe Driver</th>
+                        <th className="p-3.5">Golongan & Masa SIM</th>
+                        <th className="p-3.5">No. HP / WA</th>
+                        <th className="p-3.5">Armada Default</th>
+                        <th className="p-3.5">Status Kesiapan</th>
+                        <th className="p-3.5 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {driverList.filter(d => d && d.name).map(driver => (
+                        <tr key={driver.id || driver.name} className="hover:bg-slate-50/60">
+                          <td className="p-3.5">
+                            <div className="font-bold text-slate-900">{driver.name || 'Pengemudi'}</div>
+                            {driver.idCardNumber && (
+                              <div className="text-[10px] text-slate-400 font-mono">KTP: {driver.idCardNumber}</div>
+                            )}
+                          </td>
+                          <td className="p-3.5">
+                            <span className={`px-2.5 py-0.5 rounded-md font-bold text-[10px] ${
+                              (driver.driverType || 'Internal') === 'Internal'
+                                ? 'bg-blue-100 text-blue-800'
+                                : driver.driverType === 'Mitra Vendor'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {driver.driverType || 'Internal'}
+                            </span>
+                          </td>
+                          <td className="p-3.5 font-mono">
+                            <div className="font-bold text-slate-800">{driver.simType || '-'}</div>
+                            <div className="text-[10px] text-slate-500">Exp: {driver.simExpiry || '-'}</div>
+                          </td>
+                          <td className="p-3.5">
+                            {driver.phone ? (
+                              <a
+                                href={`https://wa.me/${driver.phone.replace(/[^0-9]/g, '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-emerald-600 font-semibold font-mono hover:underline"
+                              >
+                                <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>{driver.phone}</span>
+                              </a>
+                            ) : (
+                              <span className="text-slate-400 italic">-</span>
+                            )}
+                          </td>
+                          <td className="p-3.5 text-slate-700 font-medium">
+                            {driver.assignedVehicle || '-'}
+                          </td>
+                          <td className="p-3.5">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              (driver.status || 'Siap Jalan') === 'Siap Jalan'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : driver.status === 'On Trip'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {driver.status || 'Siap Jalan'}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-right space-x-1">
+                            <button
+                              onClick={() => {
+                                setSelectedDriver(driver);
+                                setDriverFormData({ ...driver });
+                                setShowEditDriverModal(true);
+                              }}
+                              className="text-slate-400 hover:text-indigo-600 p-1.5 rounded-lg transition-colors cursor-pointer"
+                              title="Edit Data Driver"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDriver(driver.id)}
+                              className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg transition-colors cursor-pointer"
+                              title="Hapus Driver"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {driverList.filter(d => d && d.name).length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="p-8 text-center text-slate-400">
+                            Belum ada data driver armada. Klik <strong>"Input Driver Baru"</strong> untuk menambahkan.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1741,22 +2051,40 @@ export default function Gudang({
                     }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
                   >
-                    {vehicles.map(v => (
-                      <option key={v.id} value={v.policeNumber}>{v.name} ({v.policeNumber})</option>
+                    {vehicles.filter(v => v && v.policeNumber).map(v => (
+                      <option key={v.id || v.policeNumber} value={v.policeNumber}>{v.name || 'Armada'} ({v.policeNumber})</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Nama Pengemudi (Driver) *</label>
-                  <input
-                    type="text"
-                    placeholder="Nama Driver / Sopir"
-                    value={newFleetData.driverName}
-                    onChange={(e) => setNewFleetData({ ...newFleetData, driverName: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
-                    required
-                  />
+                  <div className="space-y-1">
+                    {driverList.length > 0 && (
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setNewFleetData({ ...newFleetData, driverName: e.target.value });
+                          }
+                        }}
+                        className="w-full bg-slate-100 border border-slate-200 rounded-lg p-1.5 text-[11px] text-slate-700 font-semibold mb-1"
+                        defaultValue=""
+                      >
+                        <option value="">-- Pilih dari Master Driver Armada --</option>
+                        {driverList.map(d => (
+                          <option key={d.id} value={d.name}>{d.name} ({d.driverType} - {d.status})</option>
+                        ))}
+                      </select>
+                    )}
+                    <input
+                      type="text"
+                      placeholder="Nama Driver / Sopir"
+                      value={newFleetData.driverName}
+                      onChange={(e) => setNewFleetData({ ...newFleetData, driverName: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -2511,6 +2839,184 @@ export default function Gudang({
         </div>
       )}
 
+      {/* MODAL 7: TAMBAH / EDIT DRIVER MASTER ARMADA (GUDANG / LOGISTIK) */}
+      {(showAddDriverModal || (showEditDriverModal && selectedDriver)) && (
+        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-slate-200">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-base">
+                  {showAddDriverModal ? 'Input Data Driver Armada Baru' : 'Edit Data Driver Armada'}
+                </h3>
+                <p className="text-[11px] text-slate-500 font-medium">Master Driver Pengemudi Logistik PT RIZ-PRODUCTION</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAddDriverModal(false);
+                  setShowEditDriverModal(false);
+                  setSelectedDriver(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs font-sans">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Lengkap Driver *</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Pak Joko / Mang Ujang"
+                  value={driverFormData.name}
+                  onChange={(e) => setDriverFormData({ ...driverFormData, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tipe Driver *</label>
+                  <select
+                    value={driverFormData.driverType}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, driverType: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold"
+                  >
+                    <option value="Internal">Driver Internal PT RIZ</option>
+                    <option value="Mitra Vendor">Driver Mitra Vendor</option>
+                    <option value="Freelance Driver">Freelance Driver</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">No. WhatsApp / HP *</label>
+                  <input
+                    type="tel"
+                    placeholder="0812-xxxx-xxxx"
+                    value={driverFormData.phone}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, phone: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Jenis Golongan SIM *</label>
+                  <select
+                    value={driverFormData.simType}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, simType: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold font-mono"
+                  >
+                    <option value="SIM A">SIM A (Blindvan/Mobil Kru)</option>
+                    <option value="SIM B1">SIM B1 (Truk Engkel / CDD)</option>
+                    <option value="SIM B1 Umum">SIM B1 Umum</option>
+                    <option value="SIM B2">SIM B2 (Tronton / Wingbox)</option>
+                    <option value="SIM B2 Umum">SIM B2 Umum</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Masa Berlaku SIM *</label>
+                  <input
+                    type="date"
+                    value={driverFormData.simExpiry}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, simExpiry: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Armada Yang Biasa Dibawa</label>
+                  <select
+                    value={driverFormData.assignedVehicle}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, assignedVehicle: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-semibold"
+                  >
+                    <option value="">-- Bebas / Semua Unit --</option>
+                    {vehicles.filter(v => v && (v.name || v.policeNumber)).map(v => (
+                      <option key={v.id || v.name || v.policeNumber} value={v.name || v.policeNumber}>{v.name || 'Armada'} ({v.policeNumber || '-'})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Status Kesiapan Operasi</label>
+                  <select
+                    value={driverFormData.status}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, status: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-bold"
+                  >
+                    <option value="Siap Jalan">Siap Jalan</option>
+                    <option value="On Trip">On Trip</option>
+                    <option value="Off / Libur">Off / Libur</option>
+                    <option value="Nonaktif">Nonaktif</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nomor KTP</label>
+                  <input
+                    type="text"
+                    placeholder="3201xxxxxxxxxxxx"
+                    value={driverFormData.idCardNumber}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, idCardNumber: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Kontak Darurat</label>
+                  <input
+                    type="text"
+                    placeholder="Nama & No HP Keluarga"
+                    value={driverFormData.emergencyContact}
+                    onChange={(e) => setDriverFormData({ ...driverFormData, emergencyContact: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Catatan Tambahan</label>
+                <input
+                  type="text"
+                  placeholder="Pengalaman rute, simpan SIM, dll."
+                  value={driverFormData.notes}
+                  onChange={(e) => setDriverFormData({ ...driverFormData, notes: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddDriverModal(false);
+                  setShowEditDriverModal(false);
+                  setSelectedDriver(null);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={showAddDriverModal ? handleAddDriver : handleSaveEditDriver}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all cursor-pointer shadow-xs"
+              >
+                {showAddDriverModal ? 'Simpan Driver Baru' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+

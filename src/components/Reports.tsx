@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { LogbookEntry, DailyReport, Finding, AttendanceLog } from '../types';
+import React, { useState, useEffect } from 'react';
+import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff } from '../types';
 import { FileText, Printer, FileDown, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
-import { STAFF_LIST } from '../data';
+import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis } from '../utils/kpiCalculator';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
+import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface ReportsProps {
   logbookEntries: LogbookEntry[];
@@ -25,6 +26,19 @@ export default function Reports({
   currentUser,
   onLogActivity,
 }: ReportsProps) {
+  // Master Staff Dynamic State with Cloud Subscription
+  const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setStaffList,
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
+
   const [reportType, setReportType] = useState<'Harian' | 'Mingguan' | 'Bulanan'>('Harian');
   const [targetMonth, setTargetMonth] = useState(() => {
     const now = new Date();
@@ -58,7 +72,7 @@ export default function Reports({
   // - Daily Task / Laporan Harian (Bobot 25%)
   // - QC Checklist (Bobot 20%)
   // - Work Order (Bobot 15%)
-  const staffKpis = calculateAllStaffKpis(STAFF_LIST, dailyReports, logbookEntries, findings);
+  const staffKpis = calculateAllStaffKpis(staffList, dailyReports, logbookEntries, findings);
 
   // Dynamic metrics per division
   const reportDivisions = [
@@ -383,7 +397,7 @@ export default function Reports({
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Staff Aktif</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">{STAFF_LIST.length} Orang</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">{staffList.length} Orang</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Daily Report</div>

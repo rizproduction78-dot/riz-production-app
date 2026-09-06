@@ -8,8 +8,32 @@ import {
   SCHEDULE_NOTE,
   StaffScheduleRow
 } from '../data/september2026Schedule';
-import { Calendar, Clock, MapPin, Camera, UserCheck, AlertTriangle, RefreshCw, Check, Edit, CheckCircle, Search, User, Zap, Award, BookOpen, CheckSquare, Square, ThumbsUp, HelpCircle, Wrench, Plus, Trash2, Printer } from 'lucide-react';
-import { subscribeCloudCollection, saveCloudDoc } from '../lib/cloudSync';
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Camera,
+  UserCheck,
+  AlertTriangle,
+  RefreshCw,
+  Check,
+  Edit,
+  CheckCircle,
+  Search,
+  User,
+  Zap,
+  Award,
+  BookOpen,
+  CheckSquare,
+  Square,
+  ThumbsUp,
+  HelpCircle,
+  Wrench,
+  Plus,
+  Trash2,
+  Printer
+} from 'lucide-react';
+import { subscribeCloudCollection, saveCloudDoc, pushCollectionToCloud } from '../lib/cloudSync';
 
 export const WAJIB_ABSEN_NAMES = [
   'Agus', 'Fahrul', 'Caca', 'Seno',
@@ -286,18 +310,29 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
   // Pagination or filters for schedule grid
   const [scheduleSearch, setScheduleSearch] = useState('');
 
-  // Real-time Cloud Firestore Attendance Subscription
+  // Real-time Cloud Firestore Subscriptions
   useEffect(() => {
-    const unsub = subscribeCloudCollection<AttendanceLog>(
+    const unsubAttendance = subscribeCloudCollection<AttendanceLog>(
       'attendance_logs',
       'riz_attendance_logs',
       setAttendanceLogs,
       []
     );
-    return () => unsub();
+
+    const unsubSchedule = subscribeCloudCollection<StaffScheduleRow>(
+      'september_2026_schedule',
+      'riz_september_2026_schedule',
+      setSeptemberScheduleData,
+      OFFICIAL_SEPTEMBER_2026_SCHEDULE
+    );
+
+    return () => {
+      unsubAttendance();
+      unsubSchedule();
+    };
   }, []);
 
-  // Save states to localStorage
+  // Save states to localStorage & Cloud
   useEffect(() => {
     localStorage.setItem('riz_attendance_logs', JSON.stringify(attendanceLogs));
   }, [attendanceLogs]);
@@ -310,12 +345,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
     localStorage.setItem('riz_september_2026_schedule', JSON.stringify(septemberScheduleData));
   }, [septemberScheduleData]);
 
-  // Handler to toggle / cycle September shift
+  // Handler to toggle / cycle September shift with Cloud Firestore push
   const handleToggleSeptemberShift = (staffNo: number, day: number) => {
     if (currentUser.role !== 'Admin' && currentUser.role !== 'Supervisor' && currentUser.role !== 'Manager') return;
 
     const cycle: string[] = ['MD', 'P', 'M', 'PM', 'L', 'Cuti', '-'];
-    setSeptemberScheduleData(prev => prev.map(row => {
+    const updated = septemberScheduleData.map(row => {
       if (row.no === staffNo) {
         const currentShift = row.shifts[day] || '-';
         const nextIdx = (cycle.indexOf(currentShift) + 1) % cycle.length;
@@ -328,11 +363,18 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
         };
       }
       return row;
-    }));
+    });
+
+    setSeptemberScheduleData(updated);
+    localStorage.setItem('riz_september_2026_schedule', JSON.stringify(updated));
+    pushCollectionToCloud('september_2026_schedule', updated, currentUser.name);
   };
 
   useEffect(() => {
     localStorage.setItem('riz_staff_electrical_competencies', JSON.stringify(electricalCompetencies));
+    if (electricalCompetencies && Object.keys(electricalCompetencies).length > 0) {
+      saveCloudDoc('system_configs', 'staff_electrical_competencies', { data: electricalCompetencies }, currentUser.name);
+    }
   }, [electricalCompetencies]);
 
   // Handle GPS detection

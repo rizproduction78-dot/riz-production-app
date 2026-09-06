@@ -7,9 +7,9 @@
  * Berdasarkan referensi desain Profil Karyawan & Performance Scoreboard
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Staff, DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
-import { STAFF_LIST } from '../data';
+import { STAFF_LIST, getMasterStaffList } from '../data';
 import {
   User,
   Shield,
@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 
 import { calculateStaffKpi, calculateAllStaffKpis } from '../utils/kpiCalculator';
+import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface EmployeePerformanceModuleProps {
   currentUser: Staff;
@@ -52,14 +53,18 @@ export default function EmployeePerformanceModule({
 }: EmployeePerformanceModuleProps) {
   const isManagement = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
 
-  // Load Master Staff List from localStorage or default
-  const [masterStaffList, setMasterStaffList] = useState<Staff[]>(() => {
-    try {
-      const saved = localStorage.getItem('riz_master_staff_list');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return STAFF_LIST;
-  });
+  // Load Master Staff List dynamically with Cloud Subscription
+  const [masterStaffList, setMasterStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setMasterStaffList,
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
 
   // Selected Employee (Default to Opik if available, or currentUser)
   const defaultStaff = masterStaffList.find(s => s.name === 'Opik') || currentUser;
@@ -145,7 +150,7 @@ export default function EmployeePerformanceModule({
                 onChange={(e) => setSelectedStaffName(e.target.value)}
                 className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer"
               >
-                {STAFF_LIST.map((s) => (
+                {masterStaffList.map((s) => (
                   <option key={s.id} value={s.name}>
                     {s.name} ({s.division} - {s.role})
                   </option>
@@ -347,7 +352,7 @@ export default function EmployeePerformanceModule({
           <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
             <div>
               <span className="text-[10px] text-slate-400 font-medium block">Ranking</span>
-              <span className="font-black text-slate-900 text-sm">#{currentStaffRank || 1} <span className="text-slate-400 text-xs font-normal">dari {STAFF_LIST.length} Staff</span></span>
+              <span className="font-black text-slate-900 text-sm">#{currentStaffRank || 1} <span className="text-slate-400 text-xs font-normal">dari {masterStaffList.length} Staff</span></span>
             </div>
             <div className="text-right">
               <span className="text-[10px] text-slate-400 font-medium block">Status Grade Bulan Ini</span>

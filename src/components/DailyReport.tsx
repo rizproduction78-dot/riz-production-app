@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { DailyReport as DailyReportType, Division, Finding } from '../types';
-import { STAFF_LIST } from '../data';
+import React, { useState, useEffect } from 'react';
+import { DailyReport as DailyReportType, Division, Finding, Staff } from '../types';
+import { STAFF_LIST, getMasterStaffList } from '../data';
 import { FileText, Plus, Calendar, User, Briefcase, CheckCircle2, Clipboard, Image as ImageIcon, Trash2, Search, Send, AlertOctagon, Eye, X, Upload } from 'lucide-react';
+import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface DailyReportProps {
   reports: DailyReportType[];
@@ -33,6 +34,19 @@ export default function DailyReport({
   onLogActivity,
 }: DailyReportProps) {
   const isManagement = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
+
+  // Dynamic Master Staff State with Cloud Subscription
+  const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setStaffList,
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
 
   // Form State
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -181,7 +195,7 @@ export default function DailyReport({
                   value={staffName}
                   onChange={(e) => {
                     setStaffName(e.target.value);
-                    const selected = STAFF_LIST.find(s => s.name === e.target.value);
+                    const selected = staffList.find(s => s.name === e.target.value);
                     if (selected) {
                       setDivision(selected.division);
                     }
@@ -189,7 +203,7 @@ export default function DailyReport({
                   className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-700 bg-slate-50/50"
                   required
                 >
-                  {STAFF_LIST.filter(
+                  {staffList.filter(
                     (staff) =>
                       isManagement ||
                       staff.division === currentUser.division ||

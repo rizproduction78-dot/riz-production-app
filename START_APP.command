@@ -1,12 +1,30 @@
 #!/bin/bash
-cd "$(dirname "$0")"
+export PATH="/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-if lsof -i :3000 >/dev/null 2>&1; then
-  echo "Server sudah aktif di port 3000. Membuka browser..."
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$DIR" || exit 1
+
+TARGET_URL=""
+if lsof -i :4173 >/dev/null 2>&1; then
+    TARGET_URL="http://localhost:4173"
+elif lsof -i :3000 >/dev/null 2>&1; then
+    TARGET_URL="http://localhost:3000"
 else
-  echo "Menjalankan server..."
-  npm run dev &
-  sleep 2
+    npm run dev >/dev/null 2>&1 &
+    for i in {1..20}; do
+        if lsof -i :3000 >/dev/null 2>&1; then
+            TARGET_URL="http://localhost:3000"
+            break
+        elif lsof -i :4173 >/dev/null 2>&1; then
+            TARGET_URL="http://localhost:4173"
+            break
+        fi
+        sleep 0.5
+    done
 fi
 
-open "http://localhost:3000/"
+if [ -z "$TARGET_URL" ]; then
+    TARGET_URL="http://localhost:3000"
+fi
+
+open "$TARGET_URL"

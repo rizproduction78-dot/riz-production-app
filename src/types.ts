@@ -8,8 +8,11 @@ export type Division = 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Guda
 export interface Staff {
   id: string;
   name: string;
+  fullName?: string; // NAMA ASLI (Nama Lengkap Resmi KTP)
+  nickname?: string; // NAMA PANGGILAN (Panggilan Lapangan)
   division: Division;
   role: 'Admin' | 'Supervisor' | 'Team Leader' | 'Staff' | 'Gudang' | 'Manager';
+  level?: number; // Jenjang Tingkat Kompetensi (Level 1 - 8)
   avatar?: string;
   phone?: string;
   email?: string;
@@ -233,3 +236,42 @@ export interface DailyTask {
   createdAt: string;
   createdBy: string;
 }
+
+export type FreelanceSpecialization = 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Rigging' | 'Genset / Power' | 'Gudang / Helper' | 'Driver' | 'Service / Teknisi' | 'Umum';
+
+export interface FreelanceWorker {
+  id: string;
+  name: string;
+  specialization: FreelanceSpecialization;
+  roleTitle: string; // e.g., "Freelance Sound Engineer", "Operator Lighting", "Crew Loading"
+  phone: string;
+  email?: string;
+  dailyRate?: number; // Honor harian per event (Rp)
+  idCardNumber?: string; // No. KTP
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankAccountHolder?: string;
+  status: 'Aktif' | 'Standby' | 'Nonaktif';
+  rating?: number; // 1-5 bintang
+  skills?: string; // Keahlian khusus & portfolio
+  address?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface FleetDriver {
+  id: string;
+  name: string;
+  phone: string;
+  driverType: 'Internal' | 'Mitra Vendor' | 'Freelance Driver';
+  simType: 'SIM A' | 'SIM B1' | 'SIM B1 Umum' | 'SIM B2' | 'SIM B2 Umum';
+  simExpiry: string; // YYYY-MM-DD
+  idCardNumber?: string; // No. KTP
+  assignedVehicle?: string; // Kendaraan default yang biasa dibawa
+  status: 'Siap Jalan' | 'On Trip' | 'Off / Libur' | 'Nonaktif';
+  emergencyContact?: string;
+  address?: string;
+  notes?: string;
+  createdAt: string;
+}
+

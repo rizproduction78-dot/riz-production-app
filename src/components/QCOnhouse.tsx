@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { LogbookEntry, Division, Finding } from '../types';
-import { STAFF_LIST, QC_ITEMS_BY_DIVISION } from '../data';
+import { LogbookEntry, Division, Finding, Staff } from '../types';
+import { STAFF_LIST, QC_ITEMS_BY_DIVISION, getMasterStaffList } from '../data';
 import { Check, X, Shield, Calendar, User, Briefcase, ChevronRight, ClipboardCheck, AlertOctagon, Save, Activity, Award, CheckCircle, Camera, Upload, Trash2, Eye, Plus } from 'lucide-react';
+import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface QCOnhouseProps {
   logbookEntries: LogbookEntry[];
@@ -23,6 +24,19 @@ export default function QCOnhouse({
   currentUser,
   onLogActivity,
 }: QCOnhouseProps) {
+  // Master Staff Dynamic State with Cloud Subscription
+  const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setStaffList,
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
+
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Load electrical competencies from localStorage to calculate metrics dynamically
@@ -31,9 +45,9 @@ export default function QCOnhouse({
     return saved ? JSON.parse(saved) : {};
   });
 
-  // Calculate metrics based on STAFF_LIST and competencies
+  // Calculate metrics based on staffList and competencies
   const ELIGIBLE_DIVISIONS = ['Audio', 'Lighting', 'Multimedia', 'Videotron', 'Gudang'];
-  const eligibleStaff = STAFF_LIST.filter(staff => ELIGIBLE_DIVISIONS.includes(staff.division));
+  const eligibleStaff = staffList.filter(staff => ELIGIBLE_DIVISIONS.includes(staff.division));
 
   const getStaffProgress = (staffId: string) => {
     const comps = electricalCompetencies[staffId] || {};
@@ -302,7 +316,7 @@ export default function QCOnhouse({
                   className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50"
                   required
                 >
-                  {STAFF_LIST.filter(
+                  {staffList.filter(
                     (staff) =>
                       staff.division === selectedDivision ||
                       staff.role === 'Admin' ||

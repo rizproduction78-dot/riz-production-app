@@ -85,7 +85,9 @@ export default function App() {
   const NAVIGATION_ITEMS = (() => {
     if (!currentUser) return [];
     const role = currentUser.role;
-    if (role === 'Admin' || currentUser.division === 'Admin') {
+    const isAdminOrOwner = currentUser.division === 'Admin' || role === 'Admin' || currentUser.id === 'director-wahyu' || currentUser.name.toLowerCase().includes('wahyu');
+
+    if (isAdminOrOwner) {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
@@ -104,34 +106,32 @@ export default function App() {
       ];
     }
     
-    // Manager
+    // Manager Non-Admin
     if (role === 'Manager') {
       return [
+        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
-        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
         { id: 'absensi_schedule', label: 'Penjadwalan (1-31)', icon: Calendar },
-        { id: 'armada', label: 'Kelola Armada', icon: Truck },
         { id: 'reports', label: 'Laporan & Approval', icon: FileCheck },
         { id: 'activities', label: 'Audit Activity', icon: History },
         { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
       ];
     }
     
-    // Supervisor
+    // Supervisor Non-Admin
     if (role === 'Supervisor') {
       return [
+        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'dashboard', label: 'Divisi Monitoring', icon: LayoutDashboard },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
-        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
         { id: 'absensi_schedule', label: 'Work Schedule (1-31)', icon: Calendar },
-        { id: 'armada', label: 'Kelola Armada', icon: Truck },
         { id: 'reports', label: 'Approval & Laporan', icon: FileCheck },
         { id: 'activities', label: 'Audit Activity', icon: History },
         { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
@@ -141,11 +141,10 @@ export default function App() {
     // Team Leader
     if (role === 'Team Leader') {
       return [
+        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
-        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
-        { id: 'armada', label: 'Kelola Armada', icon: Truck },
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck }
       ];
     }
@@ -153,11 +152,10 @@ export default function App() {
     // Staff
     if (role === 'Staff') {
       return [
+        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
-        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
-        { id: 'armada', label: 'Kelola Armada', icon: Truck },
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck }
       ];
     }
@@ -165,22 +163,20 @@ export default function App() {
     // Gudang
     if (role === 'Gudang') {
       return [
+        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
         { id: 'gudang', label: 'Manajemen Gudang', icon: Package },
-        { id: 'armada', label: 'Kelola Armada', icon: Truck },
-        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck }
       ];
     }
     
     return [
+      { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList },
       { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
-      { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
-      { id: 'armada', label: 'Kelola Armada', icon: Truck },
       { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck }
     ];
   })();

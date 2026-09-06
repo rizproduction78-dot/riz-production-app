@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Asset, Division } from '../types';
-import { STAFF_LIST } from '../data';
+import React, { useState, useEffect } from 'react';
+import { Asset, Division, Staff } from '../types';
+import { STAFF_LIST, getMasterStaffList } from '../data';
 import { Search, Plus, Trash2, Edit2, Archive, MapPin, Wrench, CheckCircle, AlertTriangle, XCircle, Settings, ClipboardList, BookOpen, Sparkles } from 'lucide-react';
+import { subscribeCloudCollection } from '../lib/cloudSync';
 import {
   OFFICIAL_EQUIPMENT_CATALOG,
   OfficialEquipmentItem
@@ -31,6 +32,19 @@ export default function AssetManagement({
   currentUser,
   onLogActivity,
 }: AssetProps) {
+  // Master Staff Dynamic State with Cloud Subscription
+  const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setStaffList,
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
+
   // Tab state: 'inventory' | 'official_catalog'
   const [assetViewTab, setAssetViewTab] = useState<'inventory' | 'official_catalog'>('inventory');
   const [catalogSearch, setCatalogSearch] = useState('');
@@ -402,7 +416,7 @@ export default function AssetManagement({
                 className="block w-full px-3 py-2 border border-emerald-200 rounded-lg text-xs bg-white text-slate-700"
                 required
               >
-                {STAFF_LIST.map(s => (
+                {staffList.map(s => (
                   <option key={s.id} value={s.name}>{s.name} ({s.division})</option>
                 ))}
               </select>

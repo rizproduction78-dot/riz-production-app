@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  * 
  * Cloud Real-Time & Auto-Sync Engine for RIZ-PRODUCTION App
- * Automatically synchronizes all local & server data whenever internet connectivity is detected.
- * Powered by Firebase Cloud Firestore with Offline Pending Queue & Heartbeat Auto-Sync.
+ * Multi-Device & Cross-Operating-System Synchronization (Windows, macOS, iOS, Android, Linux).
+ * Powered by Firebase Cloud Firestore with Offline Pending Queue, BroadcastChannel, and Lifecycle Auto-Sync.
  */
 
 import {
@@ -17,6 +17,13 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
+export interface DeviceOSInfo {
+  os: 'Windows' | 'macOS' | 'iOS' | 'Android' | 'Linux' | 'Unknown';
+  deviceType: 'Desktop' | 'Mobile' | 'Tablet';
+  browser: string;
+  userAgent: string;
+}
+
 export interface SyncStatus {
   isOnline: boolean;
   isSyncing: boolean;
@@ -24,26 +31,93 @@ export interface SyncStatus {
   syncedCollections: Record<string, number>;
   pendingQueueCount: number;
   lastSyncMessage?: string;
+  deviceOS?: string;
+  browser?: string;
 }
 
-interface PendingSyncItem {
+export interface PendingSyncItem {
   id: string;
   type: 'SAVE' | 'DELETE';
   collectionName: string;
   docId: string;
   data?: Record<string, any>;
   createdAt: string;
+  deviceOS: string;
 }
 
 const PENDING_QUEUE_KEY = 'riz_pending_offline_sync_queue';
+const SYNC_BROADCAST_CHANNEL_NAME = 'riz_cross_os_sync_channel';
 
-// Global Sync Status State
+// ─────────────────────────────────────────────────────────────
+// 1. DEVICE & OPERATING SYSTEM DETECTION (CROSS-PLATFORM)
+// ─────────────────────────────────────────────────────────────
+export function getDeviceOSInfo(): DeviceOSInfo {
+  if (typeof navigator === 'undefined') {
+    return { os: 'Unknown', deviceType: 'Desktop', browser: 'Unknown', userAgent: '' };
+  }
+
+  const ua = navigator.userAgent || '';
+  let os: DeviceOSInfo['os'] = 'Unknown';
+  let deviceType: DeviceOSInfo['deviceType'] = 'Desktop';
+
+  if (/ipad/i.test(ua) || (/macintosh/i.test(ua) && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1)) {
+    os = 'iOS';
+    deviceType = 'Tablet';
+  } else if (/iphone|ipod/i.test(ua)) {
+    os = 'iOS';
+    deviceType = 'Mobile';
+  } else if (/android/i.test(ua)) {
+    os = 'Android';
+    deviceType = /tablet|sm-t|gt-p/i.test(ua) ? 'Tablet' : 'Mobile';
+  } else if (/windows phone/i.test(ua)) {
+    os = 'Windows';
+    deviceType = 'Mobile';
+  } else if (/windows/i.test(ua)) {
+    os = 'Windows';
+    deviceType = 'Desktop';
+  } else if (/macintosh|mac os x/i.test(ua)) {
+    os = 'macOS';
+    deviceType = 'Desktop';
+  } else if (/linux/i.test(ua)) {
+    os = 'Linux';
+    deviceType = 'Desktop';
+  }
+
+  let browser = 'Browser';
+  if (/edg/i.test(ua)) browser = 'Edge';
+  else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
+  else if (/safari/i.test(ua)) browser = 'Safari';
+  else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+  else if (/opera|opr/i.test(ua)) browser = 'Opera';
+
+  return { os, deviceType, browser, userAgent: ua };
+}
+
+const localDeviceInfo = getDeviceOSInfo();
+
+// ─────────────────────────────────────────────────────────────
+// 2. MULTI-TAB & CROSS-WINDOW BROADCAST CHANNEL
+// ─────────────────────────────────────────────────────────────
+let syncBroadcastChannel: BroadcastChannel | null = null;
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  try {
+    syncBroadcastChannel = new BroadcastChannel(SYNC_BROADCAST_CHANNEL_NAME);
+  } catch (e) {
+    console.warn('[Sync] BroadcastChannel init warning:', e);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 3. GLOBAL SYNC STATUS & LISTENERS
+// ─────────────────────────────────────────────────────────────
 let currentSyncStatus: SyncStatus = {
   isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   isSyncing: false,
   lastSyncedAt: null,
   syncedCollections: {},
-  pendingQueueCount: getPendingQueue().length
+  pendingQueueCount: getPendingQueue().length,
+  deviceOS: `${localDeviceInfo.os} (${localDeviceInfo.deviceType})`,
+  browser: localDeviceInfo.browser
 };
 
 const statusListeners = new Set<(status: SyncStatus) => void>();
@@ -56,13 +130,15 @@ export function subscribeSyncStatus(listener: (status: SyncStatus) => void) {
   };
 }
 
-function updateSyncStatus(updates: Partial<SyncStatus>) {
+export function updateSyncStatus(updates: Partial<SyncStatus>) {
   currentSyncStatus = { ...currentSyncStatus, ...updates };
   statusListeners.forEach(listener => listener({ ...currentSyncStatus }));
 }
 
-// Pending Queue Helpers
-function getPendingQueue(): PendingSyncItem[] {
+// ─────────────────────────────────────────────────────────────
+// 4. OFFLINE PENDING QUEUE (Indexed in LocalStorage)
+// ─────────────────────────────────────────────────────────────
+export function getPendingQueue(): PendingSyncItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const saved = localStorage.getItem(PENDING_QUEUE_KEY);
@@ -72,7 +148,7 @@ function getPendingQueue(): PendingSyncItem[] {
   }
 }
 
-function savePendingQueue(queue: PendingSyncItem[]) {
+export function savePendingQueue(queue: PendingSyncItem[]) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(PENDING_QUEUE_KEY, JSON.stringify(queue));
@@ -82,14 +158,14 @@ function savePendingQueue(queue: PendingSyncItem[]) {
   }
 }
 
-function enqueuePendingOperation(item: Omit<PendingSyncItem, 'id' | 'createdAt'>) {
+export function enqueuePendingOperation(item: Omit<PendingSyncItem, 'id' | 'createdAt' | 'deviceOS'>) {
   const queue = getPendingQueue();
-  // Avoid duplicate queue entries for the same docId
   const filtered = queue.filter(q => !(q.collectionName === item.collectionName && q.docId === item.docId));
   filtered.push({
     ...item,
-    id: 'pq-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-    createdAt: new Date().toISOString()
+    id: `pq-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    createdAt: new Date().toISOString(),
+    deviceOS: localDeviceInfo.os
   });
   savePendingQueue(filtered);
 }
@@ -126,10 +202,71 @@ export async function flushPendingQueue(): Promise<number> {
   return successCount;
 }
 
-/**
- * Generic Real-time Firestore Collection Subscriber
- */
-export function subscribeCloudCollection<T extends { id: string }>(
+// ─────────────────────────────────────────────────────────────
+// 5. REGISTRY OF ALL 19 MODULES FOR MULTI-DEVICE SYNC
+// ─────────────────────────────────────────────────────────────
+export const ALL_SYNC_COLLECTIONS = [
+  { name: 'logbook_entries', key: 'riz_logbook_entries', label: 'Logbook Entries' },
+  { name: 'daily_reports', key: 'riz_daily_reports', label: 'Laporan Harian' },
+  { name: 'daily_tasks', key: 'riz_daily_tasks', label: 'Daily Task & Checklist' },
+  { name: 'findings', key: 'riz_findings', label: 'Temuan QC' },
+  { name: 'assets', key: 'riz_assets', label: 'Master Aset' },
+  { name: 'work_orders', key: 'riz_work_orders', label: 'Work Orders' },
+  { name: 'maintenance_schedules', key: 'riz_schedules', label: 'Jadwal Pemeliharaan' },
+  { name: 'activities', key: 'riz_activities', label: 'Audit Log Aktivitas' },
+  { name: 'master_staff', key: 'riz_master_staff_list', label: 'Master Staf Karyawan' },
+  { name: 'freelance_workers', key: 'riz_freelance_workers', label: 'Database Freelance' },
+  { name: 'fleet_drivers', key: 'riz_fleet_drivers', label: 'Database Driver Armada' },
+  { name: 'master_vehicles', key: 'riz_master_vehicles', label: 'Master Armada Kendaraan' },
+  { name: 'fleet_assignments', key: 'riz_fleet_assignments', label: 'Penugasan Armada' },
+  { name: 'custom_qc_checklists', key: 'riz_custom_qc_checklists', label: 'Template QC Checklist' },
+  { name: 'september_2026_schedule', key: 'riz_september_2026_schedule', label: 'Jadwal Shift September 2026' },
+  { name: 'work_schedule', key: 'riz_work_schedule', label: 'Jadwal Kerja Tim' },
+  { name: 'attendance_logs', key: 'riz_attendance_logs', label: 'Log Absensi Mandiri' },
+  { name: 'staff_competencies', key: 'riz_staff_electrical_competencies', label: 'Kompetensi Kelistrikan' },
+  { name: 'career_records', key: 'riz_career_pipeline_records', label: 'Paspor Kompetensi & Karir' },
+  { name: 'warehouse_logs', key: 'riz_warehouse_logs', label: 'Log Inventaris Gudang' }
+];
+
+// ─────────────────────────────────────────────────────────────
+// 5B. EXPLICIT DELETION TRACKER (Prevents deleted items from resurrecting)
+// ─────────────────────────────────────────────────────────────
+export function getDeletedIds(collectionName: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const saved = localStorage.getItem(`riz_deleted_ids_${collectionName}`);
+    if (saved) {
+      const arr = JSON.parse(saved);
+      if (Array.isArray(arr)) return new Set(arr.map(String));
+    }
+  } catch (e) {}
+  return new Set();
+}
+
+export function recordDeletedId(collectionName: string, docId: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const set = getDeletedIds(collectionName);
+    set.add(String(docId));
+    localStorage.setItem(`riz_deleted_ids_${collectionName}`, JSON.stringify(Array.from(set)));
+  } catch (e) {}
+}
+
+export function clearDeletedId(collectionName: string, docId: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const set = getDeletedIds(collectionName);
+    if (set.has(String(docId))) {
+      set.delete(String(docId));
+      localStorage.setItem(`riz_deleted_ids_${collectionName}`, JSON.stringify(Array.from(set)));
+    }
+  } catch (e) {}
+}
+
+// ─────────────────────────────────────────────────────────────
+// 6. REAL-TIME FIRESTORE SUBSCRIBER
+// ─────────────────────────────────────────────────────────────
+export function subscribeCloudCollection<T = any>(
   collectionName: string,
   localCacheKey: string,
   onData: (items: T[]) => void,
@@ -140,23 +277,86 @@ export function subscribeCloudCollection<T extends { id: string }>(
     const unsubscribe = onSnapshot(
       colRef,
       (snapshot) => {
+        const deletedIds = getDeletedIds(collectionName);
+
         if (!snapshot.empty) {
-          const items: T[] = snapshot.docs.map(docSnap => {
+          let items: T[] = snapshot.docs.map(docSnap => {
             const data = docSnap.data();
             return {
               id: docSnap.id,
               ...data
-            } as T;
+            } as unknown as T;
           });
 
-          // Save to local cache
+          // Robustly unwrap if Firestore contains wrapper documents with a .list array
+          if (items.length === 1 && Array.isArray((items[0] as any)?.list)) {
+            items = (items[0] as any).list;
+          } else if (items.some(item => item && Array.isArray((item as any)?.list))) {
+            items = items.flatMap(item => (item && Array.isArray((item as any)?.list)) ? (item as any).list : [item]);
+          }
+
+          // Intelligent merge with initial fallback so that partial Firestore collections don't wipe out comprehensive local datasets
+          if (initialFallback && initialFallback.length > 0) {
+            const mergedMap = new Map<string, any>();
+            const nameToId = new Map<string, string>();
+
+            initialFallback.forEach((fb: any) => {
+              const fbId = String(fb?.id || fb?.no || fb?.name || '');
+              const normName = String(fb?.name || fb?.fullName || '').toLowerCase().trim();
+              if (fbId && !deletedIds.has(fbId)) {
+                mergedMap.set(fbId, fb);
+                if (normName) nameToId.set(normName, fbId);
+              }
+            });
+
+            items.forEach((it: any) => {
+              const itId = String(it?.id || it?.no || it?.name || '');
+              const normName = String(it?.name || it?.fullName || '').toLowerCase().trim();
+              if (itId && !deletedIds.has(itId) && !(it as any)._deleted) {
+                if (mergedMap.has(itId)) {
+                  const existing = mergedMap.get(itId);
+                  mergedMap.set(itId, { ...existing, ...it });
+                } else if (normName && nameToId.has(normName)) {
+                  const oldFbId = nameToId.get(normName)!;
+                  const existing = mergedMap.get(oldFbId);
+                  mergedMap.delete(oldFbId);
+                  mergedMap.set(itId, { ...existing, ...it });
+                  nameToId.set(normName, itId);
+                } else {
+                  mergedMap.set(itId, it);
+                }
+              }
+            });
+
+            items = Array.from(mergedMap.values()) as T[];
+          } else {
+            items = items.filter(it => {
+              const itId = String((it as any)?.id || (it as any)?.no || '');
+              return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+            });
+          }
+
+          // Update local cache safely
           try {
             localStorage.setItem(localCacheKey, JSON.stringify(items));
           } catch (e) {
-            console.warn(`[Sync] LocalStorage cache full for ${localCacheKey}`);
+            console.warn(`[Sync] LocalStorage cache storage limit warning for ${localCacheKey}`);
           }
 
           onData(items);
+
+          // Broadcast to other open tabs on this machine
+          if (syncBroadcastChannel) {
+            try {
+              syncBroadcastChannel.postMessage({
+                type: 'COLLECTION_SYNCED',
+                collectionName,
+                localCacheKey,
+                count: items.length
+              });
+            } catch (e) {}
+          }
+
           updateSyncStatus({
             isOnline: true,
             lastSyncedAt: new Date(),
@@ -166,30 +366,74 @@ export function subscribeCloudCollection<T extends { id: string }>(
             }
           });
         } else {
-          // If cloud is empty, check if we have local cache to push up
+          // If cloud collection is completely empty, check if local storage has initial data to upload
           const cached = localStorage.getItem(localCacheKey);
           if (cached) {
             try {
-              const localItems: T[] = JSON.parse(cached);
-              if (Array.isArray(localItems) && localItems.length > 0) {
-                pushCollectionToCloud(collectionName, localItems);
-                onData(localItems);
-                return;
+              let localItems: T[] = JSON.parse(cached);
+              if (Array.isArray(localItems)) {
+                if (localItems.length === 1 && Array.isArray((localItems[0] as any)?.list)) {
+                  localItems = (localItems[0] as any).list;
+                } else if (localItems.some(item => item && Array.isArray((item as any)?.list))) {
+                  localItems = localItems.flatMap(item => (item && Array.isArray((item as any)?.list)) ? (item as any).list : [item]);
+                }
+                localItems = localItems.filter(it => {
+                  const itId = String((it as any)?.id || (it as any)?.no || '');
+                  return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+                });
+                if (localItems.length > 0) {
+                  pushCollectionToCloud(collectionName, localItems);
+                  onData(localItems);
+                  return;
+                }
               }
             } catch { /* ignore */ }
           }
-          onData(initialFallback);
+          const validFallback = initialFallback.filter(it => {
+            const itId = String((it as any)?.id || (it as any)?.no || '');
+            return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+          });
+          onData(validFallback);
         }
       },
       (error) => {
-        console.warn(`[Sync] Real-time listener for ${collectionName}:`, error);
+        console.warn(`[Sync] Real-time listener warning for ${collectionName}:`, error);
+        const deletedIds = getDeletedIds(collectionName);
         const cached = localStorage.getItem(localCacheKey);
         if (cached) {
           try {
-            onData(JSON.parse(cached));
+            let localItems = JSON.parse(cached);
+            if (Array.isArray(localItems)) {
+              if (localItems.length === 1 && Array.isArray(localItems[0]?.list)) {
+                localItems = localItems[0].list;
+              } else if (localItems.some(item => item && Array.isArray(item?.list))) {
+                localItems = localItems.flatMap(item => (item && Array.isArray(item?.list)) ? item.list : [item]);
+              }
+              localItems = localItems.filter(it => {
+                const itId = String((it as any)?.id || (it as any)?.no || '');
+                return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+              });
+              onData(localItems);
+              return;
+            }
+            const validFallback = initialFallback.filter(it => {
+              const itId = String((it as any)?.id || (it as any)?.no || '');
+              return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+            });
+            onData(validFallback);
           } catch {
-            onData(initialFallback);
+            const validFallback = initialFallback.filter(it => {
+              const itId = String((it as any)?.id || (it as any)?.no || '');
+              return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+            });
+            onData(validFallback);
           }
+        } else {
+          const validFallback = initialFallback.filter(it => {
+            const itId = String((it as any)?.id || (it as any)?.no || '');
+            return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+          });
+          onData(validFallback);
         }
       }
     );
@@ -201,15 +445,28 @@ export function subscribeCloudCollection<T extends { id: string }>(
   }
 }
 
-/**
- * Save / Update a single document in Firestore
- */
+// ─────────────────────────────────────────────────────────────
+// 7. SAVE / UPDATE SINGLE DOCUMENT WITH CROSS-OS METADATA
+// ─────────────────────────────────────────────────────────────
 export async function saveCloudDoc(
   collectionName: string,
   docId: string,
-  data: Record<string, any>
+  data: Record<string, any>,
+  updaterName?: string
 ): Promise<void> {
-  const cleanData = JSON.parse(JSON.stringify(data));
+  clearDeletedId(collectionName, docId);
+  const deviceInfo = getDeviceOSInfo();
+  const cleanData = {
+    ...JSON.parse(JSON.stringify(data)),
+    _syncMeta: {
+      updatedAt: new Date().toISOString(),
+      updatedBy: updaterName || 'User',
+      deviceOS: deviceInfo.os,
+      deviceType: deviceInfo.deviceType,
+      browser: deviceInfo.browser
+    }
+  };
+
   if (!navigator.onLine) {
     enqueuePendingOperation({
       type: 'SAVE',
@@ -227,7 +484,7 @@ export async function saveCloudDoc(
       lastSyncedAt: new Date()
     });
   } catch (error) {
-    console.warn(`[Sync] Offline/Error saving ${docId} to ${collectionName}, enqueuing:`, error);
+    console.warn(`[Sync] Network error saving doc ${docId} to ${collectionName}. Queued for offline sync:`, error);
     enqueuePendingOperation({
       type: 'SAVE',
       collectionName,
@@ -237,13 +494,14 @@ export async function saveCloudDoc(
   }
 }
 
-/**
- * Delete a document in Firestore
- */
+// ─────────────────────────────────────────────────────────────
+// 8. DELETE SINGLE DOCUMENT WITH OFFLINE QUEUE
+// ─────────────────────────────────────────────────────────────
 export async function deleteCloudDoc(
   collectionName: string,
   docId: string
 ): Promise<void> {
+  recordDeletedId(collectionName, docId);
   if (!navigator.onLine) {
     enqueuePendingOperation({
       type: 'DELETE',
@@ -260,7 +518,7 @@ export async function deleteCloudDoc(
       lastSyncedAt: new Date()
     });
   } catch (error) {
-    console.warn(`[Sync] Offline/Error deleting ${docId} from ${collectionName}, enqueuing:`, error);
+    console.warn(`[Sync] Network error deleting doc ${docId} from ${collectionName}. Queued for offline sync:`, error);
     enqueuePendingOperation({
       type: 'DELETE',
       collectionName,
@@ -269,26 +527,38 @@ export async function deleteCloudDoc(
   }
 }
 
-/**
- * Push an array of local items to Firestore collection using batch writes
- */
-export async function pushCollectionToCloud<T extends { id: string }>(
+// ─────────────────────────────────────────────────────────────
+// 9. BATCH PUSH LOCAL ITEMS TO CLOUD
+// ─────────────────────────────────────────────────────────────
+export async function pushCollectionToCloud<T = any>(
   collectionName: string,
-  items: T[]
+  items: T[],
+  updaterName?: string
 ): Promise<void> {
   if (!items || items.length === 0) return;
 
+  const deviceInfo = getDeviceOSInfo();
   try {
     updateSyncStatus({ isSyncing: true });
-    const CHUNK_SIZE = 400;
+    const CHUNK_SIZE = 300;
     for (let i = 0; i < items.length; i += CHUNK_SIZE) {
       const chunk = items.slice(i, i + CHUNK_SIZE);
       const batch = writeBatch(db);
 
-      chunk.forEach(item => {
-        if (item.id) {
-          const docRef = doc(db, collectionName, item.id);
-          const cleanData = JSON.parse(JSON.stringify(item));
+      chunk.forEach((item: any, idx: number) => {
+        const docId = String(item?.id || item?.no || item?.key || `item-${i + idx}`);
+        if (docId) {
+          const docRef = doc(db, collectionName, docId);
+          const cleanData = {
+            ...JSON.parse(JSON.stringify(item)),
+            _syncMeta: {
+              updatedAt: new Date().toISOString(),
+              updatedBy: updaterName || 'BatchSync',
+              deviceOS: deviceInfo.os,
+              deviceType: deviceInfo.deviceType,
+              browser: deviceInfo.browser
+            }
+          };
           batch.set(docRef, cleanData, { merge: true });
         }
       });
@@ -310,45 +580,39 @@ export async function pushCollectionToCloud<T extends { id: string }>(
   }
 }
 
-/**
- * Trigger full bidirectional synchronization across all modules
- */
-export async function forceSyncAllModules(): Promise<{ success: boolean; message: string }> {
+// ─────────────────────────────────────────────────────────────
+// 10. FULL BIDIRECTIONAL RE-SYNC ACROSS ALL 19 MODULES
+// ─────────────────────────────────────────────────────────────
+export async function forceSyncAllModules(updaterName?: string): Promise<{ success: boolean; message: string }> {
   try {
-    updateSyncStatus({ isSyncing: true, lastSyncMessage: 'Sedang menyinkronkan seluruh data...' });
+    updateSyncStatus({ isSyncing: true, lastSyncMessage: 'Sedang menyinkronkan seluruh modul lintas perangkat...' });
 
-    // Step 1: Flush any offline pending queue
+    // Step 1: Flush offline pending queue
     const flushedCount = await flushPendingQueue();
 
-    // Step 2: Push all local storage modules to Cloud Firestore
-    const collectionsToSync = [
-      { name: 'logbook_entries', key: 'riz_logbook_entries' },
-      { name: 'daily_reports', key: 'riz_daily_reports' },
-      { name: 'daily_tasks', key: 'riz_daily_tasks' },
-      { name: 'findings', key: 'riz_findings' },
-      { name: 'assets', key: 'riz_assets' },
-      { name: 'work_orders', key: 'riz_work_orders' },
-      { name: 'maintenance_schedules', key: 'riz_schedules' },
-      { name: 'activities', key: 'riz_activities' },
-      { name: 'attendance_logs', key: 'riz_attendance_logs' },
-      { name: 'staff_competencies', key: 'riz_staff_electrical_competencies' },
-      { name: 'career_records', key: 'riz_career_pipeline_records' },
-      { name: 'warehouse_logs', key: 'riz_warehouse_logs' }
-    ];
-
+    // Step 2: Push local cache to Firestore if needed
     let totalSynced = 0;
 
-    for (const item of collectionsToSync) {
+    for (const item of ALL_SYNC_COLLECTIONS) {
       const cached = localStorage.getItem(item.key);
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            await pushCollectionToCloud(item.name, parsed);
+            await pushCollectionToCloud(item.name, parsed, updaterName);
             totalSynced += parsed.length;
-          } else if (typeof parsed === 'object' && parsed !== null) {
+          } else if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length > 0) {
             const docRef = doc(db, 'system_configs', item.name);
-            await setDoc(docRef, { data: parsed, updatedAt: new Date().toISOString() }, { merge: true });
+            await setDoc(docRef, {
+              data: parsed,
+              _syncMeta: {
+                updatedAt: new Date().toISOString(),
+                updatedBy: updaterName || 'FullSync',
+                deviceOS: localDeviceInfo.os,
+                deviceType: localDeviceInfo.deviceType,
+                browser: localDeviceInfo.browser
+              }
+            }, { merge: true });
             totalSynced += 1;
           }
         } catch (e) {
@@ -357,7 +621,7 @@ export async function forceSyncAllModules(): Promise<{ success: boolean; message
       }
     }
 
-    const msg = `Auto-Sync Sukses! ${totalSynced} data Cloud tersinkronisasi (${flushedCount} antrean offline terkirim).`;
+    const msg = `Auto-Sync Sukses! ${totalSynced} data Cloud tersinkronisasi (${localDeviceInfo.os} • ${flushedCount} antrean offline terkirim).`;
     updateSyncStatus({
       isOnline: true,
       isSyncing: false,
@@ -379,69 +643,101 @@ export async function forceSyncAllModules(): Promise<{ success: boolean; message
   }
 }
 
-/**
- * Initialize Automatic Internet-Detection & Heartbeat Auto-Sync
- * Fires automatically whenever internet connection is detected, restored, or tab is focused.
- */
+// ─────────────────────────────────────────────────────────────
+// 11. CROSS-PLATFORM LIFECYCLE HOOKS (iOS, Android, Windows, Mac, Linux)
+// ─────────────────────────────────────────────────────────────
 let autoSyncInitialized = false;
 
 export function initAutoSyncEngine() {
   if (typeof window === 'undefined' || autoSyncInitialized) return;
   autoSyncInitialized = true;
 
-  // 1. Trigger Auto-Sync immediately when device reconnects to internet
+  const triggerResync = (reason: string) => {
+    if (navigator.onLine) {
+      updateSyncStatus({
+        isOnline: true,
+        lastSyncMessage: `🔄 Auto-Sync aktif (${reason})...`
+      });
+      flushPendingQueue();
+    }
+  };
+
+  // 1. Connection Restored Event
   window.addEventListener('online', () => {
     updateSyncStatus({
       isOnline: true,
-      lastSyncMessage: '🌐 Internet Terdeteksi! Menjalankan Auto-Sync...'
+      lastSyncMessage: '🌐 Koneksi Internet Terhubung! Memulai Auto-Sync...'
     });
-    // Instant sync upon internet detection
     setTimeout(() => {
       forceSyncAllModules();
     }, 500);
   });
 
-  // 2. Update status when device goes offline
+  // 2. Connection Lost Event
   window.addEventListener('offline', () => {
     updateSyncStatus({
       isOnline: false,
-      lastSyncMessage: '⚠️ Koneksi Offline. Perubahan disimpan di antrean lokal.'
+      lastSyncMessage: '⚠️ Koneksi Offline. Perubahan disimpan di antrean perangkat.'
     });
   });
 
-  // 3. Trigger Auto-Sync when user switches back to the application tab
-  window.addEventListener('focus', () => {
-    if (navigator.onLine) {
-      forceSyncAllModules();
-    }
-  });
-
+  // 3. Tab Visibility & Wakeup from Screen-off (Crucial for iOS Safari & Android)
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && navigator.onLine) {
-      forceSyncAllModules();
+    if (document.visibilityState === 'visible') {
+      triggerResync('Tab Aktif');
     }
   });
 
-  // 4. Background Heartbeat: Auto-sync every 30 seconds when online
+  // 4. Window Focus Event (Desktop Windows, macOS, Linux)
+  window.addEventListener('focus', () => {
+    triggerResync('Fokus Aplikasi');
+  });
+
+  // 5. PageShow Event (Critical for iOS / Android when returning from background cache)
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+      triggerResync('Restorasi Cache Halaman');
+    }
+  });
+
+  // 6. Page Lifecycle API (freeze & resume on modern mobile browsers)
+  if ('onresume' in document) {
+    document.addEventListener('resume', () => {
+      triggerResync('Resume Lifecycle');
+    });
+  }
+
+  // 7. Multi-Tab Cross-Window Listener
+  if (syncBroadcastChannel) {
+    syncBroadcastChannel.onmessage = (event) => {
+      if (event.data?.type === 'COLLECTION_SYNCED') {
+        updateSyncStatus({
+          lastSyncedAt: new Date(),
+          lastSyncMessage: `⚡ Data '${event.data.collectionName}' diperbarui dari tab lain`
+        });
+      }
+    };
+  }
+
+  // 8. Background Heartbeat Interval (Every 20 seconds when online)
   setInterval(() => {
     if (navigator.onLine && !currentSyncStatus.isSyncing) {
-      // Check if there are pending offline operations or trigger sync
       const queue = getPendingQueue();
       if (queue.length > 0) {
         flushPendingQueue();
       }
     }
-  }, 30000);
+  }, 20000);
 
-  // 5. Initial startup auto-sync
+  // 9. Initial startup trigger
   if (navigator.onLine) {
     setTimeout(() => {
-      forceSyncAllModules();
+      flushPendingQueue();
     }, 1500);
   }
 }
 
-// Auto-run initialization immediately in browser environment
+// Initialize immediately in browser
 if (typeof window !== 'undefined') {
   initAutoSyncEngine();
 }

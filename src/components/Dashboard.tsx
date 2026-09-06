@@ -28,9 +28,11 @@ import {
   PenTool,
   CheckSquare
 } from 'lucide-react';
-import { STAFF_LIST } from '../data';
+import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis } from '../utils/kpiCalculator';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
+import { subscribeCloudCollection } from '../lib/cloudSync';
+import { Staff } from '../types';
 
 interface DashboardProps {
   logbookEntries: LogbookEntry[];
@@ -49,6 +51,19 @@ export default function Dashboard({
   currentUser,
   onNavigate,
 }: DashboardProps) {
+  // Master Staff Dynamic State with Cloud Subscription
+  const [staffList, setStaffList] = React.useState<Staff[]>(() => getMasterStaffList());
+
+  React.useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setStaffList,
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
+
   // State for switching dashboard modes
   const [activeTab, setActiveTab] = React.useState<'harian' | 'monthly_report'>('monthly_report');
   
@@ -93,7 +108,7 @@ export default function Dashboard({
   const totalWorkOrdersCount = findings.length + workOrders.length;
 
   // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
-  const staffProductivityData = calculateAllStaffKpis(STAFF_LIST, dailyReports, logbookEntries, findings);
+  const staffProductivityData = calculateAllStaffKpis(staffList, dailyReports, logbookEntries, findings);
 
   // Grade distributions dynamically calculated from real data
   const countGradeA = staffProductivityData.filter(s => s.grade === 'A').length;
@@ -498,7 +513,7 @@ export default function Dashboard({
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Staff Aktif</span>
-                  <strong className="text-base text-slate-900 block mt-1 font-sans">{STAFF_LIST.length} Staff</strong>
+                  <strong className="text-base text-slate-900 block mt-1 font-sans">{staffList.length} Staff</strong>
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Daily Report</span>

@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Staff, Division } from '../types';
-import { STAFF_LIST } from '../data';
+import { STAFF_LIST, getMasterStaffList } from '../data';
 import { OFFICIAL_COMPETENCY_MATRICES, DivisionMatrix, CompetencyLevel } from '../data/competencyMatrixData';
 import {
   Award,
@@ -44,6 +44,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { calculateStaffKpi } from '../utils/kpiCalculator';
+import { saveCloudDoc, subscribeCloudCollection } from '../lib/cloudSync';
 
 interface CareerCompetencyModuleProps {
   currentUser: Staff;
@@ -75,15 +76,14 @@ export const PIPELINE_STAGES: PipelineStage[] = [
 
 export interface StaffCareerRecord {
   staffId: string;
-  currentStageId: number; // 1 - 10
-  matrixLevelId: number; // 1 - 8 corresponding to Official Matrix
+  currentStageId: number; // 1 - 10 (Pipeline Stage)
+  matrixLevelId: number;  // 1 - 8 (Level Matriks Kompetensi)
   targetRole: string;
-  kpiScore: number; // 0 - 100
+  kpiScore: number;
   trainingHours: number;
-  certNumber?: string;
-  notes?: string;
   lastUpdated: string;
   verifiedBy?: string;
+  certNumber?: string;
   skills: string[];
 }
 
@@ -91,15 +91,29 @@ export default function CareerCompetencyModule({
   currentUser,
   onLogActivity
 }: CareerCompetencyModuleProps) {
+  // Check user role privileges
   const isManagement = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
 
-  // Sub-Tab Switcher: 'matrix' (Bagan Matriks Resmi PT. RIZ) | 'passport' (Paspor Karir & 10-Tahap Pipeline)
-  const [activeSubTab, setActiveSubTab] = useState<'matrix' | 'passport'>('matrix');
+  // Dynamic Master Staff State with Cloud Subscription
+  const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
 
-  // Matrix Division Selector (Lighting, Videotron, Audio, Multimedia, Gudang)
-  const [activeMatrixDivision, setActiveMatrixDivision] = useState<'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Gudang'>(() => {
-    if (['Audio', 'Lighting', 'Videotron', 'Multimedia', 'Gudang'].includes(currentUser.division)) {
-      return currentUser.division as any;
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setStaffList,
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
+
+  // Sub-Tab Switcher: 'matrix' (Bagan Matriks Resmi PT. RIZ) | 'passport' (Paspor Karir & 10-Tahap Pipeline)
+  const [activeSubTab, setActiveSubTab] = useState<'matrix' | 'passport'>('passport');
+
+  // Active matrix division for the official Matrix Inspector view
+  const [activeMatrixDivision, setActiveMatrixDivision] = useState<Division>(() => {
+    if (currentUser.division && OFFICIAL_COMPETENCY_MATRICES[currentUser.division]) {
+      return currentUser.division as Division;
     }
     return 'Audio';
   });
@@ -112,31 +126,64 @@ export default function CareerCompetencyModule({
   // Selected level in matrix inspector
   const [selectedMatrixLevel, setSelectedMatrixLevel] = useState<number | null>(null);
 
-  // Clean baseline initial records: ALL STAFF RESET TO STAGE 1 (TRAINING) & LEVEL 1
+  // Baseline career records with official Audio division levels
   const getCleanInitialCareerRecords = (): Record<string, StaffCareerRecord> => {
     const initial: Record<string, StaffCareerRecord> = {};
-    STAFF_LIST.forEach((s) => {
+    staffList.forEach((s) => {
+      let level = s.level || 1;
+      let stage = level;
+      let targetRole = `Level ${level} - ${s.division} Specialist`;
+      let skills = [`Pengenalan Dasar SOP ${s.division}`];
+
+      if (s.division === 'Audio') {
+        if (s.id === '8' || s.nickname === 'Emboh' || s.name === 'Mboh') {
+          // Emboh Level 5
+          level = 5;
+          stage = 5;
+          targetRole = 'Level 5 - FOH / Monitor Operator (Audio)';
+          skills = ['FOH Mixing', 'Monitor Mixing', 'Live Recording', 'Show Operation', 'Talkback System'];
+        } else if (s.id === '9' || s.name === 'Unyim' || s.nickname === 'Unyim') {
+          // Unyim Level 4
+          level = 4;
+          stage = 4;
+          targetRole = 'Level 4 - Senior Technician (Audio)';
+          skills = ['Digital Mixing Lanjutan', 'EQ & Dynamics Advance', 'Routing & Matrix', 'Monitor System', 'Wireless Coordination'];
+        } else if (s.id === '14' || s.name === 'Buluk' || s.nickname === 'Buluk') {
+          // Buluk Level 4
+          level = 4;
+          stage = 4;
+          targetRole = 'Level 4 - Senior Technician (Audio)';
+          skills = ['Digital Mixing Lanjutan', 'EQ & Dynamics Advance', 'Routing & Matrix', 'Monitor System', 'Wireless Coordination'];
+        } else {
+          // Dani, Butonk, Yudish, Opik: Level 2
+          level = 2;
+          stage = 2;
+          targetRole = 'Level 2 - Junior Technician (Audio)';
+          skills = ['Instalasi Dasar', 'Rack & I/O Setup', 'Patch Kabel', 'Power Distribution', 'Signal Flow Dasar'];
+        }
+      }
+
       initial[s.id] = {
         staffId: s.id,
-        currentStageId: 1, // TRAINING (Tahap Pertama)
-        matrixLevelId: 1,  // Level 1 Dasar
-        targetRole: 'Level 1 - Trainee / Operator Pemula',
-        kpiScore: 0,
-        trainingHours: 0,
-        certNumber: undefined,
+        currentStageId: stage,
+        matrixLevelId: level,
+        targetRole: targetRole,
+        kpiScore: level * 18,
+        trainingHours: level * 20,
+        certNumber: `CERT-RP-${s.division.substring(0, 3).toUpperCase()}-2026-${s.id.padStart(3, '0')}`,
         lastUpdated: new Date().toISOString().split('T')[0],
-        verifiedBy: undefined,
-        skills: [`Pengenalan Dasar SOP ${s.division}`]
+        verifiedBy: 'Fahrul (Manager Operasional)',
+        skills: skills
       };
     });
     return initial;
   };
 
-  // Persistent career records - RESET TO CLEAN ZERO
+  // Persistent career records
   const [careerRecords, setCareerRecords] = useState<Record<string, StaffCareerRecord>>(() => {
-    const isReset = localStorage.getItem('riz_career_pipeline_reset_zero_v3');
+    const isReset = localStorage.getItem('riz_career_pipeline_audio_levels_v4');
     if (!isReset) {
-      localStorage.setItem('riz_career_pipeline_reset_zero_v3', 'true');
+      localStorage.setItem('riz_career_pipeline_audio_levels_v4', 'true');
       const cleanData = getCleanInitialCareerRecords();
       localStorage.setItem('riz_career_pipeline_records', JSON.stringify(cleanData));
       return cleanData;
@@ -161,13 +208,42 @@ export default function CareerCompetencyModule({
     }
   };
 
-  // Save to localStorage
+  // Real-time Cloud Firestore Subscription
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<{ id: string; [key: string]: any }>(
+      'career_records',
+      'riz_career_pipeline_records',
+      (items) => {
+        if (items && items.length > 0) {
+          const mapped: Record<string, StaffCareerRecord> = {};
+          items.forEach(item => {
+            if (item.id && item.staffId) {
+              mapped[item.staffId] = item as unknown as StaffCareerRecord;
+            }
+          });
+          if (Object.keys(mapped).length > 0) {
+            setCareerRecords(mapped);
+          }
+        }
+      },
+      []
+    );
+    return () => unsub();
+  }, []);
+
+  // Save to localStorage & Cloud Firestore
   useEffect(() => {
     localStorage.setItem('riz_career_pipeline_records', JSON.stringify(careerRecords));
+    if (careerRecords && Object.keys(careerRecords).length > 0) {
+      // Save documents to cloud
+      Object.entries(careerRecords).forEach(([staffId, record]) => {
+        saveCloudDoc('career_records', staffId, { ...(record as any), id: staffId }, currentUser.name);
+      });
+    }
   }, [careerRecords]);
 
   // Selected staff object for passport view
-  const activeStaff = STAFF_LIST.find(s => s.id === selectedStaffId) || currentUser;
+  const activeStaff = staffList.find(s => s.id === selectedStaffId) || currentUser;
   const activeStaffKpi = calculateStaffKpi(activeStaff);
   const activeRecord = careerRecords[activeStaff.id] || {
     staffId: activeStaff.id,
@@ -223,7 +299,7 @@ export default function CareerCompetencyModule({
   };
 
   // Filtered staff list
-  const filteredStaffList = STAFF_LIST.filter(s => {
+  const filteredStaffList = staffList.filter(s => {
     const matchDiv = isManagement
       ? (filterDivision === 'All' || s.division === filterDivision)
       : (s.division === currentUser.division);
@@ -486,7 +562,7 @@ export default function CareerCompetencyModule({
                 const isSelected = selectedMatrixLevel === lvl.level;
 
                 // Staff currently assigned to this level in the system
-                const staffAtLevel = STAFF_LIST.filter(s => {
+                const staffAtLevel = staffList.filter(s => {
                   if (s.division !== activeMatrixDivision) return false;
                   const rec = careerRecords[s.id];
                   return rec ? rec.matrixLevelId === lvl.level : (lvl.level === 3);
