@@ -118,46 +118,31 @@ export default function AgenticOrchestratorModal({
 
   const handleCopyReport = () => {
     if (!orchestratedResult) return;
-    const text = `
-=== LAPORAN RESMI ${orchestratedResult.reportType.toUpperCase()} OPERASIONAL ===
-PT. RIZ PRODUCTION MULTI KREASI
-Periode: ${orchestratedResult.period} | Dibuat: ${orchestratedResult.generatedAt}
-Orkestrator: ${orchestratedResult.orchestrator.name}
-
-1. RINGKASAN EKSEKUTIF
-${orchestratedResult.orchestrator.executiveSummary}
-Indeks Kesehatan Operasional: ${orchestratedResult.orchestrator.overallHealthIndex}%
-
-2. TEMUAN QC & QUALITY ASSURANCE
-${orchestratedResult.agentFindings.qcAgent.summary}
-- Total Diinspeksi: ${orchestratedResult.agentFindings.qcAgent.totalInspected}
-- Kelulusan (OK): ${orchestratedResult.agentFindings.qcAgent.passRate}%
-- Unit NG: ${orchestratedResult.agentFindings.qcAgent.ngCount}
-
-3. TEMUAN SERVICE & MAINTENANCE
-${orchestratedResult.agentFindings.serviceAgent.summary}
-- Total Perbaikan: ${orchestratedResult.agentFindings.serviceAgent.totalRepairs}
-- Selesai Diperbaiki: ${orchestratedResult.agentFindings.serviceAgent.closedRepairs}
-- Pending Penanganan: ${orchestratedResult.agentFindings.serviceAgent.pendingRepairs}
-
-4. KESIAPAN LOGISTIK & GUDANG
-${orchestratedResult.agentFindings.logisticsAgent.summary}
-- Indeks Kesiapan: ${orchestratedResult.agentFindings.logisticsAgent.warehouseReadiness}%
-
-5. ANALISIS KPI & KINERJA STAF
-${orchestratedResult.agentFindings.kpiAgent.summary}
-- Total Staf Aktif: ${orchestratedResult.agentFindings.kpiAgent.activeStaffCount}
-
-6. POIN TINDAKAN KRITIS & STRATEGIS
-${orchestratedResult.orchestrator.criticalActionPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}
-
-Rekomendasi:
-${orchestratedResult.strategicRecommendations.map((r, i) => `- ${r}`).join('\n')}
-    `.trim();
+    const text = orchestratedResult.toMarkdownString
+      ? orchestratedResult.toMarkdownString()
+      : `=== LAPORAN RESMI ${orchestratedResult.reportType.toUpperCase()} OPERASIONAL ===\nPT. RIZ PRODUCTION MULTI KREASI\nPeriode: ${orchestratedResult.period}\n\n${orchestratedResult.orchestrator.executiveSummary}`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadMarkdown = () => {
+    if (!orchestratedResult) return;
+    const mdContent = orchestratedResult.toMarkdownString
+      ? orchestratedResult.toMarkdownString()
+      : `=== LAPORAN RESMI ${orchestratedResult.reportType.toUpperCase()} OPERASIONAL ===\nPT. RIZ PRODUCTION MULTI KREASI\nPeriode: ${orchestratedResult.period}\n\n${orchestratedResult.orchestrator.executiveSummary}`;
+
+    const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const safePeriod = orchestratedResult.period.replace(/[^a-zA-Z0-9_-]/g, '_');
+    link.href = url;
+    link.download = `Laporan_Orkestrasi_${orchestratedResult.reportType}_${safePeriod}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -282,6 +267,14 @@ ${orchestratedResult.strategicRecommendations.map((r, i) => `- ${r}`).join('\n')
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copied ? 'Tersalin' : 'Salin Teks'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleDownloadMarkdown}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Unduh Markdown (.MD)</span>
                   </button>
                 </div>
               </div>

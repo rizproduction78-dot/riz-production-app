@@ -81,7 +81,32 @@ expect(monthlyOrch.reportType === 'Bulanan', 'Generates Bulanan Orchestrated Rep
 expect(monthlyOrch.agentFindings.logisticsAgent.warehouseReadiness >= 85, `Logistics Agent calculates warehouse readiness: ${monthlyOrch.agentFindings.logisticsAgent.warehouseReadiness}%`);
 expect(monthlyOrch.agentFindings.kpiAgent.activeStaffCount > 0, `KPI Agent isolates zero-activity staff: ${monthlyOrch.agentFindings.kpiAgent.activeStaffCount} active staff members`);
 
-// 5. Test Summary
+// 5. Test Complete Cross-Division & Multi-Staff Data Integration & Markdown Generator
+console.log('\n--- 5. Testing Cross-Division Integration & Markdown Generation ---');
+expect(monthlyOrch.detailedSections !== undefined, 'Detailed sections data is populated');
+expect(monthlyOrch.detailedSections.divisionProductivity.length === 7, `All 7 official divisions connected in productivity (${monthlyOrch.detailedSections.divisionProductivity.length}/7)`);
+expect(monthlyOrch.detailedSections.staffKpiRankings.length > 0, `Staff KPI rankings populated with active contributors (${monthlyOrch.detailedSections.staffKpiRankings.length} staff)`);
+expect(monthlyOrch.detailedSections.damageStatsByDivision.length === 7, 'Damage stats calculated for all 7 divisions');
+expect(monthlyOrch.detailedSections.topProblematicEquipment.length <= 10, 'Top 10 problematic equipment calculated');
+expect(monthlyOrch.detailedSections.managementAnalysis.kendala.length > 0, 'Management analysis: Kendala populated');
+expect(monthlyOrch.detailedSections.managementAnalysis.akarMasalah.length > 0, 'Management analysis: Akar Masalah populated');
+expect(monthlyOrch.detailedSections.managementAnalysis.solusiPerbaikan.length > 0, 'Management analysis: Solusi Perbaikan populated');
+expect(monthlyOrch.detailedSections.managementAnalysis.targetBerikutnya.length > 0, 'Management analysis: Target Berikutnya populated');
+
+const mdOutput = monthlyOrch.toMarkdownString();
+expect(typeof mdOutput === 'string' && mdOutput.length > 500, `Generates robust Markdown report (${mdOutput.length} characters)`);
+expect(mdOutput.includes('# LAPORAN RESMI BULANAN OPERASIONAL'), 'Markdown contains official header');
+expect(mdOutput.includes('LOGBOOK QC HARIAN STAFF INHOUSE'), 'Markdown contains Logbook QC Harian section');
+expect(mdOutput.includes('TEMUAN QC & PERALIHAN KERUSAKAN'), 'Markdown contains Temuan QC & Work Order section');
+expect(mdOutput.includes('PRODUKTIVITAS DIVISI'), 'Markdown contains Produktivitas Divisi table');
+expect(mdOutput.includes('LAPORAN KPI & KINERJA ALL STAFF'), 'Markdown contains Laporan KPI & Kinerja All Staff table');
+expect(mdOutput.includes('STATISTIK QC'), 'Markdown contains Statistik QC section');
+expect(mdOutput.includes('STATISTIK KERUSAKAN PER DIVISI'), 'Markdown contains Statistik Kerusakan per Divisi table');
+expect(mdOutput.includes('TOP 10 PERALATAN PALING SERING BERMASALAH'), 'Markdown contains Top 10 Masalah Alat table');
+expect(mdOutput.includes('ANALISIS MANAJEMEN'), 'Markdown contains Analisis Manajemen 4 poin');
+expect(mdOutput.includes('Wahyu'), 'Markdown contains Direktur signature');
+
+// 6. Test Summary
 console.log('\n================================================================');
 console.log(`TEST SUMMARY: ${passedTests}/${totalTests} Tests Passed (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('================================================================\n');
