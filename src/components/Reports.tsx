@@ -101,7 +101,7 @@ export default function Reports({
   // 1. Daily Report
   // 2. QC Checklist
   // 3. WO Selesai
-  const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings);
+  const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
   
   // Filter hanya staf yang memiliki aktifitas riil pada periode yang dipilih
   const activeStaffKpis = staffKpis.filter(staff => staff.reports > 0 || staff.qcs > 0 || staff.wos > 0);

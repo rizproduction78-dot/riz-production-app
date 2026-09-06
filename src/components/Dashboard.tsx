@@ -175,7 +175,7 @@ export default function Dashboard({
   const totalWorkOrdersCount = totalRepair + totalPM;
 
   // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
-  const staffProductivityData = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings);
+  const staffProductivityData = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
   
   // Filter hanya staf yang memiliki aktifitas riil (laporan, QC, atau WO)
   const activeStaffProductivityData = staffProductivityData.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);

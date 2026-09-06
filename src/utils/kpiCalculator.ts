@@ -23,7 +23,7 @@
 export const KPI_SPREADSHEET_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470';
 export const KPI_SPREADSHEET_GID = '198998470';
 
-import { Staff, DailyReport, LogbookEntry, Finding, AttendanceLog } from '../types';
+import { Staff, DailyReport, LogbookEntry, Finding, AttendanceLog, WorkOrder } from '../types';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 
 export interface StaffKpiResult {
@@ -233,7 +233,8 @@ export function calculateStaffKpi(
   findings: Finding[] = [],
   attendanceLogsOverride?: AttendanceLog[],
   electricalCompetenciesOverride?: Record<string, Record<string, { verified: boolean }>>,
-  septemberScheduleOverride?: StaffScheduleRow[]
+  septemberScheduleOverride?: StaffScheduleRow[],
+  workOrdersOverride?: WorkOrder[]
 ): StaffKpiResult {
   // ─────────────────────────────────────────────────────────────
   // 1. MENGHITUNG JUMLAH ABSEN (KEHADIRAN) - DATA RESMI
@@ -319,10 +320,20 @@ export function calculateStaffKpi(
   const qcScore = isNonQcDivision ? 80 : (qcCount === 0 ? 0 : Math.min(100, Math.round((qcCount / 2) * 100)));
 
   // ─────────────────────────────────────────────────────────────
-  // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Murni dari WO yang diselesaikan)
+  // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Murni dari WO yang diselesaikan & Temuan Closed)
   // ─────────────────────────────────────────────────────────────
-  const realWoCount = findings.filter(f => isStaffMatch(staff, f.pic) && f.status === 'Close').length;
-  const woCount = realWoCount;
+  const realClosedFindingsCount = findings.filter(f => isStaffMatch(staff, f.pic) && f.status === 'Close').length;
+  
+  let realWOs: WorkOrder[] = workOrdersOverride || [];
+  if (!workOrdersOverride && typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('riz_work_orders');
+      if (saved) realWOs = JSON.parse(saved);
+    } catch (e) {}
+  }
+  const realCompletedWOCount = realWOs.filter(w => isStaffMatch(staff, w.pic) && (w.status === 'Completed' || w.progress === 100)).length;
+
+  const woCount = Math.max(realClosedFindingsCount, realCompletedWOCount, (realClosedFindingsCount + realCompletedWOCount > 0) ? Math.max(realClosedFindingsCount, realCompletedWOCount) : 0);
   const woScore = Math.min(100, Math.round((woCount / 1) * 100));
   const taskComplexityScore = woScore;
 
@@ -417,7 +428,8 @@ export function calculateAllStaffKpis(
   findings: Finding[] = [],
   attendanceLogs?: AttendanceLog[],
   electricalCompetencies?: Record<string, Record<string, { verified: boolean }>>,
-  septemberSchedule?: StaffScheduleRow[]
+  septemberSchedule?: StaffScheduleRow[],
+  workOrders?: WorkOrder[]
 ): StaffKpiResult[] {
   return staffList
     .map(staff =>
@@ -428,7 +440,8 @@ export function calculateAllStaffKpis(
         findings,
         attendanceLogs,
         electricalCompetencies,
-        septemberSchedule
+        septemberSchedule,
+        workOrders
       )
     )
     .sort((a, b) => {

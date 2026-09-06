@@ -76,8 +76,8 @@ export default function EmployeePerformanceModule({
   const selectedStaff = masterStaffList.find(s => s.name === selectedStaffName) || currentUser;
   
   // Real dynamic KPI scores
-  const allStaffKpis = calculateAllStaffKpis(masterStaffList, dailyReports, logbookEntries, findings);
-  const staffKpi = calculateStaffKpi(selectedStaff, dailyReports, logbookEntries, findings);
+  const allStaffKpis = calculateAllStaffKpis(masterStaffList, dailyReports, logbookEntries, findings, undefined, undefined, undefined, workOrders);
+  const staffKpi = calculateStaffKpi(selectedStaff, dailyReports, logbookEntries, findings, undefined, undefined, undefined, workOrders);
 
   // Filter hanya staf yang memiliki aktifitas riil
   const activeStaffKpis = allStaffKpis.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);
