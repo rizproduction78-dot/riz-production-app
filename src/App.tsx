@@ -32,10 +32,8 @@ import Gudang from './components/Gudang';
 import CareerCompetencyModule from './components/CareerCompetencyModule';
 import EmployeePerformanceModule from './components/EmployeePerformanceModule';
 import AdminPanel from './components/AdminPanel';
-import AgenticOrchestratorModal from './components/AgenticOrchestratorModal';
 
 import {
-  Bot,
   LayoutDashboard,
   ClipboardList,
   FileText,
@@ -468,9 +466,6 @@ export default function App() {
       }
     ];
   });
-
-  // Agentic Orchestrator Modal State
-  const [isAgenticModalOpen, setIsAgenticModalOpen] = useState(false);
 
   // Cloud Sync State
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
@@ -1025,15 +1020,6 @@ export default function App() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsAgenticModalOpen(true)}
-              className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
-              title="Buka Agent Helper (Orkestrator Agentic AI)"
-            >
-              <Bot className="w-3.5 h-3.5 text-indigo-200" />
-              <span>Agent Helper AI</span>
-            </button>
-
-            <button
               onClick={handleManualSync}
               disabled={syncStatus.isSyncing}
               className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
@@ -1216,19 +1202,6 @@ export default function App() {
           />
         )}
       </main>
-
-      {/* Agentic AI Multi-Agent Orchestrator Modal */}
-      <AgenticOrchestratorModal
-        isOpen={isAgenticModalOpen}
-        onClose={() => setIsAgenticModalOpen(false)}
-        dailyReports={dailyReports}
-        logbookEntries={logbookEntries}
-        findings={findings}
-        workOrders={workOrders}
-        staffList={STAFF_LIST}
-        assets={assets}
-        currentUser={currentUser}
-      />
     </div>
   );
 }

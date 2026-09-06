@@ -5,11 +5,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, MaintenanceSchedule } from '../types';
-import { FileText, Printer, FileDown, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
+import { FileText, Printer, FileDown, Download, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis } from '../utils/kpiCalculator';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 import { subscribeCloudCollection } from '../lib/cloudSync';
+import { generateOrchestratedReport } from '../lib/ragVectorEngine';
 
 interface ReportsProps {
   logbookEntries: LogbookEntry[];
@@ -292,6 +293,38 @@ export default function Reports({
     document.body.removeChild(link);
   };
 
+  // Markdown (.MD) Document Export Handler (Orkestrasi data riil di background)
+  const handleExportMarkdown = () => {
+    onLogActivity(currentUser.name, currentUser.role, `Mengekspor Dokumen Laporan ${reportType} ke format Markdown (.md)`);
+
+    const periodStr = reportType === 'Harian'
+      ? targetDate
+      : reportType === 'Mingguan'
+      ? `${targetStartDate} s/d ${targetEndDate}`
+      : targetMonth;
+
+    const orchestrated = generateOrchestratedReport(reportType, periodStr, {
+      dailyReports: activeDailyReports,
+      logbookEntries: activeLogbookEntries,
+      findings: activeFindings,
+      workOrders: activeWorkOrders,
+      staffList: staffList,
+      assets: []
+    });
+
+    const mdText = orchestrated.toMarkdownString();
+    const blob = new Blob([mdText], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const safePeriod = periodStr.replace(/[^a-zA-Z0-9_-]/g, '_');
+    link.href = url;
+    link.download = `Laporan_Operasional_${reportType}_${safePeriod}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-8 font-sans">
       {/* Configuration Header */}
@@ -380,6 +413,16 @@ export default function Reports({
           >
             <FileDown className="w-4 h-4" />
             <span>Ekspor Excel/CSV</span>
+          </button>
+
+          {/* Action: Export Markdown Document */}
+          <button
+            onClick={handleExportMarkdown}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+            title="Ekspor laporan terpadu ke format dokumen Markdown (.md)"
+          >
+            <Download className="w-4 h-4" />
+            <span>Ekspor Dokumen (.MD)</span>
           </button>
         </div>
 
