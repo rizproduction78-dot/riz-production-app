@@ -163,10 +163,9 @@ export default function Dashboard({
 
   // Dynamic CM / Repair metrics (Corrective Maintenance)
   const cmFromSchedules = activeSchedules.filter(s => s.type === 'Corrective');
-  const cmFromWO = activeWorkOrders.filter(w => w.division === 'Service' || w.title?.toLowerCase().includes('perbaikan') || w.title?.toLowerCase().includes('servis'));
   const totalRepair = activeFindings.length + cmFromSchedules.length;
-  const doneRepair = activeFindings.filter(f => f.status === 'Close').length + cmFromSchedules.filter(s => s.status === 'Done').length + cmFromWO.filter(w => w.status === 'Completed').length;
-  const pendingRepair = Math.max(0, totalRepair - doneRepair);
+  const doneRepair = activeFindings.filter(f => f.status === 'Close').length + cmFromSchedules.filter(s => s.status === 'Done').length;
+  const pendingRepair = activeFindings.filter(f => f.status === 'Open').length + cmFromSchedules.filter(s => s.status !== 'Done').length;
   const waitingSparepart = activeFindings.filter(f => f.status === 'Open' && f.issue?.toLowerCase().includes('sparepart')).length;
 
   // Dynamic derivations for report cards
@@ -643,7 +642,9 @@ export default function Dashboard({
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Corr. Main</span>
-                  <strong className="text-base text-rose-600 block mt-1 font-sans">{totalRepair}</strong>
+                  <strong className={`text-base block mt-1 font-sans ${pendingRepair > 0 ? 'text-rose-600' : 'text-slate-800'}`}>
+                    {pendingRepair}
+                  </strong>
                 </div>
               </div>
             </div>
