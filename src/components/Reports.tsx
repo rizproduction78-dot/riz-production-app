@@ -44,7 +44,9 @@ export default function Reports({
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [targetDate, setTargetDate] = useState('2026-09-05');
+  const [targetDate, setTargetDate] = useState(() => {
+    return '2026-09-06';
+  });
   const [targetStartDate, setTargetStartDate] = useState('2026-09-01');
   const [targetEndDate, setTargetEndDate] = useState('2026-09-07');
 
