@@ -552,7 +552,7 @@ export default function LogTaskModule({
             }`}
           >
             <CheckSquare className="w-4 h-4" />
-            <span>Kanban Daily Task ({tasks.length})</span>
+            <span>Kanban Daily Task ({filteredTasks.length})</span>
           </button>
           <button
             onClick={() => setSubTab('qc_checklist')}
@@ -570,7 +570,7 @@ export default function LogTaskModule({
             }`}
           >
             <ClipboardList className="w-4 h-4" />
-            <span>Log-Book Harian ({dailyReports.length})</span>
+            <span>Log-Book Harian ({filteredReports.length})</span>
           </button>
           <button
             onClick={() => setSubTab('rekap')}
@@ -596,27 +596,20 @@ export default function LogTaskModule({
             />
           </div>
 
-          {isManagement ? (
-            <select
-              value={filterDivision}
-              onChange={(e) => setFilterDivision(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
-            >
-              <option value="All">Semua Divisi (Manajemen)</option>
-              <option value="Audio">🔊 Audio (Sound)</option>
-              <option value="Lighting">💡 Lighting</option>
-              <option value="Videotron">📺 Videotron</option>
-              <option value="Multimedia">🎥 Multimedia</option>
-              <option value="Gudang">📦 Gudang</option>
-              <option value="Admin">🗄️ Admin</option>
-              <option value="Service">🔧 Service</option>
-            </select>
-          ) : (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded-lg text-xs font-bold shadow-xs">
-              <span>{DIVISION_CONFIG[currentUser.division]?.icon || '🏢'}</span>
-              <span>Divisi: {currentUser.division} (Terkunci)</span>
-            </div>
-          )}
+          <select
+            value={filterDivision}
+            onChange={(e) => setFilterDivision(e.target.value)}
+            className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer font-medium"
+          >
+            <option value="All">🌐 Semua Divisi</option>
+            <option value="Audio">🔊 Audio (Sound)</option>
+            <option value="Lighting">💡 Lighting</option>
+            <option value="Videotron">📺 Videotron</option>
+            <option value="Multimedia">🎥 Multimedia</option>
+            <option value="Gudang">📦 Gudang</option>
+            <option value="Admin">🗄️ Admin</option>
+            <option value="Service">🔧 Service</option>
+          </select>
 
           {subTab === 'kanban' && (
             <select

@@ -631,9 +631,9 @@ export default function Dashboard({
               <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">NON-AKTIF SEMENTARA</span>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 opacity-60">
-              {/* Table */}
-              <div className="lg:col-span-2 overflow-x-auto border border-slate-100 rounded-xl">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Table with inactive opacity */}
+              <div className="lg:col-span-2 overflow-x-auto border border-slate-200 rounded-xl opacity-60">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -660,11 +660,14 @@ export default function Dashboard({
                 </table>
               </div>
 
-              {/* Status Note */}
-              <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200 flex flex-col justify-center space-y-2 text-xs font-medium text-amber-900">
-                <div className="font-bold uppercase text-[10px] tracking-wider text-amber-800">Status Pencatatan</div>
-                <p className="text-[11px] leading-relaxed">
-                  Jumlah Kehadiran & Jam Kerja dinon-aktifkan sementara. Evaluasi performa staf difokuskan pada Daily Report, QC Checklist, dan Work Order.
+              {/* Status Note - Full Opacity */}
+              <div className="bg-amber-50/90 p-4 rounded-xl border border-amber-300 shadow-sm flex flex-col justify-center space-y-2 text-xs font-medium text-amber-950">
+                <div className="flex items-center gap-1.5 font-bold uppercase text-[10px] tracking-wider text-amber-900">
+                  <span>⚠️</span>
+                  <span>Status Pencatatan</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-amber-900">
+                  Jumlah Kehadiran & Jam Kerja dinon-aktifkan sementara. Evaluasi performa dan KPI staf difokuskan 100% pada kontribusi riil: <strong>Daily Report</strong>, <strong>QC Checklist</strong>, dan <strong>Work Order</strong>.
                 </p>
               </div>
             </div>
