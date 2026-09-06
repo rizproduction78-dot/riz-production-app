@@ -95,7 +95,7 @@ expect(monthlyOrch.detailedSections.managementAnalysis.targetBerikutnya.length >
 
 const mdOutput = monthlyOrch.toMarkdownString();
 expect(typeof mdOutput === 'string' && mdOutput.length > 500, `Generates robust Markdown report (${mdOutput.length} characters)`);
-expect(mdOutput.includes('# LAPORAN RESMI BULANAN OPERASIONAL'), 'Markdown contains official header');
+expect(mdOutput.includes('# LAPORAN OPERASIONAL BULANAN'), 'Markdown contains official header');
 expect(mdOutput.includes('LOGBOOK QC HARIAN STAFF INHOUSE'), 'Markdown contains Logbook QC Harian section');
 expect(mdOutput.includes('TEMUAN QC & PERALIHAN KERUSAKAN'), 'Markdown contains Temuan QC & Work Order section');
 expect(mdOutput.includes('PRODUKTIVITAS DIVISI'), 'Markdown contains Produktivitas Divisi table');
