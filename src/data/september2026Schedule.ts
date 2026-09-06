@@ -77,7 +77,7 @@ export const SHIFT_LEGEND: Record<string, ScheduleShiftInfo> = {
 
 export interface StaffScheduleRow {
   no: number;
-  division: 'GUDANG' | 'LED' | 'ADMIN' | 'SOUND' | 'LIGHTING' | 'MULTIMEDIA';
+  division: 'GUDANG' | 'LED' | 'ADMIN' | 'SOUND' | 'LIGHTING' | 'MULTIMEDIA' | 'SERVICE';
   name: string;
   shifts: { [day: number]: string };
 }
@@ -238,11 +238,22 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
     }
   },
 
+  {
+    no: 12,
+    division: 'ADMIN',
+    name: 'WAHYU',
+    shifts: {
+      1: 'MD', 2: 'MD', 3: 'MD', 4: 'MD', 5: 'MD', 6: 'L', 7: 'MD', 8: 'MD', 9: 'MD', 10: 'MD',
+      11: 'MD', 12: 'L', 13: 'MD', 14: 'MD', 15: 'MD', 16: 'MD', 17: 'MD', 18: 'L', 19: 'MD', 20: 'MD',
+      21: 'MD', 22: 'MD', 23: 'MD', 24: 'L', 25: 'MD', 26: 'MD', 27: 'MD', 28: 'MD', 29: 'MD', 30: 'L'
+    }
+  },
+
   // ─────────────────────────────────────────────────────────────
   // SOUND (AUDIO)
   // ─────────────────────────────────────────────────────────────
   {
-    no: 12,
+    no: 13,
     division: 'SOUND',
     name: 'MBOH',
     shifts: {
@@ -250,7 +261,7 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
     }
   },
   {
-    no: 13,
+    no: 14,
     division: 'SOUND',
     name: 'DANI',
     shifts: {
@@ -258,7 +269,7 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
     }
   },
   {
-    no: 14,
+    no: 15,
     division: 'SOUND',
     name: 'UNYIM',
     shifts: {
@@ -266,7 +277,7 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
     }
   },
   {
-    no: 15,
+    no: 16,
     division: 'SOUND',
     name: 'BUTONK',
     shifts: {
@@ -274,7 +285,7 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
     }
   },
   {
-    no: 16,
+    no: 17,
     division: 'SOUND',
     name: 'YUDIS',
     shifts: {
@@ -282,7 +293,7 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
     }
   },
   {
-    no: 17,
+    no: 18,
     division: 'SOUND',
     name: 'BULUX',
     shifts: {
@@ -290,7 +301,7 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
     }
   },
   {
-    no: 18,
+    no: 19,
     division: 'SOUND',
     name: 'OPIK',
     shifts: {
@@ -302,7 +313,7 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
   // LIGHTING
   // ─────────────────────────────────────────────────────────────
   {
-    no: 19,
+    no: 20,
     division: 'LIGHTING',
     name: 'HERI',
     shifts: {
@@ -314,11 +325,25 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
   // MULTIMEDIA
   // ─────────────────────────────────────────────────────────────
   {
-    no: 20,
+    no: 21,
     division: 'MULTIMEDIA',
     name: 'JAY',
     shifts: {
       2: 'MD', 3: 'MD', 8: 'MD', 12: 'MD', 17: 'MD', 18: 'MD', 21: 'MD', 27: 'MD', 28: 'MD'
+    }
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  // SERVICE
+  // ─────────────────────────────────────────────────────────────
+  {
+    no: 22,
+    division: 'SERVICE',
+    name: 'DAMRI',
+    shifts: {
+      1: 'MD', 2: 'MD', 3: 'MD', 4: 'MD', 5: 'MD', 6: 'L', 7: 'MD', 8: 'MD', 9: 'MD', 10: 'MD',
+      11: 'MD', 12: 'L', 13: 'MD', 14: 'MD', 15: 'MD', 16: 'MD', 17: 'MD', 18: 'L', 19: 'MD', 20: 'MD',
+      21: 'MD', 22: 'MD', 23: 'MD', 24: 'L', 25: 'MD', 26: 'MD', 27: 'MD', 28: 'MD', 29: 'MD', 30: 'L'
     }
   }
 ];
