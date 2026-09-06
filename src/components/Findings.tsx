@@ -19,6 +19,7 @@ interface FindingsProps {
   onUpdateWorkOrderStatus?: (id: string, status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled') => void;
   onUpdateWorkOrderProgress?: (id: string, progress: number) => void;
   onDeleteWorkOrder?: (id: string) => void;
+  onAddReport?: (report: any) => void;
   currentUser: any;
   onLogActivity: (username: string, role: string, action: string) => void;
 }
@@ -33,6 +34,7 @@ export default function Findings({
   onUpdateWorkOrderStatus,
   onUpdateWorkOrderProgress,
   onDeleteWorkOrder,
+  onAddReport,
   currentUser,
   onLogActivity,
 }: FindingsProps) {
@@ -51,6 +53,10 @@ export default function Findings({
 
   // View Tab: Findings vs Work Orders
   const [activeSubTab, setActiveSubTab] = useState<'findings' | 'work_orders'>('findings');
+
+  // Detail Modal State for Accessing Finished Log Data
+  const [selectedWODetail, setSelectedWODetail] = useState<WorkOrder | null>(null);
+  const [selectedFindingDetail, setSelectedFindingDetail] = useState<Finding | null>(null);
 
   // Filter/Search State
   const [searchTerm, setSearchTerm] = useState('');
@@ -163,7 +169,20 @@ export default function Findings({
       }
     }
 
+    // Auto-create Daily Report log entry for the technician who completed the WO
+    if (onAddReport) {
+      onAddReport({
+        date: new Date().toISOString().split('T')[0],
+        staffName: wo.pic,
+        division: wo.division,
+        activity: `[Penyelesaian Work Order] ${wo.title}`,
+        notes: `Work Order berhasil diselesaikan 100%. Rincian instruksi: ${wo.description}. Unit siap dioperasikan kembali.`,
+        status: 'Submitted'
+      });
+    }
+
     onLogActivity(currentUser.name, currentUser.role, `Menyelesaikan Work Order: "${wo.title}" (Status: Completed, Progress: 100%)`);
+    alert(`Work Order "${wo.title}" selesai 100% dan log kerja resmi otomatis terekam di Daily Report ${wo.pic}!`);
   };
 
   // Filter Findings list
@@ -785,35 +804,45 @@ export default function Findings({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-1">
-                      {!isCompleted ? (
-                        <button
-                          onClick={() => handleCompleteWorkOrder(wo)}
-                          className="flex-1 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Tandai Selesai (100%)</span>
-                        </button>
-                      ) : (
-                        <div className="flex-1 py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold text-center">
-                          ✅ Perbaikan Selesai
-                        </div>
-                      )}
+                    <div className="flex flex-col gap-2 pt-1">
+                      <div className="flex items-center gap-2">
+                        {!isCompleted ? (
+                          <button
+                            onClick={() => handleCompleteWorkOrder(wo)}
+                            className="flex-1 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Tandai Selesai (100%)</span>
+                          </button>
+                        ) : (
+                          <div className="flex-1 py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold text-center">
+                            ✅ Perbaikan Selesai
+                          </div>
+                        )}
 
-                      {/* Delete Work Order */}
-                      {onDeleteWorkOrder && (currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
                         <button
-                          onClick={() => {
-                            if (confirm('Yakin ingin menghapus Work Order ini?')) {
-                              onDeleteWorkOrder(wo.id);
-                            }
-                          }}
-                          className="p-1.5 border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"
-                          title="Hapus Work Order"
+                          onClick={() => setSelectedWODetail(wo)}
+                          className="py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                          title="Buka Lembar Log Kerja"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          📄 Log Kerja
                         </button>
-                      )}
+
+                        {/* Delete Work Order */}
+                        {onDeleteWorkOrder && (currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                          <button
+                            onClick={() => {
+                              if (confirm('Yakin ingin menghapus Work Order ini?')) {
+                                onDeleteWorkOrder(wo.id);
+                              }
+                            }}
+                            className="p-1.5 border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"
+                            title="Hapus Work Order"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -825,6 +854,73 @@ export default function Findings({
                 Tidak ada tiket Work Order yang terdaftar saat ini.
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* MODAL: DETAIL LOG KERJA WORK ORDER                         */}
+      {/* ────────────────────────────────────────────────────────── */}
+      {selectedWODetail && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-blue-100 text-blue-800">
+                  {selectedWODetail.division} • Work Order #{selectedWODetail.id}
+                </span>
+                <h3 className="text-base font-extrabold text-slate-900 mt-1">{selectedWODetail.title}</h3>
+              </div>
+              <button
+                onClick={() => setSelectedWODetail(null)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5">
+                <span className="font-bold text-slate-500 uppercase text-[10px] block">Instruksi & Uraian Pekerjaan:</span>
+                <p className="text-slate-800 leading-relaxed font-sans whitespace-pre-wrap">{selectedWODetail.description}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 font-mono">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-400 block font-sans">Teknisi PIC:</span>
+                  <strong className="text-slate-800 text-xs mt-0.5 block">{selectedWODetail.pic}</strong>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-400 block font-sans">Deadline / Target:</span>
+                  <strong className="text-slate-800 text-xs mt-0.5 block">{selectedWODetail.deadline}</strong>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-100 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-indigo-900">Status Pengerjaan:</span>
+                  <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                    selectedWODetail.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {selectedWODetail.status} ({selectedWODetail.progress}%)
+                  </span>
+                </div>
+                <div className="text-[11px] text-indigo-700 leading-relaxed font-sans">
+                  {selectedWODetail.status === 'Completed'
+                    ? '✓ Pekerjaan telah selesai 100%. Tiket ini terhubung otomatis dengan log harian personel dan temuan QC terkait telah ditutup.'
+                    : '⏳ Pekerjaan sedang dalam tahap penanganan oleh teknisi divisi terkait.'}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button
+                onClick={() => setSelectedWODetail(null)}
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+              >
+                Tutup Lembar Log
+              </button>
+            </div>
           </div>
         </div>
       )}

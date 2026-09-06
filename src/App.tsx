@@ -1048,6 +1048,7 @@ export default function App() {
             onUpdateWorkOrderStatus={handleUpdateWorkOrderStatus}
             onUpdateWorkOrderProgress={handleUpdateWorkOrderProgress}
             onDeleteWorkOrder={handleDeleteWorkOrder}
+            onAddReport={handleAddReport}
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
           />

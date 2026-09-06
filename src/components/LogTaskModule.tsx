@@ -170,6 +170,7 @@ export default function LogTaskModule({
   const [qcStatus, setQcStatus] = useState<'Open' | 'Close'>('Open');
   const [qcPhotoUrls, setQcPhotoUrls] = useState<string[]>([]);
   const [previewModalImg, setPreviewModalImg] = useState<string | null>(null);
+  const [selectedQCEntry, setSelectedQCEntry] = useState<LogbookEntry | null>(null);
   const [qcChecklistState, setQcChecklistState] = useState<Record<string, QcItemState>>({});
 
   const handleQcPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1132,7 +1133,13 @@ export default function LogTaskModule({
                         )}
                         <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1 border-t border-slate-200/60">
                           <span>{entry.date}</span>
-                          <span>{entry.verification || 'Verified'}</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedQCEntry(entry)}
+                            className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline cursor-pointer"
+                          >
+                            📄 Lembar QC Lengkap
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -1787,6 +1794,109 @@ export default function LogTaskModule({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* MODAL: LEMBAR CHECKLIST QC LENGKAP (DETAIL LOG)           */}
+      {/* ────────────────────────────────────────────────────────── */}
+      {selectedQCEntry && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800">
+                    {selectedQCEntry.division} • Inspeksi QC #{selectedQCEntry.id}
+                  </span>
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-black ${
+                    selectedQCEntry.result === 'OK' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                  }`}>
+                    Hasil: {selectedQCEntry.result}
+                  </span>
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900 mt-1">{selectedQCEntry.activity}</h3>
+              </div>
+              <button
+                onClick={() => setSelectedQCEntry(null)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3 font-mono">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-400 block font-sans">Inspektor QC:</span>
+                  <strong className="text-slate-800 text-xs mt-0.5 block">{selectedQCEntry.staffName}</strong>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-400 block font-sans">Tanggal & Verifikasi:</span>
+                  <strong className="text-slate-800 text-xs mt-0.5 block">{selectedQCEntry.date} ({selectedQCEntry.verification || 'Verified'})</strong>
+                </div>
+              </div>
+
+              {/* Rincian Item Checklist */}
+              <div className="space-y-2">
+                <h4 className="font-bold text-slate-700 uppercase text-[10px] tracking-wider">Lembar Periksa Checklist Item:</h4>
+                <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                  {selectedQCEntry.checklists && Object.keys(selectedQCEntry.checklists).length > 0 ? (
+                    Object.entries(selectedQCEntry.checklists).map(([itemName, itemVal]: [string, any], idx) => (
+                      <div key={idx} className="p-3 bg-slate-50/50 flex items-start justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-slate-800 block text-xs">{itemName}</span>
+                          {itemVal?.notes && (
+                            <span className="text-[11px] text-slate-500 italic block">Catatan: {itemVal.notes}</span>
+                          )}
+                        </div>
+                        <span className={`px-2.5 py-0.5 rounded-full font-black text-[10px] ${
+                          itemVal?.status === 'OK' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                        }`}>
+                          {itemVal?.status || 'OK'}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-slate-400 italic">Checklist SOP terverifikasi standar.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Catatan & Follow Up */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="font-bold text-slate-500 uppercase text-[10px] block">Tindak Lanjut / Follow Up:</span>
+                <p className="text-slate-800 leading-relaxed font-sans">{selectedQCEntry.followUp || 'Tidak ada catatan khusus.'}</p>
+              </div>
+
+              {/* Lampiran Foto */}
+              {((selectedQCEntry.photos && selectedQCEntry.photos.length > 0) || selectedQCEntry.photoUrl) && (
+                <div className="space-y-2">
+                  <span className="font-bold text-slate-500 uppercase text-[10px] block">Dokumentasi Foto Bukti:</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {(selectedQCEntry.photos && selectedQCEntry.photos.length > 0 ? selectedQCEntry.photos : [selectedQCEntry.photoUrl!]).map((img, i) => (
+                      <img
+                        key={i}
+                        src={img}
+                        alt={`Foto Bukti ${i + 1}`}
+                        onClick={() => setPreviewModalImg(img)}
+                        className="h-24 w-full object-cover rounded-xl border border-slate-200 cursor-pointer hover:opacity-90 transition-opacity"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button
+                onClick={() => setSelectedQCEntry(null)}
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+              >
+                Tutup Lembar QC
+              </button>
+            </div>
           </div>
         </div>
       )}
