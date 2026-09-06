@@ -203,7 +203,7 @@ export default function EmployeePerformanceModule({
               >
                 {masterStaffList.map((s) => (
                   <option key={s.id} value={s.name}>
-                    {s.name} ({s.division} - {s.role})
+                    {s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division} ({s.role})
                   </option>
                 ))}
               </select>

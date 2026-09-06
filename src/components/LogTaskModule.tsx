@@ -838,7 +838,7 @@ export default function LogTaskModule({
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
                       >
                         {staffList.map(s => (
-                          <option key={s.id} value={s.name}>{s.name} ({s.division})</option>
+                          <option key={s.id} value={s.name}>{s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}</option>
                         ))}
                       </select>
                     ) : (
@@ -1194,7 +1194,7 @@ export default function LogTaskModule({
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
                     >
                       {staffList.map(s => (
-                        <option key={s.id} value={s.name}>{s.name} ({s.division})</option>
+                        <option key={s.id} value={s.name}>{s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}</option>
                       ))}
                     </select>
                   ) : (
@@ -1762,7 +1762,7 @@ export default function LogTaskModule({
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
                   >
                     {staffList.filter(s => isManagement || s.division === currentUser.division).map(s => (
-                      <option key={s.id} value={s.name}>{s.name} ({s.division})</option>
+                      <option key={s.id} value={s.name}>{s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}</option>
                     ))}
                   </select>
                 </div>

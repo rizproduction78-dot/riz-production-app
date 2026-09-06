@@ -175,7 +175,7 @@ export default function Findings({
               >
                 <option value="">-- Pilih PIC Staff --</option>
                 {staffList.map(s => (
-                  <option key={s.id} value={s.name}>{s.name} ({s.division})</option>
+                  <option key={s.id} value={s.name}>{s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}</option>
                 ))}
               </select>
             </div>

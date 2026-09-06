@@ -127,7 +127,7 @@ export default function Dashboard({
     { label: 'Multimedia', key: 'Multimedia' },
     { label: 'Gudang Logistik', key: 'Gudang' },
     { label: 'Service (Perbaikan)', key: 'Service' },
-    { label: 'Administrasi (Admin)', key: 'Office' }
+    { label: 'Administrasi (Admin)', key: 'Admin' }
   ];
 
   const divisionStatsDynamic = divisionListConfig.map(d => {

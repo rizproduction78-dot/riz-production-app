@@ -63,18 +63,146 @@ export interface StaffKpiResult {
   grade: 'A' | 'B' | 'C' | 'D';
 }
 
-// Helper pencocokan nama staff cerdas (mendukung nama lengkap, nama panggilan, maupun teks PIC gabungan)
+// Comprehensive Staff Aliases & Nickname Dictionaries (Mapping all variations used in the field)
+export const KNOWN_STAFF_ALIASES: Record<string, string[]> = {
+  // Gudang
+  'staff-absobur': ['abah sobur', 'abah', 'sobur', 'abik'],
+  'staff-gatot': ['gatot wiliyanto', 'gatot', 'wiliyanto', 'mas gatot'],
+  'staff-udin': ['udin saepudin', 'udin', 'saepudin', 'mang ube', 'mang ubed', 'ube', 'ubed', 'mangudin', 'mang udin'],
+  
+  // Admin / Manajemen
+  'director-wahyu': ['wahyudin', 'wahyu', 'zakimau', 'pak wahyu', 'direktur wahyu'],
+  'staff-agustino': ['agustino setiawan', 'agustino', 'agus', 'setiawan', 'agustinus'],
+  'staff-fahrul': ['m. fahruyana . a', 'm. fahruyana', 'm fahruyana', 'fahruyana', 'fahrul', 'rullyana', 'rully', 'm fahrul', 'pak fahrul'],
+  'staff-syalsa': ['syalsa sri hestariana', 'syalsa', 'caca', 'hestariana', 'teh caca'],
+  'staff-seno': ['seno subroto', 'seno', 'subroto', 'om seno', 'pak seno'],
+  
+  // Videotron / LED
+  'staff-ayong': ['ayong sumarsih', 'ayong', 'sumarsih', 'prabu', 'prabuam', 'kang ayong'],
+  'staff-dedi': ['dedi agus wigiantoro', 'dedi agus', 'dedy', 'dedi', 'wigi', 'wigiantoro', 'mas wigi'],
+  'staff-irvan': ['muhamad irvan', 'muhammad irvan', 'muhamad irfan', 'muhammad irfan', 'irvan', 'irfan', 'irfanthepul'],
+  
+  // Multimedia
+  'staff-mulyadi': ['mulyadi', 'jay', 'jaymulyadi', 'jay mulyadi', 'bang jay'],
+  
+  // Lighting
+  'staff-heri': ['heri', 'heriansyah', 'saputra', 'kang heri'],
+  
+  // Sound / Audio
+  'staff-iwan': ['iwan kurniawan', 'iwan', 'kurniawan', 'butonk', 'butong', 'boetonk', 'buluk', 'boetonk2785', 'kang butonk', 'kang buluk'],
+  'staff-rahmat': ['muhamad rahmat', 'muhammad rahmat', 'rahmat', 'mboh', 'outsideprojectmboh', 'kang mboh', 'mas mboh'],
+  'staff-ramdani': ['ramdani', 'dani', 'ismail ramdani', 'ismail', 'ismailramdani'],
+  'staff-suryana': ['suryana', 'unyim', 'nia', 'kurni', 'kang unyim'],
+  'staff-taufik': ['taufik diana', 'taufik', 'diana', 'opik', 'topik', 'taufikdya', 'kang opik', 'opik diana'],
+  'staff-yudish': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama', 'yudhisintan'],
+  
+  // Service
+  'staff-damri': ['damri', 'mang damri', 'mangdamri', 'pak damri'],
+  'staff-mulyana': ['mulyana', 'kharo', 'tabita', 'tabitakharo', 'mulyana kharo', 'kharo mulyana', 'kang kharo']
+};
+
+export const STAFF_NAME_ALIAS_MAP: Record<string, string[]> = {
+  'Abah Sobur': ['abah sobur', 'abah', 'sobur'],
+  'Gatot Wiliyanto': ['gatot wiliyanto', 'gatot', 'wiliyanto'],
+  'Udin Saepudin': ['udin saepudin', 'udin', 'saepudin', 'mang ube', 'mang ubed', 'ube', 'ubed', 'mangudin', 'mang udin'],
+  'Wahyudin': ['wahyudin', 'wahyu', 'zakimau', 'pak wahyu'],
+  'Agustino Setiawan': ['agustino setiawan', 'agustino', 'agus', 'setiawan'],
+  'M. Fahruyana . A': ['m. fahruyana . a', 'm. fahruyana', 'fahruyana', 'fahrul', 'rullyana', 'rully', 'm fahrul'],
+  'Syalsa Sri Hestariana': ['syalsa sri hestariana', 'syalsa', 'caca', 'hestariana'],
+  'Seno Subroto': ['seno subroto', 'seno', 'subroto', 'om seno'],
+  'Ayong Sumarsih': ['ayong sumarsih', 'ayong', 'sumarsih', 'prabu'],
+  'Dedi Agus Wigiantoro': ['dedi agus wigiantoro', 'dedi agus', 'dedy', 'dedi', 'wigi', 'wigiantoro'],
+  'Muhamad Irvan': ['muhamad irvan', 'muhammad irvan', 'muhamad irfan', 'irvan', 'irfan'],
+  'Mulyadi': ['mulyadi', 'jay', 'jaymulyadi', 'jay mulyadi'],
+  'Heri': ['heri', 'heriansyah', 'saputra'],
+  'Iwan Kurniawan': ['iwan kurniawan', 'iwan', 'kurniawan', 'butonk', 'butong', 'boetonk', 'buluk'],
+  'Muhamad Rahmat': ['muhamad rahmat', 'muhammad rahmat', 'rahmat', 'mboh'],
+  'Ramdani': ['ramdani', 'dani', 'ismail ramdani', 'ismail'],
+  'Suryana': ['suryana', 'unyim', 'nia'],
+  'Taufik Diana': ['taufik diana', 'taufik', 'diana', 'opik', 'topik'],
+  'Yudishtira Purnama A': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama'],
+  'Damri': ['damri', 'mang damri', 'mangdamri'],
+  'Mulyana': ['mulyana', 'kharo', 'tabita', 'mulyana kharo', 'kharo mulyana']
+};
+
+/**
+ * Mengambil semua kemungkinan alias, nama panggilan, variasi ejaan resmi & lapangan untuk seorang staff
+ */
+export function getAllStaffAliases(staff: Staff): string[] {
+  const set = new Set<string>();
+
+  if (staff.id && KNOWN_STAFF_ALIASES[staff.id]) {
+    KNOWN_STAFF_ALIASES[staff.id].forEach(a => set.add(a.toLowerCase().trim()));
+  }
+
+  if (staff.name && STAFF_NAME_ALIAS_MAP[staff.name]) {
+    STAFF_NAME_ALIAS_MAP[staff.name].forEach(a => set.add(a.toLowerCase().trim()));
+  }
+
+  // Cross check by name match in dictionary
+  for (const [sName, aliases] of Object.entries(STAFF_NAME_ALIAS_MAP)) {
+    const sNameNorm = sName.toLowerCase().trim();
+    const curNameNorm = (staff.name || '').toLowerCase().trim();
+    if (curNameNorm === sNameNorm || curNameNorm.includes(sNameNorm) || sNameNorm.includes(curNameNorm)) {
+      aliases.forEach(a => set.add(a.toLowerCase().trim()));
+    }
+  }
+
+  if (staff.name) set.add(staff.name.toLowerCase().trim());
+  if (staff.nickname) set.add(staff.nickname.toLowerCase().trim());
+  if (staff.fullName) set.add(staff.fullName.toLowerCase().trim());
+  if (staff.email) {
+    const emailPrefix = staff.email.split('@')[0].toLowerCase().trim();
+    if (emailPrefix.length >= 3) set.add(emailPrefix);
+  }
+
+  return Array.from(set).filter(Boolean);
+}
+
+/**
+ * Helper pencocokan nama staff cerdas dan toleran:
+ * - Mendukung nama lengkap KTP, nama panggilan lapangan (Opik, Mboh, Jay, Kharo, Dani, Buluk, Butonk, Unyim, Wigi, Caca, Mang ube, dll)
+ * - Mendukung format gabungan PIC tim (e.g. "Opik / Buluk", "Opik, Mboh", "Mboh, Yudis, Buluk, Butong", "Team Service / Mboh", "Damri & Kharo")
+ */
 export function isStaffMatch(staff: Staff, inputName?: string): boolean {
   if (!staff || !inputName) return false;
-  const inputNorm = inputName.toLowerCase().trim();
-  const staffNameNorm = (staff.name || '').toLowerCase().trim();
-  const staffNickNorm = (staff.nickname || '').toLowerCase().trim();
-  const staffFullNorm = (staff.fullName || '').toLowerCase().trim();
   
-  if (inputNorm === staffNameNorm || inputNorm === staffNickNorm || inputNorm === staffFullNorm) return true;
-  if (staffNickNorm && (inputNorm.includes(staffNickNorm) || staffNickNorm.includes(inputNorm))) return true;
-  if (staffNameNorm && (inputNorm.includes(staffNameNorm) || staffNameNorm.includes(inputNorm))) return true;
-  if (staffFullNorm && (inputNorm.includes(staffFullNorm) || staffFullNorm.includes(inputNorm))) return true;
+  const rawInput = inputName.toLowerCase().trim();
+  if (!rawInput) return false;
+
+  const aliases = getAllStaffAliases(staff);
+  
+  // 1. Direct match check
+  for (const alias of aliases) {
+    if (rawInput === alias) return true;
+  }
+
+  // 2. Tokenized match (handling separators like commas, slashes, ampersands, pluses, 'dan', 'and', 'bersama', etc.)
+  const tokens = rawInput
+    .split(/[,/&+;\n|()]|\s+dan\s+|\s+and\s+|\s+bersama\s+|\s+team\s+/i)
+    .map(t => t.replace(/[^a-zA-Z0-9\s.]/g, ' ').trim().toLowerCase())
+    .filter(t => t.length > 0);
+
+  for (const token of tokens) {
+    for (const alias of aliases) {
+      if (token === alias) return true;
+      if (alias.length >= 3 && token.length >= 3) {
+        if (token === alias || token.includes(alias) || alias.includes(token)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  // 3. Word-boundary substring regex search across full input text
+  for (const alias of aliases) {
+    if (alias.length >= 3) {
+      const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(^|[^a-zA-Z0-9])${escaped}([^a-zA-Z0-9]|$)`, 'i');
+      if (regex.test(rawInput)) return true;
+    }
+  }
+
   return false;
 }
 
@@ -105,15 +233,13 @@ export function calculateStaffKpi(
     }
   }
   const staffLogsCount = realLogs.filter(
-    l => (l.staffId === staff.id || l.staffName?.toLowerCase().trim() === staff.name.toLowerCase().trim()) &&
+    l => (l.staffId === staff.id || isStaffMatch(staff, l.staffName)) &&
          (l.status === 'Hadir' || l.checkInTime)
   ).length;
 
   const scheduleRows = septemberScheduleOverride || OFFICIAL_SEPTEMBER_2026_SCHEDULE;
   const staffScheduleRow = scheduleRows.find(
-    r => r.name.toLowerCase().trim() === staff.name.toLowerCase().trim() ||
-         r.name.toLowerCase().includes(staff.name.toLowerCase()) ||
-         staff.name.toLowerCase().includes(r.name.toLowerCase())
+    r => isStaffMatch(staff, r.name)
   );
 
   let scheduledWorkingDays = 0;

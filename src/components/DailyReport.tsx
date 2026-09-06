@@ -210,7 +210,7 @@ export default function DailyReport({
                       staff.id === currentUser.id
                   ).map(staff => (
                     <option key={staff.id} value={staff.name}>
-                      {staff.name} ({staff.division})
+                      {staff.name} {staff.nickname && staff.nickname.toLowerCase() !== staff.name.toLowerCase() ? `(${staff.nickname})` : ''} - {staff.division}
                     </option>
                   ))}
                 </select>
