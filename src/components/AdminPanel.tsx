@@ -428,8 +428,22 @@ export default function AdminPanel({
   const handleOpenEditFreelance = (worker: FreelanceWorker) => {
     setActiveFreelanceForEdit(worker);
     setFreelanceFormData({
-      ...worker,
-      dailyRate: worker.dailyRate !== undefined ? worker.dailyRate : 200000
+      id: worker.id,
+      name: worker.name || '',
+      specialization: worker.specialization || 'Audio',
+      roleTitle: worker.roleTitle || '',
+      phone: worker.phone || '',
+      email: worker.email || '',
+      dailyRate: worker.dailyRate !== undefined ? worker.dailyRate : 200000,
+      idCardNumber: worker.idCardNumber || '',
+      bankName: worker.bankName || 'BCA',
+      bankAccountNumber: worker.bankAccountNumber || '',
+      bankAccountHolder: worker.bankAccountHolder || worker.name || '',
+      status: worker.status || 'Aktif',
+      rating: worker.rating || 5,
+      skills: worker.skills || '',
+      address: worker.address || '',
+      notes: worker.notes || ''
     });
     setShowEditFreelanceModal(true);
   };
@@ -445,37 +459,43 @@ export default function AdminPanel({
     const rateNum = Number(freelanceFormData.dailyRate);
     const resolvedRate = !isNaN(rateNum) && rateNum >= 0 ? rateNum : (activeFreelanceForEdit.dailyRate || 0);
 
-    let updatedWorkerObj: FreelanceWorker = activeFreelanceForEdit;
-    const updated = freelanceList.map(w => {
-      if (w.id === activeFreelanceForEdit.id) {
-        updatedWorkerObj = {
-          ...w,
-          name: name,
-          specialization: (freelanceFormData.specialization as FreelanceSpecialization) || w.specialization,
-          roleTitle: freelanceFormData.roleTitle?.trim() || w.roleTitle,
-          phone: freelanceFormData.phone?.trim() || '',
-          email: freelanceFormData.email?.trim() || '',
-          dailyRate: resolvedRate,
-          idCardNumber: freelanceFormData.idCardNumber?.trim() || '',
-          bankName: freelanceFormData.bankName?.trim() || '',
-          bankAccountNumber: freelanceFormData.bankAccountNumber?.trim() || '',
-          bankAccountHolder: freelanceFormData.bankAccountHolder?.trim() || '',
-          status: (freelanceFormData.status as any) || w.status,
-          rating: Number(freelanceFormData.rating || w.rating || 5),
-          skills: freelanceFormData.skills?.trim() || '',
-          address: freelanceFormData.address?.trim() || '',
-          notes: freelanceFormData.notes?.trim() || ''
-        };
-        return updatedWorkerObj;
-      }
-      return w;
-    });
+    const updatedPhone = freelanceFormData.phone !== undefined ? freelanceFormData.phone.trim() : (activeFreelanceForEdit.phone || '');
+    const updatedSkills = freelanceFormData.skills !== undefined ? freelanceFormData.skills.trim() : (activeFreelanceForEdit.skills || '');
+    const updatedEmail = freelanceFormData.email !== undefined ? freelanceFormData.email.trim() : (activeFreelanceForEdit.email || '');
+
+    const updatedWorkerObj: FreelanceWorker = {
+      ...activeFreelanceForEdit,
+      name: name,
+      specialization: (freelanceFormData.specialization as FreelanceSpecialization) || activeFreelanceForEdit.specialization,
+      roleTitle: freelanceFormData.roleTitle !== undefined ? freelanceFormData.roleTitle.trim() : (activeFreelanceForEdit.roleTitle || ''),
+      phone: updatedPhone,
+      email: updatedEmail,
+      dailyRate: resolvedRate,
+      idCardNumber: freelanceFormData.idCardNumber !== undefined ? freelanceFormData.idCardNumber.trim() : (activeFreelanceForEdit.idCardNumber || ''),
+      bankName: freelanceFormData.bankName !== undefined ? freelanceFormData.bankName.trim() : (activeFreelanceForEdit.bankName || ''),
+      bankAccountNumber: freelanceFormData.bankAccountNumber !== undefined ? freelanceFormData.bankAccountNumber.trim() : (activeFreelanceForEdit.bankAccountNumber || ''),
+      bankAccountHolder: freelanceFormData.bankAccountHolder !== undefined ? freelanceFormData.bankAccountHolder.trim() : (activeFreelanceForEdit.bankAccountHolder || ''),
+      status: (freelanceFormData.status as any) || activeFreelanceForEdit.status || 'Aktif',
+      rating: Number(freelanceFormData.rating || activeFreelanceForEdit.rating || 5),
+      skills: updatedSkills,
+      address: freelanceFormData.address !== undefined ? freelanceFormData.address.trim() : (activeFreelanceForEdit.address || ''),
+      notes: freelanceFormData.notes !== undefined ? freelanceFormData.notes.trim() : (activeFreelanceForEdit.notes || '')
+    };
+
+    const updated = freelanceList.map(w => w.id === activeFreelanceForEdit.id ? updatedWorkerObj : w);
+
+    setFreelanceList(updated);
+    localStorage.setItem('riz_freelance_workers', JSON.stringify(updated));
 
     // Close modal immediately so the UI is super responsive
     setShowEditFreelanceModal(false);
     setShowAddFreelanceModal(false);
     setActiveFreelanceForEdit(null);
-    onLogActivity(currentUser.name, currentUser.role, `Mengubah data freelance: ${updatedWorkerObj.name} (Fee: Rp ${resolvedRate.toLocaleString('id-ID')}/hari)`);
+    onLogActivity(
+      currentUser.name,
+      currentUser.role,
+      `Mengubah data freelance: ${updatedWorkerObj.name} (No HP: ${updatedPhone || '-'}, Keahlian: ${updatedSkills || '-'}, Fee: Rp ${resolvedRate.toLocaleString('id-ID')}/hari)`
+    );
     try {
       await saveFreelanceList(updated, { type: 'save', id: updatedWorkerObj.id, doc: updatedWorkerObj });
     } catch (e) {
@@ -4270,9 +4290,9 @@ export default function AdminPanel({
                 <input
                   type="text"
                   placeholder="Contoh: Rian Soundman / Budi Lighting"
-                  value={freelanceFormData.name}
+                  value={freelanceFormData.name || ''}
                   onChange={(e) => setFreelanceFormData({ ...freelanceFormData, name: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   required
                 />
               </div>
@@ -4281,9 +4301,9 @@ export default function AdminPanel({
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Spesialisasi Divisi *</label>
                   <select
-                    value={freelanceFormData.specialization}
+                    value={freelanceFormData.specialization || 'Audio'}
                     onChange={(e) => setFreelanceFormData({ ...freelanceFormData, specialization: e.target.value as FreelanceSpecialization })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
                   >
                     <option value="Audio">Audio / Sound</option>
                     <option value="Lighting">Lighting</option>
@@ -4303,9 +4323,9 @@ export default function AdminPanel({
                   <input
                     type="text"
                     placeholder="Contoh: Sound Engineer / Crew Loading"
-                    value={freelanceFormData.roleTitle}
+                    value={freelanceFormData.roleTitle || ''}
                     onChange={(e) => setFreelanceFormData({ ...freelanceFormData, roleTitle: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -4318,9 +4338,9 @@ export default function AdminPanel({
                     <input
                       type="tel"
                       placeholder="0812-xxxx-xxxx"
-                      value={freelanceFormData.phone}
+                      value={freelanceFormData.phone || ''}
                       onChange={(e) => setFreelanceFormData({ ...freelanceFormData, phone: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs font-mono font-bold"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs font-mono font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                       required
                     />
                   </div>
@@ -4333,9 +4353,9 @@ export default function AdminPanel({
                     <input
                       type="email"
                       placeholder="freelance@email.com"
-                      value={freelanceFormData.email}
+                      value={freelanceFormData.email || ''}
                       onChange={(e) => setFreelanceFormData({ ...freelanceFormData, email: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs font-mono"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs font-mono focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -4354,7 +4374,7 @@ export default function AdminPanel({
                   placeholder="Contoh: 200000"
                   value={freelanceFormData.dailyRate !== undefined ? freelanceFormData.dailyRate : ''}
                   onChange={(e) => setFreelanceFormData({ ...freelanceFormData, dailyRate: e.target.value === '' ? 0 : Number(e.target.value) })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     <button
@@ -4400,9 +4420,9 @@ export default function AdminPanel({
                     <input
                       type="text"
                       placeholder="BCA / Mandiri / BRI"
-                      value={freelanceFormData.bankName}
+                      value={freelanceFormData.bankName || ''}
                       onChange={(e) => setFreelanceFormData({ ...freelanceFormData, bankName: e.target.value })}
-                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs font-bold"
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs font-bold focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
                   <div>
@@ -4410,9 +4430,9 @@ export default function AdminPanel({
                     <input
                       type="text"
                       placeholder="1234567890"
-                      value={freelanceFormData.bankAccountNumber}
+                      value={freelanceFormData.bankAccountNumber || ''}
                       onChange={(e) => setFreelanceFormData({ ...freelanceFormData, bankAccountNumber: e.target.value })}
-                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs font-mono font-bold"
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs font-mono font-bold focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
                   <div>
@@ -4420,9 +4440,9 @@ export default function AdminPanel({
                     <input
                       type="text"
                       placeholder="Nama Pemilik Rekening"
-                      value={freelanceFormData.bankAccountHolder}
+                      value={freelanceFormData.bankAccountHolder || ''}
                       onChange={(e) => setFreelanceFormData({ ...freelanceFormData, bankAccountHolder: e.target.value })}
-                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs font-medium"
+                      className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -4432,9 +4452,9 @@ export default function AdminPanel({
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Status Keaktifan</label>
                   <select
-                    value={freelanceFormData.status}
+                    value={freelanceFormData.status || 'Aktif'}
                     onChange={(e) => setFreelanceFormData({ ...freelanceFormData, status: e.target.value as any })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-bold"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-bold focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                   >
                     <option value="Aktif">Aktif</option>
                     <option value="Standby">Standby</option>
@@ -4444,9 +4464,9 @@ export default function AdminPanel({
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Rating Kinerja (1-5)</label>
                   <select
-                    value={freelanceFormData.rating}
+                    value={freelanceFormData.rating || 5}
                     onChange={(e) => setFreelanceFormData({ ...freelanceFormData, rating: Number(e.target.value) })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-bold text-amber-600"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-bold text-amber-600 focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                   >
                     <option value={5}>★★★★★ (5 Bintang)</option>
                     <option value={4}>★★★★☆ (4 Bintang)</option>
@@ -4460,9 +4480,9 @@ export default function AdminPanel({
                   <input
                     type="text"
                     placeholder="3201xxxxxxxxxxxx"
-                    value={freelanceFormData.idCardNumber}
+                    value={freelanceFormData.idCardNumber || ''}
                     onChange={(e) => setFreelanceFormData({ ...freelanceFormData, idCardNumber: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -4472,9 +4492,9 @@ export default function AdminPanel({
                 <textarea
                   rows={2}
                   placeholder="Contoh: Ahli mixing Midas M32, setting rigging stage festival, pengalaman 5 tahun."
-                  value={freelanceFormData.skills}
+                  value={freelanceFormData.skills || ''}
                   onChange={(e) => setFreelanceFormData({ ...freelanceFormData, skills: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
             </div>

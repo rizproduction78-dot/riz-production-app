@@ -295,7 +295,36 @@ export function subscribeCloudCollection<T = any>(
             items = items.flatMap(item => (item && Array.isArray((item as any)?.list)) ? (item as any).list : [item]);
           }
 
-          // Intelligent merge with initial fallback so that partial Firestore collections don't wipe out comprehensive local datasets
+          // Helper to merge records with field priority (preserving updated phone, skills, etc.)
+          const mergeCleanDoc = (existing: any, incoming: any) => {
+            if (!existing) return incoming;
+            if (!incoming) return existing;
+            const merged = { ...existing, ...incoming };
+
+            // Check if incoming is older or has empty string where existing has valid data
+            for (const key of Object.keys(existing)) {
+              const exVal = existing[key];
+              const inVal = incoming[key];
+              if (typeof exVal === 'string' && exVal.trim() !== '') {
+                if (inVal === undefined || inVal === null || (typeof inVal === 'string' && inVal.trim() === '')) {
+                  const inMeta = incoming?._syncMeta?.updatedAt;
+                  const exMeta = existing?._syncMeta?.updatedAt;
+                  if (!inMeta || (exMeta && exMeta >= inMeta)) {
+                    merged[key] = exVal;
+                  }
+                }
+              } else if (typeof exVal === 'number' && exVal > 0 && (inVal === undefined || inVal === null || inVal === 0)) {
+                const inMeta = incoming?._syncMeta?.updatedAt;
+                const exMeta = existing?._syncMeta?.updatedAt;
+                if (!inMeta || (exMeta && exMeta >= inMeta)) {
+                  merged[key] = exVal;
+                }
+              }
+            }
+            return merged;
+          };
+
+          // Intelligent merge with initial fallback and local cache
           if (initialFallback && initialFallback.length > 0) {
             const mergedMap = new Map<string, any>();
             const nameToId = new Map<string, string>();
@@ -309,21 +338,47 @@ export function subscribeCloudCollection<T = any>(
               }
             });
 
+            // Also seed with cached items from localStorage if available
+            try {
+              const cachedRaw = localStorage.getItem(localCacheKey);
+              if (cachedRaw) {
+                const cachedList = JSON.parse(cachedRaw);
+                if (Array.isArray(cachedList)) {
+                  cachedList.forEach((c: any) => {
+                    const cId = String(c?.id || c?.no || c?.name || '');
+                    const normName = String(c?.name || c?.fullName || '').toLowerCase().trim();
+                    if (cId && !deletedIds.has(cId) && !(c as any)._deleted) {
+                      if (mergedMap.has(cId)) {
+                        mergedMap.set(cId, mergeCleanDoc(mergedMap.get(cId), c));
+                      } else if (normName && nameToId.has(normName)) {
+                        const existingId = nameToId.get(normName)!;
+                        mergedMap.set(existingId, mergeCleanDoc(mergedMap.get(existingId), c));
+                      } else {
+                        mergedMap.set(cId, c);
+                        if (normName) nameToId.set(normName, cId);
+                      }
+                    }
+                  });
+                }
+              }
+            } catch (e) {}
+
             items.forEach((it: any) => {
               const itId = String(it?.id || it?.no || it?.name || '');
               const normName = String(it?.name || it?.fullName || '').toLowerCase().trim();
               if (itId && !deletedIds.has(itId) && !(it as any)._deleted) {
                 if (mergedMap.has(itId)) {
                   const existing = mergedMap.get(itId);
-                  mergedMap.set(itId, { ...existing, ...it });
+                  mergedMap.set(itId, mergeCleanDoc(existing, it));
                 } else if (normName && nameToId.has(normName)) {
                   const oldFbId = nameToId.get(normName)!;
                   const existing = mergedMap.get(oldFbId);
                   mergedMap.delete(oldFbId);
-                  mergedMap.set(itId, { ...existing, ...it });
+                  mergedMap.set(itId, mergeCleanDoc(existing, it));
                   nameToId.set(normName, itId);
                 } else {
                   mergedMap.set(itId, it);
+                  if (normName) nameToId.set(normName, itId);
                 }
               }
             });
