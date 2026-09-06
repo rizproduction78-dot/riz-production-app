@@ -234,9 +234,9 @@ export default function Reports({
   const handleExportCSV = () => {
     onLogActivity(currentUser.name, currentUser.role, `Mengekspor Laporan ${reportType} ke format CSV/Excel`);
     
-    // Generate CSV string
+    // Generate CSV string based on active filtered period
     const headers = ['No', 'Tanggal', 'Divisi', 'Nama Staff', 'Aktivitas', 'Hasil QC', 'Status', 'Tindak Lanjut'];
-    const rows = logbookEntries.map((e, idx) => [
+    const rows = activeLogbookEntries.map((e, idx) => [
       idx + 1,
       e.date,
       e.division,
