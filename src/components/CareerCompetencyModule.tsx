@@ -135,32 +135,55 @@ export default function CareerCompetencyModule({
       let targetRole = `Level ${level} - ${s.division} Specialist`;
       let skills = [`Pengenalan Dasar SOP ${s.division}`];
 
-      if (s.division === 'Audio') {
-        if (s.id === '8' || s.nickname === 'Emboh' || s.name === 'Mboh') {
-          // Emboh Level 5
+      if (s.role === 'Owner' || s.id === 'director-wahyu') {
+        level = 8;
+        stage = 8;
+        targetRole = 'Level 8 - Owner & Operational Director';
+        skills = ['Executive Management', 'Strategic Decision', 'Investment & Fleet', 'Total Quality Assurance'];
+      } else if (s.role === 'Manager' || s.id === 'staff-fahrul') {
+        level = 6;
+        stage = 6;
+        targetRole = 'Level 6 - Operational Manager';
+        skills = ['Project Management', 'Workflow Optimization', 'Budgeting', 'Cross-Division Leadership'];
+      } else if (s.role === 'Team Leader') {
+        level = 5;
+        stage = 5;
+        targetRole = `Level 5 - Team Leader & Senior Specialist (${s.division})`;
+        skills = ['Field Leadership', 'System Tuning & Calibration', 'Troubleshooting Master', 'Safety Compliance'];
+      } else if (s.division === 'Audio') {
+        if (s.id === 'staff-rahmat' || s.nickname === 'Mboh' || s.name.includes('Rahmat')) {
           level = 5;
           stage = 5;
-          targetRole = 'Level 5 - FOH / Monitor Operator (Audio)';
+          targetRole = 'Level 5 - FOH / Monitor Operator & Audio Leader';
           skills = ['FOH Mixing', 'Monitor Mixing', 'Live Recording', 'Show Operation', 'Talkback System'];
-        } else if (s.id === '9' || s.name === 'Unyim' || s.nickname === 'Unyim') {
-          // Unyim Level 4
-          level = 4;
-          stage = 4;
-          targetRole = 'Level 4 - Senior Technician (Audio)';
-          skills = ['Digital Mixing Lanjutan', 'EQ & Dynamics Advance', 'Routing & Matrix', 'Monitor System', 'Wireless Coordination'];
-        } else if (s.id === '14' || s.name === 'Buluk' || s.nickname === 'Buluk') {
-          // Buluk Level 4
+        } else if (s.id === 'staff-unyin' || s.nickname === 'Unyim' || s.name.includes('Unyim') || s.name.includes('Wahyudin')) {
           level = 4;
           stage = 4;
           targetRole = 'Level 4 - Senior Technician (Audio)';
           skills = ['Digital Mixing Lanjutan', 'EQ & Dynamics Advance', 'Routing & Matrix', 'Monitor System', 'Wireless Coordination'];
         } else {
-          // Dani, Butonk, Yudish, Opik: Level 2
-          level = 2;
-          stage = 2;
-          targetRole = 'Level 2 - Junior Technician (Audio)';
+          level = s.level || 3;
+          stage = level;
+          targetRole = `Level ${level} - Audio Technician`;
           skills = ['Instalasi Dasar', 'Rack & I/O Setup', 'Patch Kabel', 'Power Distribution', 'Signal Flow Dasar'];
         }
+      } else if (s.division === 'Service') {
+        if (s.id === 'staff-damri' || s.nickname === 'Mang Damri') {
+          level = 5;
+          stage = 5;
+          targetRole = 'Level 5 - Service Lab Leader & Hardware Master';
+          skills = ['Advanced PCB Diagnostics', 'SMD Soldering', 'Amp Repair', 'Lab Quality Control'];
+        } else {
+          level = 3;
+          stage = 3;
+          targetRole = 'Level 3 - Hardware Maintenance & Service Technician';
+          skills = ['Soldering Dasar & Lanjutan', 'Cable Continuity Test', 'Power Supply Unit Replacement', 'Preventive Check'];
+        }
+      } else {
+        level = s.level || 3;
+        stage = level;
+        targetRole = `Level ${level} - ${s.division} Technician`;
+        skills = [`SOP Pemeliharaan ${s.division}`, 'Troubleshooting Ringan', 'Instalasi & Cabling', 'Safety 5R'];
       }
 
       initial[s.id] = {
