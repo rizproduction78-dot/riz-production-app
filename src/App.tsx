@@ -194,7 +194,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Pembersihan total data dummy lama & sinkronisasi data riil resmi Google Spreadsheet
-  const REF_SYNC_KEY = 'riz_ref_synced_v8_canonical_master';
+  const REF_SYNC_KEY = 'riz_ref_synced_v9_staff_freelance_clean';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
@@ -211,6 +211,10 @@ export default function App() {
     localStorage.removeItem('riz_deleted_ids_master_staff');
 
     localStorage.setItem(REF_SYNC_KEY, 'true');
+
+    // Hapus Chandra dan Rizky dari master_staff (mereka adalah Freelance Worker, bukan staff inhouse)
+    deleteCloudDoc('master_staff', 'staff-chandra').catch(() => {});
+    deleteCloudDoc('master_staff', 'staff-rizky').catch(() => {});
 
     // Sinkronisasi data Seno & master data ke Cloud Firestore
     saveCloudDoc('master_staff', 'staff-seno', {

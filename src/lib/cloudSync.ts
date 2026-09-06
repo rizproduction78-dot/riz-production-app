@@ -269,14 +269,25 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
 
   let items = [...rawItems];
 
-  // Special normalization for master_staff so Seno Subroto is always Admin Staff Level 4
+  // Special normalization for master_staff: Seno is Admin Staff Level 4,
+  // and Chandra & Rizky Nasrullah are excluded (they are freelance workers, not inhouse staff)
   if (collectionName === 'master_staff') {
-    return items.map((s: any) => {
-      if (s && (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno'))) {
-        return { ...s, division: 'Admin', role: 'Staff', level: 4 };
-      }
-      return s;
-    }) as T[];
+    return items
+      .filter((s: any) => {
+        if (!s) return false;
+        const id = String(s.id || '');
+        const name = String(s.name || '').toLowerCase().trim();
+        if (id === 'staff-chandra' || id === 'staff-rizky' || name === 'chandra' || name === 'rizky nasrullah') {
+          return false;
+        }
+        return true;
+      })
+      .map((s: any) => {
+        if (s && (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno'))) {
+          return { ...s, division: 'Admin', role: 'Staff', level: 4 };
+        }
+        return s;
+      }) as T[];
   }
 
   // Special normalization for findings so official reference data is preserved and not corrupted by stale mock strings

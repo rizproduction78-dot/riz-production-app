@@ -25,9 +25,7 @@ export const STAFF_LIST: Staff[] = [
   { id: 'staff-irvan', name: 'Muhamad Irvan', fullName: 'Muhamad Irvan', nickname: 'Irfan', email: 'Irfanthepul29@gmail.com', phone: '085282567132', division: 'Videotron', role: 'Staff', level: 3 },
 
   // 4. Multimedia
-  { id: 'staff-chandra', name: 'Chandra', fullName: 'Chandra', nickname: 'Chandra', email: 'Chandrakakaaja@gmail.com', phone: '088225873364', division: 'Multimedia', role: 'Staff', level: 3 },
   { id: 'staff-mulyadi', name: 'Mulyadi', fullName: 'Mulyadi', nickname: 'Jay', email: 'Jaymulyadi43@gmail.com', phone: '085813994044', division: 'Multimedia', role: 'Staff', level: 3 },
-  { id: 'staff-rizky', name: 'Rizky Nasrullah', fullName: 'Rizky Nasrullah', nickname: 'Rizky', email: 'rizkiuloh@gmail.com', phone: '085155188909', division: 'Multimedia', role: 'Staff', level: 3 },
 
   // 5. Lighting
   { id: 'staff-heri', name: 'Heri', fullName: 'Heri', nickname: 'Heri', email: 'saputraheriansyah2@gmail.com', phone: '085814152061', division: 'Lighting', role: 'Team Leader', level: 5 },
@@ -517,6 +515,8 @@ export const INITIAL_FREELANCE_WORKERS: FreelanceWorker[] = [
   { id: 'fl-sound-16', name: 'REBINK', phone: '', specialization: 'Audio', roleTitle: 'Operator Sound', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
 
   // ── 2. DIVISI MULTIMEDIA ──────────────────────────────
+  { id: 'fl-multi-chandra', name: 'CHANDRA', email: 'Chandrakakaaja@gmail.com', phone: '088225873364', specialization: 'Multimedia', roleTitle: 'CAMERA-PERSON', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
+  { id: 'fl-multi-rizky', name: 'RIZKY NASRULLAH', email: 'rizkiuloh@gmail.com', phone: '085155188909', specialization: 'Multimedia', roleTitle: 'VIDEO DIRECTOR', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
   { id: 'fl-multi-1', name: 'ARIQ', email: 'ariqarrobani2@gmail.com', phone: '085156892661', specialization: 'Multimedia', roleTitle: 'Freelance Multimedia Crew', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
   { id: 'fl-multi-2', name: 'HERIANA', email: 'Heriana1905@gmail.com', phone: '085693948411', specialization: 'Multimedia', roleTitle: 'Operator Multimedia', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
   { id: 'fl-multi-3', name: 'IMAN', email: 'mhanshungkul@gmail.com', phone: '083896782116', specialization: 'Multimedia', roleTitle: 'Freelance Multimedia Crew', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
