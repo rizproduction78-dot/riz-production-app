@@ -167,7 +167,7 @@ export function calculateStaffKpi(
   // ─────────────────────────────────────────────────────────────
   const realReportsCount = dailyReports.filter(r => isStaffMatch(staff, r.staffName)).length;
   const reportsCount = realReportsCount;
-  const reportScore = Math.min(100, Math.round((reportsCount / 18) * 100));
+  const reportScore = Math.min(100, Math.round((reportsCount / 2) * 100));
 
   // ─────────────────────────────────────────────────────────────
   // 5. QUALITY / QC CHECKLIST (Murni dari checklist QC yang diinput)
@@ -175,14 +175,14 @@ export function calculateStaffKpi(
   const isNonQcDivision = ['Gudang', 'Admin'].includes(staff.division);
   const realQcCount = logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length;
   const qcCount = isNonQcDivision ? 0 : realQcCount;
-  const qcScore = isNonQcDivision ? 100 : (qcCount === 0 ? 0 : Math.min(100, Math.round((qcCount / 10) * 100)));
+  const qcScore = isNonQcDivision ? 80 : (qcCount === 0 ? 0 : Math.min(100, Math.round((qcCount / 2) * 100)));
 
   // ─────────────────────────────────────────────────────────────
   // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Murni dari WO yang diselesaikan)
   // ─────────────────────────────────────────────────────────────
   const realWoCount = findings.filter(f => isStaffMatch(staff, f.pic) && f.status === 'Close').length;
   const woCount = realWoCount;
-  const woScore = Math.min(100, Math.round((woCount / 6) * 100));
+  const woScore = Math.min(100, Math.round((woCount / 1) * 100));
   const taskComplexityScore = woScore;
 
   // ─────────────────────────────────────────────────────────────
@@ -196,13 +196,12 @@ export function calculateStaffKpi(
   // ─────────────────────────────────────────────────────────────
   // 8. TOTAL NILAI KPI (SEMUA KOMPONEN LENGKAP & TIDAK DIHILANGKAN)
   // ─────────────────────────────────────────────────────────────
-  // Komponen Lama:
+  // Komponen:
   // - Disiplin: 10%
   // - Produktivitas (Daily Report): 25%
   // - Quality (QC Checklist): 20%
   // - Kompleksitas Tugas / WO: 10%
   // - Teamwork & Pengembangan Diri: 5%
-  // Komponen Baru Yang Ditambahkan:
   // - Jumlah Absen / Kehadiran: 15%
   // - Uji Kompetensi yang Diikuti: 15%
   // Total = 10 + 25 + 20 + 10 + 5 + 15 + 15 = 100%
@@ -267,7 +266,7 @@ export function calculateStaffKpi(
 }
 
 /**
- * Menghitung KPI untuk seluruh daftar staff
+ * Menghitung KPI untuk seluruh daftar staff dengan perangkingan adil berdasarkan kontribusi riil
  */
 export function calculateAllStaffKpis(
   staffList: Staff[],
@@ -290,5 +289,20 @@ export function calculateAllStaffKpis(
         septemberSchedule
       )
     )
-    .sort((a, b) => b.kpi - a.kpi);
+    .sort((a, b) => {
+      // 1. Prioritas Skor KPI Tertinggi
+      if (b.kpi !== a.kpi) return b.kpi - a.kpi;
+      // 2. Prioritas Total Kontribusi Riil (Daily Report + QC + WO Selesai)
+      const bContributions = b.reports + b.qcs + b.wos;
+      const aContributions = a.reports + a.qcs + a.wos;
+      if (bContributions !== aContributions) return bContributions - aContributions;
+      // 3. Prioritas Daily Reports
+      if (b.reports !== a.reports) return b.reports - a.reports;
+      // 4. Prioritas QC Checklist
+      if (b.qcs !== a.qcs) return b.qcs - a.qcs;
+      // 5. Prioritas Uji Kompetensi
+      if (b.competencyCount !== a.competencyCount) return b.competencyCount - a.competencyCount;
+      // 6. Jam Kerja / Kehadiran
+      return b.attendanceCount - a.attendanceCount;
+    });
 }
