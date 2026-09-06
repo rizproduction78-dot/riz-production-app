@@ -27,6 +27,9 @@ function expect(condition: boolean, title: string, details?: string) {
 // 1. Test Alias Matching Dictionary
 console.log('\n--- 1. Testing Staff Alias & Nickname Resolution ---');
 expect(isStaffMatch({ id: 'staff-iwan', name: 'Iwan Kurniawan' } as any, 'Kang Butonk'), 'Resolves nickname Kang Butonk -> Iwan Kurniawan');
+expect(isStaffMatch({ id: 'staff-suryana', name: 'Suryana' } as any, 'Nana'), 'Resolves nickname Nana -> Suryana');
+expect(isStaffMatch({ id: 'staff-suryana', name: 'Suryana' } as any, 'Buluk'), 'Resolves nickname Buluk -> Suryana');
+expect(isStaffMatch({ id: 'staff-suryana', name: 'Suryana' } as any, 'Bulux'), 'Resolves nickname Bulux -> Suryana');
 expect(isStaffMatch({ id: 'staff-rahmat', name: 'Muhamad Rahmat' } as any, 'mboh'), 'Resolves nickname Mboh -> Muhamad Rahmat');
 expect(isStaffMatch({ id: 'staff-udin', name: 'Udin Saepudin' } as any, 'Mang Ubed'), 'Resolves nickname Mang Ubed -> Udin Saepudin');
 expect(isStaffMatch({ id: 'staff-ayong', name: 'Ayong Sumarsih' } as any, 'Prabuam'), 'Resolves alias Prabuam -> Ayong Sumarsih');
