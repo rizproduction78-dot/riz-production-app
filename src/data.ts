@@ -93,27 +93,30 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
         phone: s.phone || '083819947193'
       };
     }
-    // 2. Wahyudin aka Unyim (Staff Audio)
+    // 2. Suryana / Nana / Buluk (Audio Staff)
     else if (
+      rawId === 'staff-suryana' ||
       rawId === 'staff-unyin' ||
       rawId === 'staff-unyim' ||
-      rawId === 'staff-suryana' ||
       rawId === 'staff-wahyudin' ||
-      combinedStr.includes('unyim') ||
       combinedStr.includes('suryana') ||
+      combinedStr.includes('nana') ||
+      combinedStr.includes('buluk') ||
+      combinedStr.includes('bulux') ||
+      combinedStr.includes('unyim') ||
       combinedStr.includes('wahyudin') ||
       combinedStr.includes('nia.kurni')
     ) {
-      canonicalId = 'staff-unyin';
+      canonicalId = 'staff-suryana';
       canonicalStaff = {
         ...s,
-        id: 'staff-unyin',
-        name: 'Wahyudin (Unyim)',
-        fullName: 'Wahyudin',
-        nickname: 'Unyim',
+        id: 'staff-suryana',
+        name: 'Suryana',
+        fullName: 'Suryana',
+        nickname: 'Nana / Buluk',
         division: 'Audio',
         role: 'Staff',
-        level: 4,
+        level: 3,
         email: 'nia.kurni1930@gmail.com',
         phone: '083847130366'
       };
@@ -245,12 +248,11 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
     staffMap.set(canonicalId, { ...canonicalStaff, id: canonicalId });
   }
 
-  // Ensure all 21 default staff are present
-  for (const defaultStaff of STAFF_LIST) {
-    if (!staffMap.has(defaultStaff.id)) {
-      staffMap.set(defaultStaff.id, defaultStaff);
-    }
-  }
+  // Remove any legacy obsolete IDs
+  staffMap.delete('staff-unyin');
+  staffMap.delete('staff-unyim');
+  staffMap.delete('staff-chandra');
+  staffMap.delete('staff-rizky');
 
   return Array.from(staffMap.values());
 }

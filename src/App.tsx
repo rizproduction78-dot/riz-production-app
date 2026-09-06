@@ -233,10 +233,23 @@ export default function App() {
     localStorage.setItem(REF_SYNC_KEY, 'true');
 
     // Hapus duplikasi dan non-inhouse dari master_staff
-    deleteCloudDoc('master_staff', 'staff-suryana').catch(() => {});
+    deleteCloudDoc('master_staff', 'staff-unyin').catch(() => {});
     deleteCloudDoc('master_staff', 'staff-unyim').catch(() => {});
     deleteCloudDoc('master_staff', 'staff-chandra').catch(() => {});
     deleteCloudDoc('master_staff', 'staff-rizky').catch(() => {});
+
+    // Simpan staff-suryana resmi
+    saveCloudDoc('master_staff', 'staff-suryana', {
+      id: 'staff-suryana',
+      name: 'Suryana',
+      fullName: 'Suryana',
+      nickname: 'Nana / Buluk',
+      email: 'nia.kurni1930@gmail.com',
+      phone: '083847130366',
+      division: 'Audio',
+      role: 'Staff',
+      level: 3
+    }, 'System Auto-Sync').catch(() => {});
 
     // Sinkronisasi data Wahyu (Owner) ke Cloud master_staff
     saveCloudDoc('master_staff', 'director-wahyu', {
