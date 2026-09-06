@@ -5,15 +5,15 @@
  * MODUL PERHITUNGAN KPI RESMI SEMUA STAFF
  * PT. RIZ PRODUCTION MULTI KREASI
  * 
- * SUMBER ACUAN RESMI PRIORITAS PENILAIAN KPI:
+ * SUMBER ACUAN RESMI PRIORITAS PENILAIAN UTAMA KPI:
  * Spreadsheet: https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470
  * 
- * PRIORITAS PENILAIAN UTAMA:
+ * PENILAIAN UTAMA KPI BERDASARKAN:
  * 1. Daily Report (Laporan Harian Operasional Lapangan & Event) - Bobot 25%
  * 2. QC Checklist Onhouse (Inspeksi & Kesiapan Alat Gudang) - Bobot 20%
- * 3. Work Order & Temuan Kerusakan Selesai (Penyelesaian WO/Tiket) - Bobot 10%
- * 4. Kehadiran & Shift Roster Riil (Jadwal Dinas 1-31) - Bobot 15% - 20%
- * 5. Uji Kompetensi yang Diikuti (6 Modul Standar Kelistrikan) - Bobot 15%
+ * 3. Work Order (WO) Selesai & Temuan Kerusakan Ditangani - Bobot 10%
+ * 4. Uji Kompetensi yang Diikuti (6 Modul Standar Kelistrikan & Teknis) - Bobot 15%
+ * 5. Kehadiran & Shift Roster Riil (Jadwal Dinas 1-31) - Bobot 15%
  * 6. Disiplin & Teamwork - Bobot 15%
  */
 
