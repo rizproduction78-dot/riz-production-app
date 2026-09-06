@@ -286,6 +286,12 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
         if (s && (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno'))) {
           return { ...s, division: 'Admin', role: 'Staff', level: 4 };
         }
+        if (s && (s.id === 'staff-damri' || String(s.name || '').toLowerCase().includes('damri'))) {
+          return { ...s, division: 'Service', role: 'Team Leader', level: 5 };
+        }
+        if (s && (s.id === 'staff-mulyana' || String(s.name || '').toLowerCase().includes('mulyana') || String(s.nickname || '').toLowerCase().includes('kharo'))) {
+          return { ...s, division: 'Service', role: 'Staff', level: 3 };
+        }
         return s;
       }) as T[];
   }

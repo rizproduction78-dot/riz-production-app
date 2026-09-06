@@ -194,7 +194,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Pembersihan total data dummy lama & sinkronisasi data riil resmi Google Spreadsheet
-  const REF_SYNC_KEY = 'riz_ref_synced_v9_staff_freelance_clean';
+  const REF_SYNC_KEY = 'riz_ref_synced_v10_service_division';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
@@ -216,7 +216,7 @@ export default function App() {
     deleteCloudDoc('master_staff', 'staff-chandra').catch(() => {});
     deleteCloudDoc('master_staff', 'staff-rizky').catch(() => {});
 
-    // Sinkronisasi data Seno & master data ke Cloud Firestore
+    // Sinkronisasi data Seno ke Cloud master_staff
     saveCloudDoc('master_staff', 'staff-seno', {
       id: 'staff-seno',
       name: 'Seno Subroto',
@@ -227,6 +227,32 @@ export default function App() {
       division: 'Admin',
       role: 'Staff',
       level: 4
+    }, 'System Auto-Sync').catch(() => {});
+
+    // Sinkronisasi data Damri (Leader Service) ke Cloud master_staff
+    saveCloudDoc('master_staff', 'staff-damri', {
+      id: 'staff-damri',
+      name: 'Damri',
+      fullName: 'Damri',
+      nickname: 'Mang Damri',
+      email: 'damri.service@rizproduction.com',
+      phone: '081288990011',
+      division: 'Service',
+      role: 'Team Leader',
+      level: 5
+    }, 'System Auto-Sync').catch(() => {});
+
+    // Sinkronisasi data Mulyana (Staff Service) ke Cloud master_staff
+    saveCloudDoc('master_staff', 'staff-mulyana', {
+      id: 'staff-mulyana',
+      name: 'Mulyana',
+      fullName: 'Mulyana',
+      nickname: 'Kharo',
+      email: 'tabitakharo@gmail.com',
+      phone: '089523134060',
+      division: 'Service',
+      role: 'Staff',
+      level: 3
     }, 'System Auto-Sync').catch(() => {});
 
     // Sinkronisasi Temuan QC Resmi ke Cloud Firestore
