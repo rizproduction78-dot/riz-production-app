@@ -79,9 +79,10 @@ export default function EmployeePerformanceModule({
   const allStaffKpis = calculateAllStaffKpis(masterStaffList, dailyReports, logbookEntries, findings);
   const staffKpi = calculateStaffKpi(selectedStaff, dailyReports, logbookEntries, findings);
 
-  // Dynamic ranking
-  const sortedStaff = [...allStaffKpis].sort((a, b) => b.kpi - a.kpi);
-  const currentStaffRank = sortedStaff.findIndex(s => s.name === selectedStaff.name) + 1;
+  // Dynamic ranking resmi komit dengan data allStaffKpis
+  const currentStaffRank = allStaffKpis.findIndex(
+    s => s.staffId === selectedStaff.id || s.id === selectedStaff.id || isStaffMatch(selectedStaff, s.name) || s.name === selectedStaff.name
+  ) + 1;
 
   // Dynamic division styling
   const divisionBadgeColors: Record<string, { bg: string; text: string; label: string }> = {
