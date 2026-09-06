@@ -405,7 +405,21 @@ export const QC_ITEMS_BY_DIVISION = {
 export const INITIAL_VEHICLE_MAINTENANCES: VehicleMaintenanceRecord[] = [];
 export const INITIAL_ASSETS: Asset[] = [];
 export const INITIAL_MAINTENANCE_SCHEDULES: MaintenanceSchedule[] = [];
-export const INITIAL_WORK_ORDERS: WorkOrder[] = [];
+export const INITIAL_WORK_ORDERS: WorkOrder[] = [
+  {
+    id: 'wo-20260904-panel-01',
+    findingId: 'find-20260904-panel-audio',
+    title: 'Perbaikan Panel Listrik Audio 3 Phase (Ganti Stop Kontak & Legrand Cewek)',
+    equipment: 'Panel Distribusi Listrik Audio 3 Phase',
+    priority: 'Sedang',
+    pic: 'Opik / Mboh',
+    dateCreated: '2026-09-04',
+    deadline: '2026-09-05',
+    status: 'Completed',
+    notes: 'Perbaikan panel listrik selesai dilakukan Opik & Mboh pada 5 Sept 2026. 1 Ganti Stop Kontak, 1 Ganti Legrand Cewek. Panel listrik dalam kondisi aman dan siap digunakan untuk event.',
+    division: 'Audio'
+  }
+];
 
 // Data Temuan QC Resmi dari Reference Daily Task Sheet
 export const INITIAL_FINDINGS: Finding[] = [
@@ -471,7 +485,7 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
     staffName: 'Yudis',
     activity: 'Pengecekan Semua Unit Speker DBTtech15 SmaartLive & Pembersihan Debu',
     result: 'OK',
-    followUp: 'Pembersihan debu dan pengecekan box speaker dBTech bersama Mboh & Buluk',
+    followUp: 'Pembersihan debu dan pengecekan box speaker dBTech bersama Mboh, Buluk & Butong',
     status: 'Open',
     verification: 'Agustino (Admin)',
     checklists: {
@@ -490,6 +504,20 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
     verification: 'Agustino (Admin)',
     checklists: {
       'Pengecekan Speker DBTech15 SmaartLive': { status: 'OK', notes: 'Pengukuran respon frekuensi modul dBTech' }
+    }
+  },
+  {
+    id: 'log-20260903-04',
+    date: '2026-09-03',
+    division: 'Audio',
+    staffName: 'Butong',
+    activity: 'Pengecekan Semua Unit Speker DBTtech15 SmaartLive & Pembersihan Debu',
+    result: 'OK',
+    followUp: 'Pembersihan debu dan pengecekan box speaker dBTech bersama Mboh, Yudis & Buluk',
+    status: 'Open',
+    verification: 'Agustino (Admin)',
+    checklists: {
+      'Pengecekan Speker DBTech15 SmaartLive': { status: 'OK', notes: 'Pembersihan dan pengecekan unit speaker dBTech' }
     }
   },
   {
@@ -639,6 +667,18 @@ export const INITIAL_DAILY_REPORTS: DailyReport[] = [
     division: 'Audio',
     activity: 'Pengecekan Semua Unit Speker DBTtech15 SmaartLive & Pembersihan Debu',
     notes: '1* Pengecekan semua unit speker DBTtech15 dengan mengunakan smartlive.\n2* Membersihkan smua unit DBtech dari debu bersama Mboh & Yudis.',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260903-butong',
+    date: '2026-09-03',
+    staffName: 'Butong',
+    division: 'Audio',
+    activity: 'Pengecekan Semua Unit Speker DBTtech15 SmaartLive & Pembersihan Debu',
+    notes: '1* Pengecekan semua unit speker DBTtech15 dengan mengunakan smartlive berdasarkan tersebut.\n2* Membersihkan smua unit DBtech dari debu bersama Mboh, Yudis, Buluk.\nREMARK:\n- DB Tech No.18 Ada Kendala dibagian Modul Amplifiernya, saat terkena beban input besar, hasuil suara yang di keluarkan menjadi serak, tapi masih aman dan bisa digunakan untuk Event.\n- Rekomendasi untuk di cek oleh team service terutama pada modul Amplifier.',
     status: 'Submitted',
     photos: [
       'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'

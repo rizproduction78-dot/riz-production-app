@@ -109,7 +109,7 @@ export const KNOWN_STAFF_ALIASES: Record<string, string[]> = {
   
   // Service
   'staff-damri': ['damri', 'mang damri', 'mangdamri', 'pak damri'],
-  'staff-mulyana': ['mulyana', 'kharo', 'karo', 'tabita', 'tabitakharo', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana', 'kang kharo', 'kang karo']
+  'staff-mulyana': ['mulyana', 'kharo', 'karo', 'kharro', 'tabita', 'tabitakharo', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana', 'kang kharo', 'kang karo', 'kang kharro']
 };
 
 export const STAFF_NAME_ALIAS_MAP: Record<string, string[]> = {
@@ -134,10 +134,10 @@ export const STAFF_NAME_ALIAS_MAP: Record<string, string[]> = {
   'Taufik Diana': ['taufik diana', 'taufik', 'diana', 'opik', 'topik'],
   'Yudishtira Purnama A': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama'],
   'Damri': ['damri', 'mang damri', 'mangdamri'],
-  'Mulyana': ['mulyana', 'kharo', 'karo', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana'],
-  'Kharo': ['mulyana', 'kharo', 'karo', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana'],
-  'KARO': ['mulyana', 'kharo', 'karo', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana'],
-  'Mulyana (Kharo)': ['mulyana', 'kharo', 'karo', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana']
+  'Mulyana': ['mulyana', 'kharo', 'karo', 'kharro', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana'],
+  'Kharo': ['mulyana', 'kharo', 'karo', 'kharro', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana'],
+  'KARO': ['mulyana', 'kharo', 'karo', 'kharro', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana'],
+  'Mulyana (Kharo)': ['mulyana', 'kharo', 'karo', 'kharro', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana']
 };
 
 /**

@@ -246,14 +246,15 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Forced one-time re-sync for all 22 official inhouse staff (including Wahyudin / Unyim)
-  const REF_SYNC_KEY = 'riz_ref_synced_v23_restore_wahyudin_unyin_sound';
+  // Forced one-time re-sync for all 22 official inhouse staff (including Wahyudin / Unyim) & exact daily task sheet
+  const REF_SYNC_KEY = 'riz_ref_synced_v26_exact_daily_task_qc_sept2026_canonical';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
     localStorage.setItem('riz_daily_tasks', JSON.stringify(INITIAL_DAILY_TASKS));
     localStorage.setItem('riz_logbook_entries', JSON.stringify(INITIAL_LOGBOOK_ENTRIES));
     localStorage.setItem('riz_daily_reports', JSON.stringify(INITIAL_DAILY_REPORTS));
+    localStorage.setItem('riz_work_orders', JSON.stringify(INITIAL_WORK_ORDERS));
     localStorage.setItem('riz_master_staff_list', JSON.stringify(STAFF_LIST));
     localStorage.setItem('riz_september_2026_schedule', JSON.stringify(OFFICIAL_SEPTEMBER_2026_SCHEDULE));
     
@@ -262,6 +263,7 @@ export default function App() {
     localStorage.removeItem('riz_deleted_ids_daily_tasks');
     localStorage.removeItem('riz_deleted_ids_logbook_entries');
     localStorage.removeItem('riz_deleted_ids_daily_reports');
+    localStorage.removeItem('riz_deleted_ids_work_orders');
     localStorage.removeItem('riz_deleted_ids_master_staff');
 
     localStorage.setItem(REF_SYNC_KEY, 'true');
@@ -364,6 +366,26 @@ export default function App() {
     // Sinkronisasi Temuan QC Resmi ke Cloud Firestore
     INITIAL_FINDINGS.forEach(f => {
       saveCloudDoc('findings', f.id, f, 'System Canonical Sync').catch(() => {});
+    });
+
+    // Sinkronisasi Daily Reports Resmi ke Cloud Firestore
+    INITIAL_DAILY_REPORTS.forEach(r => {
+      saveCloudDoc('daily_reports', r.id, r, 'System Canonical Sync').catch(() => {});
+    });
+
+    // Sinkronisasi Logbook Entries Resmi ke Cloud Firestore
+    INITIAL_LOGBOOK_ENTRIES.forEach(l => {
+      saveCloudDoc('logbook_entries', l.id, l, 'System Canonical Sync').catch(() => {});
+    });
+
+    // Sinkronisasi Daily Tasks Resmi ke Cloud Firestore
+    INITIAL_DAILY_TASKS.forEach(t => {
+      saveCloudDoc('daily_tasks', t.id, t, 'System Canonical Sync').catch(() => {});
+    });
+
+    // Sinkronisasi Work Orders Resmi ke Cloud Firestore
+    INITIAL_WORK_ORDERS.forEach(w => {
+      saveCloudDoc('work_orders', w.id, w, 'System Canonical Sync').catch(() => {});
     });
 
     // Sinkronisasi Jadwal Kerja September 2026 ke Cloud Firestore
