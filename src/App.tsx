@@ -192,13 +192,26 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Pembersihan total data dummy lama & sinkronisasi data riil resmi Google Spreadsheet
-  const REF_SYNC_KEY = 'riz_ref_synced_v4';
+  const REF_SYNC_KEY = 'riz_ref_synced_v5';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     localStorage.removeItem('riz_logbook_entries');
     localStorage.removeItem('riz_daily_reports');
     localStorage.removeItem('riz_daily_tasks');
     localStorage.removeItem('riz_findings');
+    localStorage.removeItem('riz_master_staff_list');
     localStorage.setItem(REF_SYNC_KEY, 'true');
+    // Sinkronisasi data Seno ke Cloud master_staff
+    saveCloudDoc('master_staff', 'staff-seno', {
+      id: 'staff-seno',
+      name: 'Seno Subroto',
+      fullName: 'Seno Subroto',
+      nickname: 'Seno',
+      email: 'seno.subroto78@gmail.com',
+      phone: '081297541980',
+      division: 'Admin',
+      role: 'Staff',
+      level: 4
+    }, 'System Auto-Sync').catch(() => {});
   }
 
   // Core States - Bersih murni dari data dummy & tersinkronisasi data riil resmi

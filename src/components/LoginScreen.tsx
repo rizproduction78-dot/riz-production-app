@@ -43,7 +43,13 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
     return () => unsub();
   }, []);
 
-  const activeStaffList = (propsStaffList && propsStaffList.length > 0) ? propsStaffList : localStaffList;
+  const rawStaffList = (propsStaffList && propsStaffList.length > 0) ? propsStaffList : localStaffList;
+  const activeStaffList = rawStaffList.map(s => {
+    if (s && (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno'))) {
+      return { ...s, division: 'Admin' as const, role: s.role || 'Staff' };
+    }
+    return s;
+  });
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();

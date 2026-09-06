@@ -391,6 +391,16 @@ export function subscribeCloudCollection<T = any>(
             });
           }
 
+          // Special normalization for master_staff so division and roles are 100% consistent across devices
+          if (collectionName === 'master_staff') {
+            items = (items as any[]).map(s => {
+              if (s && (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno'))) {
+                return { ...s, division: 'Admin', role: 'Staff' };
+              }
+              return s;
+            }) as T[];
+          }
+
           // Update local cache safely
           try {
             localStorage.setItem(localCacheKey, JSON.stringify(items));
