@@ -588,13 +588,14 @@ export async function deleteCloudDoc(
 export async function pushCollectionToCloud<T = any>(
   collectionName: string,
   items: T[],
-  updaterName?: string
+  updaterName?: string,
+  skipStatusUpdate: boolean = false
 ): Promise<void> {
   if (!items || items.length === 0) return;
 
   const deviceInfo = getDeviceOSInfo();
   try {
-    updateSyncStatus({ isSyncing: true });
+    if (!skipStatusUpdate) updateSyncStatus({ isSyncing: true });
     const CHUNK_SIZE = 300;
     for (let i = 0; i < items.length; i += CHUNK_SIZE) {
       const chunk = items.slice(i, i + CHUNK_SIZE);
@@ -621,17 +622,19 @@ export async function pushCollectionToCloud<T = any>(
       await batch.commit();
     }
 
-    updateSyncStatus({
-      isSyncing: false,
-      lastSyncedAt: new Date(),
-      syncedCollections: {
-        ...currentSyncStatus.syncedCollections,
-        [collectionName]: items.length
-      }
-    });
+    if (!skipStatusUpdate) {
+      updateSyncStatus({
+        isSyncing: false,
+        lastSyncedAt: new Date(),
+        syncedCollections: {
+          ...currentSyncStatus.syncedCollections,
+          [collectionName]: items.length
+        }
+      });
+    }
   } catch (error) {
     console.error(`[Sync] Batch push failed for ${collectionName}:`, error);
-    updateSyncStatus({ isSyncing: false });
+    if (!skipStatusUpdate) updateSyncStatus({ isSyncing: false });
   }
 }
 
@@ -654,7 +657,7 @@ export async function forceSyncAllModules(updaterName?: string): Promise<{ succe
         try {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            await pushCollectionToCloud(item.name, parsed, updaterName);
+            await pushCollectionToCloud(item.name, parsed, updaterName, true);
             totalSynced += parsed.length;
           } else if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length > 0) {
             const docRef = doc(db, 'system_configs', item.name);
@@ -695,6 +698,8 @@ export async function forceSyncAllModules(updaterName?: string): Promise<{ succe
       success: false,
       message: errMsg
     };
+  } finally {
+    updateSyncStatus({ isSyncing: false });
   }
 }
 

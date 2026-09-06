@@ -72,7 +72,14 @@ export function getMasterFreelanceList(): FreelanceWorker[] {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((w: any) => w && !deletedSet.has(String(w.id || '')));
+          return parsed
+            .filter((w: any) => w && !deletedSet.has(String(w.id || '')))
+            .map((w: any) => ({
+              ...w,
+              dailyRate: (w.dailyRate && Number(w.dailyRate) > 0)
+                ? Number(w.dailyRate)
+                : (w.roleTitle?.toLowerCase().includes('operator') ? 350000 : w.specialization === 'Driver' ? 250000 : 200000)
+            }));
         }
       }
       return INITIAL_FREELANCE_WORKERS.filter(w => !deletedSet.has(String(w.id || '')));
@@ -230,6 +237,9 @@ export const INITIAL_FREELANCE_WORKERS: FreelanceWorker[] = [
   // ── 5. DIVISI DRIVER / ARMADA ─────────────────────────
   { id: 'fl-drv-1', name: 'YOSEP', phone: '081291225933', specialization: 'Driver', roleTitle: 'Freelance Driver', dailyRate: 250000, status: 'Aktif', createdAt: '2026-09-01' },
   { id: 'fl-drv-2', name: 'BUNONK', phone: '087726355305', specialization: 'Driver', roleTitle: 'Freelance Driver', dailyRate: 250000, status: 'Aktif', createdAt: '2026-09-01' },
+  { id: 'fl-drv-3', name: 'SISWOYO (WOYO)', phone: '082125242340', specialization: 'Driver', roleTitle: 'Freelance Driver', dailyRate: 250000, status: 'Aktif', createdAt: '2026-09-01' },
+  { id: 'fl-drv-4', name: 'SYARIF HIDAYATULLAH (TIMBUL)', phone: '089670427430', specialization: 'Driver', roleTitle: 'Freelance Driver', dailyRate: 250000, status: 'Aktif', createdAt: '2026-09-01' },
+  { id: 'fl-drv-5', name: 'FIKI FAUJI', phone: '082299245583', specialization: 'Driver', roleTitle: 'Freelance Driver', dailyRate: 250000, status: 'Aktif', createdAt: '2026-09-01' },
 
   // ── 6. DIVISI UMUM / LAPANGAN ─────────────────────────
   { id: 'fl-umum-1', name: 'BLAHEM', phone: '', specialization: 'Umum', roleTitle: 'Freelance Crew', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
