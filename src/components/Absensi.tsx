@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Staff, AttendanceLog, WorkSchedule } from '../types';
-import { MASTER_STAFF } from '../data';
+import { STAFF_LIST, getMasterStaffList } from '../data';
 import {
   OFFICIAL_SEPTEMBER_2026_SCHEDULE,
   SEPTEMBER_2026_DAYS,
@@ -152,7 +152,7 @@ export const getInitialCompetencyData = () => {
   const data: { [staffId: string]: { [compKey: string]: { verified: boolean; verifiedBy?: string; dateVerified?: string } } } = {};
   
   // RESET TOTAL SEMUA STAFF KE 0% (BELUM LULUS / UNVERIFIED)
-  MASTER_STAFF.forEach(staff => {
+  getMasterStaffList().forEach(staff => {
     data[staff.id] = {
       comp_safety: { verified: false },
       comp_multimeter: { verified: false },
@@ -177,6 +177,19 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
   const [activeSubTab, setActiveSubTab] = useState<'self' | 'schedule' | 'progress' | 'maintenance_dashboard'>(
     forceSubTab || 'self'
   );
+
+  // Dynamic Master Staff State with Cloud Subscription
+  const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  useEffect(() => {
+    const unsub = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setStaffList,
+      STAFF_LIST
+    );
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (forceSubTab) {
@@ -412,7 +425,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
   const handleGenerateMonthSchedule = () => {
     const defaultData: { [staffId: string]: { [day: number]: 'Masuk' | 'Off' | 'Libur' | 'Izin' | 'Sakit' | 'Alpha' } } = {};
     
-    MASTER_STAFF.forEach(staff => {
+    staffList.forEach(staff => {
       defaultData[staff.id] = {};
       for (let day = 1; day <= 31; day++) {
         // Simple default: off on Sunday (day index, say 7, 14, 21, 28)
@@ -434,7 +447,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
     };
 
     setSchedule(newSchedule);
-    onLogActivity(currentUser.name, currentUser.role, 'Admin menekan tombol "Generate Bulan Baru" dan menyalin staff dari MASTER_STAFF');
+    onLogActivity(currentUser.name, currentUser.role, 'Admin menekan tombol "Generate Bulan Baru" dan menyalin staff dari master_staff');
   };
 
   // Update a single day's schedule for a staff
@@ -454,7 +467,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
       scheduleData: updatedData
     });
 
-    const staffName = MASTER_STAFF.find(s => s.id === staffId)?.name || 'Staff';
+    const staffName = staffList.find(s => s.id === staffId)?.name || 'Staff';
     onLogActivity(currentUser.name, currentUser.role, `Mengubah jadwal ${staffName} Tanggal ${day} menjadi ${value}`);
   };
 
@@ -1451,7 +1464,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-slate-200">
-                        {MASTER_STAFF.filter(s => s.name.toLowerCase().includes(scheduleSearch.toLowerCase())).map((staff) => {
+                        {staffList.filter(s => s.name.toLowerCase().includes(scheduleSearch.toLowerCase())).map((staff) => {
                           const staffRowSchedule = schedule.scheduleData[staff.id] || {};
                           
                           return (
@@ -1520,9 +1533,9 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
 
       {/* VIEW 3: STAFF PROGRESSION & ELECTRICAL COMPETENCY */}
       {activeSubTab === 'progress' && (() => {
-        // Filter MASTER_STAFF to only those in the 5 eligible divisions
+        // Filter staffList to only those in the 5 eligible divisions
         const ELIGIBLE_DIVISIONS = ['Audio', 'Lighting', 'Multimedia', 'Videotron', 'Gudang'];
-        const eligibleStaff = MASTER_STAFF.filter(staff => ELIGIBLE_DIVISIONS.includes(staff.division));
+        const eligibleStaff = staffList.filter(staff => ELIGIBLE_DIVISIONS.includes(staff.division));
 
         // Calculate progress for each staff member
         const getStaffProgress = (staffId: string) => {
@@ -1565,7 +1578,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
           return matchesSearch && matchesDiv;
         });
 
-        const selectedStaff = MASTER_STAFF.find(s => s.id === selectedStaffId);
+        const selectedStaff = staffList.find(s => s.id === selectedStaffId);
         const selectedProgress = selectedStaff ? getStaffProgress(selectedStaff.id) : null;
 
         // Check if current logged-in user can verify the target staff's competency
@@ -1580,7 +1593,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
         };
 
         const handleToggleCompetency = (staffId: string, compKey: string) => {
-          const currentStaff = MASTER_STAFF.find(s => s.id === staffId);
+          const currentStaff = staffList.find(s => s.id === staffId);
           if (!currentStaff) return;
           
           if (!canVerifyFor(currentStaff)) {
@@ -2421,7 +2434,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
                       className="w-full text-xs p-2 rounded border border-slate-200 focus:border-indigo-500 focus:outline-none bg-white font-semibold"
                     >
                       <option value="">-- Pilih PIC Default atau Karyawan --</option>
-                      {MASTER_STAFF.map(st => (
+                      {staffList.map(st => (
                         <option key={st.id} value={st.name}>{st.name} ({st.division} - {st.role})</option>
                       ))}
                     </select>

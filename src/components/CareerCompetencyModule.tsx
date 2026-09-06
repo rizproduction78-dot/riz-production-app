@@ -281,7 +281,7 @@ export default function CareerCompetencyModule({
       lastUpdated: new Date().toISOString().split('T')[0],
       verifiedBy: `${currentUser.name} (${currentUser.role})`,
       certNumber: nextStage >= 5 && !activeRecord.certNumber
-        ? `CERT-RP-${activeStaff.division.substring(0, 3).toUpperCase()}-2026-${activeStaff.id.padStart(3, '0')}`
+        ? `CERT-RP-${activeStaff.division.substring(0, 3).toUpperCase()}-2026-${String(activeStaff.id).slice(-4).toUpperCase()}`
         : activeRecord.certNumber
     };
 
@@ -789,7 +789,7 @@ export default function CareerCompetencyModule({
 
             {/* Horizontal Pipeline Steps */}
             <div className="overflow-x-auto pb-4 pt-2 scrollbar-thin">
-              <div className="flex items-center gap-2 min-w-[980px]">
+              <div className="flex items-stretch gap-2 min-w-[1150px]">
                 {PIPELINE_STAGES.map((stg, idx) => {
                   const isCurrent = activeRecord.currentStageId === stg.id;
                   const isPassed = activeRecord.currentStageId > stg.id;
@@ -810,24 +810,27 @@ export default function CareerCompetencyModule({
                             }));
                           }
                         }}
-                        className={`flex-1 min-w-[90px] p-3 rounded-2xl border text-center transition-all cursor-pointer select-none ${
+                        className={`flex-1 min-w-[100px] md:min-w-[108px] p-2.5 rounded-2xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between ${
                           isCurrent
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/30 ring-2 ring-indigo-200 scale-105'
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/30 ring-2 ring-indigo-200 scale-105 z-10'
                             : isPassed
                             ? 'bg-emerald-50/80 text-emerald-900 border-emerald-200 hover:bg-emerald-100'
                             : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
                         }`}
+                        title={`${stg.name}: ${stg.shortDesc}`}
                       >
-                        <div className="text-lg mb-1">{stg.icon}</div>
-                        <div className="text-[10px] font-mono font-bold tracking-widest uppercase opacity-80">
-                          #{stg.id}
-                        </div>
-                        <div className="text-[11px] font-black uppercase tracking-tight leading-tight mt-0.5 truncate">
-                          {stg.name}
+                        <div>
+                          <div className="text-base md:text-lg mb-0.5">{stg.icon}</div>
+                          <div className="text-[10px] font-mono font-bold tracking-widest uppercase opacity-80">
+                            #{stg.id}
+                          </div>
+                          <div className="text-[10px] sm:text-[11px] font-black uppercase tracking-tight leading-tight mt-1 min-h-[28px] flex items-center justify-center text-center">
+                            {stg.name}
+                          </div>
                         </div>
                         <div className="mt-2 text-[9px] font-bold">
                           {isCurrent ? (
-                            <span className="bg-white/20 px-2 py-0.5 rounded-full">Aktif</span>
+                            <span className="bg-white/20 px-2 py-0.5 rounded-full inline-block">Aktif</span>
                           ) : isPassed ? (
                             <span className="text-emerald-600">✓ Lolos</span>
                           ) : (
@@ -837,7 +840,9 @@ export default function CareerCompetencyModule({
                       </div>
 
                       {idx < PIPELINE_STAGES.length - 1 && (
-                        <ArrowRight className={`w-4 h-4 shrink-0 ${isPassed ? 'text-emerald-500' : 'text-slate-300'}`} />
+                        <div className="flex items-center justify-center shrink-0">
+                          <ArrowRight className={`w-3.5 h-3.5 ${isPassed ? 'text-emerald-500' : 'text-slate-300'}`} />
+                        </div>
                       )}
                     </React.Fragment>
                   );
