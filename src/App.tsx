@@ -205,25 +205,49 @@ export default function App() {
     localStorage.setItem(DUMMY_PURGE_KEY, 'true');
   }
 
-  // Core States - Bersih murni dari data dummy
+  // Core States - Bersih murni dari data dummy & tersinkronisasi data riil resmi
   const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>(() => {
     const saved = localStorage.getItem('riz_logbook_entries');
-    return saved ? JSON.parse(saved) : INITIAL_LOGBOOK_ENTRIES;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return INITIAL_LOGBOOK_ENTRIES;
   });
 
   const [dailyReports, setDailyReports] = useState<DailyReportType[]>(() => {
     const saved = localStorage.getItem('riz_daily_reports');
-    return saved ? JSON.parse(saved) : INITIAL_DAILY_REPORTS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return INITIAL_DAILY_REPORTS;
   });
 
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>(() => {
     const saved = localStorage.getItem('riz_daily_tasks');
-    return saved ? JSON.parse(saved) : INITIAL_DAILY_TASKS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return INITIAL_DAILY_TASKS;
   });
 
   const [findings, setFindings] = useState<Finding[]>(() => {
     const saved = localStorage.getItem('riz_findings');
-    return saved ? JSON.parse(saved) : INITIAL_FINDINGS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return INITIAL_FINDINGS;
   });
 
   const [assets, setAssets] = useState<Asset[]>(() => {

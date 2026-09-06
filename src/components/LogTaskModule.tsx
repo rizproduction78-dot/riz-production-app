@@ -115,7 +115,13 @@ export default function LogTaskModule({
   // Tasks state (synced with Firebase if possible, fallback to local)
   const [tasks, setTasks] = useState<DailyTask[]>(() => {
     const saved = localStorage.getItem('riz_daily_tasks');
-    return saved ? JSON.parse(saved) : initialTasks;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return (initialTasks && initialTasks.length > 0) ? initialTasks : [];
   });
   const [cloudSynced, setCloudSynced] = useState<boolean>(false);
 

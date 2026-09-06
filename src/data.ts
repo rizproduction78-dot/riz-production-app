@@ -174,10 +174,260 @@ export const INITIAL_VEHICLE_MAINTENANCES: VehicleMaintenanceRecord[] = [];
 export const INITIAL_ASSETS: Asset[] = [];
 export const INITIAL_MAINTENANCE_SCHEDULES: MaintenanceSchedule[] = [];
 export const INITIAL_WORK_ORDERS: WorkOrder[] = [];
-export const INITIAL_FINDINGS: Finding[] = [];
-export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [];
-export const INITIAL_DAILY_REPORTS: DailyReport[] = [];
-export const INITIAL_DAILY_TASKS: DailyTask[] = [];
+
+// Data Temuan QC Resmi dari Reference Daily Task Sheet
+export const INITIAL_FINDINGS: Finding[] = [
+  {
+    id: 'find-20260903-dbtech18',
+    equipment: 'Speaker dBTechnologies DVA T15 No. 18',
+    issue: 'Modul amplifier serak saat terkena beban input besar (high volume). Direkomendasikan pengecekan oleh tim Service.',
+    priority: 'Tinggi',
+    pic: 'Heri (Service)',
+    targetDate: '2026-09-08',
+    status: 'Open',
+    dateCreated: '2026-09-03'
+  },
+  {
+    id: 'find-20260904-panel-audio',
+    equipment: 'Panel Distribusi Listrik Audio 3 Phase',
+    issue: 'Perlu penggantian 1 unit stop kontak dan 1 unit konektor Legrand Cewek.',
+    priority: 'Sedang',
+    pic: 'Opik / Buluk',
+    targetDate: '2026-09-05',
+    status: 'Close',
+    dateCreated: '2026-09-04'
+  }
+];
+
+// Data Logbook Inspeksi Resmi dari Reference Daily Task Sheet
+export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
+  {
+    id: 'log-20260903-01',
+    date: '2026-09-03',
+    division: 'Audio',
+    staffName: 'Mboh',
+    activity: 'Pengecekan Unit Speaker dBTechnologies DVA T15 & SmaartLive',
+    result: 'OK',
+    followUp: 'Modul amplifier unit No.18 dijadwalkan inspeksi service',
+    status: 'Open',
+    verification: 'Agus (Supervisor)',
+    checklists: {
+      'Pengecekan Unit DVA T15 SmaartLive': { status: 'OK', notes: 'SmaartLive test selesai untuk seluruh unit' },
+      'Pembersihan Debu Box': { status: 'OK', notes: 'Pembersihan debu box selesai' }
+    }
+  },
+  {
+    id: 'log-20260904-01',
+    date: '2026-09-04',
+    division: 'Audio',
+    staffName: 'Opik',
+    activity: 'Inspeksi & Pengujian 3 Unit Panel Listrik Audio',
+    result: 'OK',
+    followUp: '1 Stop kontak & 1 Legrand cewek telah diganti',
+    status: 'Close',
+    verification: 'Fahrul (Manager)',
+    checklists: {
+      'Kelistrikan 3 Phase': { status: 'OK', notes: 'Tegangan 220V/380V stabil, 2 panel OK, 1 panel perbaikan' }
+    }
+  },
+  {
+    id: 'log-20260905-01',
+    date: '2026-09-05',
+    division: 'Videotron',
+    staffName: 'Kharo',
+    activity: 'Perbaikan Pixel Modul LED Kabinet Videotron (2 Box)',
+    result: 'OK',
+    followUp: '2 Box telah diperbaiki dan lulus uji warna RGBW',
+    status: 'Close',
+    verification: 'Agus (Supervisor)',
+    checklists: {
+      'Solder SMD Pixel LED': { status: 'OK', notes: 'Pixel menyala sempurna tanpa dead pixel' }
+    }
+  }
+];
+
+// Laporan Harian Resmi dari Reference Daily Task Sheet (September 2026)
+export const INITIAL_DAILY_REPORTS: DailyReport[] = [
+  {
+    id: 'rep-20260901-jay',
+    date: '2026-09-01',
+    staffName: 'Jay',
+    division: 'Multimedia',
+    activity: 'Belajar Aplikasi Gemini & ChatGPT untuk Efisiensi Kerja',
+    notes: 'Mempelajari pembuatan prompt AI, template laporan otomatis, dan integrasi tools AI untuk operasional tim.',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260903-mboh',
+    date: '2026-09-03',
+    staffName: 'Mboh',
+    division: 'Audio',
+    activity: 'Pengecekan Unit Speaker dBTechnologies DVA T15 & SmaartLive',
+    notes: '1. Pengecekan semua unit speaker dBTech DVA T15 dengan menggunakan SmaartLive. 2. Membersihkan semua unit dBTech dari debu. Temuan: DB Tech No.18 ada kendala di modul amplifier (suara serak saat beban input besar, masih aman untuk event). Rekomendasi cek tim service.',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260904-opik',
+    date: '2026-09-04',
+    staffName: 'Opik',
+    division: 'Audio',
+    activity: 'Pengecekan Panel Distribusi Daya Listrik (3 Unit)',
+    notes: 'Pengecekan 3 unit panel listrik audio. Hasil: 2 panel sudah OK, 1 unit ganti stop kontak dan 1 unit ganti Legrand Cewek.',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260905-opik',
+    date: '2026-09-05',
+    staffName: 'Opik',
+    division: 'Audio',
+    activity: 'Perbaikan Panel Listrik & Praktek Sub Cardioid / End-Fire T45',
+    notes: 'Perbaikan panel listrik warehouse dan praktikum penggabungan metode Sub Cardioid & End-Fire dengan Sub T45. Panel dalam kondisi aman dan siap pakai.',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260905-kharo',
+    date: '2026-09-05',
+    staffName: 'Kharo',
+    division: 'Videotron',
+    activity: 'Repair & Ganti Pixel Kabinet LED Videotron (2 Box)',
+    notes: 'Penggantian pixel SMD LED pada kabinet LED Videotron sebanyak 2 box. Modul telah diuji beban warna.',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260906-kharo',
+    date: '2026-09-06',
+    staffName: 'Kharo',
+    division: 'Videotron',
+    activity: 'Repair Ganti Pixel Kabinet LED Videotron (Lanjutan 2 Box)',
+    notes: 'Penyolderan dan perbaikan pixel kabinet LED Videotron 2 box lanjutan.',
+    status: 'Draft',
+    photos: [
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260906-dani',
+    date: '2026-09-06',
+    staffName: 'Dani',
+    division: 'Audio',
+    activity: 'Pengecekan Kabel Audio XLR & Kabel Jack to Jack',
+    notes: 'Pengecekan kabel XLR dan Jack to Jack dengan multitester kontinuitas. Seluruh kabel siap event.',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'
+    ]
+  }
+];
+
+// 7 Daily Tasks Resmi dari Reference Google Sheet (1 - 6 September 2026)
+export const INITIAL_DAILY_TASKS: DailyTask[] = [
+  {
+    id: 'dt-20260901-01',
+    title: 'Pelatihan Mandiri Aplikasi AI (Gemini & ChatGPT)',
+    description: 'Belajar dan eksplorasi aplikasi Gemini & ChatGPT untuk pembuatan prompt logbook, SOP otomatis, dan administrasi operasional event.',
+    division: 'Multimedia',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: '7',
+    assignedName: 'Jay',
+    dueDate: '2026-09-01',
+    createdAt: '2026-09-01',
+    createdBy: 'Jay'
+  },
+  {
+    id: 'dt-20260903-01',
+    title: 'Pengecekan Unit Speaker dBTechnologies DVA T15 & SmaartLive',
+    description: '1. Pengecekan seluruh unit speaker dBTechnologies DVA T15 menggunakan software SmaartLive.\n2. Pembersihan seluruh unit box dBTechnologies dari debu.\nCatatan: DB Tech No.18 terdapat kendala pada modul amplifier (suara serak pada volume tinggi, direkomendasikan cek tim service).',
+    division: 'Audio',
+    priority: 'Tinggi',
+    status: 'Done',
+    assignedTo: '8',
+    assignedName: 'Mboh, Yudish, Buluk, Butonk',
+    dueDate: '2026-09-03',
+    createdAt: '2026-09-03',
+    createdBy: 'Mboh'
+  },
+  {
+    id: 'dt-20260904-01',
+    title: 'Pengecekan & Uji Beban 3 Unit Panel Listrik Distribusi Audio',
+    description: 'Pengecekan kelistrikan 3 unit panel distribusi audio.\nHasil: 2 unit panel dalam kondisi OK. 1 unit perlu penggantian stop kontak dan 1 unit penggantian konektor Legrand Cewek.',
+    division: 'Audio',
+    priority: 'Tinggi',
+    status: 'Done',
+    assignedTo: '13',
+    assignedName: 'Opik, Buluk',
+    dueDate: '2026-09-04',
+    createdAt: '2026-09-04',
+    createdBy: 'Opik'
+  },
+  {
+    id: 'dt-20260905-01',
+    title: 'Perbaikan Panel Listrik & Workshop Setup Sub Cardioid / End-Fire T45',
+    description: 'Perbaikan panel listrik warehouse dan praktikum instalasi penggabungan metode subwoofer Cardioid serta End-Fire menggunakan Subwoofer dBTechnologies DVA T45.\nHasil: Panel listrik aman dan siap digunakan.',
+    division: 'Audio',
+    priority: 'Tinggi',
+    status: 'Done',
+    assignedTo: '13',
+    assignedName: 'Opik, Mboh',
+    dueDate: '2026-09-05',
+    createdAt: '2026-09-05',
+    createdBy: 'Opik'
+  },
+  {
+    id: 'dt-20260905-02',
+    title: 'Repair & Ganti Pixel Kabinet LED Videotron (2 Box)',
+    description: 'Penggantian pixel SMD LED yang mati/bermasalah pada 2 box kabinet LED Videotron.',
+    division: 'Videotron',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: '17',
+    assignedName: 'Kharo',
+    dueDate: '2026-09-05',
+    createdAt: '2026-09-05',
+    createdBy: 'Kharo'
+  },
+  {
+    id: 'dt-20260906-01',
+    title: 'Repair & Ganti Pixel Kabinet LED Videotron (Lanjutan 2 Box)',
+    description: 'Penyolderan dan penggantian pixel kabinet LED Videotron (2 box lanjutan) serta running test uji beban warna.',
+    division: 'Videotron',
+    priority: 'Sedang',
+    status: 'In Progress',
+    assignedTo: '17',
+    assignedName: 'Kharo',
+    dueDate: '2026-09-06',
+    createdAt: '2026-09-06',
+    createdBy: 'Kharo'
+  },
+  {
+    id: 'dt-20260906-02',
+    title: 'Pengecekan Kabel Audio XLR & Kabel Jack to Jack',
+    description: 'Pengecekan kontinuitas sinyal kabel mikrofon XLR, kabel instrumen Jack to Jack, dan perapihan gulungan kabel di rak audio.',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: '10',
+    assignedName: 'Dani',
+    dueDate: '2026-09-06',
+    createdAt: '2026-09-06',
+    createdBy: 'Dani'
+  }
+];
 
 // 50+ Official Freelance & Operator Partners PT RIZ-PRODUCTION - Sorted by Division
 export const INITIAL_FREELANCE_WORKERS: FreelanceWorker[] = [
