@@ -290,19 +290,27 @@ export function calculateAllStaffKpis(
       )
     )
     .sort((a, b) => {
-      // 1. Prioritas Skor KPI Tertinggi
-      if (b.kpi !== a.kpi) return b.kpi - a.kpi;
-      // 2. Prioritas Total Kontribusi Riil (Daily Report + QC + WO Selesai)
-      const bContributions = b.reports + b.qcs + b.wos;
-      const aContributions = a.reports + a.qcs + a.wos;
-      if (bContributions !== aContributions) return bContributions - aContributions;
-      // 3. Prioritas Daily Reports
+      // 1. PRIORITAS UTAMA: Total Kontribusi Operasional (Daily Report + QC Checklist + WO Selesai)
+      const bOps = (b.reports * 10) + (b.qcs * 8) + (b.wos * 12);
+      const aOps = (a.reports * 10) + (a.qcs * 8) + (a.wos * 12);
+      if (bOps !== aOps) return bOps - aOps;
+
+      // 2. Prioritas Jumlah Daily Reports
       if (b.reports !== a.reports) return b.reports - a.reports;
-      // 4. Prioritas QC Checklist
+
+      // 3. Prioritas Jumlah QC Checklist
       if (b.qcs !== a.qcs) return b.qcs - a.qcs;
-      // 5. Prioritas Uji Kompetensi
+
+      // 4. Prioritas Jumlah WO Selesai
+      if (b.wos !== a.wos) return b.wos - a.wos;
+
+      // 5. Prioritas Nilai Total KPI (%)
+      if (b.kpi !== a.kpi) return b.kpi - a.kpi;
+
+      // 6. Prioritas Uji Kompetensi yang Diikuti
       if (b.competencyCount !== a.competencyCount) return b.competencyCount - a.competencyCount;
-      // 6. Jam Kerja / Kehadiran
+
+      // 7. Jam Kerja & Kehadiran
       return b.attendanceCount - a.attendanceCount;
     });
 }
