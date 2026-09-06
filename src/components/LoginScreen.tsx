@@ -44,12 +44,49 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
   }, []);
 
   const rawStaffList = (propsStaffList && propsStaffList.length > 0) ? propsStaffList : localStaffList;
-  const activeStaffList = rawStaffList.map(s => {
-    if (s && (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno'))) {
-      return { ...s, division: 'Admin' as const, role: s.role || 'Staff' };
+  const staffMap = new Map<string, Staff>();
+  rawStaffList.forEach(s => {
+    if (!s || !s.id) return;
+    let canonicalId = s.id;
+    if (canonicalId === 'staff-suryana' || canonicalId === 'staff-unyim' || canonicalId === 'staff-unyin') {
+      canonicalId = 'staff-unyin';
     }
-    return s;
+    
+    let processedStaff: Staff = { ...s, id: canonicalId };
+    if (canonicalId === 'director-wahyu' || (String(s.name || '').toLowerCase() === 'wahyu' && s.division === 'Admin')) {
+      processedStaff = {
+        id: 'director-wahyu',
+        name: 'Wahyu',
+        fullName: 'Wahyu',
+        nickname: 'Wahyu',
+        division: 'Admin',
+        role: 'Owner',
+        level: 8,
+        email: 'zakimau06@gmail.com',
+        phone: '083819947193'
+      };
+    } else if (canonicalId === 'staff-unyin' || (s.division === 'Audio' && (String(s.name || '').toLowerCase().includes('unyim') || String(s.name || '').toLowerCase().includes('suryana') || String(s.name || '').toLowerCase().includes('wahyudin')))) {
+      processedStaff = {
+        id: 'staff-unyin',
+        name: 'Wahyudin (Unyim)',
+        fullName: 'Wahyudin',
+        nickname: 'Unyim',
+        division: 'Audio',
+        role: 'Staff',
+        level: 4,
+        email: 'nia.kurni1930@gmail.com',
+        phone: '083847130366'
+      };
+    } else if (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno')) {
+      processedStaff = { ...s, division: 'Admin', role: 'Staff', level: 4 };
+    } else if (s.id === 'staff-damri' || String(s.name || '').toLowerCase().includes('damri')) {
+      processedStaff = { ...s, division: 'Service', role: 'Team Leader', level: 5 };
+    } else if (s.id === 'staff-mulyana' || String(s.name || '').toLowerCase().includes('mulyana') || String(s.nickname || '').toLowerCase().includes('kharo')) {
+      processedStaff = { ...s, division: 'Service', role: 'Staff', level: 3 };
+    }
+    staffMap.set(canonicalId, processedStaff);
   });
+  const activeStaffList = Array.from(staffMap.values());
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +164,7 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
                       <optgroup key={divName} label={groupLabel}>
                         {staffInDiv.map(s => {
                           let displayRole: string = s?.role || 'Staff';
-                          if (String(s?.name || '').toLowerCase().includes('wahyu') || s?.role === 'Owner') displayRole = 'Owner';
+                          if (s?.id === 'director-wahyu' || s?.role === 'Owner') displayRole = 'Owner / Director';
                           return (
                             <option key={s.id} value={s.id}>{s.name} ({displayRole} - {s.division})</option>
                           );

@@ -12,7 +12,7 @@ export const STAFF_LIST: Staff[] = [
   { id: 'staff-udin', name: 'Udin Saepudin', fullName: 'Udin Saepudin', nickname: 'Mang ube', email: 'usaepudin1511@gmail.com', phone: '082221948861', division: 'Gudang', role: 'Gudang', level: 3 },
 
   // 2. Admin / Manajemen
-  { id: 'director-wahyu', name: 'Wahyu', fullName: 'Wahyudin', nickname: 'Wahyu', email: 'zakimau06@gmail.com', phone: '083819947193', division: 'Admin', role: 'Owner', level: 8 },
+  { id: 'director-wahyu', name: 'Wahyu', fullName: 'Wahyu', nickname: 'Wahyu', email: 'zakimau06@gmail.com', phone: '083819947193', division: 'Admin', role: 'Owner', level: 8 },
   { id: 'staff-agustino', name: 'Agustino Setiawan', fullName: 'Agustino Setiawan', nickname: 'Agustino', email: 'agustinostwn@gmail.com', phone: '082128263551', division: 'Admin', role: 'Admin', level: 4 },
   { id: 'staff-fahrul', name: 'M. Fahruyana . A', fullName: 'M. Fahruyana . A', nickname: 'Fahrul', email: 'rullyana888@gmail.com', phone: '081287364025', division: 'Admin', role: 'Manager', level: 6 },
   { id: 'staff-syalsa', name: 'Syalsa Sri Hestariana', fullName: 'Syalsa Sri Hestariana', nickname: 'Caca', email: 'Syalsaassh24@gmail.com', phone: '087834180561', division: 'Admin', role: 'Admin', level: 4 },
@@ -33,7 +33,7 @@ export const STAFF_LIST: Staff[] = [
   { id: 'staff-iwan', name: 'Iwan Kurniawan', fullName: 'Iwan Kurniawan', nickname: 'Butonk', email: 'Boetonk2785@gmail.com', phone: '083819616123', division: 'Audio', role: 'Staff', level: 3 },
   { id: 'staff-rahmat', name: 'Muhamad Rahmat', fullName: 'Muhamad Rahmat', nickname: 'Mboh', email: 'outsideprojectmboh@gmail.com', phone: '082124722363', division: 'Audio', role: 'Team Leader', level: 5 },
   { id: 'staff-ramdani', name: 'Ramdani', fullName: 'Ramdani', nickname: 'Dani', email: 'ismailramdani133@gmail.com', phone: '082123166002', division: 'Audio', role: 'Staff', level: 3 },
-  { id: 'staff-suryana', name: 'Unyim', fullName: 'Suryana', nickname: 'Unyim', email: 'nia.kurni1930@gmail.com', phone: '083847130366', division: 'Audio', role: 'Staff', level: 4 },
+  { id: 'staff-unyin', name: 'Wahyudin (Unyim)', fullName: 'Wahyudin', nickname: 'Unyim', email: 'nia.kurni1930@gmail.com', phone: '083847130366', division: 'Audio', role: 'Staff', level: 4 },
   { id: 'staff-taufik', name: 'Taufik Diana', fullName: 'Taufik Diana', nickname: 'Opik', email: 'Taufikdya8@gmail.com', phone: '085722025295', division: 'Audio', role: 'Staff', level: 3 },
   { id: 'staff-yudish', name: 'Yudishtira Purnama A', fullName: 'Yudishtira Purnama A', nickname: 'Yudish', email: 'Yudhisintan@gmail.com', phone: '085888137581', division: 'Audio', role: 'Staff', level: 3 },
 
@@ -53,26 +53,30 @@ export function getMasterStaffList(): Staff[] {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed
+          const staffMap = new Map<string, Staff>();
+          parsed
             .filter((s: any) => s && !deletedSet.has(String(s.id || '')))
-            .map((s: any) => {
-              if (s.id === 'director-wahyu' || (String(s.name || '').toLowerCase().includes('wahyu') && s.division === 'Admin')) {
-                return { ...s, id: 'director-wahyu', name: 'Wahyu', fullName: 'Wahyudin', nickname: 'Wahyu', division: 'Admin', role: 'Owner', level: 8 };
+            .forEach((s: any) => {
+              let canonicalId = s.id;
+              if (canonicalId === 'staff-suryana' || canonicalId === 'staff-unyim' || canonicalId === 'staff-unyin') {
+                canonicalId = 'staff-unyin';
               }
-              if (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno')) {
-                return { ...s, division: 'Admin', role: 'Staff', level: 4 };
+              
+              let processed: Staff = { ...s, id: canonicalId };
+              if (canonicalId === 'director-wahyu' || (String(s.name || '').toLowerCase() === 'wahyu' && s.division === 'Admin')) {
+                processed = { ...s, id: 'director-wahyu', name: 'Wahyu', fullName: 'Wahyu', nickname: 'Wahyu', division: 'Admin', role: 'Owner', level: 8 };
+              } else if (canonicalId === 'staff-unyin' || (s.division === 'Audio' && (String(s.name || '').toLowerCase().includes('unyim') || String(s.name || '').toLowerCase().includes('suryana') || String(s.name || '').toLowerCase().includes('wahyudin')))) {
+                processed = { ...s, id: 'staff-unyin', name: 'Wahyudin (Unyim)', fullName: 'Wahyudin', nickname: 'Unyim', division: 'Audio', role: 'Staff', level: 4 };
+              } else if (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno')) {
+                processed = { ...s, division: 'Admin', role: 'Staff', level: 4 };
+              } else if (s.id === 'staff-damri' || String(s.name || '').toLowerCase().includes('damri')) {
+                processed = { ...s, division: 'Service', role: 'Team Leader', level: 5 };
+              } else if (s.id === 'staff-mulyana' || String(s.name || '').toLowerCase().includes('mulyana') || String(s.nickname || '').toLowerCase().includes('kharo')) {
+                processed = { ...s, division: 'Service', role: 'Staff', level: 3 };
               }
-              if (s.id === 'staff-damri' || String(s.name || '').toLowerCase().includes('damri')) {
-                return { ...s, division: 'Service', role: 'Team Leader', level: 5 };
-              }
-              if (s.id === 'staff-mulyana' || String(s.name || '').toLowerCase().includes('mulyana') || String(s.nickname || '').toLowerCase().includes('kharo')) {
-                return { ...s, division: 'Service', role: 'Staff', level: 3 };
-              }
-              if (s.id === 'staff-suryana' || String(s.name || '').toLowerCase().includes('unyim') || String(s.name || '').toLowerCase().includes('suryana') || (String(s.name || '').toLowerCase().includes('wahyudin') && s.division === 'Audio')) {
-                return { ...s, id: 'staff-suryana', name: 'Unyim', fullName: 'Suryana', nickname: 'Unyim', division: 'Audio', role: 'Staff', level: 4 };
-              }
-              return s;
+              staffMap.set(canonicalId, processed);
             });
+          return Array.from(staffMap.values());
         }
       }
       return STAFF_LIST.filter(s => !deletedSet.has(String(s.id || '')));
