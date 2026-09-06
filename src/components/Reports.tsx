@@ -105,6 +105,21 @@ export default function Reports({
   const solvedRepairs = activeFindings.filter(f => f.status === 'Close').length;
   const pendingSpareparts = activeFindings.filter(f => f.status === 'Open' && f.issue.toLowerCase().includes('sparepart')).length;
 
+  // Dynamic PM metrics for Reports
+  const pmFromSchedules = schedules.filter(s => s.type === 'Preventive');
+  const pmFromWO = activeWorkOrders.filter(w => w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive'));
+  const totalPM = pmFromSchedules.length + pmFromWO.length;
+  const donePM = pmFromSchedules.filter(s => s.status === 'Done').length + pmFromWO.filter(w => w.status === 'Completed').length;
+  const overduePM = pmFromSchedules.filter(s => s.status === 'Overdue').length;
+  const pendingPM = totalPM - donePM;
+  const kepatuhanPM = totalPM > 0 ? ((donePM / totalPM) * 100).toFixed(1) : '100.0';
+
+  // Dynamic CM / Repair metrics (Corrective Maintenance)
+  const cmFromSchedules = schedules.filter(s => s.type === 'Corrective');
+  const totalRepair = activeFindings.length + cmFromSchedules.length;
+  const doneRepair = activeFindings.filter(f => f.status === 'Close').length + cmFromSchedules.filter(s => s.status === 'Done').length;
+  const pendingRepair = activeFindings.filter(f => f.status === 'Open').length + cmFromSchedules.filter(s => s.status !== 'Done').length;
+
   // Dynamic staff KPI performance scores prioritized by:
   // 1. Daily Report
   // 2. QC Checklist
@@ -114,18 +129,19 @@ export default function Reports({
   // Filter hanya staf yang memiliki aktifitas riil pada periode yang dipilih
   const activeStaffKpis = staffKpis.filter(staff => staff.reports > 0 || staff.qcs > 0 || staff.wos > 0);
 
-  // Dynamic metrics per division
+  // Dynamic metrics per division (7 Divisi Resmi)
   const reportDivisions = [
     { name: 'Divisi Sound (Audio)', key: 'Audio' },
     { name: 'Divisi Lighting', key: 'Lighting' },
     { name: 'Divisi Videotron', key: 'Videotron' },
     { name: 'Divisi Multimedia', key: 'Multimedia' },
     { name: 'Gudang (Warehouse)', key: 'Gudang' },
-    { name: 'Divisi Service (Perbaikan)', key: 'Service' }
+    { name: 'Divisi Service (Perbaikan)', key: 'Service' },
+    { name: 'Administrasi (Admin)', key: 'Admin' }
   ];
 
   const reportDivisionDamageStats = reportDivisions.map(d => {
-    const divFindings = findings.filter(f => f.equipment?.toLowerCase().includes(d.key.toLowerCase()));
+    const divFindings = activeFindings.filter(f => f.equipment?.toLowerCase().includes(d.key.toLowerCase()));
     const ringan = divFindings.filter(f => f.priority === 'Rendah').length;
     const sedang = divFindings.filter(f => f.priority === 'Sedang').length;
     const berat = divFindings.filter(f => f.priority === 'Tinggi').length;
@@ -142,7 +158,7 @@ export default function Reports({
 
   // Dynamic Top 10 equipment with issues
   const reportEquipmentFrequency: Record<string, { count: number; lastStatus: string }> = {};
-  findings.forEach(f => {
+  activeFindings.forEach(f => {
     const name = f.equipment || 'Unknown';
     if (!reportEquipmentFrequency[name]) {
       reportEquipmentFrequency[name] = {
@@ -548,45 +564,45 @@ export default function Reports({
                 <tbody className="divide-y divide-slate-300 font-mono">
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Sound</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Audio').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Audio').length}</td>
-                    <td className="p-2 text-center">{findings.filter(f => f.equipment.toLowerCase().includes('audio') || f.issue.toLowerCase().includes('audio')).length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Audio').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Audio').length}</td>
+                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('audio') || f.issue.toLowerCase().includes('audio')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Lighting</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Lighting').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Lighting').length}</td>
-                    <td className="p-2 text-center">{findings.filter(f => f.equipment.toLowerCase().includes('light') || f.issue.toLowerCase().includes('light')).length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Lighting').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Lighting').length}</td>
+                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('light') || f.issue.toLowerCase().includes('light')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Videotron</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Videotron').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Videotron').length}</td>
-                    <td className="p-2 text-center">{findings.filter(f => f.equipment.toLowerCase().includes('video') || f.equipment.toLowerCase().includes('led')).length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Videotron').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Videotron').length}</td>
+                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('video') || f.equipment.toLowerCase().includes('led')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Multimedia</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Multimedia').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Multimedia').length}</td>
-                    <td className="p-2 text-center">{findings.filter(f => f.equipment.toLowerCase().includes('multi') || f.issue.toLowerCase().includes('multi')).length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Multimedia').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Multimedia').length}</td>
+                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('multi') || f.issue.toLowerCase().includes('multi')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Gudang (Warehouse)</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Gudang').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">0</td>
-                    <td className="p-2 text-center">{findings.filter(f => f.equipment.toLowerCase().includes('gudang')).length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Gudang').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Gudang').length}</td>
+                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('gudang')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Administrasi</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Admin').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">0</td>
-                    <td className="p-2 text-center">0</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Admin').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Admin').length}</td>
+                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('admin')).length}</td>
                   </tr>
                   <tr>
                     <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Service (Perbaikan)</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{dailyReports.filter(r=>r.division==='Service').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{logbookEntries.filter(e=>e.division==='Service').length}</td>
-                    <td className="p-2 text-center">{findings.filter(f => f.status === 'Close').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Service').length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Service').length}</td>
+                    <td className="p-2 text-center">{activeFindings.filter(f => f.status === 'Close').length}</td>
                   </tr>
                 </tbody>
               </table>
@@ -756,8 +772,8 @@ export default function Reports({
             <div className="p-3 border border-slate-200 bg-slate-50/30 rounded text-xs">
               <strong className="block text-slate-700">Ringkasan Temuan Kerusakan:</strong>
               <p className="text-[11px] text-slate-500 mt-1 font-sans">
-                {findings.length > 0 
-                  ? `Total ${findings.length} temuan kerusakan tercatat di sistem (${findings.filter(f => f.status === 'Close').length} selesai, ${findings.filter(f => f.status === 'Open').length} dalam penanganan).`
+                {activeFindings.length > 0 
+                  ? `Total ${activeFindings.length} temuan kerusakan tercatat di sistem (${activeFindings.filter(f => f.status === 'Close').length} selesai, ${activeFindings.filter(f => f.status === 'Open').length} dalam penanganan).`
                   : 'Belum ada data kerusakan peralatan yang tercatat pada sistem.'}
               </p>
             </div>
@@ -803,24 +819,24 @@ export default function Reports({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-sans">
               <div className="p-3 border border-slate-200 rounded">
                 <span className="text-slate-400 block font-bold text-[9px] uppercase">Jadwal PM</span>
-                <strong className="text-lg text-slate-800">0 Kegiatan</strong>
+                <strong className="text-lg text-slate-800">{totalPM} Kegiatan</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-emerald-50/20 rounded">
-                <span className="text-emerald-500 block font-bold text-[9px] uppercase">PM Tepat Waktu</span>
-                <strong className="text-lg text-emerald-700">0 Kegiatan</strong>
+                <span className="text-emerald-500 block font-bold text-[9px] uppercase">PM Selesai</span>
+                <strong className="text-lg text-emerald-700">{donePM} Kegiatan</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-amber-50/20 rounded">
                 <span className="text-amber-500 block font-bold text-[9px] uppercase">PM Terlambat</span>
-                <strong className="text-lg text-amber-700">0 Kegiatan</strong>
+                <strong className="text-lg text-amber-700">{overduePM} Kegiatan</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-rose-50/20 rounded">
                 <span className="text-rose-500 block font-bold text-[9px] uppercase">PM Belum Selesai</span>
-                <strong className="text-lg text-rose-700">0 Kegiatan</strong>
+                <strong className="text-lg text-rose-700">{pendingPM} Kegiatan</strong>
               </div>
             </div>
             <div className="p-3 border border-slate-200 bg-slate-50/50 rounded flex justify-between items-center text-xs font-sans">
               <span>Persentase Kepatuhan PM Bulan Ini:</span>
-              <strong className="text-indigo-700 text-sm font-mono">0.0%</strong>
+              <strong className="text-indigo-700 text-sm font-mono">{kepatuhanPM}%</strong>
             </div>
           </div>
 
@@ -830,15 +846,15 @@ export default function Reports({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-sans">
               <div className="p-3 border border-slate-200 rounded flex flex-col justify-between">
                 <span className="text-slate-400 font-bold text-[9px] uppercase">Total Repair</span>
-                <strong className="text-lg text-slate-800 mt-1">{findings.length} Kasus</strong>
+                <strong className="text-lg text-slate-800 mt-1">{totalRepair} Kasus</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-emerald-50/20 rounded flex flex-col justify-between">
                 <span className="text-emerald-500 font-bold text-[9px] uppercase">Selesai (Close)</span>
-                <strong className="text-lg text-emerald-700 mt-1">{findings.filter(f=>f.status==='Close').length} Unit</strong>
+                <strong className="text-lg text-emerald-700 mt-1">{doneRepair} Unit</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-amber-50/20 rounded flex flex-col justify-between">
                 <span className="text-amber-500 font-bold text-[9px] uppercase">Pending (Open)</span>
-                <strong className="text-lg text-amber-700 mt-1">{findings.filter(f=>f.status==='Open').length} Unit</strong>
+                <strong className="text-lg text-amber-700 mt-1">{pendingRepair} Unit</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-rose-50/20 rounded flex flex-col justify-between">
                 <span className="text-rose-500 font-bold text-[9px] uppercase">Menunggu Sparepart</span>

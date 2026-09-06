@@ -756,15 +756,15 @@ export default function Dashboard({
                   <div className="space-y-1 font-mono text-[10px] text-slate-500">
                     <div className="flex justify-between">
                       <span>Total Daily Report:</span>
-                      <strong className="text-slate-800">{dailyReports.length}</strong>
+                      <strong className="text-slate-800">{totalDailyReportsCount}</strong>
                     </div>
                     <div className="flex justify-between">
                       <span>Total QC Log:</span>
-                      <strong className="text-slate-800">{logbookEntries.length}</strong>
+                      <strong className="text-slate-800">{totalQCCount}</strong>
                     </div>
                     <div className="flex justify-between">
                       <span>Total Work Order / Temuan:</span>
-                      <strong className="text-slate-800">{findings.length + workOrders.length}</strong>
+                      <strong className="text-slate-800">{activeFindings.length + activeWorkOrders.length}</strong>
                     </div>
                   </div>
                 </div>
