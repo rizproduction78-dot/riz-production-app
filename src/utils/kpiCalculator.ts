@@ -5,13 +5,20 @@
  * MODUL PERHITUNGAN KPI RESMI SEMUA STAFF
  * PT. RIZ PRODUCTION MULTI KREASI
  * 
- * Aturan Resmi Perhitungan KPI Staff:
- * 1. Kehadiran & Jumlah Absen (Bobot 20%): Dihitung dari log absensi riil & jadwal dinas shift September 2026.
- * 2. Uji Kompetensi yang Diikuti (Bobot 20%): Dihitung dari jumlah unit kompetensi yang diuji & diverifikasi (6 Unit Standar Listrik).
- * 3. Daily Task / Laporan Harian (Bobot 25%): Target 18 laporan per bulan.
- * 4. QC & Checklist Onhouse (Bobot 20%): Target 10 pemeriksaan QC (100% untuk divisi non-teknis / gudang).
- * 5. Work Order & Temuan Selesai (Bobot 15%): Target 6 WO selesai.
+ * SUMBER ACUAN RESMI PRIORITAS PENILAIAN KPI:
+ * Spreadsheet: https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470
+ * 
+ * PRIORITAS PENILAIAN UTAMA:
+ * 1. Daily Report (Laporan Harian Operasional Lapangan & Event) - Bobot 25%
+ * 2. QC Checklist Onhouse (Inspeksi & Kesiapan Alat Gudang) - Bobot 20%
+ * 3. Work Order & Temuan Kerusakan Selesai (Penyelesaian WO/Tiket) - Bobot 10%
+ * 4. Kehadiran & Shift Roster Riil (Jadwal Dinas 1-31) - Bobot 15% - 20%
+ * 5. Uji Kompetensi yang Diikuti (6 Modul Standar Kelistrikan) - Bobot 15%
+ * 6. Disiplin & Teamwork - Bobot 15%
  */
+
+export const KPI_SPREADSHEET_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470';
+export const KPI_SPREADSHEET_GID = '198998470';
 
 import { Staff, DailyReport, LogbookEntry, Finding, AttendanceLog } from '../types';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';

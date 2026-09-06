@@ -30,10 +30,12 @@ import {
   Sparkles,
   ChevronRight,
   Printer,
-  ChevronDown
+  ChevronDown,
+  FileSpreadsheet,
+  ExternalLink
 } from 'lucide-react';
 
-import { calculateStaffKpi, calculateAllStaffKpis, isStaffMatch } from '../utils/kpiCalculator';
+import { calculateStaffKpi, calculateAllStaffKpis, isStaffMatch, KPI_SPREADSHEET_SOURCE_URL } from '../utils/kpiCalculator';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface EmployeePerformanceModuleProps {
@@ -226,6 +228,18 @@ export default function EmployeePerformanceModule({
               <option value="April 2026">April 2026</option>
             </select>
           </div>
+
+          <a
+            href={KPI_SPREADSHEET_SOURCE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold text-emerald-700 transition-all cursor-pointer shadow-xs"
+            title="Buka Acuan / Sumber Prioritas Penilaian KPI di Google Spreadsheet"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Sumber Acuan Sheet</span>
+            <ExternalLink className="w-3 h-3 text-emerald-500" />
+          </a>
 
           <button
             onClick={() => window.print()}
