@@ -32,6 +32,7 @@ import Gudang from './components/Gudang';
 import CareerCompetencyModule from './components/CareerCompetencyModule';
 import EmployeePerformanceModule from './components/EmployeePerformanceModule';
 import AdminPanel from './components/AdminPanel';
+import AgenticOrchestratorModal from './components/AgenticOrchestratorModal';
 
 import {
   LayoutDashboard,
@@ -83,6 +84,9 @@ export default function App() {
 
   // Mobile sidebar menu open
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Agentic AI Orchestrator Modal Open state
+  const [agenticModalOpen, setAgenticModalOpen] = useState(false);
 
   // Define tab navigation elements based on current user role (Hak Akses)
   interface NavigationItem {
@@ -972,6 +976,15 @@ export default function App() {
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setAgenticModalOpen(true)}
+              className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Buka Agentic AI Multi-Agent Orchestrator"
+            >
+              <Bot className="w-3.5 h-3.5 text-indigo-200" />
+              <span>Agentic AI Orchestrator</span>
+            </button>
+
+            <button
               onClick={handleManualSync}
               disabled={syncStatus.isSyncing}
               className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
@@ -1134,6 +1147,19 @@ export default function App() {
             currentUser={currentUser}
           />
         )}
+
+        {/* Agentic AI Multi-Agent Orchestrator Modal */}
+        <AgenticOrchestratorModal
+          isOpen={agenticModalOpen}
+          onClose={() => setAgenticModalOpen(false)}
+          dailyReports={dailyReports}
+          logbookEntries={logbookEntries}
+          findings={findings}
+          workOrders={workOrders}
+          staffList={staffList}
+          assets={assets}
+          currentUser={currentUser}
+        />
       </main>
     </div>
   );
