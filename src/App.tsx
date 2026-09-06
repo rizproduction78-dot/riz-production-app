@@ -85,7 +85,14 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Define tab navigation elements based on current user role (Hak Akses)
-  const NAVIGATION_ITEMS = (() => {
+  interface NavigationItem {
+    id: string;
+    label: string;
+    icon: any;
+    category: string;
+  }
+
+  const NAVIGATION_ITEMS: NavigationItem[] = (() => {
     if (!currentUser) return [];
     const role = currentUser?.role;
     const isOwnerOrAdmin = currentUser?.division === 'Admin' || role === 'Owner' || role === 'Direktur' || role === 'Admin' || currentUser?.id === 'director-wahyu' || String(currentUser?.name || '').toLowerCase() === 'wahyu';
@@ -93,120 +100,135 @@ export default function App() {
     // 1. Owner & Admin / Management (14 Fitur Lengkap & Terintegrasi)
     if (isOwnerOrAdmin) {
       return [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
-        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
-        { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
-        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
-        { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon },
-        { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-        { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
-        { id: 'absensi_schedule', label: 'Penjadwalan (1-31)', icon: Calendar },
-        { id: 'gudang', label: 'Manajemen Gudang', icon: Package },
-        { id: 'armada', label: 'Kelola Armada', icon: Truck },
-        { id: 'reports', label: 'Laporan & Ekspor', icon: FileCheck },
-        { id: 'activities', label: 'Audit Activity', icon: History },
-        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
+        { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional & QC' },
+        { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional & QC' },
+        { id: 'maintenance', label: 'Jadwal Maintenance', icon: Wrench, category: 'Operasional & QC' },
+        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
+        { id: 'kinerja_karyawan', label: 'Kinerja & KPI Karyawan', icon: TrendingUp, category: 'SDM & Performa' },
+        { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'SDM & Performa' },
+        { id: 'absensi_schedule', label: 'Jadwal Shift (1-31)', icon: Calendar, category: 'SDM & Performa' },
+        { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+        { id: 'armada', label: 'Kelola Armada', icon: Truck, category: 'Logistik & Fasilitas' },
+        { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' },
+        { id: 'reports', label: 'Laporan & Ekspor', icon: FileCheck, category: 'Laporan & Sistem' },
+        { id: 'activities', label: 'Audit Aktivitas', icon: History, category: 'Laporan & Sistem' },
+        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders, category: 'Laporan & Sistem' }
       ];
     }
     
     // 2. Manager
     if (role === 'Manager') {
       return [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
-        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
-        { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
-        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
-        { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon },
-        { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-        { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
-        { id: 'absensi_schedule', label: 'Penjadwalan (1-31)', icon: Calendar },
-        { id: 'gudang', label: 'Manajemen Gudang', icon: Package },
-        { id: 'armada', label: 'Kelola Armada', icon: Truck },
-        { id: 'reports', label: 'Laporan & Approval', icon: FileCheck },
-        { id: 'activities', label: 'Audit Activity', icon: History },
-        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
+        { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional & QC' },
+        { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional & QC' },
+        { id: 'maintenance', label: 'Jadwal Maintenance', icon: Wrench, category: 'Operasional & QC' },
+        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
+        { id: 'kinerja_karyawan', label: 'Kinerja & KPI Karyawan', icon: TrendingUp, category: 'SDM & Performa' },
+        { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'SDM & Performa' },
+        { id: 'absensi_schedule', label: 'Jadwal Shift (1-31)', icon: Calendar, category: 'SDM & Performa' },
+        { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+        { id: 'armada', label: 'Kelola Armada', icon: Truck, category: 'Logistik & Fasilitas' },
+        { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' },
+        { id: 'reports', label: 'Laporan & Approval', icon: FileCheck, category: 'Laporan & Sistem' },
+        { id: 'activities', label: 'Audit Aktivitas', icon: History, category: 'Laporan & Sistem' },
+        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders, category: 'Laporan & Sistem' }
       ];
     }
     
     // 3. Supervisor
     if (role === 'Supervisor') {
       return [
-        { id: 'dashboard', label: 'Dashboard Monitoring', icon: LayoutDashboard },
-        { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
-        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
-        { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
-        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
-        { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon },
-        { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-        { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
-        { id: 'absensi_schedule', label: 'Work Schedule (1-31)', icon: Calendar },
-        { id: 'gudang', label: 'Manajemen Gudang', icon: Package },
-        { id: 'armada', label: 'Kelola Armada', icon: Truck },
-        { id: 'reports', label: 'Approval & Laporan', icon: FileCheck },
-        { id: 'activities', label: 'Audit Activity', icon: History },
-        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders }
+        { id: 'dashboard', label: 'Dashboard Monitoring', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional & QC' },
+        { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional & QC' },
+        { id: 'maintenance', label: 'Jadwal Maintenance', icon: Wrench, category: 'Operasional & QC' },
+        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
+        { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp, category: 'SDM & Performa' },
+        { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'SDM & Performa' },
+        { id: 'absensi_schedule', label: 'Jadwal Shift (1-31)', icon: Calendar, category: 'SDM & Performa' },
+        { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+        { id: 'armada', label: 'Kelola Armada', icon: Truck, category: 'Logistik & Fasilitas' },
+        { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' },
+        { id: 'reports', label: 'Approval & Laporan', icon: FileCheck, category: 'Laporan & Sistem' },
+        { id: 'activities', label: 'Audit Aktivitas', icon: History, category: 'Laporan & Sistem' },
+        { id: 'admin_panel', label: 'Panel Kontrol Admin', icon: Sliders, category: 'Laporan & Sistem' }
       ];
     }
     
     // 4. Team Leader
     if (role === 'Team Leader') {
       return [
-        { id: 'dashboard', label: 'Dashboard Divisi', icon: LayoutDashboard },
-        { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
-        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
-        { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
-        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
-        { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon },
-        { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-        { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck },
-        { id: 'absensi_schedule', label: 'Jadwal Kerja (1-31)', icon: Calendar },
-        { id: 'reports', label: 'Laporan Divisi', icon: FileCheck }
+        { id: 'dashboard', label: 'Dashboard Divisi', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional & QC' },
+        { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional & QC' },
+        { id: 'maintenance', label: 'Jadwal Maintenance', icon: Wrench, category: 'Operasional & QC' },
+        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
+        { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp, category: 'SDM & Performa' },
+        { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'SDM & Performa' },
+        { id: 'absensi_schedule', label: 'Jadwal Kerja (1-31)', icon: Calendar, category: 'SDM & Performa' },
+        { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' },
+        { id: 'reports', label: 'Laporan Divisi', icon: FileCheck, category: 'Laporan & Sistem' }
       ];
     }
     
     // 5. Staff
     if (role === 'Staff') {
       return [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList },
-        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
-        { id: 'kinerja_karyawan', label: 'Kinerja Saya', icon: TrendingUp },
-        { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
-        { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon },
-        { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-        { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck }
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional & QC' },
+        { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional & QC' },
+        { id: 'maintenance', label: 'Maintenance', icon: Wrench, category: 'Operasional & QC' },
+        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
+        { id: 'kinerja_karyawan', label: 'Kinerja Saya', icon: TrendingUp, category: 'SDM & Performa' },
+        { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck, category: 'SDM & Performa' },
+        { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' }
       ];
     }
     
     // 6. Gudang
     if (role === 'Gudang') {
       return [
-        { id: 'dashboard', label: 'Dashboard Gudang', icon: LayoutDashboard },
-        { id: 'gudang', label: 'Manajemen Gudang', icon: Package },
-        { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList },
-        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
-        { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp },
-        { id: 'armada', label: 'Kelola Armada', icon: Truck },
-        { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck }
+        { id: 'dashboard', label: 'Dashboard Gudang', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+        { id: 'armada', label: 'Kelola Armada', icon: Truck, category: 'Logistik & Fasilitas' },
+        { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList, category: 'Operasional & QC' },
+        { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
+        { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp, category: 'SDM & Performa' },
+        { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck, category: 'SDM & Performa' }
       ];
     }
     
     return [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList },
-      { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award },
-      { id: 'maintenance_dashboard', label: 'Dashboard Pemeliharaan', icon: Wrench },
-      { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck }
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, category: 'Ringkasan' },
+      { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList, category: 'Operasional & QC' },
+      { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
+      { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' },
+      { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'SDM & Performa' }
     ];
   })();
+
+  // Helper untuk memeriksa status aktif jalur penghubung (termasuk sub-jalur seperti 'qc' dan 'daily')
+  const isTabActive = (tabId: string) => {
+    if (activeTab === tabId) return true;
+    if (tabId === 'log_task' && (activeTab === 'daily' || activeTab === 'qc')) return true;
+    return false;
+  };
+
+  // Group navigation items by category
+  const groupedNavItems = NAVIGATION_ITEMS.reduce<Record<string, NavigationItem[]>>((acc, item) => {
+    const cat = item.category || 'Lainnya';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+  }, {});
 
   // Redirect to first allowed tab if current active tab is not allowed for the role
   useEffect(() => {
     if (currentUser) {
       const allowedTabIds = NAVIGATION_ITEMS.map(item => item.id);
-      if (allowedTabIds.length > 0 && !allowedTabIds.includes(activeTab)) {
+      if (allowedTabIds.length > 0 && !allowedTabIds.includes(activeTab) && activeTab !== 'daily' && activeTab !== 'qc') {
         setActiveTab(allowedTabIds[0]);
       }
     }
@@ -772,53 +794,65 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-800 font-sans">
       
       {/* Sidebar for Desktop - Hidden on Print */}
-      <aside className="no-print hidden md:flex flex-col w-[220px] bg-[#0f172a] text-[#f8fafc] shrink-0 h-screen sticky top-0 py-6">
-        {/* Brand Logo */}
-        <div className="px-6 pb-6 border-b border-[#1e293b]">
-          <div className="font-extrabold text-lg tracking-tight">
-            RIZ-PRO<span className="text-[#3b82f6]">LOG</span>
+      <aside className="no-print hidden md:flex flex-col w-64 bg-[#0f172a] text-[#f8fafc] shrink-0 h-screen sticky top-0 border-r border-[#1e293b] z-30 select-none shadow-xl">
+        {/* Brand Header */}
+        <div className="flex-none px-5 py-4 border-b border-[#1e293b] bg-[#0c1322]">
+          <div className="font-extrabold text-base tracking-tight flex items-center gap-2">
+            <span className="text-white font-black tracking-wider">RIZ-PRO</span>
+            <span className="bg-blue-600 text-white text-[10px] font-mono px-2 py-0.5 rounded font-bold">LOG</span>
           </div>
-          <div className="text-[10px] text-[#475569] font-semibold mt-1 uppercase tracking-wider">
-            QC ASSET MANAGEMENT v2.0
+          <div className="text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider">
+            QC & OPERATIONAL SYSTEM v2.0
           </div>
         </div>
 
-        {/* Main Navigation Links */}
-        <nav className="flex-1 mt-6 space-y-0.5 overflow-y-auto">
-          {NAVIGATION_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-6 py-3 text-xs font-semibold tracking-wide transition-all border-l-3 text-left ${
-                  isActive
-                    ? 'bg-[#1e293b] text-white border-[#3b82f6]'
-                    : 'text-[#94a3b8] hover:text-white hover:bg-slate-800/60 border-transparent'
-                }`}
-              >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-[#94a3b8]'}`} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
+        {/* Main Navigation Links with Synchronized Jalur Penghubung */}
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3">
+          {Object.entries(groupedNavItems).map(([category, items]) => (
+            <div key={category} className="space-y-1">
+              <div className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest px-2.5 pt-1">
+                {category}
+              </div>
+              {/* Jalur Penghubung Vertical Connector Track */}
+              <div className="relative pl-2.5 space-y-0.5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-800/80">
+                {items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = isTabActive(item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold rounded-lg transition-all text-left relative cursor-pointer ${
+                        isActive
+                          ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40 font-bold shadow-xs'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isActive ? 'bg-blue-400 shadow-xs shadow-blue-400' : 'bg-slate-700'}`} />
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-400' : 'text-slate-400'}`} />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Staff Footer & Logout */}
-        <div className="px-6 pt-4 border-t border-[#334155] space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#334155] flex items-center justify-center font-bold text-white text-xs shrink-0">
+        <div className="flex-none px-3.5 pt-3 pb-4 border-t border-[#1e293b] bg-[#0c1322] space-y-2.5">
+          <div className="flex items-center gap-2.5 bg-slate-900/80 p-2 rounded-lg border border-slate-800/90">
+            <div className="w-8 h-8 rounded-full bg-blue-600/30 text-blue-400 border border-blue-500/40 flex items-center justify-center font-bold text-xs shrink-0">
               {currentUser.name.substring(0, 1).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-semibold text-xs text-white truncate">{currentUser.name}</div>
-              <div className="text-[10px] text-[#94a3b8] truncate">{currentUser.division} Division</div>
+              <div className="font-bold text-xs text-white truncate">{currentUser.name}</div>
+              <div className="text-[10px] text-slate-400 truncate">{currentUser.division} • {currentUser.role}</div>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-800/50 hover:bg-red-900/40 hover:text-red-200 border border-slate-700/60 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-800/60 hover:bg-rose-950/70 hover:text-rose-200 text-slate-300 border border-slate-700/70 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Keluar Aplikasi</span>
@@ -827,20 +861,21 @@ export default function App() {
       </aside>
 
       {/* Mobile Top Header - Hidden on Print */}
-      <header className="no-print md:hidden bg-[#0f172a] text-white flex items-center justify-between p-4 sticky top-0 z-50 shadow-md">
+      <header className="no-print md:hidden bg-[#0f172a] text-white flex items-center justify-between p-4 sticky top-0 z-50 shadow-md border-b border-[#1e293b]">
         <div className="flex items-center gap-2">
-          <div className="font-extrabold text-sm tracking-tight">
-            RIZ-PRO<span className="text-[#3b82f6]">LOG</span>
+          <div className="font-extrabold text-sm tracking-tight flex items-center gap-1.5">
+            <span>RIZ-PRO</span>
+            <span className="bg-blue-600 text-white text-[9px] font-mono px-1.5 py-0.5 rounded font-bold">LOG</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-mono text-[#94a3b8] font-bold bg-[#1e293b] px-2 py-0.5 rounded">
+        <div className="flex items-center gap-2.5">
+          <span className="text-[11px] font-mono text-[#94a3b8] font-bold bg-[#1e293b] px-2 py-0.5 rounded border border-slate-700">
             {currentUser.name}
           </span>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1 bg-[#1e293b] rounded focus:outline-none"
+            className="p-1.5 bg-[#1e293b] text-white rounded border border-slate-700 focus:outline-none"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -849,33 +884,43 @@ export default function App() {
 
       {/* Mobile Sidebar Dropdown menu - Hidden on Print */}
       {mobileMenuOpen && (
-        <div className="no-print md:hidden bg-[#0f172a] text-slate-300 fixed inset-0 top-[52px] z-40 flex flex-col p-4 space-y-2 border-t border-[#1e293b]">
-          <div className="flex-1 space-y-1">
-            {NAVIGATION_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-xs font-semibold tracking-wide transition-all border-l-3 ${
-                    isActive
-                      ? 'bg-[#1e293b] text-white border-[#3b82f6] font-bold'
-                      : 'text-[#94a3b8] hover:text-white hover:bg-slate-800/60 border-transparent'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+        <div className="no-print md:hidden bg-[#0f172a] text-slate-300 fixed inset-0 top-[57px] z-40 flex flex-col p-4 space-y-3 border-t border-[#1e293b] overflow-y-auto">
+          <div className="flex-1 space-y-3">
+            {Object.entries(groupedNavItems).map(([category, items]) => (
+              <div key={category} className="space-y-1">
+                <div className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest px-2 pt-1">
+                  {category}
+                </div>
+                <div className="relative pl-2 space-y-1 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-800">
+                  {items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = isTabActive(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                          isActive
+                            ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40 font-bold'
+                            : 'text-[#94a3b8] hover:text-white hover:bg-slate-800/60 border border-transparent'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-blue-400' : 'bg-slate-700'}`} />
+                        <Icon className="w-4 h-4 shrink-0" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800/50 hover:bg-red-950/50 hover:text-red-200 rounded-lg text-xs font-semibold transition-colors border border-slate-700"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800/60 hover:bg-red-950/60 hover:text-red-200 rounded-lg text-xs font-semibold transition-colors border border-slate-700 shrink-0"
           >
             <LogOut className="w-4 h-4" />
             <span>Keluar Aplikasi</span>
