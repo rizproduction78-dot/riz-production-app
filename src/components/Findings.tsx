@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Finding, Division, Staff, WorkOrder } from '../types';
+import { Finding, Division, Staff, WorkOrder, Asset } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { AlertTriangle, Plus, Search, Trash2, CheckCircle, Clock, Check, X, ShieldAlert, Wrench, ArrowRight, Activity, Filter, Sparkles, CheckSquare } from 'lucide-react';
 import { subscribeCloudCollection } from '../lib/cloudSync';
@@ -12,6 +12,7 @@ import { subscribeCloudCollection } from '../lib/cloudSync';
 interface FindingsProps {
   findings: Finding[];
   workOrders?: WorkOrder[];
+  assets?: Asset[];
   onAddFinding: (finding: Omit<Finding, 'id' | 'dateCreated'>) => void;
   onUpdateFindingStatus: (id: string, status: 'Open' | 'Close') => void;
   onDeleteFinding: (id: string) => void;
@@ -20,6 +21,7 @@ interface FindingsProps {
   onUpdateWorkOrderProgress?: (id: string, progress: number) => void;
   onDeleteWorkOrder?: (id: string) => void;
   onAddReport?: (report: any) => void;
+  onUpdateAssetCondition?: (id: string, condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat') => void;
   currentUser: any;
   onLogActivity: (username: string, role: string, action: string) => void;
 }
@@ -27,6 +29,7 @@ interface FindingsProps {
 export default function Findings({
   findings,
   workOrders = [],
+  assets = [],
   onAddFinding,
   onUpdateFindingStatus,
   onDeleteFinding,
@@ -35,6 +38,7 @@ export default function Findings({
   onUpdateWorkOrderProgress,
   onDeleteWorkOrder,
   onAddReport,
+  onUpdateAssetCondition,
   currentUser,
   onLogActivity,
 }: FindingsProps) {
@@ -152,6 +156,17 @@ export default function Findings({
   const handleToggleStatus = (id: string, currentStatus: 'Open' | 'Close') => {
     const nextStatus = currentStatus === 'Open' ? 'Close' : 'Open';
     onUpdateFindingStatus(id, nextStatus);
+    // P1.3: saat finding di-Close, update kondisi aset terkait ke 'Baik'
+    if (nextStatus === 'Close' && onUpdateAssetCondition && assets.length > 0) {
+      const finding = findings.find(f => f.id === id);
+      if (finding) {
+        const equipName = finding.equipment.replace(/\s*\(.*\)$/, '').trim().toLowerCase();
+        const matched = assets.find(a => a.name.toLowerCase().includes(equipName) || equipName.includes(a.name.toLowerCase()));
+        if (matched) {
+          onUpdateAssetCondition(matched.id, 'Baik');
+        }
+      }
+    }
     onLogActivity(currentUser.name, currentUser.role, `Mengubah status temuan QC id:${id} menjadi ${nextStatus}`);
   };
 

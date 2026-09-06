@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Staff, Division, QCItem, Finding, WorkOrder, MaintenanceSchedule, Asset, VehicleMaster, FleetAssignment, FreelanceWorker, FleetDriver, FreelanceSpecialization } from '../types';
+import { Staff, Division, QCItem, Finding, WorkOrder, MaintenanceSchedule, Asset, VehicleMaster, FleetAssignment, FreelanceWorker, FleetDriver, FreelanceSpecialization, DailyReport, LogbookEntry } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, getMasterStaffList, getMasterFreelanceList } from '../data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 import {
@@ -93,6 +93,8 @@ interface AdminPanelProps {
   onAddAsset: (asset: Omit<Asset, 'id' | 'repairHistory'>) => void;
   onUpdateAsset: (id: string, updated: Partial<Asset>) => void;
   onDeleteAsset: (id: string) => void;
+  dailyReports?: DailyReport[];
+  logbookEntries?: LogbookEntry[];
 }
 
 export default function AdminPanel({
@@ -113,7 +115,9 @@ export default function AdminPanel({
   assets,
   onAddAsset,
   onUpdateAsset,
-  onDeleteAsset
+  onDeleteAsset,
+  dailyReports = [],
+  logbookEntries = []
 }: AdminPanelProps) {
   // Navigation Sub-tabs
   const [activeTab, setActiveTab] = useState<'staff' | 'findings_wo' | 'maintenance' | 'gudang' | 'kendaraan' | 'qc_checklist' | 'schedule' | 'database'>('staff');

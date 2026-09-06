@@ -53,6 +53,7 @@ interface GudangProps {
   assets: Asset[];
   onUpdateAssetLocation?: (id: string, newLocation: string) => void;
   onUpdateAssetCondition?: (id: string, condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat') => void;
+  onAddFinding?: (finding: Omit<import('../types').Finding, 'id' | 'dateCreated'>) => void;
   onLogActivity: (username: string, role: string, action: string) => void;
   forceSubTab?: 'logs' | 'scanner' | 'armada_governance';
 }
@@ -62,6 +63,7 @@ export default function Gudang({
   assets,
   onUpdateAssetLocation,
   onUpdateAssetCondition,
+  onAddFinding,
   onLogActivity,
   forceSubTab
 }: GudangProps) {
@@ -379,6 +381,17 @@ export default function Gudang({
 
         if (onUpdateAssetLocation) onUpdateAssetLocation(matched.id, newLocation);
         if (onUpdateAssetCondition) onUpdateAssetCondition(matched.id, newCondition);
+        // P1.1: Auto-create Finding jika kondisi berubah ke Rusak
+        if (onAddFinding && (newCondition === 'Rusak Ringan' || newCondition === 'Rusak Berat')) {
+          onAddFinding({
+            equipment: matched.name + (matched.code ? ` (${matched.code})` : ''),
+            issue: `Kondisi aset dilaporkan ${newCondition} oleh Divisi Gudang. Lokasi: ${newLocation}.`,
+            priority: newCondition === 'Rusak Berat' ? 'Tinggi' : 'Sedang',
+            pic: currentUser.name,
+            targetDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            status: 'Open'
+          });
+        }
       }
     }
 
@@ -718,6 +731,17 @@ export default function Gudang({
 
     if (onUpdateAssetLocation) onUpdateAssetLocation(scannedAsset.id, newLoc);
     if (onUpdateAssetCondition) onUpdateAssetCondition(scannedAsset.id, newCond);
+    // P1.1: Auto-create Finding jika kondisi berubah ke Rusak (scanner path)
+    if (onAddFinding && (newCond === 'Rusak Ringan' || newCond === 'Rusak Berat')) {
+      onAddFinding({
+        equipment: scannedAsset.name + (scannedAsset.code ? ` (${scannedAsset.code})` : ''),
+        issue: `Kondisi aset dilaporkan ${newCond} via scanner Gudang. Lokasi: ${newLoc}.`,
+        priority: newCond === 'Rusak Berat' ? 'Tinggi' : 'Sedang',
+        pic: currentUser.name,
+        targetDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: 'Open'
+      });
+    }
 
     onLogActivity(currentUser.name, currentUser.role, `Gudang mengupdate lokasi asset ${scannedAsset.code} menjadi [${newLoc}] & kondisi [${newCond}]`);
     

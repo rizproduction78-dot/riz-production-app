@@ -772,6 +772,20 @@ export default function App() {
       if (w.id === id) {
         const updated = { ...w, status, progress: status === 'Completed' ? 100 : w.progress };
         saveCloudDoc('work_orders', id, updated);
+        // P3.2: Auto-create Daily Report saat WO di-Completed
+        if (status === 'Completed') {
+          const newRep = {
+            id: 'dr-' + Date.now(),
+            date: new Date().toISOString().split('T')[0],
+            staffName: w.pic,
+            division: w.division,
+            activity: `[Penyelesaian Work Order] ${w.title}`,
+            notes: `Work Order berhasil diselesaikan 100%. ${w.description}`,
+            status: 'Submitted' as const
+          };
+          setDailyReports(drs => [newRep, ...drs]);
+          saveCloudDoc('daily_reports', newRep.id, newRep);
+        }
         return updated;
       }
       return w;
@@ -1020,6 +1034,7 @@ export default function App() {
             onUpdateTasks={setDailyTasks}
             logbookEntries={logbookEntries}
             onAddLogbookEntry={handleAddLogbookEntry}
+            workOrders={workOrders}
             initialSubTab={activeTab === 'qc' ? 'qc_checklist' : 'kanban'}
           />
         )}
@@ -1028,6 +1043,7 @@ export default function App() {
           <Findings
             findings={findings}
             workOrders={workOrders}
+            assets={assets}
             onAddFinding={handleAddFinding}
             onUpdateFindingStatus={handleUpdateFindingStatus}
             onDeleteFinding={handleDeleteFinding}
@@ -1036,6 +1052,7 @@ export default function App() {
             onUpdateWorkOrderProgress={handleUpdateWorkOrderProgress}
             onDeleteWorkOrder={handleDeleteWorkOrder}
             onAddReport={handleAddReport}
+            onUpdateAssetCondition={handleUpdateAssetCondition}
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
           />
@@ -1046,6 +1063,9 @@ export default function App() {
             schedules={schedules}
             onAddSchedule={handleAddSchedule}
             onUpdateScheduleStatus={handleUpdateScheduleStatus}
+            onUpdateSchedule={handleUpdateSchedule}
+            onAddFinding={handleAddFinding}
+            onAddWorkOrder={handleAddWorkOrder}
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
           />
@@ -1107,6 +1127,8 @@ export default function App() {
             onAddAsset={handleAddAsset}
             onUpdateAsset={handleUpdateAsset}
             onDeleteAsset={handleDeleteAsset}
+            dailyReports={dailyReports}
+            logbookEntries={logbookEntries}
           />
         )}
 
@@ -1133,6 +1155,7 @@ export default function App() {
             assets={assets}
             onUpdateAssetLocation={handleUpdateAssetLocation}
             onUpdateAssetCondition={handleUpdateAssetCondition}
+            onAddFinding={handleAddFinding}
             onLogActivity={handleLogActivity}
           />
         )}
@@ -1143,6 +1166,7 @@ export default function App() {
             assets={assets}
             onUpdateAssetLocation={handleUpdateAssetLocation}
             onUpdateAssetCondition={handleUpdateAssetCondition}
+            onAddFinding={handleAddFinding}
             onLogActivity={handleLogActivity}
             forceSubTab="armada_governance"
           />

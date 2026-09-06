@@ -78,6 +78,14 @@ export default function Reports({
     return true;
   });
 
+  // P3.1: Filter workOrders by report period
+  const activeWorkOrders = workOrders.filter(w => {
+    if (reportType === 'Harian') return w.dateCreated === targetDate;
+    if (reportType === 'Mingguan') return w.dateCreated >= targetStartDate && w.dateCreated <= targetEndDate;
+    if (reportType === 'Bulanan') return w.dateCreated?.startsWith(targetMonth);
+    return true;
+  });
+
   const totalChecked = activeLogbookEntries.length;
   
   // Calculate item-level counts based on active period

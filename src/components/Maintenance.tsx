@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { MaintenanceSchedule, Division } from '../types';
+import { MaintenanceSchedule, Division, Finding, WorkOrder } from '../types';
 import { STAFF_LIST } from '../data';
 import { Calendar, Plus, CheckCircle, Clock, AlertCircle, FileText, Search, Settings, ArrowRight, ShieldAlert } from 'lucide-react';
 
@@ -20,6 +20,9 @@ interface MaintenanceProps {
     biaya?: number,
     photoUrl?: string
   ) => void;
+  onUpdateSchedule?: (id: string, updatedFields: Partial<MaintenanceSchedule>) => void;
+  onAddFinding?: (finding: Omit<Finding, 'id' | 'dateCreated'>) => void;
+  onAddWorkOrder?: (wo: Omit<WorkOrder, 'id' | 'dateCreated'>) => void;
   currentUser: any;
   onLogActivity: (username: string, role: string, action: string) => void;
 }
@@ -28,6 +31,9 @@ export default function Maintenance({
   schedules,
   onAddSchedule,
   onUpdateScheduleStatus,
+  onUpdateSchedule,
+  onAddFinding,
+  onAddWorkOrder,
   currentUser,
   onLogActivity,
 }: MaintenanceProps) {
@@ -90,6 +96,34 @@ export default function Maintenance({
     setVendor('');
     setBiaya('');
     setPhotoUrl('');
+  };
+
+  // P1.2: Terbitkan WO dari jadwal Overdue
+  const handleIssueWO = (schedule: MaintenanceSchedule) => {
+    const defaultPic = STAFF_LIST.find(s => s.division === 'Service')?.name || currentUser.name;
+    if (onAddWorkOrder) {
+      onAddWorkOrder({
+        title: `[Maintenance Overdue] ${schedule.type} — ${schedule.assetName}`,
+        description: `Jadwal ${schedule.type} Maintenance untuk aset ${schedule.assetName} (${schedule.assetCode}) sudah OVERDUE sejak ${schedule.nextDate}. Instruksi: ${schedule.notes || 'Pengecekan standar berkala.'}`,
+        pic: defaultPic,
+        division: 'Service',
+        deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        progress: 0,
+        status: 'Pending'
+      });
+    }
+    if (onAddFinding) {
+      onAddFinding({
+        equipment: `${schedule.assetName} (${schedule.assetCode})`,
+        issue: `Jadwal ${schedule.type} Maintenance overdue sejak ${schedule.nextDate}. Perlu eskalasi ke Divisi Service.`,
+        priority: 'Tinggi',
+        pic: defaultPic,
+        targetDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: 'Open'
+      });
+    }
+    onLogActivity(currentUser.name, currentUser.role, `Menerbitkan WO dari jadwal Maintenance Overdue: ${schedule.assetName}`);
+    alert(`Work Order untuk "${schedule.assetName}" berhasil diterbitkan ke Divisi Service!`);
   };
 
   // Filter schedules list
@@ -501,11 +535,20 @@ export default function Maintenance({
                         setServicingId(schedule.id);
                         setServiceNotes('');
                       }}
-                      className="w-full py-1.5 px-3 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="flex-1 py-1.5 px-3 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <CheckCircle className="w-3.5 h-3.5" />
                       <span>Eksekusi Service & Selesaikan</span>
                     </button>
+                    {isOverdue && (onAddWorkOrder || onAddFinding) && (
+                      <button
+                        onClick={() => handleIssueWO(schedule)}
+                        className="flex-1 py-1.5 px-3 bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        <span>Terbitkan WO</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

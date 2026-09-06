@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Staff, Division, DailyReport as DailyReportType, DailyTask, Finding, LogbookEntry } from '../types';
+import { Staff, Division, DailyReport as DailyReportType, DailyTask, Finding, LogbookEntry, WorkOrder } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, getMasterStaffList } from '../data';
 import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';
 import { db } from '../lib/firebase';
@@ -61,6 +61,7 @@ interface LogTaskModuleProps {
   onUpdateTasks?: (tasks: DailyTask[]) => void;
   logbookEntries?: LogbookEntry[];
   onAddLogbookEntry?: (entry: Omit<LogbookEntry, 'id'>) => void;
+  workOrders?: WorkOrder[];
   initialSubTab?: 'kanban' | 'qc_checklist' | 'logbook' | 'rekap';
 }
 
@@ -92,6 +93,7 @@ export default function LogTaskModule({
   onUpdateTasks,
   logbookEntries = [],
   onAddLogbookEntry,
+  workOrders = [],
   initialSubTab = 'kanban'
 }: LogTaskModuleProps) {
   const isManagement = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';

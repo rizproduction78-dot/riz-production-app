@@ -140,7 +140,7 @@ export interface QCDivisionReport {
 export interface LogbookEntry {
   id: string;
   date: string;
-  division: 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Service';
+  division: Division;
   staffName: string;
   activity: string; // e.g., "Cleaning / Check / Test"
   result: 'OK' | 'NG';
