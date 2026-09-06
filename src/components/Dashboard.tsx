@@ -540,9 +540,10 @@ export default function Dashboard({
             <div className="flex items-center gap-2 border-l-4 border-indigo-600 pl-3">
               <span className="text-indigo-600 font-mono font-bold text-sm">02.</span>
               <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">KEHADIRAN STAFF</h2>
+              <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">NON-AKTIF SEMENTARA</span>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 opacity-60">
               {/* Table */}
               <div className="lg:col-span-2 overflow-x-auto border border-slate-100 rounded-xl">
                 <table className="w-full text-left text-xs border-collapse">
@@ -560,44 +561,23 @@ export default function Dashboard({
                     {divisionAttendanceStats.map((d, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50">
                         <td className="p-3 font-sans font-bold text-slate-800">{d.label}</td>
-                        <td className="p-3 text-center text-emerald-600 font-bold">{d.hadir}</td>
-                        <td className="p-3 text-center text-amber-600 font-bold">{d.terlambat}</td>
-                        <td className="p-3 text-center text-slate-500">{d.izin}</td>
-                        <td className="p-3 text-center text-indigo-500">{d.sakit}</td>
-                        <td className="p-3 text-center text-rose-600 font-bold">{d.alpha}</td>
+                        <td className="p-3 text-center text-slate-400 font-bold">-</td>
+                        <td className="p-3 text-center text-slate-400 font-bold">-</td>
+                        <td className="p-3 text-center text-slate-400">-</td>
+                        <td className="p-3 text-center text-slate-400">-</td>
+                        <td className="p-3 text-center text-slate-400 font-bold">-</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              {/* Charts (Tailwind-styled inline Visual Bars) */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col justify-center space-y-4 text-xs font-medium text-slate-700">
-                <div>
-                  <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-2">Persentase Kehadiran</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <span>Rata-rata Kehadiran Tim</span>
-                      <span className="font-extrabold text-emerald-600">{avgAttendancePercent}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${avgAttendancePercent}%` }}></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-bold text-slate-900 uppercase text-[10px] tracking-wider mb-2">Persentase Keterlambatan</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <span>Toleransi Maksimal 3%</span>
-                      <span className="font-extrabold text-amber-600">{avgLatePercent}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${Math.min(100, parseFloat(avgLatePercent) * 10)}%` }}></div>
-                    </div>
-                  </div>
-                </div>
+              {/* Status Note */}
+              <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200 flex flex-col justify-center space-y-2 text-xs font-medium text-amber-900">
+                <div className="font-bold uppercase text-[10px] tracking-wider text-amber-800">Status Pencatatan</div>
+                <p className="text-[11px] leading-relaxed">
+                  Jumlah Kehadiran & Jam Kerja dinon-aktifkan sementara. Evaluasi performa staf difokuskan pada Daily Report, QC Checklist, dan Work Order.
+                </p>
               </div>
             </div>
           </div>
@@ -691,9 +671,9 @@ export default function Dashboard({
                       <th className="p-3">Divisi</th>
                       <th className="p-3 text-center">Daily Report</th>
                       <th className="p-3 text-center">QC Checked</th>
-                      <th className="p-3 text-center">Kehadiran</th>
+                      <th className="p-3 text-center text-slate-400">Kehadiran</th>
                       <th className="p-3 text-center">Uji Komp.</th>
-                      <th className="p-3 text-center">Jam Kerja</th>
+                      <th className="p-3 text-center text-slate-400">Jam Kerja</th>
                       <th className="p-3 text-center">KPI Score</th>
                     </tr>
                   </thead>
@@ -704,9 +684,9 @@ export default function Dashboard({
                         <td className="p-3 font-sans text-slate-600">{staff.division}</td>
                         <td className="p-3 text-center text-slate-700">{staff.reports}</td>
                         <td className="p-3 text-center text-slate-700">{staff.qcs}</td>
-                        <td className="p-3 text-center text-slate-700">{staff.attendanceCount} hr</td>
+                        <td className="p-3 text-center text-slate-400 font-sans">-</td>
                         <td className="p-3 text-center text-slate-700">{staff.competencyCount}/6</td>
-                        <td className="p-3 text-center text-slate-700">{staff.hours} jam</td>
+                        <td className="p-3 text-center text-slate-400 font-sans">-</td>
                         <td className="p-3 text-center">
                           <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold text-[11px]">
                             {staff.kpi}%

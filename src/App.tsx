@@ -212,8 +212,8 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Pembersihan total data dummy lama & sinkronisasi data riil resmi Google Spreadsheet
-  const REF_SYNC_KEY = 'riz_ref_synced_v21_suryana_nana_buluk_official_sync';
+  // Pembersihan total data dummy lama & sinkronisasi data riil resmi Google Spreadsheet  // Forced one-time re-sync for updated staff list and deactivated attendance & hours
+  const REF_SYNC_KEY = 'riz_ref_synced_v22_deactivate_attendance_and_hours';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));

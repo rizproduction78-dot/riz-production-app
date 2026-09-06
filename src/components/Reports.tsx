@@ -478,8 +478,11 @@ export default function Reports({
 
           {/* 2. KEHADIRAN STAFF */}
           <div className="space-y-4">
-            <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">2. KEHADIRAN STAFF</div>
-            <div className="overflow-x-auto">
+            <div className="flex items-center gap-2">
+              <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">2. KEHADIRAN STAFF</div>
+              <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">NON-AKTIF SEMENTARA</span>
+            </div>
+            <div className="overflow-x-auto opacity-60">
               <table className="w-full text-left border border-slate-300 text-xs">
                 <thead>
                   <tr className="bg-slate-50 text-slate-800 font-mono border-b border-slate-300 uppercase">
@@ -495,36 +498,20 @@ export default function Reports({
                   {divisionAttendanceStats.map((d, idx) => (
                     <tr key={idx}>
                       <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">{d.label}</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{d.hadir}</td>
-                      <td className="p-2 border-r border-slate-300 text-center text-amber-600">{d.terlambat}</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{d.izin}</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{d.sakit}</td>
-                      <td className="p-2 border-r border-slate-300 text-center text-rose-600">{d.alpha}</td>
+                      <td className="p-2 border-r border-slate-300 text-center">-</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-amber-600">-</td>
+                      <td className="p-2 border-r border-slate-300 text-center">-</td>
+                      <td className="p-2 border-r border-slate-300 text-center">-</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-rose-600">-</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
-              <div className="p-3 border border-slate-200 bg-slate-50/50 rounded">
-                <div className="font-semibold text-slate-600">Persentase Kehadiran</div>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${avgAttendancePercent}%` }}></div>
-                  </div>
-                  <strong className="text-slate-800 font-mono text-xs shrink-0">{avgAttendancePercent}%</strong>
-                </div>
-              </div>
-              <div className="p-3 border border-slate-200 bg-slate-50/50 rounded">
-                <div className="font-semibold text-slate-600">Persentase Keterlambatan</div>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, parseFloat(avgLatePercent) * 10)}%` }}></div>
-                  </div>
-                  <strong className="text-slate-800 font-mono text-xs shrink-0">{avgLatePercent}%</strong>
-                </div>
-              </div>
+            <div className="p-3 border border-amber-200 bg-amber-50/60 rounded text-xs text-amber-900 font-sans">
+              <div className="font-semibold">⚠️ Pencatatan Jumlah Kehadiran & Jam Kerja Dinon-aktifkan Sementara</div>
+              <div className="text-[11px] text-amber-700 mt-0.5">Penilaian KPI & Evaluasi Kinerja saat ini difokuskan 100% pada kontribusi riil: Daily Report, QC Checklist Onhouse, Work Order Perbaikan, dan Uji Kompetensi Teknis.</div>
             </div>
           </div>
 
@@ -629,9 +616,9 @@ export default function Reports({
                     <th className="p-2 border-r border-slate-300">Divisi</th>
                     <th className="p-2 border-r border-slate-300 text-center">Daily Report</th>
                     <th className="p-2 border-r border-slate-300 text-center">QC</th>
-                    <th className="p-2 border-r border-slate-300 text-center">Absensi</th>
+                    <th className="p-2 border-r border-slate-300 text-center text-slate-400">Absensi</th>
                     <th className="p-2 border-r border-slate-300 text-center">Uji Komp.</th>
-                    <th className="p-2 border-r border-slate-300 text-center">Jam Kerja</th>
+                    <th className="p-2 border-r border-slate-300 text-center text-slate-400">Jam Kerja</th>
                     <th className="p-2 text-center">Performance Score</th>
                   </tr>
                 </thead>
@@ -642,9 +629,9 @@ export default function Reports({
                       <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.reports}</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.qcs}</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.attendanceCount} Hari</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.hours} Jam</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
                       <td className={`p-2 text-center font-bold ${
                         staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
                       }`}>{staff.kpi}%</td>
@@ -1091,7 +1078,7 @@ export default function Reports({
                 IV. LAPORAN KPI & KINERJA ALL STAFF ({reportType === 'Harian' ? `HARIAN: ${targetDate}` : reportType === 'Mingguan' ? `MINGGUAN: ${targetStartDate} s/d ${targetEndDate}` : `BULANAN: ${targetMonth}`})
               </div>
               <span className="text-[10px] font-mono text-indigo-600 font-semibold">
-                Prioritas: Daily Report • QC Checklist • WO Selesai • Uji Komp. • Kehadiran
+                Prioritas: Daily Report • QC Checklist • WO Selesai • Uji Komp. (Kehadiran & Jam Kerja Non-Aktif)
               </span>
             </div>
             <div className="overflow-x-auto max-h-[350px] overflow-y-auto border border-slate-300 rounded">
@@ -1104,9 +1091,9 @@ export default function Reports({
                     <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">Daily Report</th>
                     <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">QC Checklist</th>
                     <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">WO Selesai</th>
-                    <th className="p-2 border-r border-slate-300 text-center">Kehadiran</th>
+                    <th className="p-2 border-r border-slate-300 text-center text-slate-400">Kehadiran</th>
                     <th className="p-2 border-r border-slate-300 text-center">Uji Komp.</th>
-                    <th className="p-2 border-r border-slate-300 text-center">Jam Kerja</th>
+                    <th className="p-2 border-r border-slate-300 text-center text-slate-400">Jam Kerja</th>
                     <th className="p-2 text-center font-bold">Nilai KPI (%)</th>
                   </tr>
                 </thead>
@@ -1125,12 +1112,12 @@ export default function Reports({
                       <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.wos > 0 ? 'text-emerald-700 bg-emerald-50/30' : 'text-slate-400'}`}>
                         {staff.wos}
                       </td>
-                      <td className="p-2 border-r border-slate-300 text-center">
-                        {reportType === 'Harian' ? (staff.reports > 0 || staff.qcs > 0 || staff.wos > 0 ? '1 Hari' : '0 Hari') : `${staff.attendanceCount} Hari`}
+                      <td className="p-2 border-r border-slate-300 text-center text-slate-400">
+                        -
                       </td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
-                      <td className="p-2 border-r border-slate-300 text-center">
-                        {reportType === 'Harian' ? (staff.reports > 0 || staff.qcs > 0 || staff.wos > 0 ? '8 Jam' : '0 Jam') : `${staff.hours} Jam`}
+                      <td className="p-2 border-r border-slate-300 text-center text-slate-400">
+                        -
                       </td>
                       <td className={`p-2 text-center font-bold ${
                         staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
@@ -1146,7 +1133,7 @@ export default function Reports({
                 <span className="text-[10px] font-mono text-slate-600 uppercase font-bold tracking-wider block">
                   🏆 TOP 3 PERFORMER {reportType.toUpperCase()} ({reportType === 'Harian' ? targetDate : reportType === 'Mingguan' ? `${targetStartDate} s/d ${targetEndDate}` : targetMonth})
                 </span>
-                <span className="text-[9px] font-mono text-slate-400">Peringkat Berdasarkan: Daily Report, QC Checklist, WO Selesai, Uji Komp, Kehadiran</span>
+                <span className="text-[9px] font-mono text-slate-400">Peringkat Berdasarkan: Daily Report, QC Checklist, WO Selesai, Uji Komp (Kehadiran Non-Aktif)</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {staffKpis.slice(0, 3).map((staff, idx) => (

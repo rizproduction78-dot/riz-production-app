@@ -298,9 +298,9 @@ export function calculateStaffKpi(
   const competencyScore = Math.round((competencyCount / competencyTotal) * 100);
 
   // ─────────────────────────────────────────────────────────────
-  // 3. DISIPLIN KERJA (Dihitung dari kehadiran dan kepatuhan jam kerja)
+  // 3. DISIPLIN KERJA (Non-aktif sementara)
   // ─────────────────────────────────────────────────────────────
-  const disciplineScore = attendanceCount > 0 ? Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100)) : 0;
+  const disciplineScore = 0;
 
   // ─────────────────────────────────────────────────────────────
   // 4. PRODUKTIVITAS / DAILY TASK (Murni dari laporan harian yang diinput)
@@ -330,39 +330,39 @@ export function calculateStaffKpi(
   // ─────────────────────────────────────────────────────────────
   const teamworkScore = Math.round((competencyScore * 0.5) + (reportScore * 0.5));
 
-  // Jam kerja total riil (shift kehadiran x 8 jam)
-  const baseHours = attendanceCount * 8;
+  // Jam kerja (Non-aktif sementara)
+  const baseHours = 0;
 
   // ─────────────────────────────────────────────────────────────
-  // 8. TOTAL NILAI KPI (SEMUA KOMPONEN LENGKAP & TIDAK DIHILANGKAN)
+  // 8. TOTAL NILAI KPI (KEHADIRAN & JAM KERJA DINON-AKTIFKAN SEMENTARA)
   // ─────────────────────────────────────────────────────────────
-  // Komponen:
-  // - Disiplin: 10%
-  // - Produktivitas (Daily Report): 25%
-  // - Quality (QC Checklist): 20%
-  // - Kompleksitas Tugas / WO: 10%
+  // Komposisi Baru (Tanpa Kehadiran & Jam Kerja):
+  // Divisi Non-QC (Gudang, Admin):
+  // - Daily Report: 40%
+  // - Work Order Selesai: 25%
+  // - Uji Kompetensi: 20%
+  // - Teamwork & Pengembangan Diri: 15%
+  //
+  // Divisi Teknis QC (Audio, Lighting, Videotron, Multimedia, Service):
+  // - Daily Report: 35%
+  // - QC Checklist: 30%
+  // - Work Order Selesai: 15%
+  // - Uji Kompetensi: 15%
   // - Teamwork & Pengembangan Diri: 5%
-  // - Jumlah Absen / Kehadiran: 15%
-  // - Uji Kompetensi yang Diikuti: 15%
-  // Total = 10 + 25 + 20 + 10 + 5 + 15 + 15 = 100%
   let totalKpi: number;
   if (isNonQcDivision) {
     totalKpi = Math.round(
-      (attendanceScore * 0.20) +
-      (competencyScore * 0.15) +
-      (disciplineScore * 0.10) +
-      (reportScore * 0.30) +
-      (woScore * 0.15) +
-      (teamworkScore * 0.10)
+      (reportScore * 0.40) +
+      (woScore * 0.25) +
+      (competencyScore * 0.20) +
+      (teamworkScore * 0.15)
     );
   } else {
     totalKpi = Math.round(
-      (attendanceScore * 0.15) +
+      (reportScore * 0.35) +
+      (qcScore * 0.30) +
+      (woScore * 0.15) +
       (competencyScore * 0.15) +
-      (disciplineScore * 0.10) +
-      (reportScore * 0.25) +
-      (qcScore * 0.20) +
-      (woScore * 0.10) +
       (teamworkScore * 0.05)
     );
   }
@@ -381,13 +381,13 @@ export function calculateStaffKpi(
     name: staff.name,
     division: staff.division,
     role: staff.role,
-    attendanceCount,
+    attendanceCount: 0,
     attendanceTarget,
-    attendanceScore,
+    attendanceScore: 0,
     competencyCount,
     competencyTotal,
     competencyScore,
-    disciplineScore,
+    disciplineScore: 0,
     reports: reportsCount,
     reportsCount,
     reportScore,
@@ -399,7 +399,7 @@ export function calculateStaffKpi(
     woScore,
     taskComplexityScore,
     teamworkScore,
-    hours: baseHours,
+    hours: 0,
     kpi,
     grade
   };
@@ -407,6 +407,7 @@ export function calculateStaffKpi(
 
 /**
  * Menghitung KPI untuk seluruh daftar staff dengan perangkingan adil berdasarkan kontribusi riil
+ * (Kehadiran & Jam Kerja dinon-aktifkan sementara)
  */
 export function calculateAllStaffKpis(
   staffList: Staff[],
@@ -442,10 +443,7 @@ export function calculateAllStaffKpis(
       // 4. Prioritas 4: Uji Kompetensi yang Diikuti
       if (b.competencyCount !== a.competencyCount) return b.competencyCount - a.competencyCount;
 
-      // 5. Prioritas 5: Kehadiran (Jumlah Hari Hadir Roster Riil)
-      if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
-
-      // 6. Nilai Total KPI (%)
+      // 5. Nilai Total KPI (%)
       return b.kpi - a.kpi;
     });
 }

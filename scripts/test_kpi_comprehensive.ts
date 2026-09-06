@@ -80,11 +80,10 @@ for (let i = 1; i < allResults.length; i++) {
 }
 expect(isSortedCorrectly, 'Leaderboard ranks staff strictly by Daily Report, QC Checklist, WO Selesai, Uji Komp, Kehadiran');
 
-// 4. Test Roster / Shift Integration
-console.log('\n--- 4. Testing Attendance & Schedule Roster Integration ---');
-const sampleStaffWithSchedule = STAFF_LIST.find(s => s.id === 'staff-absobur') || STAFF_LIST[0];
-const kpiSample = calculateStaffKpi(sampleStaffWithSchedule, INITIAL_DAILY_REPORTS, INITIAL_LOGBOOK_ENTRIES, INITIAL_FINDINGS);
-expect(kpiSample.attendanceCount > 0, `Attendance count computed from roster: ${kpiSample.attendanceCount} days (Score: ${kpiSample.attendanceScore}%)`);
+// 4. Testing Attendance & Schedule Roster Status (Deactivated)
+console.log('\n--- 4. Testing Attendance & Schedule Roster Status (Deactivated) ---');
+const sampleKpi = allResults[0];
+expect(sampleKpi.attendanceCount === 0 && sampleKpi.hours === 0, `Attendance count & hours are deactivated: ${sampleKpi.attendanceCount} days, ${sampleKpi.hours} hours (Score: ${sampleKpi.attendanceScore}%)`);
 
 // 5. Test Summary Report
 console.log('\n================================================================');
