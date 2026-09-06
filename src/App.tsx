@@ -212,7 +212,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Pembersihan total data dummy lama & sinkronisasi data riil resmi Google Spreadsheet
-  const REF_SYNC_KEY = 'riz_ref_synced_v12_wahyu_owner';
+  const REF_SYNC_KEY = 'riz_ref_synced_v13_clean_unyin_wahyu';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
@@ -230,7 +230,9 @@ export default function App() {
 
     localStorage.setItem(REF_SYNC_KEY, 'true');
 
-    // Hapus Chandra dan Rizky dari master_staff (mereka adalah Freelance Worker, bukan staff inhouse)
+    // Hapus duplikasi dan non-inhouse dari master_staff
+    deleteCloudDoc('master_staff', 'staff-suryana').catch(() => {});
+    deleteCloudDoc('master_staff', 'staff-unyim').catch(() => {});
     deleteCloudDoc('master_staff', 'staff-chandra').catch(() => {});
     deleteCloudDoc('master_staff', 'staff-rizky').catch(() => {});
 
@@ -238,7 +240,7 @@ export default function App() {
     saveCloudDoc('master_staff', 'director-wahyu', {
       id: 'director-wahyu',
       name: 'Wahyu',
-      fullName: 'Wahyudin',
+      fullName: 'Wahyu',
       nickname: 'Wahyu',
       email: 'zakimau06@gmail.com',
       phone: '083819947193',
@@ -286,11 +288,11 @@ export default function App() {
       level: 3
     }, 'System Auto-Sync').catch(() => {});
 
-    // Sinkronisasi data Unyim (Staff Audio) ke Cloud master_staff
-    saveCloudDoc('master_staff', 'staff-suryana', {
-      id: 'staff-suryana',
-      name: 'Unyim',
-      fullName: 'Suryana',
+    // Sinkronisasi data Wahyudin (Unyim) (Staff Audio) ke Cloud master_staff
+    saveCloudDoc('master_staff', 'staff-unyin', {
+      id: 'staff-unyin',
+      name: 'Wahyudin (Unyim)',
+      fullName: 'Wahyudin',
       nickname: 'Unyim',
       email: 'nia.kurni1930@gmail.com',
       phone: '083847130366',

@@ -44,6 +44,218 @@ export const STAFF_LIST: Staff[] = [
 
 export const MASTER_STAFF: Staff[] = [...STAFF_LIST];
 
+export function normalizeStaffMaster(rawList: any[]): Staff[] {
+  if (!Array.isArray(rawList) || rawList.length === 0) {
+    return [...STAFF_LIST];
+  }
+
+  const staffMap = new Map<string, Staff>();
+
+  for (const s of rawList) {
+    if (!s) continue;
+    const rawId = String(s.id || '').trim();
+    const rawName = String(s.name || '').trim();
+    const rawFull = String(s.fullName || '').trim();
+    const rawNick = String(s.nickname || '').trim();
+    const combinedStr = `${rawId} ${rawName} ${rawFull} ${rawNick} ${s.email || ''}`.toLowerCase();
+
+    // Filter out deleted or non-inhouse freelance workers
+    if (
+      rawId === 'staff-chandra' ||
+      rawId === 'staff-rizky' ||
+      (combinedStr.includes('chandra') && !combinedStr.includes('admin')) ||
+      (combinedStr.includes('rizky nasrullah'))
+    ) {
+      continue;
+    }
+
+    let canonicalId = rawId;
+    let canonicalStaff: Staff = { ...s };
+
+    // 1. Wahyu (Owner / Director)
+    if (
+      rawId === 'director-wahyu' ||
+      rawId === 'staff-wahyu' ||
+      rawId === 'admin-wahyu' ||
+      (combinedStr.includes('wahyu') && !combinedStr.includes('wahyudin')) ||
+      (s.division === 'Admin' && (s.role === 'Owner' || s.role === 'Direktur' || combinedStr.includes('director')))
+    ) {
+      canonicalId = 'director-wahyu';
+      canonicalStaff = {
+        ...s,
+        id: 'director-wahyu',
+        name: 'Wahyu',
+        fullName: 'Wahyu',
+        nickname: 'Wahyu',
+        division: 'Admin',
+        role: 'Owner',
+        level: 8,
+        email: s.email || 'zakimau06@gmail.com',
+        phone: s.phone || '083819947193'
+      };
+    }
+    // 2. Wahyudin aka Unyim (Staff Audio)
+    else if (
+      rawId === 'staff-unyin' ||
+      rawId === 'staff-unyim' ||
+      rawId === 'staff-suryana' ||
+      rawId === 'staff-wahyudin' ||
+      combinedStr.includes('unyim') ||
+      combinedStr.includes('suryana') ||
+      combinedStr.includes('wahyudin') ||
+      combinedStr.includes('nia.kurni')
+    ) {
+      canonicalId = 'staff-unyin';
+      canonicalStaff = {
+        ...s,
+        id: 'staff-unyin',
+        name: 'Wahyudin (Unyim)',
+        fullName: 'Wahyudin',
+        nickname: 'Unyim',
+        division: 'Audio',
+        role: 'Staff',
+        level: 4,
+        email: 'nia.kurni1930@gmail.com',
+        phone: '083847130366'
+      };
+    }
+    // 3. Seno Subroto (Admin Staff)
+    else if (rawId === 'staff-seno' || combinedStr.includes('seno')) {
+      canonicalId = 'staff-seno';
+      canonicalStaff = {
+        ...s,
+        id: 'staff-seno',
+        name: 'Seno Subroto',
+        fullName: 'Seno Subroto',
+        nickname: 'Seno',
+        division: 'Admin',
+        role: 'Staff',
+        level: 4
+      };
+    }
+    // 4. Damri (Service Leader)
+    else if (rawId === 'staff-damri' || combinedStr.includes('damri')) {
+      canonicalId = 'staff-damri';
+      canonicalStaff = {
+        ...s,
+        id: 'staff-damri',
+        name: 'Damri',
+        fullName: 'Damri',
+        nickname: 'Mang Damri',
+        division: 'Service',
+        role: 'Team Leader',
+        level: 5
+      };
+    }
+    // 5. Mulyana (Service Staff)
+    else if (rawId === 'staff-mulyana' || combinedStr.includes('mulyana') || combinedStr.includes('kharo')) {
+      canonicalId = 'staff-mulyana';
+      canonicalStaff = {
+        ...s,
+        id: 'staff-mulyana',
+        name: 'Mulyana',
+        fullName: 'Mulyana',
+        nickname: 'Kharo',
+        division: 'Service',
+        role: 'Staff',
+        level: 3
+      };
+    }
+    // 6. Iwan Kurniawan / Butonk (Audio)
+    else if (rawId === 'staff-iwan' || combinedStr.includes('iwan') || combinedStr.includes('butonk') || combinedStr.includes('boetonk')) {
+      canonicalId = 'staff-iwan';
+      canonicalStaff = { ...s, id: 'staff-iwan', name: 'Iwan Kurniawan', fullName: 'Iwan Kurniawan', nickname: 'Butonk', division: 'Audio', role: 'Staff', level: 3 };
+    }
+    // 7. Muhamad Rahmat / Mboh (Audio Leader)
+    else if (rawId === 'staff-rahmat' || combinedStr.includes('rahmat') || combinedStr.includes('mboh')) {
+      canonicalId = 'staff-rahmat';
+      canonicalStaff = { ...s, id: 'staff-rahmat', name: 'Muhamad Rahmat', fullName: 'Muhamad Rahmat', nickname: 'Mboh', division: 'Audio', role: 'Team Leader', level: 5 };
+    }
+    // 8. Ramdani / Dani (Audio)
+    else if (rawId === 'staff-ramdani' || combinedStr.includes('ramdani') || combinedStr.includes('dani')) {
+      canonicalId = 'staff-ramdani';
+      canonicalStaff = { ...s, id: 'staff-ramdani', name: 'Ramdani', fullName: 'Ramdani', nickname: 'Dani', division: 'Audio', role: 'Staff', level: 3 };
+    }
+    // 9. Taufik Diana / Opik (Audio)
+    else if (rawId === 'staff-taufik' || combinedStr.includes('taufik') || combinedStr.includes('opik')) {
+      canonicalId = 'staff-taufik';
+      canonicalStaff = { ...s, id: 'staff-taufik', name: 'Taufik Diana', fullName: 'Taufik Diana', nickname: 'Opik', division: 'Audio', role: 'Staff', level: 3 };
+    }
+    // 10. Yudishtira Purnama A / Yudish (Audio)
+    else if (rawId === 'staff-yudish' || combinedStr.includes('yudishtira') || combinedStr.includes('yudish')) {
+      canonicalId = 'staff-yudish';
+      canonicalStaff = { ...s, id: 'staff-yudish', name: 'Yudishtira Purnama A', fullName: 'Yudishtira Purnama A', nickname: 'Yudish', division: 'Audio', role: 'Staff', level: 3 };
+    }
+    // 11. Heri (Lighting Leader)
+    else if (rawId === 'staff-heri' || combinedStr.includes('heri')) {
+      canonicalId = 'staff-heri';
+      canonicalStaff = { ...s, id: 'staff-heri', name: 'Heri', fullName: 'Heri', nickname: 'Heri', division: 'Lighting', role: 'Team Leader', level: 5 };
+    }
+    // 12. Mulyadi / Jay (Multimedia)
+    else if (rawId === 'staff-mulyadi' || combinedStr.includes('mulyadi') || combinedStr.includes('jay')) {
+      canonicalId = 'staff-mulyadi';
+      canonicalStaff = { ...s, id: 'staff-mulyadi', name: 'Mulyadi', fullName: 'Mulyadi', nickname: 'Jay', division: 'Multimedia', role: 'Staff', level: 3 };
+    }
+    // 13. Ayong Sumarsih (Videotron Leader)
+    else if (rawId === 'staff-ayong' || combinedStr.includes('ayong')) {
+      canonicalId = 'staff-ayong';
+      canonicalStaff = { ...s, id: 'staff-ayong', name: 'Ayong Sumarsih', fullName: 'Ayong Sumarsih', nickname: 'Ayong', division: 'Videotron', role: 'Team Leader', level: 5 };
+    }
+    // 14. Dedi Agus Wigiantoro / Wigi (Videotron)
+    else if (rawId === 'staff-dedi' || combinedStr.includes('dedi') || combinedStr.includes('wigi')) {
+      canonicalId = 'staff-dedi';
+      canonicalStaff = { ...s, id: 'staff-dedi', name: 'Dedi Agus Wigiantoro', fullName: 'Dedi Agus Wigiantoro', nickname: 'Wigi', division: 'Videotron', role: 'Staff', level: 3 };
+    }
+    // 15. Muhamad Irvan / Irfan (Videotron)
+    else if (rawId === 'staff-irvan' || combinedStr.includes('irvan') || combinedStr.includes('irfan')) {
+      canonicalId = 'staff-irvan';
+      canonicalStaff = { ...s, id: 'staff-irvan', name: 'Muhamad Irvan', fullName: 'Muhamad Irvan', nickname: 'Irfan', division: 'Videotron', role: 'Staff', level: 3 };
+    }
+    // 16. Abah Sobur (Gudang)
+    else if (rawId === 'staff-absobur' || combinedStr.includes('sobur')) {
+      canonicalId = 'staff-absobur';
+      canonicalStaff = { ...s, id: 'staff-absobur', name: 'Abah Sobur', fullName: 'Abah Sobur', nickname: 'Abah Sobur', division: 'Gudang', role: 'Gudang', level: 3 };
+    }
+    // 17. Gatot Wiliyanto (Gudang)
+    else if (rawId === 'staff-gatot' || combinedStr.includes('gatot')) {
+      canonicalId = 'staff-gatot';
+      canonicalStaff = { ...s, id: 'staff-gatot', name: 'Gatot Wiliyanto', fullName: 'Gatot Wiliyanto', nickname: 'Gatot', division: 'Gudang', role: 'Gudang', level: 3 };
+    }
+    // 18. Udin Saepudin / Mang ube (Gudang)
+    else if (rawId === 'staff-udin' || combinedStr.includes('saepudin') || combinedStr.includes('mang ube') || combinedStr.includes('udin')) {
+      canonicalId = 'staff-udin';
+      canonicalStaff = { ...s, id: 'staff-udin', name: 'Udin Saepudin', fullName: 'Udin Saepudin', nickname: 'Mang ube', division: 'Gudang', role: 'Gudang', level: 3 };
+    }
+    // 19. Agustino Setiawan (Admin)
+    else if (rawId === 'staff-agustino' || combinedStr.includes('agustino')) {
+      canonicalId = 'staff-agustino';
+      canonicalStaff = { ...s, id: 'staff-agustino', name: 'Agustino Setiawan', fullName: 'Agustino Setiawan', nickname: 'Agustino', division: 'Admin', role: 'Admin', level: 4 };
+    }
+    // 20. M. Fahruyana . A / Fahrul (Manager)
+    else if (rawId === 'staff-fahrul' || combinedStr.includes('fahruyana') || combinedStr.includes('fahrul') || combinedStr.includes('rullyana')) {
+      canonicalId = 'staff-fahrul';
+      canonicalStaff = { ...s, id: 'staff-fahrul', name: 'M. Fahruyana . A', fullName: 'M. Fahruyana . A', nickname: 'Fahrul', division: 'Admin', role: 'Manager', level: 6 };
+    }
+    // 21. Syalsa Sri Hestariana / Caca (Admin)
+    else if (rawId === 'staff-syalsa' || combinedStr.includes('syalsa') || combinedStr.includes('caca')) {
+      canonicalId = 'staff-syalsa';
+      canonicalStaff = { ...s, id: 'staff-syalsa', name: 'Syalsa Sri Hestariana', fullName: 'Syalsa Sri Hestariana', nickname: 'Caca', division: 'Admin', role: 'Admin', level: 4 };
+    }
+
+    // Overwrite or update in staffMap
+    staffMap.set(canonicalId, { ...canonicalStaff, id: canonicalId });
+  }
+
+  // Ensure all 21 default staff are present
+  for (const defaultStaff of STAFF_LIST) {
+    if (!staffMap.has(defaultStaff.id)) {
+      staffMap.set(defaultStaff.id, defaultStaff);
+    }
+  }
+
+  return Array.from(staffMap.values());
+}
+
 export function getMasterStaffList(): Staff[] {
   if (typeof window !== 'undefined') {
     try {
@@ -53,38 +265,16 @@ export function getMasterStaffList(): Staff[] {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const staffMap = new Map<string, Staff>();
-          parsed
-            .filter((s: any) => s && !deletedSet.has(String(s.id || '')))
-            .forEach((s: any) => {
-              let canonicalId = s.id;
-              if (canonicalId === 'staff-suryana' || canonicalId === 'staff-unyim' || canonicalId === 'staff-unyin') {
-                canonicalId = 'staff-unyin';
-              }
-              
-              let processed: Staff = { ...s, id: canonicalId };
-              if (canonicalId === 'director-wahyu' || (String(s.name || '').toLowerCase() === 'wahyu' && s.division === 'Admin')) {
-                processed = { ...s, id: 'director-wahyu', name: 'Wahyu', fullName: 'Wahyu', nickname: 'Wahyu', division: 'Admin', role: 'Owner', level: 8 };
-              } else if (canonicalId === 'staff-unyin' || (s.division === 'Audio' && (String(s.name || '').toLowerCase().includes('unyim') || String(s.name || '').toLowerCase().includes('suryana') || String(s.name || '').toLowerCase().includes('wahyudin')))) {
-                processed = { ...s, id: 'staff-unyin', name: 'Wahyudin (Unyim)', fullName: 'Wahyudin', nickname: 'Unyim', division: 'Audio', role: 'Staff', level: 4 };
-              } else if (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno')) {
-                processed = { ...s, division: 'Admin', role: 'Staff', level: 4 };
-              } else if (s.id === 'staff-damri' || String(s.name || '').toLowerCase().includes('damri')) {
-                processed = { ...s, division: 'Service', role: 'Team Leader', level: 5 };
-              } else if (s.id === 'staff-mulyana' || String(s.name || '').toLowerCase().includes('mulyana') || String(s.nickname || '').toLowerCase().includes('kharo')) {
-                processed = { ...s, division: 'Service', role: 'Staff', level: 3 };
-              }
-              staffMap.set(canonicalId, processed);
-            });
-          return Array.from(staffMap.values());
+          const filtered = parsed.filter((s: any) => s && !deletedSet.has(String(s.id || '')));
+          return normalizeStaffMaster(filtered);
         }
       }
-      return STAFF_LIST.filter(s => !deletedSet.has(String(s.id || '')));
+      return normalizeStaffMaster(STAFF_LIST.filter(s => !deletedSet.has(String(s.id || ''))));
     } catch (e) {
       console.warn('Failed to parse riz_master_staff_list:', e);
     }
   }
-  return STAFF_LIST;
+  return [...STAFF_LIST];
 }
 
 export function getMasterFreelanceList(): FreelanceWorker[] {

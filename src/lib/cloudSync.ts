@@ -16,6 +16,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { normalizeStaffMaster } from '../data';
 
 export interface DeviceOSInfo {
   os: 'Windows' | 'macOS' | 'iOS' | 'Android' | 'Linux' | 'Unknown';
@@ -269,31 +270,10 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
 
   let items = [...rawItems];
 
-  // Special normalization for master_staff: Seno is Admin Staff Level 4,
-  // and Chandra & Rizky Nasrullah are excluded (they are freelance workers, not inhouse staff)
+  // Special normalization for master_staff: full canonical deduplication,
+  // Wahyu as Owner, Unyim as Staff Audio, and excluding non-inhouse freelancers
   if (collectionName === 'master_staff') {
-    return items
-      .filter((s: any) => {
-        if (!s) return false;
-        const id = String(s.id || '');
-        const name = String(s.name || '').toLowerCase().trim();
-        if (id === 'staff-chandra' || id === 'staff-rizky' || name === 'chandra' || name === 'rizky nasrullah') {
-          return false;
-        }
-        return true;
-      })
-      .map((s: any) => {
-        if (s && (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno'))) {
-          return { ...s, division: 'Admin', role: 'Staff', level: 4 };
-        }
-        if (s && (s.id === 'staff-damri' || String(s.name || '').toLowerCase().includes('damri'))) {
-          return { ...s, division: 'Service', role: 'Team Leader', level: 5 };
-        }
-        if (s && (s.id === 'staff-mulyana' || String(s.name || '').toLowerCase().includes('mulyana') || String(s.nickname || '').toLowerCase().includes('kharo'))) {
-          return { ...s, division: 'Service', role: 'Staff', level: 3 };
-        }
-        return s;
-      }) as T[];
+    return normalizeStaffMaster(items) as unknown as T[];
   }
 
   // Special normalization for findings so official reference data is preserved and not corrupted by stale mock strings
