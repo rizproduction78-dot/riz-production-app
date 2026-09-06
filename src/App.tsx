@@ -339,14 +339,14 @@ export default function App() {
     // Sinkronisasi data Wahyudin (Unyim) (Staff Audio) ke Cloud master_staff
     saveCloudDoc('master_staff', 'staff-unyin', {
       id: 'staff-unyin',
-      name: 'Wahyudin (Unyim)',
+      name: 'Wahyudin',
       fullName: 'Wahyudin',
       nickname: 'Unyim',
-      email: 'nia.kurni1930@gmail.com',
-      phone: '083847130366',
+      email: 'wahyudin.unyin@gmail.com',
+      phone: '085812345678',
       division: 'Audio',
       role: 'Staff',
-      level: 4
+      level: 3
     }, 'System Auto-Sync').catch(() => {});
 
     // Sinkronisasi Temuan QC Resmi ke Cloud Firestore
