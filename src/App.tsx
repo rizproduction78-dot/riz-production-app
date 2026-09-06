@@ -191,18 +191,14 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Pembersihan total data dummy lama di localStorage agar user dapat mulai mengisi data riil
-  const DUMMY_PURGE_KEY = 'riz_dummy_purged_v1';
-  if (typeof window !== 'undefined' && !localStorage.getItem(DUMMY_PURGE_KEY)) {
+  // Pembersihan total data dummy lama & sinkronisasi data riil resmi Google Spreadsheet
+  const REF_SYNC_KEY = 'riz_ref_synced_v4';
+  if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     localStorage.removeItem('riz_logbook_entries');
     localStorage.removeItem('riz_daily_reports');
     localStorage.removeItem('riz_daily_tasks');
     localStorage.removeItem('riz_findings');
-    localStorage.removeItem('riz_assets');
-    localStorage.removeItem('riz_work_orders');
-    localStorage.removeItem('riz_schedules');
-    localStorage.removeItem('riz_attendance_logs');
-    localStorage.setItem(DUMMY_PURGE_KEY, 'true');
+    localStorage.setItem(REF_SYNC_KEY, 'true');
   }
 
   // Core States - Bersih murni dari data dummy & tersinkronisasi data riil resmi
