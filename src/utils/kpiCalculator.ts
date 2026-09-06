@@ -106,7 +106,7 @@ export const KNOWN_STAFF_ALIASES: Record<string, string[]> = {
   
   // Service
   'staff-damri': ['damri', 'mang damri', 'mangdamri', 'pak damri'],
-  'staff-mulyana': ['mulyana', 'kharo', 'tabita', 'tabitakharo', 'mulyana kharo', 'kharo mulyana', 'kang kharo']
+  'staff-mulyana': ['mulyana', 'kharo', 'karo', 'tabita', 'tabitakharo', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana', 'kang kharo', 'kang karo']
 };
 
 export const STAFF_NAME_ALIAS_MAP: Record<string, string[]> = {
@@ -123,7 +123,7 @@ export const STAFF_NAME_ALIAS_MAP: Record<string, string[]> = {
   'Muhamad Irvan': ['muhamad irvan', 'muhammad irvan', 'muhamad irfan', 'irvan', 'irfan'],
   'Mulyadi': ['mulyadi', 'jay', 'jaymulyadi', 'jay mulyadi'],
   'Heri': ['heri', 'heriansyah', 'saputra'],
-  'Iwan Kurniawan': ['iwan kurniawan', 'iwan', 'kurniawan', 'butonk', 'butong', 'boetonk', 'buluk'],
+  'Iwan Kurniawan': ['iwan kurniawan', 'iwan', 'kurniawan', 'butonk', 'butong', 'boetonk', 'buluk', 'bulux'],
   'Muhamad Rahmat': ['muhamad rahmat', 'muhammad rahmat', 'rahmat', 'mboh'],
   'Ramdani': ['ramdani', 'dani', 'ismail ramdani', 'ismail'],
   'Wahyudin (Unyim)': ['wahyudin (unyim)', 'wahyudin', 'unyim', 'wahyudin unyim', 'wahyudin aka unyim', 'suryana', 'unyink', 'nia', 'kang unyim'],
@@ -133,7 +133,10 @@ export const STAFF_NAME_ALIAS_MAP: Record<string, string[]> = {
   'Taufik Diana': ['taufik diana', 'taufik', 'diana', 'opik', 'topik'],
   'Yudishtira Purnama A': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama'],
   'Damri': ['damri', 'mang damri', 'mangdamri'],
-  'Mulyana': ['mulyana', 'kharo', 'tabita', 'mulyana kharo', 'kharo mulyana']
+  'Mulyana': ['mulyana', 'kharo', 'karo', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana'],
+  'Kharo': ['mulyana', 'kharo', 'karo', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana'],
+  'KARO': ['mulyana', 'kharo', 'karo', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana'],
+  'Mulyana (Kharo)': ['mulyana', 'kharo', 'karo', 'tabita', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana']
 };
 
 /**

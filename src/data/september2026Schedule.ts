@@ -185,8 +185,8 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
   },
   {
     no: 7,
-    division: 'LED',
-    name: 'KARO',
+    division: 'SERVICE',
+    name: 'Mulyana (Kharo)',
     shifts: {
       1: 'MD', 2: 'MD', 3: 'L', 4: 'MD', 5: 'MD', 6: 'MD', 7: 'MD', 8: 'MD', 9: 'L', 10: 'MD',
       11: 'MD', 12: 'MD', 13: 'MD', 14: 'MD', 15: 'L', 16: 'MD', 17: 'MD', 18: 'MD', 19: 'MD', 20: 'MD',
