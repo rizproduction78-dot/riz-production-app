@@ -1016,6 +1016,7 @@ export default function App() {
             dailyReports={dailyReports}
             findings={findings}
             workOrders={workOrders}
+            schedules={schedules}
             currentUser={currentUser}
             onNavigate={setActiveTab}
           />
@@ -1069,6 +1070,8 @@ export default function App() {
             logbookEntries={logbookEntries}
             dailyReports={dailyReports}
             findings={findings}
+            workOrders={workOrders}
+            schedules={schedules}
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
           />

@@ -11,10 +11,14 @@ import { calculateAllStaffKpis } from '../utils/kpiCalculator';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 
+import { Staff, WorkOrder, MaintenanceSchedule } from '../types';
+
 interface ReportsProps {
   logbookEntries: LogbookEntry[];
   dailyReports: DailyReport[];
   findings: Finding[];
+  workOrders?: WorkOrder[];
+  schedules?: MaintenanceSchedule[];
   currentUser: any;
   onLogActivity: (username: string, role: string, action: string) => void;
 }
@@ -23,6 +27,8 @@ export default function Reports({
   logbookEntries,
   dailyReports,
   findings,
+  workOrders = [],
+  schedules = [],
   currentUser,
   onLogActivity,
 }: ReportsProps) {
@@ -451,23 +457,25 @@ export default function Reports({
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Staff Aktif</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">{staffList.length} Orang</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">{activeStaffKpis.length} Orang</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Daily Report</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">{dailyReports.length} Laporan</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">{activeDailyReports.length} Laporan</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total QC</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">{logbookEntries.length} Pemeriksaan</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">{activeLogbookEntries.length} Pemeriksaan</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total PM</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">{logbookEntries.filter(e => e.activity.includes('PM') || e.activity.includes('Preventive')).length} Kegiatan</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">
+                    {schedules.filter(s => s.type === 'Preventive').length + workOrders.filter(w => w.title.toLowerCase().includes('pm')).length} Kegiatan
+                  </div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total CM / Temuan</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">{findings.length} Kasus</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">{activeFindings.length} Kasus</div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Kelulusan QC</div>

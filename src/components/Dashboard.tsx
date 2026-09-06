@@ -32,13 +32,14 @@ import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis } from '../utils/kpiCalculator';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 import { subscribeCloudCollection } from '../lib/cloudSync';
-import { Staff } from '../types';
+import { Staff, MaintenanceSchedule } from '../types';
 
 interface DashboardProps {
   logbookEntries: LogbookEntry[];
   dailyReports: DailyReport[];
   findings: Finding[];
   workOrders: WorkOrder[];
+  schedules?: MaintenanceSchedule[];
   currentUser: any;
   onNavigate: (tab: string) => void;
 }
@@ -48,6 +49,7 @@ export default function Dashboard({
   dailyReports,
   findings,
   workOrders,
+  schedules = [],
   currentUser,
   onNavigate,
 }: DashboardProps) {
@@ -111,17 +113,37 @@ export default function Dashboard({
   }, [findings, activeTab, targetDate, targetStartDate, targetEndDate]);
 
   const activeWorkOrders = React.useMemo(() => {
-    if (activeTab === 'daily_report') return workOrders.filter(w => w.date === targetDate || w.createdAt === targetDate);
-    if (activeTab === 'weekly_report') return workOrders.filter(w => (w.date >= targetStartDate && w.date <= targetEndDate) || (w.createdAt >= targetStartDate && w.createdAt <= targetEndDate));
+    if (activeTab === 'daily_report') {
+      return workOrders.filter(w => w.dateCreated === targetDate || (w as any).date === targetDate || w.deadline === targetDate);
+    }
+    if (activeTab === 'weekly_report') {
+      return workOrders.filter(w => 
+        (w.dateCreated >= targetStartDate && w.dateCreated <= targetEndDate) ||
+        (w.deadline >= targetStartDate && w.deadline <= targetEndDate)
+      );
+    }
     return workOrders; // monthly_report
   }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate]);
+
+  const activeSchedules = React.useMemo(() => {
+    if (activeTab === 'daily_report') {
+      return schedules.filter(s => s.lastDate === targetDate || s.nextDate === targetDate);
+    }
+    if (activeTab === 'weekly_report') {
+      return schedules.filter(s => 
+        (s.lastDate >= targetStartDate && s.lastDate <= targetEndDate) ||
+        (s.nextDate >= targetStartDate && s.nextDate <= targetEndDate)
+      );
+    }
+    return schedules; // monthly_report
+  }, [schedules, activeTab, targetDate, targetStartDate, targetEndDate]);
 
   // QC Stats from all logbooks
   let totalQCOk = 0;
   let totalQCNg = 0;
 
   activeLogbookEntries.forEach(entry => {
-    Object.values(entry.checklists).forEach(ch => {
+    Object.values(entry.checklists || {}).forEach(ch => {
       if (ch.status === 'OK') totalQCOk++;
       if (ch.status === 'NG') totalQCNg++;
     });
@@ -131,10 +153,26 @@ export default function Dashboard({
   const openIssues = activeFindings.filter(f => f.status === 'Open').length;
   const closedIssues = activeFindings.filter(f => f.status === 'Close').length;
 
+  // Dynamic PM metrics
+  const pmFromSchedules = activeSchedules.filter(s => s.type === 'Preventive');
+  const pmFromWO = activeWorkOrders.filter(w => w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive'));
+  const totalPM = pmFromSchedules.length + pmFromWO.length;
+  const donePM = pmFromSchedules.filter(s => s.status === 'Done').length + pmFromWO.filter(w => w.status === 'Completed').length;
+  const pendingPM = totalPM - donePM;
+  const kepatuhanPM = totalPM > 0 ? ((donePM / totalPM) * 100).toFixed(1) : '100.0';
+
+  // Dynamic CM / Repair metrics (Corrective Maintenance)
+  const cmFromSchedules = activeSchedules.filter(s => s.type === 'Corrective');
+  const cmFromWO = activeWorkOrders.filter(w => w.division === 'Service' || w.title?.toLowerCase().includes('perbaikan') || w.title?.toLowerCase().includes('servis'));
+  const totalRepair = activeFindings.length + cmFromSchedules.length;
+  const doneRepair = activeFindings.filter(f => f.status === 'Close').length + cmFromSchedules.filter(s => s.status === 'Done').length + cmFromWO.filter(w => w.status === 'Completed').length;
+  const pendingRepair = Math.max(0, totalRepair - doneRepair);
+  const waitingSparepart = activeFindings.filter(f => f.status === 'Open' && f.issue?.toLowerCase().includes('sparepart')).length;
+
   // Dynamic derivations for report cards
   const totalDailyReportsCount = activeDailyReports.length;
   const totalQCCount = activeLogbookEntries.length;
-  const totalWorkOrdersCount = activeFindings.length + activeWorkOrders.length;
+  const totalWorkOrdersCount = totalRepair + totalPM;
 
   // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
   const staffProductivityData = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings);
@@ -224,18 +262,6 @@ export default function Dashboard({
     .map(([name, data]) => ({ name, ...data }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
-
-  // Dynamic PM metrics
-  const totalPM = activeWorkOrders.filter(w => w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive')).length;
-  const donePM = activeWorkOrders.filter(w => (w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive')) && w.status === 'Completed').length;
-  const pendingPM = totalPM - donePM;
-  const kepatuhanPM = totalPM > 0 ? ((donePM / totalPM) * 100).toFixed(1) : '0.0';
-
-  // Dynamic CM / Repair metrics
-  const totalRepair = activeFindings.length;
-  const doneRepair = activeFindings.filter(f => f.status === 'Close').length;
-  const pendingRepair = activeFindings.filter(f => f.status === 'Open').length;
-  const waitingSparepart = activeFindings.filter(f => f.status === 'Open' && f.issue?.toLowerCase().includes('sparepart')).length;
 
   // Chart data: count how many QC checklist items are checked per division
   const divisionsList = ['Audio', 'Lighting', 'Videotron', 'Multimedia', 'Service'] as const;
