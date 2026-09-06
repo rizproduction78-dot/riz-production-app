@@ -260,7 +260,7 @@ export const OFFICIAL_SEPTEMBER_2026_SCHEDULE: StaffScheduleRow[] = [
   {
     no: 14,
     division: 'SOUND',
-    name: 'UNYINK',
+    name: 'UNYIM',
     shifts: {
       1: 'MD', 5: 'MD', 9: 'MD', 12: 'MD', 17: 'MD', 20: 'MD', 21: 'MD', 25: 'MD', 29: 'MD'
     }

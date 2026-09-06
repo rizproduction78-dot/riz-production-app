@@ -194,7 +194,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Pembersihan total data dummy lama & sinkronisasi data riil resmi Google Spreadsheet
-  const REF_SYNC_KEY = 'riz_ref_synced_v10_service_division';
+  const REF_SYNC_KEY = 'riz_ref_synced_v11_unyin_staff';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
@@ -253,6 +253,19 @@ export default function App() {
       division: 'Service',
       role: 'Staff',
       level: 3
+    }, 'System Auto-Sync').catch(() => {});
+
+    // Sinkronisasi data Unyim (Staff Audio) ke Cloud master_staff
+    saveCloudDoc('master_staff', 'staff-suryana', {
+      id: 'staff-suryana',
+      name: 'Unyim',
+      fullName: 'Suryana',
+      nickname: 'Unyim',
+      email: 'nia.kurni1930@gmail.com',
+      phone: '083847130366',
+      division: 'Audio',
+      role: 'Staff',
+      level: 4
     }, 'System Auto-Sync').catch(() => {});
 
     // Sinkronisasi Temuan QC Resmi ke Cloud Firestore

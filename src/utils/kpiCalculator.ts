@@ -92,7 +92,7 @@ export const KNOWN_STAFF_ALIASES: Record<string, string[]> = {
   'staff-iwan': ['iwan kurniawan', 'iwan', 'kurniawan', 'butonk', 'butong', 'boetonk', 'buluk', 'boetonk2785', 'kang butonk', 'kang buluk'],
   'staff-rahmat': ['muhamad rahmat', 'muhammad rahmat', 'rahmat', 'mboh', 'outsideprojectmboh', 'kang mboh', 'mas mboh'],
   'staff-ramdani': ['ramdani', 'dani', 'ismail ramdani', 'ismail', 'ismailramdani'],
-  'staff-suryana': ['suryana', 'unyim', 'nia', 'kurni', 'kang unyim'],
+  'staff-suryana': ['unyim', 'suryana', 'wahyudin unyim', 'unyink', 'nia', 'kurni', 'kang unyim'],
   'staff-taufik': ['taufik diana', 'taufik', 'diana', 'opik', 'topik', 'taufikdya', 'kang opik', 'opik diana'],
   'staff-yudish': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama', 'yudhisintan'],
   
@@ -118,7 +118,8 @@ export const STAFF_NAME_ALIAS_MAP: Record<string, string[]> = {
   'Iwan Kurniawan': ['iwan kurniawan', 'iwan', 'kurniawan', 'butonk', 'butong', 'boetonk', 'buluk'],
   'Muhamad Rahmat': ['muhamad rahmat', 'muhammad rahmat', 'rahmat', 'mboh'],
   'Ramdani': ['ramdani', 'dani', 'ismail ramdani', 'ismail'],
-  'Suryana': ['suryana', 'unyim', 'nia'],
+  'Unyim': ['unyim', 'suryana', 'wahyudin unyim', 'unyink', 'nia', 'kang unyim'],
+  'Suryana': ['unyim', 'suryana', 'wahyudin unyim', 'unyink', 'nia', 'kang unyim'],
   'Taufik Diana': ['taufik diana', 'taufik', 'diana', 'opik', 'topik'],
   'Yudishtira Purnama A': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama'],
   'Damri': ['damri', 'mang damri', 'mangdamri'],
