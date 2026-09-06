@@ -12,7 +12,7 @@ export const STAFF_LIST: Staff[] = [
   { id: 'staff-udin', name: 'Udin Saepudin', fullName: 'Udin Saepudin', nickname: 'Mang ube', email: 'usaepudin1511@gmail.com', phone: '082221948861', division: 'Gudang', role: 'Gudang', level: 3 },
 
   // 2. Admin / Manajemen
-  { id: 'director-wahyu', name: 'Wahyudin', fullName: 'Wahyudin', nickname: 'Wahyu', email: 'zakimau06@gmail.com', phone: '083819947193', division: 'Admin', role: 'Admin', level: 7 },
+  { id: 'director-wahyu', name: 'Wahyu', fullName: 'Wahyudin', nickname: 'Wahyu', email: 'zakimau06@gmail.com', phone: '083819947193', division: 'Admin', role: 'Owner', level: 8 },
   { id: 'staff-agustino', name: 'Agustino Setiawan', fullName: 'Agustino Setiawan', nickname: 'Agustino', email: 'agustinostwn@gmail.com', phone: '082128263551', division: 'Admin', role: 'Admin', level: 4 },
   { id: 'staff-fahrul', name: 'M. Fahruyana . A', fullName: 'M. Fahruyana . A', nickname: 'Fahrul', email: 'rullyana888@gmail.com', phone: '081287364025', division: 'Admin', role: 'Manager', level: 6 },
   { id: 'staff-syalsa', name: 'Syalsa Sri Hestariana', fullName: 'Syalsa Sri Hestariana', nickname: 'Caca', email: 'Syalsaassh24@gmail.com', phone: '087834180561', division: 'Admin', role: 'Admin', level: 4 },
@@ -56,6 +56,9 @@ export function getMasterStaffList(): Staff[] {
           return parsed
             .filter((s: any) => s && !deletedSet.has(String(s.id || '')))
             .map((s: any) => {
+              if (s.id === 'director-wahyu' || (String(s.name || '').toLowerCase().includes('wahyu') && s.division === 'Admin')) {
+                return { ...s, id: 'director-wahyu', name: 'Wahyu', fullName: 'Wahyudin', nickname: 'Wahyu', division: 'Admin', role: 'Owner', level: 8 };
+              }
               if (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno')) {
                 return { ...s, division: 'Admin', role: 'Staff', level: 4 };
               }

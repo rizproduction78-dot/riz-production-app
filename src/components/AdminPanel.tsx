@@ -3201,11 +3201,13 @@ export default function AdminPanel({
                     onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value as any })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
                   >
-                    <option value="Staff">Staff</option>
-                    <option value="Team Leader">Team Leader</option>
-                    <option value="Supervisor">Supervisor</option>
+                    <option value="Owner">Owner (Pemilik)</option>
+                    <option value="Direktur">Direktur</option>
                     <option value="Manager">Manager</option>
                     <option value="Admin">Admin</option>
+                    <option value="Supervisor">Supervisor</option>
+                    <option value="Team Leader">Team Leader</option>
+                    <option value="Staff">Staff</option>
                     <option value="Gudang">Gudang</option>
                   </select>
                 </div>
@@ -3358,11 +3360,13 @@ export default function AdminPanel({
                     onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value as any })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
                   >
-                    <option value="Staff">Staff</option>
-                    <option value="Team Leader">Team Leader</option>
-                    <option value="Supervisor">Supervisor</option>
+                    <option value="Owner">Owner (Pemilik)</option>
+                    <option value="Direktur">Direktur</option>
                     <option value="Manager">Manager</option>
                     <option value="Admin">Admin</option>
+                    <option value="Supervisor">Supervisor</option>
+                    <option value="Team Leader">Team Leader</option>
+                    <option value="Staff">Staff</option>
                     <option value="Gudang">Gudang</option>
                   </select>
                 </div>

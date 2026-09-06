@@ -11,7 +11,7 @@ export interface Staff {
   fullName?: string; // NAMA ASLI (Nama Lengkap Resmi KTP)
   nickname?: string; // NAMA PANGGILAN (Panggilan Lapangan)
   division: Division;
-  role: 'Admin' | 'Supervisor' | 'Team Leader' | 'Staff' | 'Gudang' | 'Manager';
+  role: 'Owner' | 'Direktur' | 'Admin' | 'Supervisor' | 'Team Leader' | 'Staff' | 'Gudang' | 'Manager';
   level?: number; // Jenjang Tingkat Kompetensi (Level 1 - 8)
   avatar?: string;
   phone?: string;
