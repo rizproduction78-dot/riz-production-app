@@ -1027,10 +1027,10 @@ export default function Reports({
                       <td className="p-2 border-r border-slate-300 text-center">{idx + 1}</td>
                       <td className="p-2 border-r border-slate-300 font-sans font-bold">{f.equipment}</td>
                       <td className="p-2 border-r border-slate-300 font-sans text-slate-600">{f.issue}</td>
-                      <td className="p-2 border-r border-slate-300 text-center font-semibold text-rose-700 uppercase tracking-wide">{f.priority}</td>
+                      <td className={`p-2 border-r border-slate-300 text-center font-semibold uppercase tracking-wide ${f.priority.toLowerCase() === 'tinggi' ? 'text-rose-700' : f.priority.toLowerCase() === 'sedang' ? 'text-amber-700' : 'text-emerald-700'}`}>{f.priority}</td>
                       <td className="p-2 border-r border-slate-300 font-sans font-medium text-slate-700">{f.pic}</td>
                       <td className="p-2 border-r border-slate-300 text-center">{f.targetDate}</td>
-                      <td className="p-2 text-center font-bold uppercase">{f.status}</td>
+                      <td className={`p-2 text-center font-bold uppercase ${f.status.toLowerCase() === 'close' ? 'text-emerald-700' : 'text-amber-700'}`}>{f.status}</td>
                     </tr>
                   ))}
                   {findings.length === 0 && (

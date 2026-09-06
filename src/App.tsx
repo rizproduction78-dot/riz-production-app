@@ -192,15 +192,25 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Pembersihan total data dummy lama & sinkronisasi data riil resmi Google Spreadsheet
-  const REF_SYNC_KEY = 'riz_ref_synced_v5';
+  const REF_SYNC_KEY = 'riz_ref_synced_v8_canonical_master';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
-    localStorage.removeItem('riz_logbook_entries');
-    localStorage.removeItem('riz_daily_reports');
-    localStorage.removeItem('riz_daily_tasks');
-    localStorage.removeItem('riz_findings');
-    localStorage.removeItem('riz_master_staff_list');
+    // Reset local caches to exact authentic reference dataset
+    localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
+    localStorage.setItem('riz_daily_tasks', JSON.stringify(INITIAL_DAILY_TASKS));
+    localStorage.setItem('riz_logbook_entries', JSON.stringify(INITIAL_LOGBOOK_ENTRIES));
+    localStorage.setItem('riz_daily_reports', JSON.stringify(INITIAL_DAILY_REPORTS));
+    localStorage.setItem('riz_master_staff_list', JSON.stringify(STAFF_LIST));
+    
+    // Clear any obsolete deleted ID records
+    localStorage.removeItem('riz_deleted_ids_findings');
+    localStorage.removeItem('riz_deleted_ids_daily_tasks');
+    localStorage.removeItem('riz_deleted_ids_logbook_entries');
+    localStorage.removeItem('riz_deleted_ids_daily_reports');
+    localStorage.removeItem('riz_deleted_ids_master_staff');
+
     localStorage.setItem(REF_SYNC_KEY, 'true');
-    // Sinkronisasi data Seno ke Cloud master_staff
+
+    // Sinkronisasi data Seno & master data ke Cloud Firestore
     saveCloudDoc('master_staff', 'staff-seno', {
       id: 'staff-seno',
       name: 'Seno Subroto',
@@ -212,6 +222,11 @@ export default function App() {
       role: 'Staff',
       level: 4
     }, 'System Auto-Sync').catch(() => {});
+
+    // Sinkronisasi Temuan QC Resmi ke Cloud Firestore
+    INITIAL_FINDINGS.forEach(f => {
+      saveCloudDoc('findings', f.id, f, 'System Canonical Sync').catch(() => {});
+    });
   }
 
   // Core States - Bersih murni dari data dummy & tersinkronisasi data riil resmi

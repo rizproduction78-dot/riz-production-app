@@ -263,6 +263,74 @@ export function clearDeletedId(collectionName: string, docId: string) {
   } catch (e) {}
 }
 
+// Helper to normalize and enforce canonical data integrity across all devices & caches
+export function normalizeCollectionItems<T = any>(collectionName: string, rawItems: T[]): T[] {
+  if (!Array.isArray(rawItems)) return [];
+
+  let items = [...rawItems];
+
+  // Special normalization for master_staff so Seno Subroto is always Admin Staff Level 4
+  if (collectionName === 'master_staff') {
+    return items.map((s: any) => {
+      if (s && (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno'))) {
+        return { ...s, division: 'Admin', role: 'Staff', level: 4 };
+      }
+      return s;
+    }) as T[];
+  }
+
+  // Special normalization for findings so official reference data is preserved and not corrupted by stale mock strings
+  if (collectionName === 'findings') {
+    const cleaned = items.map((f: any) => {
+      if (!f) return f;
+      const eq = String(f.equipment || '').toLowerCase();
+      const pic = String(f.pic || '').toLowerCase();
+      const id = String(f.id || '');
+
+      // Normalize Speaker dBTech T15 No. 18 (Sedang, Team Service / Mboh, 2026-09-08)
+      if (eq.includes('t15') || eq.includes('dbtech') || eq.includes('dbtechnologies') || pic.includes('heri') || id === '1' || id === 'find-20260903-dbtech18') {
+        return {
+          id: 'find-20260903-dbtech18',
+          equipment: 'Speaker dBTech DVA T15 No. 18',
+          issue: 'DB Tech No.18 Ada Kendala dibagian Modul Amplifiernya, saat terkena beban input besar, hasuil suara yang di keluarkan menjadi serak, tapi masih aman dan bisa digunakan untuk Event. Rekomendasi untuk di cek oleh team service terutama pada modul Amplifier.',
+          priority: 'Sedang',
+          pic: 'Team Service / Mboh',
+          targetDate: '2026-09-08',
+          status: f.status === 'Close' ? 'Close' : 'Open',
+          dateCreated: '2026-09-03'
+        };
+      }
+
+      // Normalize Panel Distribusi Listrik Audio 3 Phase (Sedang, Opik / Buluk, 2026-09-05, Close)
+      if (eq.includes('panel') || eq.includes('distribusi') || eq.includes('legrand') || id === '2' || id === 'find-20260904-panel-audio') {
+        return {
+          id: 'find-20260904-panel-audio',
+          equipment: 'Panel Distribusi Listrik Audio 3 Phase',
+          issue: 'Pengecekan Panel 3 Unit: 2 panel Sudah OK. 1 Ganti Stop Kontak, 1 Ganti Legran Cewe (Perbaikan selesai dilakukan Opik & Mboh pada 5 Sept, panel aman & siap pakai).',
+          priority: 'Sedang',
+          pic: 'Opik / Buluk',
+          targetDate: '2026-09-05',
+          status: 'Close',
+          dateCreated: '2026-09-04'
+        };
+      }
+
+      return f;
+    });
+
+    // Deduplicate by ID
+    const map = new Map<string, any>();
+    cleaned.forEach((item: any) => {
+      if (item && item.id) {
+        map.set(item.id, item);
+      }
+    });
+    return Array.from(map.values()) as T[];
+  }
+
+  return items;
+}
+
 // ─────────────────────────────────────────────────────────────
 // 6. REAL-TIME FIRESTORE SUBSCRIBER
 // ─────────────────────────────────────────────────────────────
@@ -391,15 +459,8 @@ export function subscribeCloudCollection<T = any>(
             });
           }
 
-          // Special normalization for master_staff so division and roles are 100% consistent across devices
-          if (collectionName === 'master_staff') {
-            items = (items as any[]).map(s => {
-              if (s && (s.id === 'staff-seno' || String(s.name || '').toLowerCase().includes('seno'))) {
-                return { ...s, division: 'Admin', role: 'Staff' };
-              }
-              return s;
-            }) as T[];
-          }
+          // Apply normalization to guarantee data integrity across all devices
+          items = normalizeCollectionItems(collectionName, items);
 
           // Update local cache safely
           try {
@@ -446,6 +507,7 @@ export function subscribeCloudCollection<T = any>(
                   const itId = String((it as any)?.id || (it as any)?.no || '');
                   return itId && !deletedIds.has(itId) && !(it as any)._deleted;
                 });
+                localItems = normalizeCollectionItems(collectionName, localItems);
                 if (localItems.length > 0) {
                   pushCollectionToCloud(collectionName, localItems);
                   onData(localItems);
@@ -454,10 +516,11 @@ export function subscribeCloudCollection<T = any>(
               }
             } catch { /* ignore */ }
           }
-          const validFallback = initialFallback.filter(it => {
+          let validFallback = initialFallback.filter(it => {
             const itId = String((it as any)?.id || (it as any)?.no || '');
             return itId && !deletedIds.has(itId) && !(it as any)._deleted;
           });
+          validFallback = normalizeCollectionItems(collectionName, validFallback);
           onData(validFallback);
         }
       },
@@ -478,26 +541,30 @@ export function subscribeCloudCollection<T = any>(
                 const itId = String((it as any)?.id || (it as any)?.no || '');
                 return itId && !deletedIds.has(itId) && !(it as any)._deleted;
               });
+              localItems = normalizeCollectionItems(collectionName, localItems);
               onData(localItems);
               return;
             }
-            const validFallback = initialFallback.filter(it => {
+            let validFallback = initialFallback.filter(it => {
               const itId = String((it as any)?.id || (it as any)?.no || '');
               return itId && !deletedIds.has(itId) && !(it as any)._deleted;
             });
+            validFallback = normalizeCollectionItems(collectionName, validFallback);
             onData(validFallback);
           } catch {
-            const validFallback = initialFallback.filter(it => {
+            let validFallback = initialFallback.filter(it => {
               const itId = String((it as any)?.id || (it as any)?.no || '');
               return itId && !deletedIds.has(itId) && !(it as any)._deleted;
             });
+            validFallback = normalizeCollectionItems(collectionName, validFallback);
             onData(validFallback);
           }
         } else {
-          const validFallback = initialFallback.filter(it => {
+          let validFallback = initialFallback.filter(it => {
             const itId = String((it as any)?.id || (it as any)?.no || '');
             return itId && !deletedIds.has(itId) && !(it as any)._deleted;
           });
+          validFallback = normalizeCollectionItems(collectionName, validFallback);
           onData(validFallback);
         }
       }
