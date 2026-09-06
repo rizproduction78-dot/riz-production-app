@@ -6,6 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { Staff, LogbookEntry, DailyReport as DailyReportType, Finding, Asset, WorkOrder, MaintenanceSchedule, UserActivity, DailyTask } from './types';
 import {
+  STAFF_LIST,
+  getMasterStaffList,
   INITIAL_ASSETS,
   INITIAL_MAINTENANCE_SCHEDULES,
   INITIAL_WORK_ORDERS,
