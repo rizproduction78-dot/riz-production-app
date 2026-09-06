@@ -79,10 +79,15 @@ export default function EmployeePerformanceModule({
   const allStaffKpis = calculateAllStaffKpis(masterStaffList, dailyReports, logbookEntries, findings);
   const staffKpi = calculateStaffKpi(selectedStaff, dailyReports, logbookEntries, findings);
 
-  // Dynamic ranking resmi komit dengan data allStaffKpis
-  const currentStaffRank = allStaffKpis.findIndex(
+  // Filter hanya staf yang memiliki aktifitas riil
+  const activeStaffKpis = allStaffKpis.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);
+
+  // Dynamic ranking resmi komit dengan data activeStaffKpis
+  const hasActiveActivity = staffKpi.reports > 0 || staffKpi.qcs > 0 || staffKpi.wos > 0;
+  const staffRankIndex = activeStaffKpis.findIndex(
     s => s.staffId === selectedStaff.id || s.id === selectedStaff.id || isStaffMatch(selectedStaff, s.name) || s.name === selectedStaff.name
-  ) + 1;
+  );
+  const currentStaffRank = hasActiveActivity && staffRankIndex !== -1 ? staffRankIndex + 1 : null;
 
   // Dynamic division styling
   const divisionBadgeColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -417,8 +422,14 @@ export default function EmployeePerformanceModule({
 
           <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
             <div>
-              <span className="text-[10px] text-slate-400 font-medium block">Ranking</span>
-              <span className="font-black text-slate-900 text-sm">#{currentStaffRank || 1} <span className="text-slate-400 text-xs font-normal">dari {masterStaffList.length} Staff</span></span>
+              <span className="text-[10px] text-slate-400 font-medium block">Ranking Staff Aktif</span>
+              {currentStaffRank !== null ? (
+                <span className="font-black text-slate-900 text-sm">
+                  #{currentStaffRank} <span className="text-slate-400 text-xs font-normal">dari {activeStaffKpis.length} Staff Aktif</span>
+                </span>
+              ) : (
+                <span className="font-semibold text-slate-400 text-xs">- (Belum Ada Aktifitas)</span>
+              )}
             </div>
             <div className="text-right">
               <span className="text-[10px] text-slate-400 font-medium block">Status Grade Bulan Ini</span>

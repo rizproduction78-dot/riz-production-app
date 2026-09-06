@@ -98,6 +98,9 @@ export default function Reports({
   // 2. QC Checklist
   // 3. WO Selesai
   const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings);
+  
+  // Filter hanya staf yang memiliki aktifitas riil pada periode yang dipilih
+  const activeStaffKpis = staffKpis.filter(staff => staff.reports > 0 || staff.qcs > 0 || staff.wos > 0);
 
   // Dynamic metrics per division
   const reportDivisions = [
@@ -607,7 +610,10 @@ export default function Reports({
 
           {/* 4. PRODUKTIVITAS STAFF */}
           <div className="space-y-4">
-            <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">4. PRODUKTIVITAS STAFF</div>
+            <div className="flex items-center justify-between">
+              <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">4. PRODUKTIVITAS STAFF BERAKTIFITAS</div>
+              <span className="text-[10px] font-mono text-slate-400">Total: {activeStaffKpis.length} Staff Aktif</span>
+            </div>
             <div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-slate-300 rounded">
               <table className="w-full text-left text-xs">
                 <thead>
@@ -623,34 +629,44 @@ export default function Reports({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
-                  {staffKpis.map((staff) => (
-                    <tr key={staff.id} className="hover:bg-slate-50">
-                      <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
-                      <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.reports}</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.qcs}</td>
-                      <td className="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
-                      <td className="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
-                      <td className={`p-2 text-center font-bold ${
-                        staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
-                      }`}>{staff.kpi}%</td>
+                  {activeStaffKpis.length > 0 ? (
+                    activeStaffKpis.map((staff) => (
+                      <tr key={staff.id} className="hover:bg-slate-50">
+                        <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
+                        <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
+                        <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.reports}</td>
+                        <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.qcs}</td>
+                        <td className="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
+                        <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
+                        <td className="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
+                        <td className={`p-2 text-center font-bold ${
+                          staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
+                        }`}>{staff.kpi}%</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="p-4 text-center text-slate-500 font-sans italic">
+                        Tidak ada aktifitas pekerjaan staff pada periode ini.
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
-              <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider block mb-2">TOP PERFORMER BULAN INI (KPI TERBAIK)</span>
-              <ol className="list-decimal pl-5 space-y-1 text-xs text-slate-700 font-sans">
-                {staffKpis.slice(0, 5).map((staff, idx) => (
-                  <li key={staff.id}>
-                     <strong className="text-indigo-600">{staff.name}</strong> (Divisi {staff.division}) — Nilai KPI: <strong className="text-emerald-600">{staff.kpi}%</strong> ({staff.reports} Daily Report, {staff.qcs} QC)
-                  </li>
-                ))}
-              </ol>
-            </div>
+            {activeStaffKpis.length > 0 && (
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider block mb-2">TOP PERFORMER (BERDASARKAN AKTIFITAS RIIL)</span>
+                <ol className="list-decimal pl-5 space-y-1 text-xs text-slate-700 font-sans">
+                  {activeStaffKpis.slice(0, 5).map((staff) => (
+                    <li key={staff.id}>
+                       <strong className="text-indigo-600">{staff.name}</strong> (Divisi {staff.division}) — Nilai KPI: <strong className="text-emerald-600">{staff.kpi}%</strong> ({staff.reports} Daily Report, {staff.qcs} QC)
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
           </div>
 
           {/* 5. STATISTIK QC */}
@@ -849,23 +865,23 @@ export default function Reports({
                 <div className="bg-amber-50 border border-amber-200 p-2 rounded font-semibold text-amber-800">+ 6. Uji Komp (15%)</div>
               </div>
               <div className="pt-2">
-                <div className="text-xs font-semibold text-slate-700 mb-2">Nilai Akhir Staff Periode Ini:</div>
+                <div className="text-xs font-semibold text-slate-700 mb-2">Nilai Akhir Staff Aktif Periode Ini ({activeStaffKpis.length} Staff):</div>
                 <div className="grid grid-cols-4 gap-4 text-center">
                   <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded">
                     <div className="text-lg font-bold text-emerald-700">A</div>
-                    <div className="text-[10px] text-emerald-600 mt-0.5">{staffKpis.filter(s => s.grade === 'A').length} Staff (Sangat Baik)</div>
+                    <div className="text-[10px] text-emerald-600 mt-0.5">{activeStaffKpis.filter(s => s.grade === 'A').length} Staff (Sangat Baik)</div>
                   </div>
                   <div className="bg-blue-50 border border-blue-200 p-2.5 rounded">
                     <div className="text-lg font-bold text-blue-700">B</div>
-                    <div className="text-[10px] text-blue-600 mt-0.5">{staffKpis.filter(s => s.grade === 'B').length} Staff (Baik)</div>
+                    <div className="text-[10px] text-blue-600 mt-0.5">{activeStaffKpis.filter(s => s.grade === 'B').length} Staff (Baik)</div>
                   </div>
                   <div className="bg-amber-50 border border-amber-200 p-2.5 rounded">
                     <div className="text-lg font-bold text-amber-700">C</div>
-                    <div className="text-[10px] text-amber-600 mt-0.5">{staffKpis.filter(s => s.grade === 'C').length} Staff (Cukup)</div>
+                    <div className="text-[10px] text-amber-600 mt-0.5">{activeStaffKpis.filter(s => s.grade === 'C').length} Staff (Cukup)</div>
                   </div>
                   <div className="bg-slate-50 border border-slate-200 p-2.5 rounded">
                     <div className="text-lg font-bold text-slate-700">D</div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">{staffKpis.filter(s => s.grade === 'D').length} Staff (Kurang)</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">{activeStaffKpis.filter(s => s.grade === 'D').length} Staff (Kurang)</div>
                   </div>
                 </div>
               </div>
@@ -1098,32 +1114,40 @@ export default function Reports({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
-                  {staffKpis.map((staff, idx) => (
-                    <tr key={staff.id} className="hover:bg-slate-50">
-                      <td className="p-2 border-r border-slate-300 text-center">{idx + 1}</td>
-                      <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
-                      <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
-                      <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.reports > 0 ? 'text-indigo-700 bg-indigo-50/30' : 'text-slate-400'}`}>
-                        {staff.reports}
+                  {activeStaffKpis.length > 0 ? (
+                    activeStaffKpis.map((staff, idx) => (
+                      <tr key={staff.id} className="hover:bg-slate-50">
+                        <td className="p-2 border-r border-slate-300 text-center">{idx + 1}</td>
+                        <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
+                        <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
+                        <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.reports > 0 ? 'text-indigo-700 bg-indigo-50/30' : 'text-slate-400'}`}>
+                          {staff.reports}
+                        </td>
+                        <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.qcs > 0 ? 'text-indigo-700 bg-indigo-50/30' : 'text-slate-400'}`}>
+                          {staff.qcs}
+                        </td>
+                        <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.wos > 0 ? 'text-emerald-700 bg-emerald-50/30' : 'text-slate-400'}`}>
+                          {staff.wos}
+                        </td>
+                        <td className="p-2 border-r border-slate-300 text-center text-slate-400">
+                          -
+                        </td>
+                        <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
+                        <td className="p-2 border-r border-slate-300 text-center text-slate-400">
+                          -
+                        </td>
+                        <td className={`p-2 text-center font-bold ${
+                          staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
+                        }`}>{staff.kpi}%</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={10} className="p-4 text-center text-slate-400 italic">
+                        Tidak ada aktifitas staff tercatat pada periode ini.
                       </td>
-                      <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.qcs > 0 ? 'text-indigo-700 bg-indigo-50/30' : 'text-slate-400'}`}>
-                        {staff.qcs}
-                      </td>
-                      <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.wos > 0 ? 'text-emerald-700 bg-emerald-50/30' : 'text-slate-400'}`}>
-                        {staff.wos}
-                      </td>
-                      <td className="p-2 border-r border-slate-300 text-center text-slate-400">
-                        -
-                      </td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
-                      <td className="p-2 border-r border-slate-300 text-center text-slate-400">
-                        -
-                      </td>
-                      <td className={`p-2 text-center font-bold ${
-                        staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
-                      }`}>{staff.kpi}%</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1136,23 +1160,29 @@ export default function Reports({
                 <span className="text-[9px] font-mono text-slate-400">Peringkat Berdasarkan: Daily Report, QC Checklist, WO Selesai, Uji Komp (Kehadiran Non-Aktif)</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {staffKpis.slice(0, 3).map((staff, idx) => (
-                  <div key={staff.id} className="bg-white p-2.5 border border-slate-200 rounded-lg shadow-2xs flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono mb-0.5">
-                        <span>PERFORMA #{idx + 1}</span>
-                        <span className="text-slate-500 font-semibold">{staff.division}</span>
+                {activeStaffKpis.length > 0 ? (
+                  activeStaffKpis.slice(0, 3).map((staff, idx) => (
+                    <div key={staff.id} className="bg-white p-2.5 border border-slate-200 rounded-lg shadow-2xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono mb-0.5">
+                          <span>PERFORMA #{idx + 1}</span>
+                          <span className="text-slate-500 font-semibold">{staff.division}</span>
+                        </div>
+                        <strong className="text-slate-800 block text-xs truncate">{staff.name}</strong>
                       </div>
-                      <strong className="text-slate-800 block text-xs truncate">{staff.name}</strong>
+                      <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                        <span className="text-slate-500 font-mono">
+                          Report: <strong className="text-indigo-600">{staff.reports}</strong> | QC: <strong className="text-indigo-600">{staff.qcs}</strong> | WO: <strong className="text-emerald-600">{staff.wos}</strong>
+                        </span>
+                        <span className="text-emerald-600 font-bold font-mono">KPI: {staff.kpi}%</span>
+                      </div>
                     </div>
-                    <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                      <span className="text-slate-500 font-mono">
-                        Report: <strong className="text-indigo-600">{staff.reports}</strong> | QC: <strong className="text-indigo-600">{staff.qcs}</strong> | WO: <strong className="text-emerald-600">{staff.wos}</strong>
-                      </span>
-                      <span className="text-emerald-600 font-bold font-mono">KPI: {staff.kpi}%</span>
-                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-3 text-center py-4 text-slate-400 text-xs italic">
+                    Belum ada aktifitas staff pada periode ini.
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>

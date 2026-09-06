@@ -109,15 +109,18 @@ export default function Dashboard({
 
   // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
   const staffProductivityData = calculateAllStaffKpis(staffList, dailyReports, logbookEntries, findings);
+  
+  // Filter hanya staf yang memiliki aktifitas riil (laporan, QC, atau WO)
+  const activeStaffProductivityData = staffProductivityData.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);
 
-  // Grade distributions dynamically calculated from real data
-  const countGradeA = staffProductivityData.filter(s => s.grade === 'A').length;
-  const countGradeB = staffProductivityData.filter(s => s.grade === 'B').length;
-  const countGradeC = staffProductivityData.filter(s => s.grade === 'C').length;
-  const countGradeD = staffProductivityData.filter(s => s.grade === 'D').length;
+  // Grade distributions dynamically calculated from real active data
+  const countGradeA = activeStaffProductivityData.filter(s => s.grade === 'A').length;
+  const countGradeB = activeStaffProductivityData.filter(s => s.grade === 'B').length;
+  const countGradeC = activeStaffProductivityData.filter(s => s.grade === 'C').length;
+  const countGradeD = activeStaffProductivityData.filter(s => s.grade === 'D').length;
 
-  // Top 5 performers
-  const topPerformers = staffProductivityData.slice(0, 5);
+  // Top 5 performers (hanya staf dengan aktifitas)
+  const topPerformers = activeStaffProductivityData.slice(0, 5);
 
   // 100% Dynamic Division Metrics
   const divisionListConfig = [
@@ -678,22 +681,30 @@ export default function Dashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-mono">
-                    {staffProductivityData.slice(0, 10).map((staff, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
-                        <td className="p-3 font-sans font-bold text-slate-800">{staff.name}</td>
-                        <td className="p-3 font-sans text-slate-600">{staff.division}</td>
-                        <td className="p-3 text-center text-slate-700">{staff.reports}</td>
-                        <td className="p-3 text-center text-slate-700">{staff.qcs}</td>
-                        <td className="p-3 text-center text-slate-400 font-sans">-</td>
-                        <td className="p-3 text-center text-slate-700">{staff.competencyCount}/6</td>
-                        <td className="p-3 text-center text-slate-400 font-sans">-</td>
-                        <td className="p-3 text-center">
-                          <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold text-[11px]">
-                            {staff.kpi}%
-                          </span>
+                    {activeStaffProductivityData.length > 0 ? (
+                      activeStaffProductivityData.slice(0, 10).map((staff, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="p-3 font-sans font-bold text-slate-800">{staff.name}</td>
+                          <td className="p-3 font-sans text-slate-600">{staff.division}</td>
+                          <td className="p-3 text-center text-slate-700">{staff.reports}</td>
+                          <td className="p-3 text-center text-slate-700">{staff.qcs}</td>
+                          <td className="p-3 text-center text-slate-400 font-sans">-</td>
+                          <td className="p-3 text-center text-slate-700">{staff.competencyCount}/6</td>
+                          <td className="p-3 text-center text-slate-400 font-sans">-</td>
+                          <td className="p-3 text-center">
+                            <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold text-[11px]">
+                              {staff.kpi}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={8} className="p-4 text-center text-slate-400 italic">
+                          Tidak ada aktifitas staff tercatat pada periode ini.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -707,26 +718,32 @@ export default function Dashboard({
                   </div>
                   
                   <div className="space-y-3">
-                    {topPerformers.map((p, index) => (
-                      <div key={index} className="flex items-center justify-between bg-white px-3 py-2.5 rounded-lg border border-slate-200">
-                        <div className="flex items-center gap-2.5">
-                          <span className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold ${
-                            index === 0 ? 'bg-amber-100 text-amber-800' :
-                            index === 1 ? 'bg-slate-100 text-slate-800' :
-                            index === 2 ? 'bg-orange-100 text-orange-800' : 'bg-slate-50 text-slate-500'
-                          }`}>
-                            {index + 1}
-                          </span>
-                          <div>
-                            <span className="font-bold text-slate-900 text-xs block">{p.name}</span>
-                            <span className="text-[10px] text-slate-500 block">{p.division}</span>
+                    {topPerformers.length > 0 ? (
+                      topPerformers.map((p, index) => (
+                        <div key={index} className="flex items-center justify-between bg-white px-3 py-2.5 rounded-lg border border-slate-200">
+                          <div className="flex items-center gap-2.5">
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold ${
+                              index === 0 ? 'bg-amber-100 text-amber-800' :
+                              index === 1 ? 'bg-slate-100 text-slate-800' :
+                              index === 2 ? 'bg-orange-100 text-orange-800' : 'bg-slate-50 text-slate-500'
+                            }`}>
+                              {index + 1}
+                            </span>
+                            <div>
+                              <span className="font-bold text-slate-900 text-xs block">{p.name}</span>
+                              <span className="text-[10px] text-slate-500 block">{p.division}</span>
+                            </div>
                           </div>
+                          <span className="text-xs font-mono font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                            {p.kpi}%
+                          </span>
                         </div>
-                        <span className="text-xs font-mono font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
-                          {p.kpi}%
-                        </span>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 text-slate-400 text-xs italic">
+                        Belum ada aktifitas staff untuk pemeringkatan.
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               </div>

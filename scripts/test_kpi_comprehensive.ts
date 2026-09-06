@@ -85,13 +85,28 @@ console.log('\n--- 4. Testing Attendance & Schedule Roster Status (Deactivated) 
 const sampleKpi = allResults[0];
 expect(sampleKpi.attendanceCount === 0 && sampleKpi.hours === 0, `Attendance count & hours are deactivated: ${sampleKpi.attendanceCount} days, ${sampleKpi.hours} hours (Score: ${sampleKpi.attendanceScore}%)`);
 
-// 5. Test Summary Report
+// 5. Test Zero-Activity Staff Filtering (Komitmen KPI)
+console.log('\n--- 5. Testing Zero-Activity Staff Filtering (Komitmen KPI) ---');
+const activeResults = allResults.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);
+const zeroActivityResults = allResults.filter(s => s.reports === 0 && s.qcs === 0 && s.wos === 0);
+
+expect(activeResults.length > 0, `Active staff with real operational logs detected: ${activeResults.length} staff`);
+expect(
+  activeResults.every(s => s.reports > 0 || s.qcs > 0 || s.wos > 0),
+  '100% staff in active KPI list have at least 1 real operational activity (Daily Report, QC Checklist, or WO)'
+);
+expect(
+  zeroActivityResults.every(s => s.reports === 0 && s.qcs === 0 && s.wos === 0),
+  `Zero-activity staff correctly identified and isolated from display (${zeroActivityResults.length} inactive staff)`
+);
+
+// 6. Test Summary Report
 console.log('\n================================================================');
 console.log(`TEST SUMMARY: ${passedTests}/${totalTests} Tests Passed (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('================================================================\n');
 
-console.log('TOP 5 KPI LEADERBOARD:');
-allResults.slice(0, 5).forEach((r, idx) => {
-  console.log(`  ${idx + 1}. [${r.grade}] ${r.name.padEnd(24)} | Divisi: ${r.division.padEnd(12)} | KPI: ${r.kpi}% | Lap: ${r.reportsCount} | QC: ${r.qcCount} | Att: ${r.attendanceCount}d`);
+console.log('ACTIVE STAFF KPI LEADERBOARD (HANYA STAF BERAKTIFITAS):');
+activeResults.slice(0, 10).forEach((r, idx) => {
+  console.log(`  ${idx + 1}. [${r.grade}] ${r.name.padEnd(24)} | Divisi: ${r.division.padEnd(12)} | KPI: ${r.kpi}% | Lap: ${r.reportsCount} | QC: ${r.qcCount} | WO: ${r.woCount}`);
 });
 console.log('\n');
