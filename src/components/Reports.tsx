@@ -4,14 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff } from '../types';
+import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, MaintenanceSchedule } from '../types';
 import { FileText, Printer, FileDown, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis } from '../utils/kpiCalculator';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 import { subscribeCloudCollection } from '../lib/cloudSync';
-
-import { Staff, WorkOrder, MaintenanceSchedule } from '../types';
 
 interface ReportsProps {
   logbookEntries: LogbookEntry[];
