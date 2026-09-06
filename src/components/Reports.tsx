@@ -47,13 +47,23 @@ export default function Reports({
   const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Aggregate numbers
-  const totalChecked = logbookEntries.length;
+  // Filter logbook entries based on report type (Harian vs Bulanan vs Mingguan)
+  const activeLogbookEntries = logbookEntries.filter(e => {
+    if (reportType === 'Harian') {
+      return e.date === targetDate;
+    } else if (reportType === 'Bulanan') {
+      return e.date.startsWith(targetMonth);
+    }
+    return true;
+  });
+
+  const totalChecked = activeLogbookEntries.length;
   
-  // Calculate item-level counts
+  // Calculate item-level counts based on active period
   let totalCheckedItems = 0;
   let totalOkItems = 0;
   let totalNgItems = 0;
-  logbookEntries.forEach(e => {
+  activeLogbookEntries.forEach(e => {
     Object.values(e.checklists || {}).forEach(ch => {
       totalCheckedItems++;
       if (ch.status === 'OK') totalOkItems++;
@@ -904,7 +914,9 @@ export default function Reports({
 
           {/* LOGBOOK TABLE */}
           <div className="space-y-4">
-            <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">I. LOGBOOK QC HARIAN STAFF INHOUSE</div>
+            <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">
+              I. LOGBOOK QC {reportType === 'Harian' ? 'HARIAN' : reportType === 'Bulanan' ? 'BULANAN' : 'MINGGUAN'} STAFF INHOUSE
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border border-slate-300 text-xs">
                 <thead>
@@ -920,7 +932,7 @@ export default function Reports({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300">
-                  {logbookEntries.filter(e => e.date === targetDate).map((e, idx) => (
+                  {activeLogbookEntries.map((e, idx) => (
                     <tr key={e.id} className="hover:bg-slate-50 font-mono">
                       <td className="p-2 border-r border-slate-300 text-center">{idx + 1}</td>
                       <td className="p-2 border-r border-slate-300">{e.date}</td>
@@ -952,9 +964,11 @@ export default function Reports({
                       </td>
                     </tr>
                   ))}
-                  {logbookEntries.filter(e => e.date === targetDate).length === 0 && (
+                  {activeLogbookEntries.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="p-4 text-center text-slate-400 italic">Tidak ada logbook QC harian terisi pada tanggal ini.</td>
+                      <td colSpan={8} className="p-4 text-center text-slate-400 italic">
+                        Tidak ada logbook QC terisi pada periode {reportType === 'Harian' ? targetDate : targetMonth}.
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -964,7 +978,9 @@ export default function Reports({
 
           {/* REKAP HARIAN SECTION */}
           <div className="space-y-4">
-            <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">II. REKAP HARIAN</div>
+            <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">
+              II. REKAP {reportType === 'Harian' ? 'HARIAN' : reportType === 'Bulanan' ? 'BULANAN' : 'MINGGUAN'} ({reportType === 'Harian' ? targetDate : targetMonth})
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs text-slate-700 font-sans">
               <div className="p-3 border border-slate-300 bg-slate-50/50 rounded flex flex-col justify-between">
                 <span className="text-slate-400 font-mono uppercase text-[9px] font-bold">Peralatan Dicek</span>

@@ -33,7 +33,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-import { calculateStaffKpi, calculateAllStaffKpis } from '../utils/kpiCalculator';
+import { calculateStaffKpi, calculateAllStaffKpis, isStaffMatch } from '../utils/kpiCalculator';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface EmployeePerformanceModuleProps {
@@ -387,7 +387,7 @@ export default function EmployeePerformanceModule({
                 <span className="text-[11px] text-slate-500 font-semibold block">QC OK</span>
                 <span className="text-2xl font-black text-emerald-600">{staffKpi.qcs}</span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
-                  dari {logbookEntries.filter(e => e.staffName.toLowerCase().includes(selectedStaff.name.toLowerCase())).length || staffKpi.qcs} checklist
+                  dari {logbookEntries.filter(e => isStaffMatch(selectedStaff, e.staffName)).length || staffKpi.qcs} checklist
                 </span>
               </div>
               <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-600">
@@ -412,7 +412,7 @@ export default function EmployeePerformanceModule({
               <div>
                 <span className="text-[11px] text-slate-500 font-semibold block">Open Issue</span>
                 <span className="text-2xl font-black text-amber-600">
-                  {findings.filter(f => f.pic?.toLowerCase().includes(selectedStaff.name.toLowerCase()) && f.status === 'Open').length}
+                  {findings.filter(f => isStaffMatch(selectedStaff, f.pic) && f.status === 'Open').length}
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">Issue Pending</span>
               </div>

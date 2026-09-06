@@ -63,6 +63,21 @@ export interface StaffKpiResult {
   grade: 'A' | 'B' | 'C' | 'D';
 }
 
+// Helper pencocokan nama staff cerdas (mendukung nama lengkap, nama panggilan, maupun teks PIC gabungan)
+export function isStaffMatch(staff: Staff, inputName?: string): boolean {
+  if (!staff || !inputName) return false;
+  const inputNorm = inputName.toLowerCase().trim();
+  const staffNameNorm = (staff.name || '').toLowerCase().trim();
+  const staffNickNorm = (staff.nickname || '').toLowerCase().trim();
+  const staffFullNorm = (staff.fullName || '').toLowerCase().trim();
+  
+  if (inputNorm === staffNameNorm || inputNorm === staffNickNorm || inputNorm === staffFullNorm) return true;
+  if (staffNickNorm && (inputNorm.includes(staffNickNorm) || staffNickNorm.includes(inputNorm))) return true;
+  if (staffNameNorm && (inputNorm.includes(staffNameNorm) || staffNameNorm.includes(inputNorm))) return true;
+  if (staffFullNorm && (inputNorm.includes(staffFullNorm) || staffFullNorm.includes(inputNorm))) return true;
+  return false;
+}
+
 /**
  * Menghitung KPI akurat untuk seorang staff dengan menghitung:
  * - Komponen asli: Disiplin, Produktivitas, Quality, Kompleksitas Tugas, Teamwork
@@ -150,9 +165,7 @@ export function calculateStaffKpi(
   // ─────────────────────────────────────────────────────────────
   // 4. PRODUKTIVITAS / DAILY TASK (Murni dari laporan harian yang diinput)
   // ─────────────────────────────────────────────────────────────
-  const realReportsCount = dailyReports.filter(
-    r => r.staffName?.toLowerCase() === staff.name.toLowerCase()
-  ).length;
+  const realReportsCount = dailyReports.filter(r => isStaffMatch(staff, r.staffName)).length;
   const reportsCount = realReportsCount;
   const reportScore = Math.min(100, Math.round((reportsCount / 18) * 100));
 
@@ -160,18 +173,14 @@ export function calculateStaffKpi(
   // 5. QUALITY / QC CHECKLIST (Murni dari checklist QC yang diinput)
   // ─────────────────────────────────────────────────────────────
   const isNonQcDivision = ['Gudang', 'Admin'].includes(staff.division);
-  const realQcCount = logbookEntries.filter(
-    e => e.staffName?.toLowerCase() === staff.name.toLowerCase()
-  ).length;
+  const realQcCount = logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length;
   const qcCount = isNonQcDivision ? 0 : realQcCount;
   const qcScore = isNonQcDivision ? 100 : (qcCount === 0 ? 0 : Math.min(100, Math.round((qcCount / 10) * 100)));
 
   // ─────────────────────────────────────────────────────────────
   // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Murni dari WO yang diselesaikan)
   // ─────────────────────────────────────────────────────────────
-  const realWoCount = findings.filter(
-    f => f.pic?.toLowerCase() === staff.name.toLowerCase() && f.status === 'Close'
-  ).length;
+  const realWoCount = findings.filter(f => isStaffMatch(staff, f.pic) && f.status === 'Close').length;
   const woCount = realWoCount;
   const woScore = Math.min(100, Math.round((woCount / 6) * 100));
   const taskComplexityScore = woScore;
