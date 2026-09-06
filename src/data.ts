@@ -413,7 +413,7 @@ export const INITIAL_FINDINGS: Finding[] = [
   }
 ];
 
-// Data Logbook Inspeksi Resmi dari Reference Daily Task Sheet
+// Data Logbook Inspeksi Resmi dari Reference Daily Task Sheet (gid=198998470)
 export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
   {
     id: 'log-20260901-01',
@@ -447,6 +447,34 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
     }
   },
   {
+    id: 'log-20260903-02',
+    date: '2026-09-03',
+    division: 'Audio',
+    staffName: 'Yudis',
+    activity: 'Pengecekan Semua Unit Speker DBTtech15 SmaartLive & Pembersihan Debu',
+    result: 'OK',
+    followUp: 'Pembersihan debu dan pengecekan box speaker dBTech bersama Mboh & Buluk',
+    status: 'Open',
+    verification: 'Agustino (Admin)',
+    checklists: {
+      'Pembersihan Debu Box DBTech': { status: 'OK', notes: 'Pembersihan fisik box speaker dBTech selesai' }
+    }
+  },
+  {
+    id: 'log-20260903-03',
+    date: '2026-09-03',
+    division: 'Audio',
+    staffName: 'Buluk',
+    activity: 'Pengecekan Semua Unit Speker DBTtech15 SmaartLive & Pembersihan Debu',
+    result: 'OK',
+    followUp: 'Pembersihan debu dan uji pengukuran SmaartLive line array dBTech',
+    status: 'Open',
+    verification: 'Agustino (Admin)',
+    checklists: {
+      'Pengecekan Speker DBTech15 SmaartLive': { status: 'OK', notes: 'Pengukuran respon frekuensi modul dBTech' }
+    }
+  },
+  {
     id: 'log-20260904-01',
     date: '2026-09-04',
     division: 'Audio',
@@ -458,6 +486,20 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
     verification: 'Agustino (Admin)',
     checklists: {
       'Pengecekan Panel 3 Unit': { status: 'OK', notes: '2 panel Sudah OK, 1 unit perbaikan stop kontak & Legrand cewek' }
+    }
+  },
+  {
+    id: 'log-20260904-02',
+    date: '2026-09-04',
+    division: 'Audio',
+    staffName: 'Buluk',
+    activity: 'Pengecekan Panel 3 Unit',
+    result: 'OK',
+    followUp: 'Pengecekan panel 3 unit & penggantian stop kontak bersama Opik',
+    status: 'Close',
+    verification: 'Agustino (Admin)',
+    checklists: {
+      'Pengecekan Panel 3 Unit': { status: 'OK', notes: '2 panel Sudah OK, 1 ganti stop kontak & Legrand cewek' }
     }
   },
   {
@@ -477,6 +519,20 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
   },
   {
     id: 'log-20260905-02',
+    date: '2026-09-05',
+    division: 'Audio',
+    staffName: 'Mboh',
+    activity: 'Perbaikan Panel Listrik & Praktek Penggabungan Metode Sub Cardioid dan End-Fire (Sub T45)',
+    result: 'OK',
+    followUp: 'Pengujian panel dan setting delay/fasa sub cardioid bersama Opik',
+    status: 'Close',
+    verification: 'Fahrul (Manager)',
+    checklists: {
+      'Praktek Sub Cardioid & End-Fire': { status: 'OK', notes: 'Verifikasi pembatalan radiasi belakang polar pattern sub cardioid' }
+    }
+  },
+  {
+    id: 'log-20260905-03',
     date: '2026-09-05',
     division: 'Videotron',
     staffName: 'Kharo',
@@ -520,7 +576,7 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
   }
 ];
 
-// Laporan Harian Resmi dari Reference Daily Task Sheet (September 2026)
+// Laporan Harian Resmi dari Reference Daily Task Sheet (gid=198998470)
 export const INITIAL_DAILY_REPORTS: DailyReport[] = [
   {
     id: 'rep-20260901-jay',
@@ -547,6 +603,30 @@ export const INITIAL_DAILY_REPORTS: DailyReport[] = [
     ]
   },
   {
+    id: 'rep-20260903-yudis',
+    date: '2026-09-03',
+    staffName: 'Yudis',
+    division: 'Audio',
+    activity: 'Pengecekan Semua Unit Speker DBTtech15 SmaartLive & Pembersihan Debu',
+    notes: '1* Pengecekan semua unit speker DBTtech15 dengan mengunakan smartlive.\n2* Membersihkan semua unit DBtech dari debu bersama Mboh & Buluk.',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260903-buluk',
+    date: '2026-09-03',
+    staffName: 'Buluk',
+    division: 'Audio',
+    activity: 'Pengecekan Semua Unit Speker DBTtech15 SmaartLive & Pembersihan Debu',
+    notes: '1* Pengecekan semua unit speker DBTtech15 dengan mengunakan smartlive.\n2* Membersihkan smua unit DBtech dari debu bersama Mboh & Yudis.',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
     id: 'rep-20260904-opik',
     date: '2026-09-04',
     staffName: 'Opik',
@@ -559,12 +639,36 @@ export const INITIAL_DAILY_REPORTS: DailyReport[] = [
     ]
   },
   {
+    id: 'rep-20260904-buluk',
+    date: '2026-09-04',
+    staffName: 'Buluk',
+    division: 'Audio',
+    activity: 'Pengecekan Panel 3 Unit',
+    notes: '- Pengecekan Panel 3 Unit bersama Opik\nREMARK:\n- 2 panel Sudah OK\n- 1 Ganti Stop Kontak, 1 Ganti Legran Cewe',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
     id: 'rep-20260905-opik',
     date: '2026-09-05',
     staffName: 'Opik',
     division: 'Audio',
     activity: 'Perbaikan Panel Listrik & Praktek Sub Cardioid dan End-Fire (Sub T45)',
     notes: '- Perbaikan panel listrik dan praktek penggabungan metode sub cardioid dan End-Fire menggunakan Sub T45\nREMARK:\n- Panel listrik dalam kondisi aman dan bisa di gunakan',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260905-mboh',
+    date: '2026-09-05',
+    staffName: 'Mboh',
+    division: 'Audio',
+    activity: 'Perbaikan Panel Listrik & Praktek Sub Cardioid dan End-Fire (Sub T45)',
+    notes: '- Perbaikan panel listrik dan praktek penggabungan metode sub cardioid dan End-Fire bersama Opik\nREMARK:\n- Panel listrik dalam kondisi aman dan siap event',
     status: 'Submitted',
     photos: [
       'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80'
