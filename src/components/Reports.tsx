@@ -44,16 +44,31 @@ export default function Reports({
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0]);
+  const [targetDate, setTargetDate] = useState('2026-09-05');
+  const [targetStartDate, setTargetStartDate] = useState('2026-09-01');
+  const [targetEndDate, setTargetEndDate] = useState('2026-09-07');
 
-  // Aggregate numbers
-  // Filter logbook entries based on report type (Harian vs Bulanan vs Mingguan)
+  // Dynamic filter for active daily reports based on Harian / Mingguan / Bulanan
+  const activeDailyReports = dailyReports.filter(r => {
+    if (reportType === 'Harian') return r.date === targetDate;
+    if (reportType === 'Mingguan') return r.date >= targetStartDate && r.date <= targetEndDate;
+    if (reportType === 'Bulanan') return r.date.startsWith(targetMonth);
+    return true;
+  });
+
+  // Filter logbook entries based on report type (Harian vs Mingguan vs Bulanan)
   const activeLogbookEntries = logbookEntries.filter(e => {
-    if (reportType === 'Harian') {
-      return e.date === targetDate;
-    } else if (reportType === 'Bulanan') {
-      return e.date.startsWith(targetMonth);
-    }
+    if (reportType === 'Harian') return e.date === targetDate;
+    if (reportType === 'Mingguan') return e.date >= targetStartDate && e.date <= targetEndDate;
+    if (reportType === 'Bulanan') return e.date.startsWith(targetMonth);
+    return true;
+  });
+
+  // Filter findings based on report type
+  const activeFindings = findings.filter(f => {
+    if (reportType === 'Harian') return f.dateCreated === targetDate || f.targetDate === targetDate;
+    if (reportType === 'Mingguan') return (f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate >= targetStartDate && f.targetDate <= targetEndDate);
+    if (reportType === 'Bulanan') return f.dateCreated?.startsWith(targetMonth) || f.targetDate?.startsWith(targetMonth);
     return true;
   });
 
@@ -73,16 +88,14 @@ export default function Reports({
 
   const goodCondition = totalOkItems;
   const needRepair = totalNgItems;
-  const solvedRepairs = findings.filter(f => f.status === 'Close').length;
-  const pendingSpareparts = findings.filter(f => f.status === 'Open' && f.issue.toLowerCase().includes('sparepart')).length;
+  const solvedRepairs = activeFindings.filter(f => f.status === 'Close').length;
+  const pendingSpareparts = activeFindings.filter(f => f.status === 'Open' && f.issue.toLowerCase().includes('sparepart')).length;
 
-  // Dynamic staff KPI performance scores for all staff members calculated with:
-  // - Kehadiran & Jumlah Absen (Bobot 20%)
-  // - Uji Kompetensi yang Diikuti (Bobot 20%)
-  // - Daily Task / Laporan Harian (Bobot 25%)
-  // - QC Checklist (Bobot 20%)
-  // - Work Order (Bobot 15%)
-  const staffKpis = calculateAllStaffKpis(staffList, dailyReports, logbookEntries, findings);
+  // Dynamic staff KPI performance scores prioritized by:
+  // 1. Daily Report
+  // 2. QC Checklist
+  // 3. WO Selesai
+  const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings);
 
   // Dynamic metrics per division
   const reportDivisions = [
@@ -262,32 +275,58 @@ export default function Reports({
             <select
               value={reportType}
               onChange={(e) => setReportType(e.target.value as any)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-medium"
             >
               <option value="Harian">Laporan Harian (Daily)</option>
+              <option value="Mingguan">Laporan Mingguan (Weekly)</option>
               <option value="Bulanan">Laporan Bulanan (Monthly Operation Report)</option>
             </select>
           </div>
 
           {/* Date Selector */}
-          {reportType === 'Harian' ? (
+          {reportType === 'Harian' && (
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Pilih Tanggal</label>
               <input
                 type="date"
                 value={targetDate}
                 onChange={(e) => setTargetDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-mono"
               />
             </div>
-          ) : (
+          )}
+
+          {reportType === 'Mingguan' && (
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Mulai</label>
+                <input
+                  type="date"
+                  value={targetStartDate}
+                  onChange={(e) => setTargetStartDate(e.target.value)}
+                  className="w-full px-2 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-mono"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Sampai</label>
+                <input
+                  type="date"
+                  value={targetEndDate}
+                  onChange={(e) => setTargetEndDate(e.target.value)}
+                  className="w-full px-2 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-mono"
+                />
+              </div>
+            </div>
+          )}
+
+          {reportType === 'Bulanan' && (
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Pilih Bulan</label>
               <input
                 type="month"
                 value={targetMonth}
                 onChange={(e) => setTargetMonth(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-mono"
               />
             </div>
           )}
@@ -1045,32 +1084,47 @@ export default function Reports({
 
           {/* IV. LAPORAN KPI & KINERJA ALL STAFF */}
           <div className="space-y-4">
-            <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">IV. LAPORAN KPI & KINERJA ALL STAFF</div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">
+                IV. LAPORAN KPI & KINERJA ALL STAFF ({reportType === 'Harian' ? `HARIAN: ${targetDate}` : reportType === 'Mingguan' ? `MINGGUAN: ${targetStartDate} s/d ${targetEndDate}` : `BULANAN: ${targetMonth}`})
+              </div>
+              <span className="text-[10px] font-mono text-indigo-600 font-semibold">
+                Prioritas: Daily Report • QC Checklist • WO Selesai
+              </span>
+            </div>
             <div className="overflow-x-auto max-h-[350px] overflow-y-auto border border-slate-300 rounded">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="bg-slate-50 text-slate-800 font-mono border-b border-slate-300 uppercase sticky top-0 z-10">
+                    <th className="p-2 border-r border-slate-300 w-8 text-center">No</th>
                     <th className="p-2 border-r border-slate-300">Nama Staff</th>
                     <th className="p-2 border-r border-slate-300">Divisi</th>
-                    <th className="p-2 border-r border-slate-300 text-center">Daily Report</th>
-                    <th className="p-2 border-r border-slate-300 text-center">QC Checklist</th>
+                    <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">Daily Report</th>
+                    <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">QC Checklist</th>
+                    <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">WO Selesai</th>
                     <th className="p-2 border-r border-slate-300 text-center">Kehadiran</th>
                     <th className="p-2 border-r border-slate-300 text-center">Uji Komp.</th>
-                    <th className="p-2 border-r border-slate-300 text-center">WO Selesai</th>
                     <th className="p-2 border-r border-slate-300 text-center">Jam Kerja</th>
-                    <th className="p-2 text-center">Nilai KPI (%)</th>
+                    <th className="p-2 text-center font-bold">Nilai KPI (%)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
-                  {staffKpis.map((staff) => (
+                  {staffKpis.map((staff, idx) => (
                     <tr key={staff.id} className="hover:bg-slate-50">
+                      <td className="p-2 border-r border-slate-300 text-center">{idx + 1}</td>
                       <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
                       <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.reports}</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.qcs}</td>
+                      <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.reports > 0 ? 'text-indigo-700 bg-indigo-50/30' : 'text-slate-400'}`}>
+                        {staff.reports}
+                      </td>
+                      <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.qcs > 0 ? 'text-indigo-700 bg-indigo-50/30' : 'text-slate-400'}`}>
+                        {staff.qcs}
+                      </td>
+                      <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.wos > 0 ? 'text-emerald-700 bg-emerald-50/30' : 'text-slate-400'}`}>
+                        {staff.wos}
+                      </td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.attendanceCount} Hari</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.wos}</td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.hours} Jam</td>
                       <td className={`p-2 text-center font-bold ${
                         staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
@@ -1082,13 +1136,28 @@ export default function Reports({
             </div>
             
             <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg text-xs font-sans">
-              <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider block mb-2">TOP 3 PERFORMER HARI INI</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
+                <span className="text-[10px] font-mono text-slate-600 uppercase font-bold tracking-wider block">
+                  🏆 TOP 3 PERFORMER {reportType.toUpperCase()} ({reportType === 'Harian' ? targetDate : reportType === 'Mingguan' ? `${targetStartDate} s/d ${targetEndDate}` : targetMonth})
+                </span>
+                <span className="text-[9px] font-mono text-slate-400">Peringkat Berdasarkan Total Penyelesaian Daily Report, QC Checklist & WO</span>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {staffKpis.slice(0, 3).map((staff, idx) => (
-                  <div key={staff.id} className="bg-white p-2 border border-slate-200 rounded">
-                    <span className="text-[9px] text-slate-400 font-mono block">PERFORMA #{idx + 1}</span>
-                    <strong className="text-slate-800 block text-xs">{staff.name}</strong>
-                    <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">KPI: {staff.kpi}%</div>
+                  <div key={staff.id} className="bg-white p-2.5 border border-slate-200 rounded-lg shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono mb-0.5">
+                        <span>PERFORMA #{idx + 1}</span>
+                        <span className="text-slate-500 font-semibold">{staff.division}</span>
+                      </div>
+                      <strong className="text-slate-800 block text-xs truncate">{staff.name}</strong>
+                    </div>
+                    <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                      <span className="text-slate-500 font-mono">
+                        Report: <strong className="text-indigo-600">{staff.reports}</strong> | QC: <strong className="text-indigo-600">{staff.qcs}</strong> | WO: <strong className="text-emerald-600">{staff.wos}</strong>
+                      </span>
+                      <span className="text-emerald-600 font-bold font-mono">KPI: {staff.kpi}%</span>
+                    </div>
                   </div>
                 ))}
               </div>
