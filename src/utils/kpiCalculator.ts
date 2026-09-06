@@ -8,7 +8,10 @@
  * SUMBER ACUAN RESMI PRIORITAS PENILAIAN UTAMA KPI:
  * Spreadsheet: https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470
  * 
- * PENILAIAN UTAMA KPI BERDASARKAN:
+ * PRINSIP INTEGRITAS DATA:
+ * - 100% Data Riil dari input operasional & spreadsheet resmi (tanpa halusinasi/data fiktif)
+ * 
+ * URUTAN PENILAIAN & PERANGKINGAN RESMI:
  * 1. Daily Report (Laporan Harian Operasional Lapangan & Event) - Bobot 25%
  * 2. QC Checklist Onhouse (Inspeksi & Kesiapan Alat Gudang) - Bobot 20%
  * 3. Work Order (WO) Selesai & Temuan Kerusakan Ditangani - Bobot 10%
