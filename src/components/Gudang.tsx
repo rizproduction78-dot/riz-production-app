@@ -1094,6 +1094,7 @@ export default function Gudang({
 
                             setLocalAssets(updated);
                             localStorage.setItem('riz_assets', JSON.stringify(updated));
+                            pushCollectionToCloud('assets', updated, currentUser.name);
 
                             // Propagate if handlers exist
                             if (onUpdateAssetLocation) onUpdateAssetLocation(item.id, newLoc);
@@ -1113,6 +1114,8 @@ export default function Gudang({
                             const nextLogs = [newLog, ...warehouseLogs];
                             setWarehouseLogs(nextLogs);
                             localStorage.setItem('riz_warehouse_logs', JSON.stringify(nextLogs));
+                            pushCollectionToCloud('warehouse_logs', nextLogs, currentUser.name);
+                            saveCloudDoc('warehouse_logs', newLog.id, newLog, currentUser.name);
 
                             onLogActivity(currentUser.name, currentUser.role, `Gudang menerima kembali aset ${item.code} dari SERVICE (Kondisi: Baik)`);
                             alert(`Aset ${item.code} (${item.name}) telah selesai di-servis & dikembalikan ke Gudang!`);
