@@ -3209,17 +3209,32 @@ export default function AdminPanel({
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">No. Telepon / WhatsApp</label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                  <input
-                    type="tel"
-                    placeholder="Contoh: 0812-3456-7890"
-                    value={staffFormData.phone}
-                    onChange={(e) => setStaffFormData({ ...staffFormData, phone: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
-                  />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">No. Telepon / WhatsApp</label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="tel"
+                      placeholder="Contoh: 0812-3456-7890"
+                      value={staffFormData.phone}
+                      onChange={(e) => setStaffFormData({ ...staffFormData, phone: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Email</label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="email"
+                      placeholder="nama@rizproduction.com"
+                      value={staffFormData.email}
+                      onChange={(e) => setStaffFormData({ ...staffFormData, email: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -3351,16 +3366,31 @@ export default function AdminPanel({
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">No. Telepon / WhatsApp</label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                  <input
-                    type="tel"
-                    value={staffFormData.phone}
-                    onChange={(e) => setStaffFormData({ ...staffFormData, phone: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
-                  />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">No. Telepon / WhatsApp</label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="tel"
+                      value={staffFormData.phone}
+                      onChange={(e) => setStaffFormData({ ...staffFormData, phone: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Email</label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="email"
+                      placeholder="nama@rizproduction.com"
+                      value={staffFormData.email}
+                      onChange={(e) => setStaffFormData({ ...staffFormData, email: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -4297,20 +4327,35 @@ export default function AdminPanel({
                 </div>
 
                 <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="font-bold text-slate-700 block text-xs">Honor / Fee Harian (Rp)</label>
-                    <span className="text-[11px] font-extrabold text-indigo-600 font-mono">
-                      Rp {Number(freelanceFormData.dailyRate || 0).toLocaleString('id-ID')} / hari
-                    </span>
+                  <label className="font-bold text-slate-700 block mb-1">Email</label>
+                  <div className="relative">
+                    <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="email"
+                      placeholder="freelance@email.com"
+                      value={freelanceFormData.email}
+                      onChange={(e) => setFreelanceFormData({ ...freelanceFormData, email: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs font-mono"
+                    />
                   </div>
-                  <input
-                    type="number"
-                    step="25000"
-                    placeholder="Contoh: 200000"
-                    value={freelanceFormData.dailyRate !== undefined ? freelanceFormData.dailyRate : ''}
-                    onChange={(e) => setFreelanceFormData({ ...freelanceFormData, dailyRate: e.target.value === '' ? 0 : Number(e.target.value) })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="font-bold text-slate-700 block text-xs">Honor / Fee Harian (Rp)</label>
+                  <span className="text-[11px] font-extrabold text-indigo-600 font-mono">
+                    Rp {Number(freelanceFormData.dailyRate || 0).toLocaleString('id-ID')} / hari
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  step="25000"
+                  placeholder="Contoh: 200000"
+                  value={freelanceFormData.dailyRate !== undefined ? freelanceFormData.dailyRate : ''}
+                  onChange={(e) => setFreelanceFormData({ ...freelanceFormData, dailyRate: e.target.value === '' ? 0 : Number(e.target.value) })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     <button
                       type="button"
@@ -4342,7 +4387,6 @@ export default function AdminPanel({
                     </button>
                   </div>
                 </div>
-              </div>
 
               {/* Data Rekening Pembayaran */}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
