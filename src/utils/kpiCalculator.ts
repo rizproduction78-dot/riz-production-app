@@ -103,7 +103,7 @@ export const KNOWN_STAFF_ALIASES: Record<string, string[]> = {
   'staff-rahmat': ['muhamad rahmat', 'muhammad rahmat', 'rahmat', 'mboh', 'outsideprojectmboh', 'kang mboh', 'mas mboh'],
   'staff-ramdani': ['ramdani', 'dani', 'ismail ramdani', 'ismail', 'ismailramdani'],
   'staff-suryana': ['suryana', 'nana', 'buluk', 'bulux', 'kang nana', 'kang buluk', 'nana buluk', 'nia', 'kurni', 'nia.kurni1930@gmail.com'],
-  'staff-unyin': ['suryana', 'nana', 'buluk', 'bulux', 'kang nana', 'kang buluk', 'unyim', 'unyin', 'wahyudin'],
+  'staff-unyin': ['wahyudin', 'unyin', 'unyim', 'kang unyim', 'kang unyin'],
   'staff-taufik': ['taufik diana', 'taufik', 'diana', 'opik', 'topik', 'taufikdya', 'kang opik', 'opik diana'],
   'staff-yudish': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama', 'yudhisintan'],
   
@@ -130,6 +130,7 @@ export const STAFF_NAME_ALIAS_MAP: Record<string, string[]> = {
   'Muhamad Rahmat': ['muhamad rahmat', 'muhammad rahmat', 'rahmat', 'mboh'],
   'Ramdani': ['ramdani', 'dani', 'ismail ramdani', 'ismail'],
   'Suryana': ['suryana', 'nana', 'buluk', 'bulux', 'kang nana', 'kang buluk', 'nana buluk', 'nia', 'kurni'],
+  'Wahyudin': ['wahyudin', 'unyin', 'unyim', 'kang unyim', 'kang unyin'],
   'Taufik Diana': ['taufik diana', 'taufik', 'diana', 'opik', 'topik'],
   'Yudishtira Purnama A': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama'],
   'Damri': ['damri', 'mang damri', 'mangdamri'],

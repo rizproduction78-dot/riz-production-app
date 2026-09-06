@@ -34,6 +34,7 @@ export const STAFF_LIST: Staff[] = [
   { id: 'staff-ramdani', name: 'Ramdani', fullName: 'Ramdani', nickname: 'Dani', email: 'ismailramdani133@gmail.com', phone: '082123166002', division: 'Audio', role: 'Staff', level: 3 },
   { id: 'staff-suryana', name: 'Suryana', fullName: 'Suryana', nickname: 'Nana / Buluk', email: 'nia.kurni1930@gmail.com', phone: '083847130366', division: 'Audio', role: 'Staff', level: 3 },
   { id: 'staff-taufik', name: 'Taufik Diana', fullName: 'Taufik Diana', nickname: 'Opik', email: 'Taufikdya8@gmail.com', phone: '085722025295', division: 'Audio', role: 'Staff', level: 3 },
+  { id: 'staff-unyin', name: 'Wahyudin', fullName: 'Wahyudin', nickname: 'Unyim', email: 'wahyudin.unyin@gmail.com', phone: '085812345678', division: 'Audio', role: 'Staff', level: 3 },
   { id: 'staff-yudish', name: 'Yudishtira Purnama A', fullName: 'Yudishtira Purnama A', nickname: 'Yudish', email: 'Yudhisintan@gmail.com', phone: '085888137581', division: 'Audio', role: 'Staff', level: 3 },
 
   // 7. Service
@@ -96,15 +97,10 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
     // 2. Suryana / Nana / Buluk (Audio Staff)
     else if (
       rawId === 'staff-suryana' ||
-      rawId === 'staff-unyin' ||
-      rawId === 'staff-unyim' ||
-      rawId === 'staff-wahyudin' ||
       combinedStr.includes('suryana') ||
       combinedStr.includes('nana') ||
       combinedStr.includes('buluk') ||
       combinedStr.includes('bulux') ||
-      combinedStr.includes('unyim') ||
-      combinedStr.includes('wahyudin') ||
       combinedStr.includes('nia.kurni')
     ) {
       canonicalId = 'staff-suryana';
@@ -119,6 +115,29 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
         level: 3,
         email: 'nia.kurni1930@gmail.com',
         phone: '083847130366'
+      };
+    }
+    // 2b. Wahyudin / Unyim (Audio Staff)
+    else if (
+      rawId === 'staff-unyin' ||
+      rawId === 'staff-unyim' ||
+      rawId === 'staff-wahyudin' ||
+      combinedStr.includes('unyim') ||
+      combinedStr.includes('unyin') ||
+      (combinedStr.includes('wahyudin') && !combinedStr.includes('director-wahyu'))
+    ) {
+      canonicalId = 'staff-unyin';
+      canonicalStaff = {
+        ...s,
+        id: 'staff-unyin',
+        name: 'Wahyudin',
+        fullName: 'Wahyudin',
+        nickname: 'Unyim',
+        division: 'Audio',
+        role: 'Staff',
+        level: 3,
+        email: 'wahyudin.unyin@gmail.com',
+        phone: '085812345678'
       };
     }
     // 3. Seno Subroto (Admin Staff)
@@ -249,8 +268,6 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
   }
 
   // Remove any legacy obsolete IDs
-  staffMap.delete('staff-unyin');
-  staffMap.delete('staff-unyim');
   staffMap.delete('staff-chandra');
   staffMap.delete('staff-rizky');
 

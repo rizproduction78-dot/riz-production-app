@@ -234,8 +234,8 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Pembersihan total data dummy lama & sinkronisasi data riil resmi Google Spreadsheet  // Forced one-time re-sync for updated staff list and deactivated attendance & hours
-  const REF_SYNC_KEY = 'riz_ref_synced_v22_deactivate_attendance_and_hours';
+  // Forced one-time re-sync for all 22 official inhouse staff (including Wahyudin / Unyim)
+  const REF_SYNC_KEY = 'riz_ref_synced_v23_restore_wahyudin_unyin_sound';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
@@ -254,9 +254,20 @@ export default function App() {
 
     localStorage.setItem(REF_SYNC_KEY, 'true');
 
-    // Hapus duplikasi dan non-inhouse dari master_staff
-    deleteCloudDoc('master_staff', 'staff-unyin').catch(() => {});
-    deleteCloudDoc('master_staff', 'staff-unyim').catch(() => {});
+    // Simpan Wahyudin (Unyim) resmi ke Cloud master_staff
+    saveCloudDoc('master_staff', 'staff-unyin', {
+      id: 'staff-unyin',
+      name: 'Wahyudin',
+      fullName: 'Wahyudin',
+      nickname: 'Unyim',
+      email: 'wahyudin.unyin@gmail.com',
+      phone: '085812345678',
+      division: 'Audio',
+      role: 'Staff',
+      level: 3
+    }, 'System Auto-Sync').catch(() => {});
+
+    // Hapus non-inhouse freelance dari master_staff
     deleteCloudDoc('master_staff', 'staff-chandra').catch(() => {});
     deleteCloudDoc('master_staff', 'staff-rizky').catch(() => {});
 
