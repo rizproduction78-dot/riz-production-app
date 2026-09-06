@@ -9,12 +9,14 @@
 import { OFFICIAL_EQUIPMENT_SOURCES, OFFICIAL_EQUIPMENT_CATALOG } from '../data/officialEquipmentReference';
 import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';
 import { OFFICIAL_COMPETENCY_MATRICES } from '../data/competencyMatrixData';
+import { STAFF_LIST } from '../data';
+import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../data/september2026Schedule';
 import { Asset, LogbookEntry, DailyReport, Finding, WorkOrder, AttendanceLog, WarehouseLog } from '../types';
 
 export interface VectorDocument {
   id: string;
   title: string;
-  category: 'Official Catalog' | 'SOP & 5R' | 'QC Inspection' | 'Maintenance Guide' | 'Competency Standard' | 'Live Operational Data';
+  category: 'Official Catalog' | 'SOP & 5R' | 'QC Inspection' | 'Maintenance Guide' | 'Competency Standard' | 'Live Operational Data' | 'Master Staff & Schedule';
   division: string;
   sourceUrl?: string;
   sourceRef?: string;
@@ -158,15 +160,30 @@ class RAGVectorStore {
       }
     ];
 
-    safetyGuides.forEach((g, idx) => {
+    // E. Master Staf Resmi (21 Staf)
+    STAFF_LIST.forEach((st) => {
       this.documents.push({
-        id: `guide-${idx + 1}`,
-        title: g.title,
-        category: 'Maintenance Guide',
-        division: 'Service',
-        sourceRef: 'Buku Panduan Teknis & Keselamatan Operasi',
-        content: g.content,
-        keywords: tokenize(`${g.title} ${g.content} ${g.keywords.join(' ')}`),
+        id: `staff-${st.id}`,
+        title: `Profil Staf: ${st.name} (${st.nickname || st.name})`,
+        category: 'Master Staff & Schedule',
+        division: st.division,
+        sourceRef: `Master Data Karyawan Tetap (${st.division})`,
+        content: `Data Karyawan Resmi PT RIZ PRODUCTION. Nama: ${st.name}. Nama Lengkap: ${st.fullName || st.name}. Nama Panggilan/Alias: ${st.nickname || '-'}. Divisi: ${st.division}. Jabatan/Role: ${st.role}. Level: ${st.level}. Email: ${st.email || '-'}. No. HP: ${st.phone || '-'}.`,
+        keywords: tokenize(`${st.name} ${st.fullName || ''} ${st.nickname || ''} ${st.division} ${st.role} ${st.email || ''} ${st.phone || ''}`),
+        timestamp: '2026-09-01'
+      });
+    });
+
+    // F. Jadwal Kerja September 2026 Resmi
+    OFFICIAL_SEPTEMBER_2026_SCHEDULE.forEach((sch) => {
+      this.documents.push({
+        id: `sch-${sch.no}`,
+        title: `Jadwal Shift September 2026: ${sch.name} (${sch.division})`,
+        category: 'Master Staff & Schedule',
+        division: sch.division,
+        sourceRef: `Jadwal Kerja September 2026 No. ${sch.no}`,
+        content: `Jadwal Shift Kerja Resmi September 2026 (30 Hari). Nama: ${sch.name}. Divisi: ${sch.division}. Total Hari Kerja: ${sch.totalHadir} Hari. Total Libur: ${sch.totalLibur} Hari. Shift Harian: ${Object.entries(sch.shifts).map(([d, s]) => `Tgl ${d}:${s}`).join(', ')}.`,
+        keywords: tokenize(`${sch.name} ${sch.division} jadwal shift september 2026 dinas`),
         timestamp: '2026-09-01'
       });
     });
