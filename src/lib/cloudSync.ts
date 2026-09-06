@@ -366,7 +366,6 @@ export function subscribeCloudCollection<T = any>(
             if (!incoming) return existing;
             const merged = { ...existing, ...incoming };
 
-            // Check if incoming is older or has empty string where existing has valid data
             for (const key of Object.keys(existing)) {
               const exVal = existing[key];
               const inVal = incoming[key];
@@ -389,12 +388,19 @@ export function subscribeCloudCollection<T = any>(
             return merged;
           };
 
-          // Intelligent merge with initial fallback and local cache
-          if (initialFallback && initialFallback.length > 0) {
+          // Filter out explicitly deleted items
+          items = items.filter(it => {
+            const itId = String((it as any)?.id || (it as any)?.no || '');
+            return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+          });
+
+          // Khusus master data referensi statis (master_staff & september_2026_schedule):
+          // Pastikan 22 staf resmi selalu terdaftar dan digabung dengan update cloud
+          if (collectionName === 'master_staff' || collectionName === 'september_2026_schedule') {
             const mergedMap = new Map<string, any>();
             const nameToId = new Map<string, string>();
 
-            initialFallback.forEach((fb: any) => {
+            (initialFallback || []).forEach((fb: any) => {
               const fbId = String(fb?.id || fb?.no || fb?.name || '');
               const normName = String(fb?.name || fb?.fullName || '').toLowerCase().trim();
               if (fbId && !deletedIds.has(fbId)) {
@@ -402,31 +408,6 @@ export function subscribeCloudCollection<T = any>(
                 if (normName) nameToId.set(normName, fbId);
               }
             });
-
-            // Also seed with cached items from localStorage if available
-            try {
-              const cachedRaw = localStorage.getItem(localCacheKey);
-              if (cachedRaw) {
-                const cachedList = JSON.parse(cachedRaw);
-                if (Array.isArray(cachedList)) {
-                  cachedList.forEach((c: any) => {
-                    const cId = String(c?.id || c?.no || c?.name || '');
-                    const normName = String(c?.name || c?.fullName || '').toLowerCase().trim();
-                    if (cId && !deletedIds.has(cId) && !(c as any)._deleted) {
-                      if (mergedMap.has(cId)) {
-                        mergedMap.set(cId, mergeCleanDoc(mergedMap.get(cId), c));
-                      } else if (normName && nameToId.has(normName)) {
-                        const existingId = nameToId.get(normName)!;
-                        mergedMap.set(existingId, mergeCleanDoc(mergedMap.get(existingId), c));
-                      } else {
-                        mergedMap.set(cId, c);
-                        if (normName) nameToId.set(normName, cId);
-                      }
-                    }
-                  });
-                }
-              }
-            } catch (e) {}
 
             items.forEach((it: any) => {
               const itId = String(it?.id || it?.no || it?.name || '');
@@ -449,11 +430,6 @@ export function subscribeCloudCollection<T = any>(
             });
 
             items = Array.from(mergedMap.values()) as T[];
-          } else {
-            items = items.filter(it => {
-              const itId = String((it as any)?.id || (it as any)?.no || '');
-              return itId && !deletedIds.has(itId) && !(it as any)._deleted;
-            });
           }
 
           // Apply normalization to guarantee data integrity across all devices
