@@ -125,6 +125,57 @@ export default function EmployeePerformanceModule({
 
   const pathD = points.reduce((acc, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`), '');
 
+  // ──────────────────────────────────────────────────────────
+  // DYNAMIC CALCULATIONS FOR SELECTED STAFF
+  // ──────────────────────────────────────────────────────────
+  const staffReports = dailyReports.filter(r => isStaffMatch(selectedStaff, r.staffName));
+  const staffLogbooks = logbookEntries.filter(e => isStaffMatch(selectedStaff, e.staffName));
+  const staffFindings = findings.filter(f => isStaffMatch(selectedStaff, f.pic));
+
+  // Activity Category Breakdown
+  let cleaningCount = 0;
+  let repairCount = 0;
+  let serviceCount = 0;
+  let trainingCount = 0;
+  let checkTestCount = 0;
+  let maintenanceCount = 0;
+
+  [...staffReports, ...staffLogbooks].forEach(item => {
+    const text = `${(item as any).activity || ''} ${(item as any).notes || ''} ${(item as any).followUp || ''}`.toLowerCase();
+    if (text.includes('bersih') || text.includes('clean') || text.includes('debu') || text.includes('5r')) cleaningCount++;
+    else if (text.includes('repair') || text.includes('solder') || text.includes('ganti pixel') || text.includes('ganti stop kontak') || text.includes('legran')) repairCount++;
+    else if (text.includes('service') || text.includes('perbaikan') || text.includes('modul')) serviceCount++;
+    else if (text.includes('belajar') || text.includes('training') || text.includes('praktek') || text.includes('workshop') || text.includes('gemini') || text.includes('chat gpt')) trainingCount++;
+    else if (text.includes('cek') || text.includes('check') || text.includes('uji') || text.includes('smaart') || text.includes('inspeksi') || text.includes('kontinuitas') || text.includes('kabel')) checkTestCount++;
+    else maintenanceCount++;
+  });
+
+  const totalCalculatedTasks = cleaningCount + repairCount + serviceCount + trainingCount + checkTestCount + maintenanceCount || staffKpi.reportsCount;
+
+  // Real QC Breakdown
+  let staffQcOk = 0;
+  let staffQcNg = 0;
+  staffLogbooks.forEach(e => {
+    Object.values(e.checklists || {}).forEach(ch => {
+      if (ch.status === 'OK') staffQcOk++;
+      if (ch.status === 'NG') staffQcNg++;
+    });
+  });
+  const totalStaffQc = staffQcOk + staffQcNg;
+  const staffQcOkPercent = totalStaffQc > 0 ? ((staffQcOk / totalStaffQc) * 100).toFixed(1) : (staffKpi.qcScore > 0 ? staffKpi.qcScore.toFixed(1) : '100.0');
+
+  // Real Maintenance Breakdown
+  const staffPreventive = staffLogbooks.length;
+  const staffCorrective = staffFindings.length;
+  const totalStaffMaint = staffPreventive + staffCorrective;
+  const maintPercent = totalStaffMaint > 0 ? ((staffPreventive / totalStaffMaint) * 100).toFixed(1) : '100.0';
+
+  // Real Recent Activities & Events
+  const recentActivities = [
+    ...staffReports.map(r => ({ date: r.date, title: r.activity, desc: r.notes || r.division, type: 'Daily Report', status: r.status })),
+    ...staffLogbooks.map(l => ({ date: l.date, title: l.activity, desc: l.followUp || l.result, type: 'QC Logbook', status: l.status }))
+  ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
+
   return (
     <div className="space-y-6 pb-12 print:p-0">
       {/* Top Breadcrumb & Controls */}
@@ -632,64 +683,64 @@ export default function EmployeePerformanceModule({
             <div className="mt-3 space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-slate-600">
-                  <span className="text-blue-600 font-bold">🧹</span>
-                  <span>Cleaning</span>
+                  <span className="text-blue-600 font-bold">🔍</span>
+                  <span>Pengecekan & Uji</span>
                 </span>
-                <span className="font-bold text-slate-900 font-mono">18</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-600">
-                  <span className="text-purple-600 font-bold">⚙️</span>
-                  <span>Maintenance</span>
-                </span>
-                <span className="font-bold text-slate-900 font-mono">9</span>
+                <span className="font-bold text-slate-900 font-mono">{checkTestCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-slate-600">
                   <span className="text-amber-600 font-bold">🔧</span>
-                  <span>Repair</span>
+                  <span>Repair & Ganti Part</span>
                 </span>
-                <span className="font-bold text-slate-900 font-mono">5</span>
+                <span className="font-bold text-slate-900 font-mono">{repairCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-slate-600">
-                  <span className="text-emerald-600 font-bold">🔌</span>
-                  <span>Service</span>
+                  <span className="text-emerald-600 font-bold">🧹</span>
+                  <span>Cleaning & 5R</span>
                 </span>
-                <span className="font-bold text-slate-900 font-mono">2</span>
+                <span className="font-bold text-slate-900 font-mono">{cleaningCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-slate-600">
                   <span className="text-indigo-600 font-bold">🎓</span>
-                  <span>Training</span>
+                  <span>Training & Workshop</span>
                 </span>
-                <span className="font-bold text-slate-900 font-mono">2</span>
+                <span className="font-bold text-slate-900 font-mono">{trainingCount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-slate-600">
+                  <span className="text-purple-600 font-bold">⚙️</span>
+                  <span>Maintenance / Service</span>
+                </span>
+                <span className="font-bold text-slate-900 font-mono">{serviceCount + maintenanceCount}</span>
               </div>
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-400 font-semibold">Total</span>
-            <span className="font-black text-slate-900 font-mono">36 Task</span>
+            <span className="text-slate-400 font-semibold">Total Tugas Riil</span>
+            <span className="font-black text-slate-900 font-mono">{totalCalculatedTasks} Task</span>
           </div>
         </div>
 
         {/* Rincian QC */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-slate-400">RINCIAN QC</span>
+            <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-slate-400">RINCIAN QC CHECKLIST</span>
             
             <div className="flex items-center justify-between mt-3">
               <div className="space-y-2 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                   <span className="text-slate-600">QC OK:</span>
-                  <span className="font-bold text-slate-900 font-mono">42</span>
+                  <span className="font-bold text-slate-900 font-mono">{staffQcOk}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
                   <span className="text-slate-600">QC NG:</span>
-                  <span className="font-bold text-slate-900 font-mono">1</span>
+                  <span className="font-bold text-slate-900 font-mono">{staffQcNg}</span>
                 </div>
               </div>
 
@@ -707,11 +758,11 @@ export default function EmployeePerformanceModule({
                     fill="none"
                     stroke="#10b981"
                     strokeWidth="4"
-                    strokeDasharray="97.7, 100"
+                    strokeDasharray={`${staffQcOkPercent}, 100`}
                   />
                 </svg>
                 <div className="absolute text-center">
-                  <span className="text-[11px] font-black text-slate-900 leading-none">97.7%</span>
+                  <span className="text-[11px] font-black text-slate-900 leading-none">{staffQcOkPercent}%</span>
                   <span className="text-[8px] text-slate-400 block">OK</span>
                 </div>
               </div>
@@ -719,27 +770,27 @@ export default function EmployeePerformanceModule({
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-400 font-semibold">Total</span>
-            <span className="font-black text-slate-900 font-mono">43 QC</span>
+            <span className="text-slate-400 font-semibold">Total Item QC</span>
+            <span className="font-black text-slate-900 font-mono">{totalStaffQc} Item</span>
           </div>
         </div>
 
         {/* Rincian Maintenance */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-slate-400">RINCIAN MAINTENANCE</span>
+            <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-slate-400">RINCIAN MAINTENANCE & WO</span>
             
             <div className="flex items-center justify-between mt-3">
               <div className="space-y-2 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                  <span className="text-slate-600">Preventive:</span>
-                  <span className="font-bold text-slate-900 font-mono">12</span>
+                  <span className="text-slate-600">Log Inspeksi:</span>
+                  <span className="font-bold text-slate-900 font-mono">{staffPreventive}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                  <span className="text-slate-600">Corrective:</span>
-                  <span className="font-bold text-slate-900 font-mono">2</span>
+                  <span className="text-slate-600">Temuan / WO:</span>
+                  <span className="font-bold text-slate-900 font-mono">{staffCorrective}</span>
                 </div>
               </div>
 
@@ -757,64 +808,50 @@ export default function EmployeePerformanceModule({
                     fill="none"
                     stroke="#2563eb"
                     strokeWidth="4"
-                    strokeDasharray="87.5, 100"
+                    strokeDasharray={`${maintPercent}, 100`}
                   />
                 </svg>
                 <div className="absolute text-center">
-                  <span className="text-[11px] font-black text-slate-900 leading-none">87.5%</span>
-                  <span className="text-[8px] text-slate-400 block">Preventive</span>
+                  <span className="text-[11px] font-black text-slate-900 leading-none">{maintPercent}%</span>
+                  <span className="text-[8px] text-slate-400 block">Rasio</span>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-400 font-semibold">Total</span>
-            <span className="font-black text-slate-900 font-mono">14 Kegiatan</span>
+            <span className="text-slate-400 font-semibold">Total Kegiatan</span>
+            <span className="font-black text-slate-900 font-mono">{totalStaffMaint} Kegiatan</span>
           </div>
         </div>
 
-        {/* Riwayat Event Terakhir */}
+        {/* Riwayat Aktivitas & Tugas Terakhir */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div>
-            <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-slate-400">RIWAYAT EVENT TERAKHIR</span>
+            <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-slate-400">AKTIVITAS & TUGAS TERAKHIR</span>
             
             <div className="mt-3 space-y-2 text-[11px]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-slate-800 block">Konser Musik</span>
-                  <span className="text-slate-400 text-[10px]">20 Jul 2026 • ICE BSD</span>
+              {recentActivities.map((act, idx) => (
+                <div key={idx} className="flex items-start justify-between gap-2 border-b border-slate-50 pb-1.5 last:border-b-0 last:pb-0">
+                  <div className="min-w-0">
+                    <span className="font-bold text-slate-800 block truncate">{act.title}</span>
+                    <span className="text-slate-400 text-[10px] block font-mono">{act.date} • {act.type}</span>
+                  </div>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase shrink-0 ${act.status === 'Submitted' || act.status === 'Close' || act.status === 'Done' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                    {act.status || 'OK'}
+                  </span>
                 </div>
-                <div className="flex text-amber-400 text-xs">★★★★★</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-slate-800 block">Corporate Gathering</span>
-                  <span className="text-slate-400 text-[10px]">18 Jul 2026 • Hotel Mulia</span>
+              ))}
+              {recentActivities.length === 0 && (
+                <div className="text-xs text-slate-400 italic text-center py-4">
+                  Belum ada catatan tugas harian untuk karyawan ini.
                 </div>
-                <div className="flex text-amber-400 text-xs">★★★★★</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-slate-800 block">Pernikahan</span>
-                  <span className="text-slate-400 text-[10px]">15 Jul 2026 • The Ritz</span>
-                </div>
-                <div className="flex text-amber-400 text-xs">★★★★☆</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-slate-800 block">Seminar Nasional</span>
-                  <span className="text-slate-400 text-[10px]">12 Jul 2026 • JIExpo</span>
-                </div>
-                <div className="flex text-amber-400 text-xs">★★★★★</div>
-              </div>
+              )}
             </div>
           </div>
 
           <div className="mt-3 pt-2 border-t border-slate-100 text-right">
-            <button className="text-blue-600 hover:text-blue-500 text-[11px] font-bold cursor-pointer">
-              Lihat Semua →
-            </button>
+            <span className="text-slate-400 text-[10px] font-mono">Periode {selectedMonth}</span>
           </div>
         </div>
       </div>
