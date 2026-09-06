@@ -1061,7 +1061,7 @@ export default function Reports({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
-                  {findings.map((f, idx) => (
+                  {activeFindings.map((f, idx) => (
                     <tr key={f.id} className="hover:bg-slate-50">
                       <td className="p-2 border-r border-slate-300 text-center">{idx + 1}</td>
                       <td className="p-2 border-r border-slate-300 font-sans font-bold">{f.equipment}</td>
@@ -1072,9 +1072,9 @@ export default function Reports({
                       <td className={`p-2 text-center font-bold uppercase ${f.status.toLowerCase() === 'close' ? 'text-emerald-700' : 'text-amber-700'}`}>{f.status}</td>
                     </tr>
                   ))}
-                  {findings.length === 0 && (
+                  {activeFindings.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-4 text-center text-slate-400 italic">Tidak ada temuan kerusakan tercatat.</td>
+                      <td colSpan={7} className="p-4 text-center text-slate-400 italic">Tidak ada temuan kerusakan tercatat pada periode ini.</td>
                     </tr>
                   )}
                 </tbody>
@@ -1123,9 +1123,13 @@ export default function Reports({
                       <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.wos > 0 ? 'text-emerald-700 bg-emerald-50/30' : 'text-slate-400'}`}>
                         {staff.wos}
                       </td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.attendanceCount} Hari</td>
+                      <td className="p-2 border-r border-slate-300 text-center">
+                        {reportType === 'Harian' ? (staff.reports > 0 || staff.qcs > 0 || staff.wos > 0 ? '1 Hari' : '0 Hari') : `${staff.attendanceCount} Hari`}
+                      </td>
                       <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
-                      <td className="p-2 border-r border-slate-300 text-center">{staff.hours} Jam</td>
+                      <td className="p-2 border-r border-slate-300 text-center">
+                        {reportType === 'Harian' ? (staff.reports > 0 || staff.qcs > 0 || staff.wos > 0 ? '8 Jam' : '0 Jam') : `${staff.hours} Jam`}
+                      </td>
                       <td className={`p-2 text-center font-bold ${
                         staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
                       }`}>{staff.kpi}%</td>
