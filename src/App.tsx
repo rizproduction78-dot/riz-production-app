@@ -1040,9 +1040,14 @@ export default function App() {
         {activeTab === 'findings' && (
           <Findings
             findings={findings}
+            workOrders={workOrders}
             onAddFinding={handleAddFinding}
             onUpdateFindingStatus={handleUpdateFindingStatus}
             onDeleteFinding={handleDeleteFinding}
+            onAddWorkOrder={handleAddWorkOrder}
+            onUpdateWorkOrderStatus={handleUpdateWorkOrderStatus}
+            onUpdateWorkOrderProgress={handleUpdateWorkOrderProgress}
+            onDeleteWorkOrder={handleDeleteWorkOrder}
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
           />

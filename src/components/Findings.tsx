@@ -4,29 +4,39 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Finding, Division, Staff } from '../types';
+import { Finding, Division, Staff, WorkOrder } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
-import { AlertTriangle, Plus, Search, Trash2, CheckCircle, Clock, Check, X, ShieldAlert, ChevronDown } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Trash2, CheckCircle, Clock, Check, X, ShieldAlert, Wrench, ArrowRight, Activity, Filter, Sparkles, CheckSquare } from 'lucide-react';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface FindingsProps {
   findings: Finding[];
+  workOrders?: WorkOrder[];
   onAddFinding: (finding: Omit<Finding, 'id' | 'dateCreated'>) => void;
   onUpdateFindingStatus: (id: string, status: 'Open' | 'Close') => void;
   onDeleteFinding: (id: string) => void;
+  onAddWorkOrder?: (wo: Omit<WorkOrder, 'id' | 'dateCreated'>) => void;
+  onUpdateWorkOrderStatus?: (id: string, status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled') => void;
+  onUpdateWorkOrderProgress?: (id: string, progress: number) => void;
+  onDeleteWorkOrder?: (id: string) => void;
   currentUser: any;
   onLogActivity: (username: string, role: string, action: string) => void;
 }
 
 export default function Findings({
   findings,
+  workOrders = [],
   onAddFinding,
   onUpdateFindingStatus,
   onDeleteFinding,
+  onAddWorkOrder,
+  onUpdateWorkOrderStatus,
+  onUpdateWorkOrderProgress,
+  onDeleteWorkOrder,
   currentUser,
   onLogActivity,
 }: FindingsProps) {
-  // Master Staff Dynamic State with Cloud Subscription
+  // Dynamic Master Staff List
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
 
   useEffect(() => {
@@ -39,12 +49,16 @@ export default function Findings({
     return () => unsub();
   }, []);
 
+  // View Tab: Findings vs Work Orders
+  const [activeSubTab, setActiveSubTab] = useState<'findings' | 'work_orders'>('findings');
+
   // Filter/Search State
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
+  const [filterDivision, setFilterDivision] = useState<string>('All');
 
-  // Form state
+  // Form state for Findings
   const [showAddForm, setShowAddForm] = useState(false);
   const [equipment, setEquipment] = useState('');
   const [issue, setIssue] = useState('');
@@ -52,7 +66,15 @@ export default function Findings({
   const [pic, setPic] = useState('');
   const [targetDate, setTargetDate] = useState(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Form state for Work Order
+  const [showAddWOForm, setShowAddWOForm] = useState(false);
+  const [woTitle, setWoTitle] = useState('');
+  const [woDescription, setWoDescription] = useState('');
+  const [woPic, setWoPic] = useState('');
+  const [woDivision, setWoDivision] = useState<Division>('Service');
+  const [woDeadline, setWoDeadline] = useState(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
+  const handleSubmitFinding = (e: React.FormEvent) => {
     e.preventDefault();
     if (!equipment.trim() || !issue.trim() || !pic) return;
 
@@ -75,10 +97,73 @@ export default function Findings({
     setShowAddForm(false);
   };
 
+  const handleSubmitWO = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!woTitle.trim() || !woPic || !onAddWorkOrder) return;
+
+    onAddWorkOrder({
+      title: woTitle,
+      description: woDescription,
+      pic: woPic,
+      division: woDivision,
+      deadline: woDeadline,
+      progress: 0,
+      status: 'Pending',
+    });
+
+    onLogActivity(currentUser.name, currentUser.role, `Menerbitkan Work Order baru: "${woTitle}" untuk PIC ${woPic}`);
+
+    // Reset Form
+    setWoTitle('');
+    setWoDescription('');
+    setWoPic('');
+    setWoDivision('Service');
+    setShowAddWOForm(false);
+  };
+
+  // Convert Finding directly to Work Order for Service Division
+  const handleConvertToWorkOrder = (finding: Finding) => {
+    if (!onAddWorkOrder) return;
+
+    // Cari staf service default atau PIC finding
+    const serviceStaff = staffList.find(s => s.division === 'Service') || staffList.find(s => s.name === finding.pic) || staffList[0];
+    const defaultPic = serviceStaff ? serviceStaff.name : finding.pic;
+
+    onAddWorkOrder({
+      title: `Perbaikan: ${finding.equipment}`,
+      description: `[Temuan QC ID: ${finding.id}] ${finding.issue} (Prioritas: ${finding.priority})`,
+      pic: defaultPic,
+      division: 'Service',
+      deadline: finding.targetDate,
+      progress: 10,
+      status: 'In Progress',
+    });
+
+    onLogActivity(currentUser.name, currentUser.role, `Menerbitkan Work Order Perbaikan dari Temuan QC: ${finding.equipment}`);
+    alert(`Work Order untuk unit "${finding.equipment}" berhasil diterbitkan dan dialokasikan ke Divisi Service (${defaultPic})!`);
+  };
+
   const handleToggleStatus = (id: string, currentStatus: 'Open' | 'Close') => {
     const nextStatus = currentStatus === 'Open' ? 'Close' : 'Open';
     onUpdateFindingStatus(id, nextStatus);
     onLogActivity(currentUser.name, currentUser.role, `Mengubah status temuan QC id:${id} menjadi ${nextStatus}`);
+  };
+
+  const handleCompleteWorkOrder = (wo: WorkOrder) => {
+    if (!onUpdateWorkOrderStatus) return;
+    onUpdateWorkOrderStatus(wo.id, 'Completed');
+    
+    // Auto-close finding jika WO berasal dari temuan QC
+    const match = wo.description.match(/\[Temuan QC ID: ([^\]]+)\]/);
+    if (match && match[1]) {
+      const findingId = match[1];
+      const relatedFinding = findings.find(f => f.id === findingId);
+      if (relatedFinding && relatedFinding.status === 'Open') {
+        onUpdateFindingStatus(findingId, 'Close');
+      }
+    }
+
+    onLogActivity(currentUser.name, currentUser.role, `Menyelesaikan Work Order: "${wo.title}" (Status: Completed, Progress: 100%)`);
   };
 
   // Filter Findings list
@@ -91,272 +176,658 @@ export default function Findings({
     return matchesSearch && matchesPriority && matchesStatus;
   });
 
+  // Filter Work Orders list
+  const filteredWorkOrders = workOrders.filter(w => {
+    const matchesSearch = w.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          w.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          w.pic.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDivision = filterDivision === 'All' || w.division === filterDivision;
+    const matchesStatus = filterStatus === 'All' || w.status === filterStatus;
+    return matchesSearch && matchesDivision && matchesStatus;
+  });
+
   return (
-    <div className="space-y-8 font-sans">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 font-sans">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-2xl text-white shadow-md border border-slate-700/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display font-bold text-slate-900 tracking-tight">Temuan QC & Kerusakan</h1>
-          <p className="text-xs text-slate-500">Daftar kerusakan unit peralatan yang terdeteksi dan status penanganannya</p>
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🛠️</span>
+            <h1 className="text-2xl font-black tracking-tight">TEMUAN QC & WORK ORDER (WO)</h1>
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+              Lintas Divisi Terhubung
+            </span>
+          </div>
+          <p className="text-xs text-slate-300 mt-1 max-w-2xl">
+            Pusat penanganan hasil inspeksi QC, temuan kerusakan unit harian, dan tiket perintah kerja (Work Order) antar-divisi Audio, Lighting, Videotron, Multimedia, Gudang, & Service.
+          </p>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer self-start md:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{showAddForm ? 'Tutup Formulir' : 'Laporkan Temuan Baru'}</span>
-        </button>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {activeSubTab === 'findings' ? (
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{showAddForm ? 'Tutup Form' : '+ Laporkan Temuan Baru'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowAddWOForm(!showAddWOForm)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-blue-600/30 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{showAddWOForm ? 'Tutup Form' : '+ Terbitkan WO Baru'}</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Manual Add Form (Collapsible) */}
-      {showAddForm && (
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4 max-w-xl">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-            <ShieldAlert className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-sm font-bold text-slate-800">Form Laporan Kerusakan Unit Baru</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Equipment Name */}
-            <div className="col-span-2">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                Nama Alat / Unit Bermasalah
-              </label>
-              <input
-                type="text"
-                value={equipment}
-                onChange={(e) => setEquipment(e.target.value)}
-                placeholder="e.g. Mixer Yamaha CL5 #1 atau Moving Head BSW #4"
-                className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50/50"
-                required
-              />
-            </div>
-
-            {/* Description of Issue */}
-            <div className="col-span-2">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                Deskripsi Kerusakan / Kendala
-              </label>
-              <textarea
-                value={issue}
-                onChange={(e) => setIssue(e.target.value)}
-                placeholder="Sebutkan detail kendala, e.g. Layar berkedip-kedip setelah pemakaian 2 jam"
-                rows={2}
-                className="block w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50/50"
-                required
-              />
-            </div>
-
-            {/* Priority Selector */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                Prioritas Penanganan
-              </label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as any)}
-                className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50/50"
-              >
-                <option value="Rendah">Rendah (Low)</option>
-                <option value="Sedang">Sedang (Medium)</option>
-                <option value="Tinggi">Tinggi (High / Urgent)</option>
-              </select>
-            </div>
-
-            {/* PIC Assigned */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                PIC Penanggung Jawab
-              </label>
-              <select
-                value={pic}
-                onChange={(e) => setPic(e.target.value)}
-                className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50/50"
-                required
-              >
-                <option value="">-- Pilih PIC Staff --</option>
-                {staffList.map(s => (
-                  <option key={s.id} value={s.name}>{s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Target Selesai */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                Target Tanggal Selesai
-              </label>
-              <input
-                type="date"
-                value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
-                className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50/50"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-50">
-            <button
-              type="button"
-              onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold"
-            >
-              Simpan & Daftarkan Temuan
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-          <input
-            type="text"
-            placeholder="Cari kerusakan berdasarkan nama alat, masalah, PIC..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-700"
-          />
+      {/* Sub-Tabs Selector */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl text-xs font-bold">
+          <button
+            onClick={() => setActiveSubTab('findings')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
+              activeSubTab === 'findings' ? 'bg-white text-indigo-700 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4 text-indigo-600" />
+            <span>Temuan QC & Kerusakan ({filteredFindings.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveSubTab('work_orders')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
+              activeSubTab === 'work_orders' ? 'bg-white text-blue-700 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Wrench className="w-4 h-4 text-blue-600" />
+            <span>Work Orders / Perbaikan Service ({filteredWorkOrders.length})</span>
+          </button>
         </div>
 
-        <div className="flex gap-2">
-          {/* Priority filter */}
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-700 bg-white"
-          >
-            <option value="All">Semua Prioritas</option>
-            <option value="Tinggi">Tinggi</option>
-            <option value="Sedang">Sedang</option>
-            <option value="Rendah">Rendah</option>
-          </select>
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              placeholder={activeSubTab === 'findings' ? "Cari alat, masalah, PIC..." : "Cari tiket WO, PIC, divisi..."}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none w-48 md:w-56"
+            />
+          </div>
 
-          {/* Status filter */}
+          {activeSubTab === 'findings' && (
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
+            >
+              <option value="All">Semua Prioritas</option>
+              <option value="Tinggi">🔴 Prioritas Tinggi</option>
+              <option value="Sedang">🟡 Prioritas Sedang</option>
+              <option value="Rendah">🟢 Prioritas Rendah</option>
+            </select>
+          )}
+
+          {activeSubTab === 'work_orders' && (
+            <select
+              value={filterDivision}
+              onChange={(e) => setFilterDivision(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer font-medium"
+            >
+              <option value="All">🌐 Semua Divisi</option>
+              <option value="Service">🔧 Divisi Service</option>
+              <option value="Audio">🔊 Divisi Audio</option>
+              <option value="Lighting">💡 Divisi Lighting</option>
+              <option value="Videotron">📺 Divisi Videotron</option>
+              <option value="Multimedia">🎥 Divisi Multimedia</option>
+              <option value="Gudang">📦 Divisi Gudang</option>
+            </select>
+          )}
+
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-700 bg-white"
+            className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
           >
             <option value="All">Semua Status</option>
-            <option value="Open">Open</option>
-            <option value="Close">Close</option>
+            {activeSubTab === 'findings' ? (
+              <>
+                <option value="Open">Open (Belum Selesai)</option>
+                <option value="Close">Close (Selesai)</option>
+              </>
+            ) : (
+              <>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </>
+            )}
           </select>
         </div>
       </div>
 
-      {/* List of Findings */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredFindings.map((finding) => {
-          const isHigh = finding.priority === 'Tinggi';
-          const isOpen = finding.status === 'Open';
-
-          return (
-            <div
-              key={finding.id}
-              className={`bg-white rounded-xl border p-5 shadow-sm space-y-4 flex flex-col justify-between transition-all ${
-                isHigh && isOpen
-                  ? 'border-red-200 bg-red-50/10 hover:border-red-300 ring-1 ring-red-100/50'
-                  : 'border-slate-100 hover:border-slate-200'
-              }`}
-            >
-              <div className="space-y-2">
-                {/* Badge Header */}
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                      finding.priority === 'Tinggi' ? 'bg-red-100 text-red-800' :
-                      finding.priority === 'Sedang' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800'
-                    }`}
-                  >
-                    Prioritas {finding.priority}
-                  </span>
-
-                  <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                      finding.status === 'Open' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
-                    }`}
-                  >
-                    {finding.status}
-                  </span>
-                </div>
-
-                {/* Equipment & Problem */}
-                <h3 className="font-bold text-slate-800 text-md">{finding.equipment}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
-                  {finding.issue}
-                </p>
-              </div>
-
-              {/* PIC, Target Date and Actions */}
-              <div className="pt-3 border-t border-slate-100/80 space-y-3">
-                <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 font-mono">
-                  <div>
-                    <span className="block text-[10px] text-slate-400">PIC Staff</span>
-                    <span className="font-semibold text-slate-700">{finding.pic}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-400">Target Selesai</span>
-                    <span className="font-semibold text-slate-700">{finding.targetDate}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 pt-1">
-                  {/* Toggle Status Button */}
-                  <button
-                    onClick={() => handleToggleStatus(finding.id, finding.status)}
-                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border cursor-pointer ${
-                      finding.status === 'Open'
-                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                        : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
-                    }`}
-                  >
-                    {finding.status === 'Open' ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Selesaikan (Close)</span>
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Re-open Temuan</span>
-                      </>
-                    )}
-                  </button>
-
-                  {/* Delete Button (Allowed for supervisor, admin, manager) */}
-                  {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
-                    <button
-                      onClick={() => {
-                        if (confirm('Yakin ingin menghapus temuan ini dari history?')) {
-                          onDeleteFinding(finding.id);
-                        }
-                      }}
-                      className="p-1.5 border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
-                      title="Hapus Temuan"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* 1. SUB-TAB: TEMUAN QC & KERUSAKAN                          */}
+      {/* ────────────────────────────────────────────────────────── */}
+      {activeSubTab === 'findings' && (
+        <div className="space-y-6">
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div className="text-xs text-slate-500 font-semibold">Total Temuan QC</div>
+              <div className="text-2xl font-black text-slate-900 mt-1">{filteredFindings.length}</div>
+            </div>
+            <div className="bg-rose-50/70 p-4 rounded-xl border border-rose-200 shadow-sm">
+              <div className="text-xs text-rose-700 font-semibold">Open (Perlu Penanganan)</div>
+              <div className="text-2xl font-black text-rose-700 mt-1">
+                {filteredFindings.filter(f => f.status === 'Open').length}
               </div>
             </div>
-          );
-        })}
-
-        {filteredFindings.length === 0 && (
-          <div className="col-span-full bg-white py-12 text-center rounded-xl border border-slate-100 text-slate-400 text-sm">
-            Tidak ada temuan kerusakan yang terdeteksi dengan kriteria pencarian ini.
+            <div className="bg-red-50/70 p-4 rounded-xl border border-red-200 shadow-sm">
+              <div className="text-xs text-red-700 font-semibold">Prioritas Tinggi</div>
+              <div className="text-2xl font-black text-red-700 mt-1">
+                {filteredFindings.filter(f => f.priority === 'Tinggi' && f.status === 'Open').length}
+              </div>
+            </div>
+            <div className="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 shadow-sm">
+              <div className="text-xs text-emerald-700 font-semibold">Selesai (Close)</div>
+              <div className="text-2xl font-black text-emerald-700 mt-1">
+                {filteredFindings.filter(f => f.status === 'Close').length}
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Form Add Finding */}
+          {showAddForm && (
+            <form onSubmit={handleSubmitFinding} className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-md space-y-4 max-w-xl">
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                <ShieldAlert className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-sm font-bold text-slate-800">Form Laporan Kerusakan Unit Baru</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Nama Alat / Unit Bermasalah
+                  </label>
+                  <input
+                    type="text"
+                    value={equipment}
+                    onChange={(e) => setEquipment(e.target.value)}
+                    placeholder="e.g. Mixer Yamaha CL5 #1 atau Moving Head BSW #4"
+                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Deskripsi Kerusakan / Kendala
+                  </label>
+                  <textarea
+                    value={issue}
+                    onChange={(e) => setIssue(e.target.value)}
+                    placeholder="Sebutkan detail kendala, e.g. Layar berkedip-kedip setelah pemakaian 2 jam"
+                    rows={2}
+                    className="block w-full p-3 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Prioritas Penanganan
+                  </label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value as any)}
+                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  >
+                    <option value="Rendah">🟢 Rendah (Low)</option>
+                    <option value="Sedang">🟡 Sedang (Medium)</option>
+                    <option value="Tinggi">🔴 Tinggi (High / Urgent)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    PIC Penanggung Jawab
+                  </label>
+                  <select
+                    value={pic}
+                    onChange={(e) => setPic(e.target.value)}
+                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    required
+                  >
+                    <option value="">-- Pilih PIC Staff --</option>
+                    {staffList.map(s => (
+                      <option key={s.id} value={s.name}>
+                        {s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Target Tanggal Selesai
+                  </label>
+                  <input
+                    type="date"
+                    value={targetDate}
+                    onChange={(e) => setTargetDate(e.target.value)}
+                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer"
+                >
+                  Simpan & Daftarkan Temuan
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* List of Findings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {filteredFindings.map((finding) => {
+              const isHigh = finding.priority === 'Tinggi';
+              const isOpen = finding.status === 'Open';
+              
+              // Cek apakah temuan sudah dibuatkan Work Order
+              const hasLinkedWO = workOrders.some(w => w.description.includes(finding.id) || w.title.toLowerCase().includes(finding.equipment.toLowerCase()));
+
+              return (
+                <div
+                  key={finding.id}
+                  className={`bg-white rounded-2xl border p-5 shadow-sm space-y-4 flex flex-col justify-between transition-all ${
+                    isHigh && isOpen
+                      ? 'border-red-200 bg-red-50/10 hover:border-red-300 ring-1 ring-red-100'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="space-y-2.5">
+                    {/* Badge Header */}
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                          finding.priority === 'Tinggi' ? 'bg-red-100 text-red-800' :
+                          finding.priority === 'Sedang' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800'
+                        }`}
+                      >
+                        Prioritas {finding.priority}
+                      </span>
+
+                      <div className="flex items-center gap-1.5">
+                        {hasLinkedWO && (
+                          <span className="text-[9px] font-mono px-2 py-0.5 rounded-full font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                            ⚡ WO Aktif
+                          </span>
+                        )}
+                        <span
+                          className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold ${
+                            finding.status === 'Open' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
+                          {finding.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Equipment & Problem */}
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm">{finding.equipment}</h3>
+                      <p className="text-xs text-slate-600 mt-1 leading-relaxed bg-slate-50/70 p-3 rounded-xl border border-slate-100 font-sans">
+                        {finding.issue}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* PIC, Target Date and Actions */}
+                  <div className="pt-3 border-t border-slate-100 space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 font-mono">
+                      <div>
+                        <span className="block text-[10px] text-slate-400">PIC Lapor</span>
+                        <span className="font-semibold text-slate-800">{finding.pic}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] text-slate-400">Target Selesai</span>
+                        <span className="font-semibold text-slate-800">{finding.targetDate}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-1">
+                      {/* Convert to Work Order Button for Open Findings */}
+                      {isOpen && onAddWorkOrder && (
+                        <button
+                          onClick={() => handleConvertToWorkOrder(finding)}
+                          className="w-full py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer"
+                        >
+                          <Wrench className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>⚡ Terbitkan Work Order (WO) Service</span>
+                        </button>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        {/* Toggle Status Button */}
+                        <button
+                          onClick={() => handleToggleStatus(finding.id, finding.status)}
+                          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border cursor-pointer ${
+                            finding.status === 'Open'
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                              : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                          }`}
+                        >
+                          {finding.status === 'Open' ? (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Selesaikan (Close)</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>Re-open Temuan</span>
+                            </>
+                          )}
+                        </button>
+
+                        {/* Delete Button */}
+                        {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                          <button
+                            onClick={() => {
+                              if (confirm('Yakin ingin menghapus temuan ini dari history?')) {
+                                onDeleteFinding(finding.id);
+                              }
+                            }}
+                            className="p-1.5 border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"
+                            title="Hapus Temuan"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {filteredFindings.length === 0 && (
+              <div className="col-span-full bg-white py-12 text-center rounded-2xl border border-slate-200 text-slate-400 text-xs">
+                Tidak ada temuan kerusakan yang terdeteksi dengan kriteria pencarian ini.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* 2. SUB-TAB: WORK ORDERS / PERBAIKAN SERVICE                */}
+      {/* ────────────────────────────────────────────────────────── */}
+      {activeSubTab === 'work_orders' && (
+        <div className="space-y-6">
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div className="text-xs text-slate-500 font-semibold">Total Work Orders</div>
+              <div className="text-2xl font-black text-slate-900 mt-1">{filteredWorkOrders.length}</div>
+            </div>
+            <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 shadow-sm">
+              <div className="text-xs text-amber-700 font-semibold">Pending / Menunggu</div>
+              <div className="text-2xl font-black text-amber-700 mt-1">
+                {filteredWorkOrders.filter(w => w.status === 'Pending').length}
+              </div>
+            </div>
+            <div className="bg-blue-50/70 p-4 rounded-xl border border-blue-200 shadow-sm">
+              <div className="text-xs text-blue-700 font-semibold">Sedang Dikerjakan (Progress)</div>
+              <div className="text-2xl font-black text-blue-700 mt-1">
+                {filteredWorkOrders.filter(w => w.status === 'In Progress').length}
+              </div>
+            </div>
+            <div className="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 shadow-sm">
+              <div className="text-xs text-emerald-700 font-semibold">Selesai (Completed)</div>
+              <div className="text-2xl font-black text-emerald-700 mt-1">
+                {filteredWorkOrders.filter(w => w.status === 'Completed').length}
+              </div>
+            </div>
+          </div>
+
+          {/* Form Add Work Order */}
+          {showAddWOForm && (
+            <form onSubmit={handleSubmitWO} className="bg-white p-6 rounded-2xl border border-blue-100 shadow-md space-y-4 max-w-xl">
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                <Wrench className="w-5 h-5 text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-800">Form Penerbitan Work Order (WO) Perbaikan Baru</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Judul Work Order / Pekerjaan
+                  </label>
+                  <input
+                    type="text"
+                    value={woTitle}
+                    onChange={(e) => setWoTitle(e.target.value)}
+                    placeholder="e.g. Servis Power Supply Moving Head Beam #2"
+                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Instruksi & Deskripsi Pekerjaan
+                  </label>
+                  <textarea
+                    value={woDescription}
+                    onChange={(e) => setWoDescription(e.target.value)}
+                    placeholder="Jelaskan detail perbaikan, penggantian sparepart atau pengecekan komponen..."
+                    rows={2}
+                    className="block w-full p-3 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Divisi Pelaksana
+                  </label>
+                  <select
+                    value={woDivision}
+                    onChange={(e) => setWoDivision(e.target.value as any)}
+                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    <option value="Service">🔧 Divisi Service</option>
+                    <option value="Audio">🔊 Divisi Audio</option>
+                    <option value="Lighting">💡 Divisi Lighting</option>
+                    <option value="Videotron">📺 Divisi Videotron</option>
+                    <option value="Multimedia">🎥 Divisi Multimedia</option>
+                    <option value="Gudang">📦 Divisi Gudang</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Teknisi PIC
+                  </label>
+                  <select
+                    value={woPic}
+                    onChange={(e) => setWoPic(e.target.value)}
+                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    required
+                  >
+                    <option value="">-- Pilih PIC Teknisi --</option>
+                    {staffList.map(s => (
+                      <option key={s.id} value={s.name}>
+                        {s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Batas Waktu (Deadline)
+                  </label>
+                  <input
+                    type="date"
+                    value={woDeadline}
+                    onChange={(e) => setWoDeadline(e.target.value)}
+                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddWOForm(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer"
+                >
+                  Terbitkan Work Order
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* List of Work Orders */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {filteredWorkOrders.map((wo) => {
+              const isCompleted = wo.status === 'Completed';
+
+              return (
+                <div
+                  key={wo.id}
+                  className={`bg-white rounded-2xl border p-5 shadow-sm space-y-4 flex flex-col justify-between transition-all ${
+                    isCompleted
+                      ? 'border-emerald-200 bg-emerald-50/10'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="space-y-2.5">
+                    {/* Badge Header */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-blue-100 text-blue-800">
+                        {wo.division}
+                      </span>
+
+                      <span
+                        className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold ${
+                          wo.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' :
+                          wo.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                          wo.status === 'Cancelled' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {wo.status}
+                      </span>
+                    </div>
+
+                    {/* Title & Description */}
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm">{wo.title}</h3>
+                      <p className="text-xs text-slate-600 mt-1 leading-relaxed bg-slate-50/70 p-3 rounded-xl border border-slate-100 font-sans">
+                        {wo.description}
+                      </p>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex justify-between text-[11px] font-mono">
+                        <span className="text-slate-500 font-medium">Progres Pengerjaan</span>
+                        <span className="font-bold text-slate-800">{wo.progress}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            wo.progress >= 100 ? 'bg-emerald-500' : wo.progress >= 50 ? 'bg-blue-500' : 'bg-amber-500'
+                          }`}
+                          style={{ width: `${wo.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PIC, Deadline and Actions */}
+                  <div className="pt-3 border-t border-slate-100 space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 font-mono">
+                      <div>
+                        <span className="block text-[10px] text-slate-400">Teknisi PIC</span>
+                        <span className="font-semibold text-slate-800">{wo.pic}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] text-slate-400">Deadline</span>
+                        <span className="font-semibold text-slate-800">{wo.deadline}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      {!isCompleted ? (
+                        <button
+                          onClick={() => handleCompleteWorkOrder(wo)}
+                          className="flex-1 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Tandai Selesai (100%)</span>
+                        </button>
+                      ) : (
+                        <div className="flex-1 py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold text-center">
+                          ✅ Perbaikan Selesai
+                        </div>
+                      )}
+
+                      {/* Delete Work Order */}
+                      {onDeleteWorkOrder && (currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                        <button
+                          onClick={() => {
+                            if (confirm('Yakin ingin menghapus Work Order ini?')) {
+                              onDeleteWorkOrder(wo.id);
+                            }
+                          }}
+                          className="p-1.5 border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg cursor-pointer"
+                          title="Hapus Work Order"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {filteredWorkOrders.length === 0 && (
+              <div className="col-span-full bg-white py-12 text-center rounded-2xl border border-slate-200 text-slate-400 text-xs">
+                Tidak ada tiket Work Order yang terdaftar saat ini.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
