@@ -84,8 +84,8 @@ export default function App() {
   // Define tab navigation elements based on current user role (Hak Akses)
   const NAVIGATION_ITEMS = (() => {
     if (!currentUser) return [];
-    const role = currentUser.role;
-    const isAdminOrOwner = currentUser.division === 'Admin' || role === 'Admin' || currentUser.id === 'director-wahyu' || currentUser.name.toLowerCase().includes('wahyu');
+    const role = currentUser?.role;
+    const isAdminOrOwner = currentUser?.division === 'Admin' || role === 'Admin' || currentUser?.id === 'director-wahyu' || String(currentUser?.name || '').toLowerCase().includes('wahyu');
 
     if (isAdminOrOwner) {
       return [

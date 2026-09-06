@@ -126,8 +126,8 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
                     return (
                       <optgroup key={divName} label={groupLabel}>
                         {staffInDiv.map(s => {
-                          let displayRole: string = s.role || 'Staff';
-                          if (s.name.toLowerCase() === 'wahyu') displayRole = 'Director';
+                          let displayRole: string = s?.role || 'Staff';
+                          if (String(s?.name || '').toLowerCase().includes('wahyu')) displayRole = 'Director';
                           return (
                             <option key={s.id} value={s.id}>{s.name} ({displayRole} - {s.division})</option>
                           );
