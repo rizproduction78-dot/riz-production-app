@@ -394,15 +394,23 @@ export function subscribeCloudCollection<T = any>(
             return itId && !deletedIds.has(itId) && !(it as any)._deleted;
           });
 
-          // Khusus master data referensi statis (master_staff & september_2026_schedule):
-          // Pastikan 22 staf resmi selalu terdaftar dan digabung dengan update cloud
-          if (collectionName === 'master_staff' || collectionName === 'september_2026_schedule') {
+          // Khusus data operasional & master referensi resmi:
+          // Pastikan data resmi selalu terdaftar dan digabung dengan update cloud
+          if (
+            collectionName === 'master_staff' ||
+            collectionName === 'september_2026_schedule' ||
+            collectionName === 'logbook_entries' ||
+            collectionName === 'daily_reports' ||
+            collectionName === 'daily_tasks' ||
+            collectionName === 'findings' ||
+            collectionName === 'work_orders'
+          ) {
             const mergedMap = new Map<string, any>();
             const nameToId = new Map<string, string>();
 
             (initialFallback || []).forEach((fb: any) => {
               const fbId = String(fb?.id || fb?.no || fb?.name || '');
-              const normName = String(fb?.name || fb?.fullName || '').toLowerCase().trim();
+              const normName = String(fb?.name || fb?.fullName || fb?.title || '').toLowerCase().trim();
               if (fbId && !deletedIds.has(fbId)) {
                 mergedMap.set(fbId, fb);
                 if (normName) nameToId.set(normName, fbId);
@@ -411,7 +419,7 @@ export function subscribeCloudCollection<T = any>(
 
             items.forEach((it: any) => {
               const itId = String(it?.id || it?.no || it?.name || '');
-              const normName = String(it?.name || it?.fullName || '').toLowerCase().trim();
+              const normName = String(it?.name || it?.fullName || it?.title || '').toLowerCase().trim();
               if (itId && !deletedIds.has(itId) && !(it as any)._deleted) {
                 if (mergedMap.has(itId)) {
                   const existing = mergedMap.get(itId);
