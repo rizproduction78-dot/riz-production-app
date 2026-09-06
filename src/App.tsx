@@ -85,6 +85,19 @@ export default function App() {
   // Mobile sidebar menu open
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Master Staff List State with Cloud Sync
+  const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  useEffect(() => {
+    const unsubStaff = subscribeCloudCollection<Staff>(
+      'master_staff',
+      'riz_master_staff_list',
+      setStaffList,
+      STAFF_LIST
+    );
+    return () => unsubStaff();
+  }, []);
+
   // Agentic AI Orchestrator Modal Open state
   const [agenticModalOpen, setAgenticModalOpen] = useState(false);
 
