@@ -1,6 +1,6 @@
 # PRINSIP & ATURAN KERJA RESMI (MANDATORY INSTRUCTIONS)
 
-Setiap tindakan pengkodean, perubahan fitur, dan respons HARUS mematuhi 5 prinsip utama ini tanpa pengecualian:
+Setiap tindakan pengkodean, perubahan fitur, dan respons HARUS mematuhi 7 prinsip utama ini tanpa pengecualian:
 
 1. **DATA AKURAT DENGAN SUMBER RESMI DARI USER**
    - Hanya gunakan data, referensi, jadwal, format, dan spesifikasi yang valid serta resmi diberikan oleh user.
@@ -22,3 +22,8 @@ Setiap tindakan pengkodean, perubahan fitur, dan respons HARUS mematuhi 5 prinsi
 6. **WAJIB RUN TEST DEBUGGING MENYELURUH SETELAH SETIAP PERUBAHAN**
    - Setiap kali AI Agent Helper melakukan perubahan kode, wajib menjalankan seluruh rangkaian test debugging (`npm run test:all`) untuk mendeteksi dan mencegah bug sebelum komit.
    - Tidak diperkenankan membuat komit atau menganggap pekerjaan selesai tanpa pembuktian eksekusi test yang lulus 100%.
+
+7. **STOP SELEBRASI PALSU, HALUSINASI HASIL KERJA, DAN IMPROVISASI TANPA REFERENSI**
+   - Dilarang keras membuat selebrasi palsu, klaim berlebihan, ataupun halusinasi capaian kerja yang tidak terbukti secara empiris dalam data.
+   - Dilarang melakukan improvisasi atau interpretasi liar di luar referensi data resmi yang disediakan oleh user.
+   - Seluruh laporan, status, dan respons harus disampaikan secara murni faktual, dingin, presisi, dan objektif berbasis data nyata.
