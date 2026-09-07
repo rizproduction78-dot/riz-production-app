@@ -173,6 +173,27 @@ export default function Findings({
     onLogActivity(currentUser.name, currentUser.role, `Mengubah status temuan QC id:${id} menjadi ${nextStatus}`);
   };
 
+  // Handler Approval Admin untuk Temuan QC agar terselesaikan (Status: Close)
+  const handleAdminApproveFinding = (finding: Finding) => {
+    onUpdateFindingStatus(finding.id, 'Close');
+    if (onUpdateAssetCondition && assets && assets.length > 0 && finding.equipment) {
+      const equipName = String(finding.equipment).replace(/\s*\(.*\)$/, '').trim().toLowerCase();
+      const matched = assets.find(a => {
+        const aname = String(a?.name || '').toLowerCase();
+        return (aname && equipName && (aname.includes(equipName) || equipName.includes(aname)));
+      });
+      if (matched) {
+        onUpdateAssetCondition(matched.id, 'Baik');
+      }
+    }
+    onLogActivity(
+      currentUser.name,
+      currentUser.role,
+      `[ADMIN APPROVAL] Menyetujui & menyelesaikan temuan QC: "${finding.equipment}" (Status: Close)`
+    );
+    alert(`Temuan QC untuk unit "${finding.equipment}" berhasil DISETUJUI (APPROVED) dan terselesaikan (Close) oleh Admin!`);
+  };
+
   const handleCompleteWorkOrder = (wo: WorkOrder) => {
     if (!onUpdateWorkOrderStatus) return;
     onUpdateWorkOrderStatus(wo.id, 'Completed');
@@ -202,6 +223,42 @@ export default function Findings({
 
     onLogActivity(currentUser.name, currentUser.role, `Menyelesaikan Work Order: "${wo.title}" (Status: Completed, Progress: 100%)`);
     alert(`Work Order "${wo.title}" selesai 100% dan log kerja resmi otomatis terekam di Daily Report ${wo.pic}!`);
+  };
+
+  // Handler Approval Admin untuk Work Order agar terselesaikan (Status: Completed, 100%)
+  const handleAdminApproveWorkOrder = (wo: WorkOrder) => {
+    if (!onUpdateWorkOrderStatus) return;
+    onUpdateWorkOrderStatus(wo.id, 'Completed');
+
+    // Auto-close finding jika WO berasal dari temuan QC
+    const desc = String(wo?.description || (wo as any)?.notes || '');
+    const match = desc.match(/\[Temuan QC ID: ([^\]]+)\]/);
+    if (match && match[1]) {
+      const findingId = match[1];
+      const relatedFinding = findings.find(f => f?.id === findingId);
+      if (relatedFinding && relatedFinding.status === 'Open') {
+        onUpdateFindingStatus(findingId, 'Close');
+      }
+    }
+
+    // Auto-create Daily Report log entry for the technician who completed the WO
+    if (onAddReport) {
+      onAddReport({
+        date: new Date().toISOString().split('T')[0],
+        staffName: wo.pic,
+        division: wo.division,
+        activity: `[Admin Approved WO] ${wo.title}`,
+        notes: `Work Order telah disetujui (Approved) & diselesaikan oleh Admin (${currentUser.name}). Unit siap operasional 100%.`,
+        status: 'Submitted'
+      });
+    }
+
+    onLogActivity(
+      currentUser.name,
+      currentUser.role,
+      `[ADMIN APPROVAL] Menyetujui & menyelesaikan Work Order: "${wo.title}" (Status: Completed 100%)`
+    );
+    alert(`Work Order "${wo.title}" berhasil DISETUJUI (APPROVED) dan terselesaikan (Completed 100%) oleh Admin!`);
   };
 
   // Filter Findings list
@@ -576,7 +633,19 @@ export default function Findings({
                       )}
 
                       <div className="flex items-center gap-2">
-                        {/* Toggle Status Button */}
+                        {/* Tombol Approval Khusus Admin jika status masih Open */}
+                        {isOpen && (currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                          <button
+                            onClick={() => handleAdminApproveFinding(finding)}
+                            className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs cursor-pointer"
+                            title="Admin Approve Temuan QC agar langsung terselesaikan (Close)"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5 text-white" />
+                            <span>Approve Temuan (Admin)</span>
+                          </button>
+                        )}
+
+                        {/* Toggle Status Button (Regular / Staf) */}
                         <button
                           onClick={() => handleToggleStatus(finding.id, finding.status)}
                           className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border cursor-pointer ${
@@ -837,6 +906,18 @@ export default function Findings({
 
                     <div className="flex flex-col gap-2 pt-1">
                       <div className="flex items-center gap-2">
+                        {/* Tombol Approval Khusus Admin jika WO belum berstatus Completed */}
+                        {!isCompleted && (currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                          <button
+                            onClick={() => handleAdminApproveWorkOrder(wo)}
+                            className="flex-1 py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                            title="Admin Approve Work Order agar langsung selesai 100%"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5 text-white" />
+                            <span>Approve WO (Admin)</span>
+                          </button>
+                        )}
+
                         {!isCompleted ? (
                           <button
                             onClick={() => handleCompleteWorkOrder(wo)}

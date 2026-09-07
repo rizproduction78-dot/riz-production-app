@@ -173,6 +173,8 @@ export interface Finding {
   targetDate: string;
   status: 'Open' | 'Close';
   dateCreated: string;
+  approvedBy?: string;
+  approvedAt?: string;
 }
 
 export interface Asset {
@@ -197,6 +199,8 @@ export interface WorkOrder {
   progress: number; // 0 to 100
   status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
   dateCreated: string;
+  approvedBy?: string;
+  approvedAt?: string;
 }
 
 export interface MaintenanceSchedule {
