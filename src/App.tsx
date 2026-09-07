@@ -1106,6 +1106,7 @@ export default function App() {
             onUpdateSchedule={handleUpdateSchedule}
             onAddFinding={handleAddFinding}
             onAddWorkOrder={handleAddWorkOrder}
+            onAddReport={handleAddReport}
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
           />

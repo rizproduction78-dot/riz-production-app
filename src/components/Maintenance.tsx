@@ -23,6 +23,7 @@ interface MaintenanceProps {
   onUpdateSchedule?: (id: string, updatedFields: Partial<MaintenanceSchedule>) => void;
   onAddFinding?: (finding: Omit<Finding, 'id' | 'dateCreated'>) => void;
   onAddWorkOrder?: (wo: Omit<WorkOrder, 'id' | 'dateCreated'>) => void;
+  onAddReport?: (report: any) => void;
   currentUser: any;
   onLogActivity: (username: string, role: string, action: string) => void;
 }
@@ -34,6 +35,7 @@ export default function Maintenance({
   onUpdateSchedule,
   onAddFinding,
   onAddWorkOrder,
+  onAddReport,
   currentUser,
   onLogActivity,
 }: MaintenanceProps) {
@@ -85,10 +87,28 @@ export default function Maintenance({
   };
 
   const handleExecuteService = (id: string) => {
-    onUpdateScheduleStatus(id, 'Done', serviceNotes, sparepart, vendor, Number(biaya) || 0, photoUrl);
+    const costNumber = Number(biaya) || 0;
+    onUpdateScheduleStatus(id, 'Done', serviceNotes, sparepart, vendor, costNumber, photoUrl);
     const item = schedules.find(s => s.id === id);
     if (item) {
       onLogActivity(currentUser.name, currentUser.role, `Menyelesaikan service ${item.type} untuk ${item.assetName}`);
+      
+      // Auto-create Daily Report log entry untuk Divisi Service
+      if (onAddReport) {
+        const servicePic = currentUser.division === 'Service' 
+          ? currentUser.name 
+          : (STAFF_LIST.find(s => s.division === 'Service')?.name || currentUser.name);
+          
+        onAddReport({
+          date: new Date().toISOString().split('T')[0],
+          staffName: servicePic,
+          division: 'Service',
+          activity: `[Maintenance & Servis Selesai] ${item.assetName} (${item.assetCode || 'Unit'})`,
+          notes: `Pekerjaan ${item.type} Maintenance selesai. Catatan teknis: ${serviceNotes || 'Pemeriksaan rutin standar'}. Sparepart: ${sparepart || 'Tidak ada penggantian'}. Vendor: ${vendor || 'Internal'}. Biaya: Rp ${costNumber.toLocaleString('id-ID')}.`,
+          status: 'Submitted',
+          photoUrl: photoUrl || undefined
+        });
+      }
     }
     setServicingId(null);
     setServiceNotes('');
