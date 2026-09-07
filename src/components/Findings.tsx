@@ -14,10 +14,10 @@ interface FindingsProps {
   workOrders?: WorkOrder[];
   assets?: Asset[];
   onAddFinding: (finding: Omit<Finding, 'id' | 'dateCreated'>) => void;
-  onUpdateFindingStatus: (id: string, status: 'Open' | 'Close') => void;
+  onUpdateFindingStatus: (id: string, status: 'Open' | 'Close', approvedBy?: string, approvedAt?: string) => void;
   onDeleteFinding: (id: string) => void;
   onAddWorkOrder?: (wo: Omit<WorkOrder, 'id' | 'dateCreated'>) => void;
-  onUpdateWorkOrderStatus?: (id: string, status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled') => void;
+  onUpdateWorkOrderStatus?: (id: string, status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled', approvedBy?: string, approvedAt?: string) => void;
   onUpdateWorkOrderProgress?: (id: string, progress: number) => void;
   onDeleteWorkOrder?: (id: string) => void;
   onAddReport?: (report: any) => void;
@@ -74,6 +74,7 @@ export default function Findings({
   const [issue, setIssue] = useState('');
   const [priority, setPriority] = useState<'Tinggi' | 'Sedang' | 'Rendah'>('Sedang');
   const [pic, setPic] = useState('');
+  const [findingDivision, setFindingDivision] = useState<Division>('Audio');
   const [targetDate, setTargetDate] = useState(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
   // Form state for Work Order
@@ -93,17 +94,19 @@ export default function Findings({
       issue,
       priority,
       pic,
+      division: findingDivision,
       targetDate,
       status: 'Open',
     });
 
-    onLogActivity(currentUser.name, currentUser.role, `Menambahkan temuan QC manual untuk ${equipment}`);
+    onLogActivity(currentUser.name, currentUser.role, `Menambahkan temuan QC untuk ${equipment} (Divisi: ${findingDivision}, PIC: ${pic})`);
 
     // Reset Form
     setEquipment('');
     setIssue('');
     setPriority('Sedang');
     setPic('');
+    setFindingDivision('Audio');
     setShowAddForm(false);
   };
 
@@ -175,7 +178,8 @@ export default function Findings({
 
   // Handler Approval Admin untuk Temuan QC agar terselesaikan (Status: Close)
   const handleAdminApproveFinding = (finding: Finding) => {
-    onUpdateFindingStatus(finding.id, 'Close');
+    const today = new Date().toISOString().split('T')[0];
+    onUpdateFindingStatus(finding.id, 'Close', currentUser.name, today);
     if (onUpdateAssetCondition && assets && assets.length > 0 && finding.equipment) {
       const equipName = String(finding.equipment).replace(/\s*\(.*\)$/, '').trim().toLowerCase();
       const matched = assets.find(a => {
@@ -228,7 +232,8 @@ export default function Findings({
   // Handler Approval Admin untuk Work Order agar terselesaikan (Status: Completed, 100%)
   const handleAdminApproveWorkOrder = (wo: WorkOrder) => {
     if (!onUpdateWorkOrderStatus) return;
-    onUpdateWorkOrderStatus(wo.id, 'Completed');
+    const today = new Date().toISOString().split('T')[0];
+    onUpdateWorkOrderStatus(wo.id, 'Completed', currentUser.name, today);
 
     // Auto-close finding jika WO berasal dari temuan QC
     const desc = String(wo?.description || (wo as any)?.notes || '');
@@ -237,14 +242,14 @@ export default function Findings({
       const findingId = match[1];
       const relatedFinding = findings.find(f => f?.id === findingId);
       if (relatedFinding && relatedFinding.status === 'Open') {
-        onUpdateFindingStatus(findingId, 'Close');
+        onUpdateFindingStatus(findingId, 'Close', currentUser.name, today);
       }
     }
 
     // Auto-create Daily Report log entry for the technician who completed the WO
     if (onAddReport) {
       onAddReport({
-        date: new Date().toISOString().split('T')[0],
+        date: today,
         staffName: wo.pic,
         division: wo.division,
         activity: `[Admin Approved WO] ${wo.title}`,
@@ -268,10 +273,14 @@ export default function Findings({
     const p = String(f?.pic || '').toLowerCase();
     const q = searchTerm.toLowerCase();
 
-    const matchesSearch = equip.includes(q) || iss.includes(q) || p.includes(q);
+    // Resolusi divisi temuan baik dari f.division maupun dari profil staffList
+    const findingDiv = f?.division || staffList.find(s => s.name.toLowerCase() === p.toLowerCase() || (s.nickname && p.toLowerCase().includes(s.nickname.toLowerCase())))?.division;
+
+    const matchesSearch = equip.includes(q) || iss.includes(q) || p.includes(q) || (findingDiv && findingDiv.toLowerCase().includes(q));
     const matchesPriority = filterPriority === 'All' || f?.priority === filterPriority;
     const matchesStatus = filterStatus === 'All' || f?.status === filterStatus;
-    return matchesSearch && matchesPriority && matchesStatus;
+    const matchesDivision = filterDivision === 'All' || findingDiv === filterDivision;
+    return matchesSearch && matchesPriority && matchesStatus && matchesDivision;
   });
 
   // Filter Work Orders list
@@ -374,21 +383,22 @@ export default function Findings({
             </select>
           )}
 
-          {activeSubTab === 'work_orders' && (
-            <select
-              value={filterDivision}
-              onChange={(e) => setFilterDivision(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer font-medium"
-            >
-              <option value="All">🌐 Semua Divisi</option>
-              <option value="Service">🔧 Divisi Service</option>
-              <option value="Audio">🔊 Divisi Audio</option>
-              <option value="Lighting">💡 Divisi Lighting</option>
-              <option value="Videotron">📺 Divisi Videotron</option>
-              <option value="Multimedia">🎥 Divisi Multimedia</option>
-              <option value="Gudang">📦 Divisi Gudang</option>
-            </select>
-          )}
+          <select
+            value={filterDivision}
+            onChange={(e) => setFilterDivision(e.target.value)}
+            className={`px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:outline-none cursor-pointer font-medium ${
+              activeSubTab === 'findings' ? 'focus:ring-indigo-500' : 'focus:ring-blue-500'
+            }`}
+          >
+            <option value="All">🌐 Semua Divisi (7 Divisi)</option>
+            <option value="Audio">🔊 Divisi Audio</option>
+            <option value="Lighting">💡 Divisi Lighting</option>
+            <option value="Videotron">📺 Divisi Videotron</option>
+            <option value="Multimedia">🎥 Divisi Multimedia</option>
+            <option value="Gudang">📦 Divisi Gudang</option>
+            <option value="Admin">💼 Divisi Admin</option>
+            <option value="Service">🔧 Divisi Service</option>
+          </select>
 
           <select
             value={filterStatus}
@@ -501,7 +511,14 @@ export default function Findings({
                   </label>
                   <select
                     value={pic}
-                    onChange={(e) => setPic(e.target.value)}
+                    onChange={(e) => {
+                      const selectedName = e.target.value;
+                      setPic(selectedName);
+                      const matchedStaff = staffList.find(s => s.name === selectedName);
+                      if (matchedStaff) {
+                        setFindingDivision(matchedStaff.division);
+                      }
+                    }}
                     className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     required
                   >
@@ -511,6 +528,26 @@ export default function Findings({
                         {s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Divisi Terkait
+                  </label>
+                  <select
+                    value={findingDivision}
+                    onChange={(e) => setFindingDivision(e.target.value as Division)}
+                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    required
+                  >
+                    <option value="Audio">🔊 Audio</option>
+                    <option value="Lighting">💡 Lighting</option>
+                    <option value="Videotron">📺 Videotron</option>
+                    <option value="Multimedia">🎥 Multimedia</option>
+                    <option value="Gudang">📦 Gudang</option>
+                    <option value="Admin">💼 Admin</option>
+                    <option value="Service">🔧 Service</option>
                   </select>
                 </div>
 
@@ -573,14 +610,20 @@ export default function Findings({
                   <div className="space-y-2.5">
                     {/* Badge Header */}
                     <div className="flex items-center justify-between">
-                      <span
-                        className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                          finding.priority === 'Tinggi' ? 'bg-red-100 text-red-800' :
-                          finding.priority === 'Sedang' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800'
-                        }`}
-                      >
-                        Prioritas {finding.priority}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                            finding.priority === 'Tinggi' ? 'bg-red-100 text-red-800' :
+                            finding.priority === 'Sedang' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800'
+                          }`}
+                        >
+                          Prioritas {finding.priority}
+                        </span>
+
+                        <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          {finding.division || staffList.find(s => s.name.toLowerCase() === (finding.pic || '').toLowerCase() || (s.nickname && (finding.pic || '').toLowerCase().includes(s.nickname.toLowerCase())))?.division || 'Semua Divisi'}
+                        </span>
+                      </div>
 
                       <div className="flex items-center gap-1.5">
                         {hasLinkedWO && (
@@ -633,6 +676,13 @@ export default function Findings({
                       )}
 
                       <div className="flex items-center gap-2">
+                        {/* Status Approved by Admin bila sudah Close */}
+                        {!isOpen && finding.approvedBy && (
+                          <div className="flex-1 py-1.5 px-3 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-lg text-xs font-bold text-center">
+                            🛡️ Approved by {finding.approvedBy} ({finding.approvedAt || 'Selesai'})
+                          </div>
+                        )}
+
                         {/* Tombol Approval Khusus Admin jika status masih Open */}
                         {isOpen && (currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
                           <button
@@ -928,7 +978,7 @@ export default function Findings({
                           </button>
                         ) : (
                           <div className="flex-1 py-1.5 px-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold text-center">
-                            ✅ Perbaikan Selesai
+                            {wo.approvedBy ? `🛡️ Approved by ${wo.approvedBy} (Selesai 100%)` : '✅ Perbaikan Selesai (100%)'}
                           </div>
                         )}
 

@@ -429,6 +429,7 @@ export const INITIAL_FINDINGS: Finding[] = [
     issue: 'DB Tech No.18 Ada Kendala dibagian Modul Amplifiernya, saat terkena beban input besar, hasuil suara yang di keluarkan menjadi serak, tapi masih aman dan bisa digunakan untuk Event. Rekomendasi untuk di cek oleh team service terutama pada modul Amplifier.',
     priority: 'Sedang',
     pic: 'Team Service / Mboh',
+    division: 'Audio',
     targetDate: '2026-09-08',
     status: 'Open',
     dateCreated: '2026-09-03'
@@ -439,6 +440,7 @@ export const INITIAL_FINDINGS: Finding[] = [
     issue: 'Pengecekan Panel 3 Unit: 2 panel Sudah OK. 1 Ganti Stop Kontak, 1 Ganti Legran Cewe (Perbaikan selesai dilakukan Opik & Mboh pada 5 Sept, panel aman & siap pakai).',
     priority: 'Sedang',
     pic: 'Opik / Buluk',
+    division: 'Audio',
     targetDate: '2026-09-05',
     status: 'Close',
     dateCreated: '2026-09-04'

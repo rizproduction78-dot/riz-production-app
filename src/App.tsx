@@ -610,10 +610,15 @@ export default function App() {
     saveCloudDoc('findings', newFinding.id, newFinding);
   };
 
-  const handleUpdateFindingStatus = (id: string, status: 'Open' | 'Close') => {
+  const handleUpdateFindingStatus = (id: string, status: 'Open' | 'Close', approvedBy?: string, approvedAt?: string) => {
     setFindings(prev => prev.map(f => {
       if (f.id === id) {
-        const updated = { ...f, status };
+        const updated = {
+          ...f,
+          status,
+          ...(approvedBy ? { approvedBy } : {}),
+          ...(approvedAt ? { approvedAt } : {})
+        };
         saveCloudDoc('findings', id, updated);
         return updated;
       }
@@ -789,10 +794,21 @@ export default function App() {
     }));
   };
 
-  const handleUpdateWorkOrderStatus = (id: string, status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled') => {
+  const handleUpdateWorkOrderStatus = (
+    id: string,
+    status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled',
+    approvedBy?: string,
+    approvedAt?: string
+  ) => {
     setWorkOrders(prev => prev.map(w => {
       if (w.id === id) {
-        const updated = { ...w, status, progress: status === 'Completed' ? 100 : w.progress };
+        const updated = {
+          ...w,
+          status,
+          progress: status === 'Completed' ? 100 : w.progress,
+          ...(approvedBy ? { approvedBy } : {}),
+          ...(approvedAt ? { approvedAt } : {})
+        };
         saveCloudDoc('work_orders', id, updated);
         // P3.2: Auto-create Daily Report saat WO di-Completed
         if (status === 'Completed') {
@@ -801,8 +817,10 @@ export default function App() {
             date: new Date().toISOString().split('T')[0],
             staffName: w.pic,
             division: w.division,
-            activity: `[Penyelesaian Work Order] ${w.title}`,
-            notes: `Work Order berhasil diselesaikan 100%. ${w.description}`,
+            activity: approvedBy ? `[Admin Approved WO] ${w.title}` : `[Penyelesaian Work Order] ${w.title}`,
+            notes: approvedBy
+              ? `Work Order telah disetujui (Approved) & diselesaikan oleh Admin (${approvedBy}). Unit siap operasional 100%. Instruksi: ${w.description}`
+              : `Work Order berhasil diselesaikan 100%. ${w.description}`,
             status: 'Submitted' as const
           };
           setDailyReports(drs => [newRep, ...drs]);

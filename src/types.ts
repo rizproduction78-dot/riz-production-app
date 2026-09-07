@@ -173,6 +173,7 @@ export interface Finding {
   targetDate: string;
   status: 'Open' | 'Close';
   dateCreated: string;
+  division?: Division;
   approvedBy?: string;
   approvedAt?: string;
 }
