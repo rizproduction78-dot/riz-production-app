@@ -246,8 +246,8 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Forced one-time re-sync for all 22 official inhouse staff (including Wahyudin / Unyim) & exact daily task sheet
-  const REF_SYNC_KEY = 'riz_ref_synced_v26_exact_daily_task_qc_sept2026_canonical';
+  // Forced one-time re-sync for all 22 official inhouse staff (including Wahyudin / Unyim) & 50+ official freelance & exact daily task sheet
+  const REF_SYNC_KEY = 'riz_ref_synced_v27_exact_staff_and_freelance_canonical';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
@@ -256,6 +256,7 @@ export default function App() {
     localStorage.setItem('riz_daily_reports', JSON.stringify(INITIAL_DAILY_REPORTS));
     localStorage.setItem('riz_work_orders', JSON.stringify(INITIAL_WORK_ORDERS));
     localStorage.setItem('riz_master_staff_list', JSON.stringify(STAFF_LIST));
+    localStorage.setItem('riz_freelance_workers', JSON.stringify(INITIAL_FREELANCE_WORKERS));
     localStorage.setItem('riz_september_2026_schedule', JSON.stringify(OFFICIAL_SEPTEMBER_2026_SCHEDULE));
     
     // Clear any obsolete deleted ID records
@@ -265,6 +266,7 @@ export default function App() {
     localStorage.removeItem('riz_deleted_ids_daily_reports');
     localStorage.removeItem('riz_deleted_ids_work_orders');
     localStorage.removeItem('riz_deleted_ids_master_staff');
+    localStorage.removeItem('riz_deleted_ids_freelance_workers');
 
     localStorage.setItem(REF_SYNC_KEY, 'true');
 

@@ -442,6 +442,7 @@ export function subscribeCloudCollection<T = any>(
           // Pastikan data resmi selalu terdaftar dan digabung dengan update cloud
           if (
             collectionName === 'master_staff' ||
+            collectionName === 'freelance_workers' ||
             collectionName === 'september_2026_schedule' ||
             collectionName === 'logbook_entries' ||
             collectionName === 'daily_reports' ||
