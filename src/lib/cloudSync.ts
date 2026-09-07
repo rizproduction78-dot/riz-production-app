@@ -293,8 +293,10 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
           priority: 'Sedang',
           pic: 'Team Service / Mboh',
           targetDate: '2026-09-08',
-          status: f.status === 'Close' ? 'Close' : 'Open',
-          dateCreated: '2026-09-03'
+          status: f.status || 'Open',
+          approvedBy: f.approvedBy,
+          approvedAt: f.approvedAt,
+          dateCreated: f.dateCreated || '2026-09-03'
         };
       }
 
@@ -307,8 +309,10 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
           priority: 'Sedang',
           pic: 'Opik / Buluk',
           targetDate: '2026-09-05',
-          status: 'Close',
-          dateCreated: '2026-09-04'
+          status: f.status || 'Close',
+          approvedBy: f.approvedBy,
+          approvedAt: f.approvedAt,
+          dateCreated: f.dateCreated || '2026-09-04'
         };
       }
 
@@ -391,24 +395,37 @@ export function subscribeCloudCollection<T = any>(
           const mergeCleanDoc = (existing: any, incoming: any) => {
             if (!existing) return incoming;
             if (!incoming) return existing;
+            // Incoming (from Firestore / live user changes) always takes priority
             const merged = { ...existing, ...incoming };
+
+            // Explicitly preserve crucial incoming mutable fields even if existing had values
+            if (incoming.status !== undefined) merged.status = incoming.status;
+            if (incoming.approvedBy !== undefined) merged.approvedBy = incoming.approvedBy;
+            if (incoming.approvedAt !== undefined) merged.approvedAt = incoming.approvedAt;
+            if (incoming.progress !== undefined) merged.progress = incoming.progress;
 
             for (const key of Object.keys(existing)) {
               const exVal = existing[key];
               const inVal = incoming[key];
+              // Only pull from existing fallback if incoming is completely missing or blank
               if (typeof exVal === 'string' && exVal.trim() !== '') {
                 if (inVal === undefined || inVal === null || (typeof inVal === 'string' && inVal.trim() === '')) {
+                  // Do not revert status/approval from fallback
+                  if (key !== 'status' && key !== 'approvedBy' && key !== 'approvedAt') {
+                    const inMeta = incoming?._syncMeta?.updatedAt;
+                    const exMeta = existing?._syncMeta?.updatedAt;
+                    if (!inMeta || (exMeta && exMeta >= inMeta)) {
+                      merged[key] = exVal;
+                    }
+                  }
+                }
+              } else if (typeof exVal === 'number' && exVal > 0 && (inVal === undefined || inVal === null || inVal === 0)) {
+                if (key !== 'progress') {
                   const inMeta = incoming?._syncMeta?.updatedAt;
                   const exMeta = existing?._syncMeta?.updatedAt;
                   if (!inMeta || (exMeta && exMeta >= inMeta)) {
                     merged[key] = exVal;
                   }
-                }
-              } else if (typeof exVal === 'number' && exVal > 0 && (inVal === undefined || inVal === null || inVal === 0)) {
-                const inMeta = incoming?._syncMeta?.updatedAt;
-                const exMeta = existing?._syncMeta?.updatedAt;
-                if (!inMeta || (exMeta && exMeta >= inMeta)) {
-                  merged[key] = exVal;
                 }
               }
             }
@@ -607,6 +624,38 @@ export async function saveCloudDoc(
     }
   };
 
+  // 1. Immediately update localStorage cache so refresh never reverts
+  try {
+    const reg = ALL_SYNC_COLLECTIONS.find(c => c.name === collectionName);
+    if (reg && typeof window !== 'undefined') {
+      const cached = localStorage.getItem(reg.key);
+      let list: any[] = [];
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) list = parsed;
+        } catch (e) {}
+      }
+      const existingIdx = list.findIndex(item => String(item?.id || item?.no || '') === String(docId));
+      if (existingIdx >= 0) {
+        list[existingIdx] = { ...list[existingIdx], ...cleanData };
+      } else {
+        list.unshift(cleanData);
+      }
+      localStorage.setItem(reg.key, JSON.stringify(list));
+      if (syncBroadcastChannel) {
+        syncBroadcastChannel.postMessage({
+          type: 'COLLECTION_SYNCED',
+          collectionName,
+          localCacheKey: reg.key,
+          count: list.length
+        });
+      }
+    }
+  } catch (e) {
+    console.warn(`[Sync] Failed to immediately update local cache for ${collectionName}:`, e);
+  }
+
   if (!navigator.onLine) {
     enqueuePendingOperation({
       type: 'SAVE',
@@ -642,6 +691,34 @@ export async function deleteCloudDoc(
   docId: string
 ): Promise<void> {
   recordDeletedId(collectionName, docId);
+
+  // 1. Immediately purge from localStorage cache
+  try {
+    const reg = ALL_SYNC_COLLECTIONS.find(c => c.name === collectionName);
+    if (reg && typeof window !== 'undefined') {
+      const cached = localStorage.getItem(reg.key);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            const filtered = parsed.filter(item => String(item?.id || item?.no || '') !== String(docId));
+            localStorage.setItem(reg.key, JSON.stringify(filtered));
+            if (syncBroadcastChannel) {
+              syncBroadcastChannel.postMessage({
+                type: 'COLLECTION_SYNCED',
+                collectionName,
+                localCacheKey: reg.key,
+                count: filtered.length
+              });
+            }
+          }
+        } catch (e) {}
+      }
+    }
+  } catch (e) {
+    console.warn(`[Sync] Failed to purge deleted doc from local cache for ${collectionName}:`, e);
+  }
+
   if (!navigator.onLine) {
     enqueuePendingOperation({
       type: 'DELETE',
