@@ -325,6 +325,33 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     return Array.from(map.values()) as T[];
   }
 
+  // Special normalization for work_orders to ensure title, description, pic, and status are never undefined
+  if (collectionName === 'work_orders') {
+    const cleaned = items.map((w: any) => {
+      if (!w) return w;
+      return {
+        ...w,
+        id: String(w.id || `wo-${Date.now()}`),
+        title: String(w.title || 'Work Order'),
+        description: String(w.description || w.notes || ''),
+        pic: String(w.pic || 'Team Service'),
+        division: w.division || 'Service',
+        deadline: String(w.deadline || ''),
+        progress: typeof w.progress === 'number' ? w.progress : (w.status === 'Completed' ? 100 : 0),
+        status: w.status || 'Pending',
+        dateCreated: String(w.dateCreated || new Date().toISOString().split('T')[0])
+      };
+    });
+
+    const map = new Map<string, any>();
+    cleaned.forEach((item: any) => {
+      if (item && item.id) {
+        map.set(item.id, item);
+      }
+    });
+    return Array.from(map.values()) as T[];
+  }
+
   return items;
 }
 

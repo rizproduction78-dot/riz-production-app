@@ -157,11 +157,14 @@ export default function Findings({
     const nextStatus = currentStatus === 'Open' ? 'Close' : 'Open';
     onUpdateFindingStatus(id, nextStatus);
     // P1.3: saat finding di-Close, update kondisi aset terkait ke 'Baik'
-    if (nextStatus === 'Close' && onUpdateAssetCondition && assets.length > 0) {
-      const finding = findings.find(f => f.id === id);
-      if (finding) {
-        const equipName = finding.equipment.replace(/\s*\(.*\)$/, '').trim().toLowerCase();
-        const matched = assets.find(a => a.name.toLowerCase().includes(equipName) || equipName.includes(a.name.toLowerCase()));
+    if (nextStatus === 'Close' && onUpdateAssetCondition && assets && assets.length > 0) {
+      const finding = findings.find(f => f?.id === id);
+      if (finding && finding.equipment) {
+        const equipName = String(finding.equipment).replace(/\s*\(.*\)$/, '').trim().toLowerCase();
+        const matched = assets.find(a => {
+          const aname = String(a?.name || '').toLowerCase();
+          return (aname && equipName && (aname.includes(equipName) || equipName.includes(aname)));
+        });
         if (matched) {
           onUpdateAssetCondition(matched.id, 'Baik');
         }
@@ -175,10 +178,11 @@ export default function Findings({
     onUpdateWorkOrderStatus(wo.id, 'Completed');
     
     // Auto-close finding jika WO berasal dari temuan QC
-    const match = wo.description.match(/\[Temuan QC ID: ([^\]]+)\]/);
+    const desc = String(wo?.description || (wo as any)?.notes || '');
+    const match = desc.match(/\[Temuan QC ID: ([^\]]+)\]/);
     if (match && match[1]) {
       const findingId = match[1];
-      const relatedFinding = findings.find(f => f.id === findingId);
+      const relatedFinding = findings.find(f => f?.id === findingId);
       if (relatedFinding && relatedFinding.status === 'Open') {
         onUpdateFindingStatus(findingId, 'Close');
       }
@@ -202,21 +206,27 @@ export default function Findings({
 
   // Filter Findings list
   const filteredFindings = findings.filter(f => {
-    const matchesSearch = f.equipment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          f.issue.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          f.pic.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPriority = filterPriority === 'All' || f.priority === filterPriority;
-    const matchesStatus = filterStatus === 'All' || f.status === filterStatus;
+    const equip = String(f?.equipment || '').toLowerCase();
+    const iss = String(f?.issue || '').toLowerCase();
+    const p = String(f?.pic || '').toLowerCase();
+    const q = searchTerm.toLowerCase();
+
+    const matchesSearch = equip.includes(q) || iss.includes(q) || p.includes(q);
+    const matchesPriority = filterPriority === 'All' || f?.priority === filterPriority;
+    const matchesStatus = filterStatus === 'All' || f?.status === filterStatus;
     return matchesSearch && matchesPriority && matchesStatus;
   });
 
   // Filter Work Orders list
   const filteredWorkOrders = workOrders.filter(w => {
-    const matchesSearch = w.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          w.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          w.pic.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDivision = filterDivision === 'All' || w.division === filterDivision;
-    const matchesStatus = filterStatus === 'All' || w.status === filterStatus;
+    const t = String(w?.title || '').toLowerCase();
+    const d = String(w?.description || (w as any)?.notes || '').toLowerCase();
+    const p = String(w?.pic || '').toLowerCase();
+    const q = searchTerm.toLowerCase();
+
+    const matchesSearch = t.includes(q) || d.includes(q) || p.includes(q);
+    const matchesDivision = filterDivision === 'All' || w?.division === filterDivision;
+    const matchesStatus = filterStatus === 'All' || w?.status === filterStatus;
     return matchesSearch && matchesDivision && matchesStatus;
   });
 
@@ -486,7 +496,13 @@ export default function Findings({
               const isOpen = finding.status === 'Open';
               
               // Cek apakah temuan sudah dibuatkan Work Order
-              const hasLinkedWO = workOrders.some(w => w.description.includes(finding.id) || w.title.toLowerCase().includes(finding.equipment.toLowerCase()));
+              const hasLinkedWO = workOrders.some(w => {
+                const desc = String(w?.description || (w as any)?.notes || '');
+                const title = String(w?.title || '').toLowerCase();
+                const fid = String(finding?.id || '');
+                const eq = String(finding?.equipment || '').toLowerCase();
+                return (fid && desc.includes(fid)) || (eq && title.includes(eq));
+              });
 
               return (
                 <div
