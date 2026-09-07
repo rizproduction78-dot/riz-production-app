@@ -18,3 +18,7 @@ Setiap tindakan pengkodean, perubahan fitur, dan respons HARUS mematuhi 5 prinsi
 
 5. **TIDAK MENAMBAH, MENGURANGI TAMPILAN TANPA PERSETUJUAN DARI USER**
    - Dilarang keras menambah elemen tampilan (UI) baru atau menghapus elemen tampilan yang sudah ada tanpa persetujuan eksplisit dari user.
+
+6. **WAJIB RUN TEST DEBUGGING MENYELURUH SETELAH SETIAP PERUBAHAN**
+   - Setiap kali AI Agent Helper melakukan perubahan kode, wajib menjalankan seluruh rangkaian test debugging (`npm run test:all`) untuk mendeteksi dan mencegah bug sebelum komit.
+   - Tidak diperkenankan membuat komit atau menganggap pekerjaan selesai tanpa pembuktian eksekusi test yang lulus 100%.

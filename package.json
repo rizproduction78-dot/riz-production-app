@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "npx tsx scripts/verify_system.ts",
+    "test:all": "npx tsx scripts/verify_system.ts && npx tsx scripts/test_cross_division_integrity.ts && npx tsx scripts/test_kpi_comprehensive.ts && npx tsx scripts/test_vector_engine.ts && npx tsx scripts/test_orchestrator_agentic.ts && npx tsx scripts/verify_continuous_timeline.ts && npm run build"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
