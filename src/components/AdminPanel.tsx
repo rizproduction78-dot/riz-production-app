@@ -1213,6 +1213,18 @@ export default function AdminPanel({
   const [showScriptModal, setShowScriptModal] = useState<boolean>(false);
   const [copiedScript, setCopiedScript] = useState<boolean>(false);
 
+  // Live listener untuk update otomatis status sinkronisasi Google Sheet
+  useEffect(() => {
+    const handleSheetSynced = (e: any) => {
+      const ts = e?.detail?.timestamp || new Date().toISOString();
+      setSheetLastSync(ts);
+    };
+    window.addEventListener('riz_google_sheet_synced', handleSheetSynced);
+    return () => {
+      window.removeEventListener('riz_google_sheet_synced', handleSheetSynced);
+    };
+  }, []);
+
   const handleSaveSheetUrl = () => {
     setGoogleSheetWebhookUrl(sheetWebhookUrl);
     setSheetMessage({ text: 'URL Google Apps Script Webhook berhasil disimpan!', type: 'success' });

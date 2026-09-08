@@ -636,6 +636,7 @@ export async function saveCloudDoc(
   clearDeletedId(collectionName, docId);
   const deviceInfo = getDeviceOSInfo();
   const cleanData = {
+    id: data.id || docId,
     ...JSON.parse(JSON.stringify(data)),
     _syncMeta: {
       updatedAt: new Date().toISOString(),
@@ -666,13 +667,21 @@ export async function saveCloudDoc(
       }
       localStorage.setItem(reg.key, JSON.stringify(list));
       if (syncBroadcastChannel) {
-        syncBroadcastChannel.postMessage({
-          type: 'COLLECTION_SYNCED',
-          collectionName,
-          localCacheKey: reg.key,
-          count: list.length
-        });
+        try {
+          syncBroadcastChannel.postMessage({
+            type: 'COLLECTION_SYNCED',
+            collectionName,
+            localCacheKey: reg.key,
+            count: list.length
+          });
+        } catch (e) {}
       }
+      // Trigger instant in-page custom event for active tab reactivity
+      try {
+        window.dispatchEvent(new CustomEvent('riz_collection_updated', {
+          detail: { collectionName, docId, data: cleanData }
+        }));
+      } catch (e) {}
     }
   } catch (e) {
     console.warn(`[Sync] Failed to immediately update local cache for ${collectionName}:`, e);

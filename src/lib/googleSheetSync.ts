@@ -264,21 +264,37 @@ export async function syncAllToGoogleSheet(webhookUrl?: string): Promise<GoogleS
       resData = JSON.parse(text);
     } catch (e) {
       if (response.ok) {
-        localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, new Date().toISOString());
+        const syncTime = new Date().toISOString();
+        localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, syncTime);
+        if (typeof window !== 'undefined') {
+          try {
+            window.dispatchEvent(new CustomEvent('riz_google_sheet_synced', {
+              detail: { timestamp: syncTime, success: true }
+            }));
+          } catch (err) {}
+        }
         return {
           success: true,
           message: 'Seluruh data berhasil disinkronkan ke Google Sheet!',
-          timestamp: new Date().toISOString()
+          timestamp: syncTime
         };
       }
     }
 
     if (resData.status === 'success' || response.ok) {
-      localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, new Date().toISOString());
+      const syncTime = new Date().toISOString();
+      localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, syncTime);
+      if (typeof window !== 'undefined') {
+        try {
+          window.dispatchEvent(new CustomEvent('riz_google_sheet_synced', {
+            detail: { timestamp: syncTime, success: true }
+          }));
+        } catch (e) {}
+      }
       return {
         success: true,
         message: resData.message || 'Seluruh data berhasil disinkronkan ke Google Sheet!',
-        timestamp: new Date().toISOString(),
+        timestamp: syncTime,
         details: resData
       };
     } else {
@@ -298,7 +314,7 @@ export async function syncAllToGoogleSheet(webhookUrl?: string): Promise<GoogleS
 }
 
 /**
- * Pull updated schedule and staff from Google Sheet
+ * Pull updated schedule/roster data from Google Sheet
  */
 export async function pullDataFromGoogleSheet(webhookUrl?: string): Promise<GoogleSheetSyncResult> {
   const url = webhookUrl || getGoogleSheetWebhookUrl();
@@ -316,67 +332,60 @@ export async function pullDataFromGoogleSheet(webhookUrl?: string): Promise<Goog
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
       },
-      body: JSON.stringify({
-        action: 'PULL_SCHEDULE_DATA',
-        spreadsheetId: DEFAULT_SPREADSHEET_ID,
-        timestamp: new Date().toISOString()
-      })
+      body: JSON.stringify({ action: 'PULL_SCHEDULE_DATA' })
     });
 
-    const text = await response.text();
-    const resData = JSON.parse(text);
-
-    if (resData.status === 'success' && resData.schedule_shifts) {
-      localStorage.setItem('riz_september_2026_schedule', JSON.stringify(resData.schedule_shifts));
-      localStorage.setItem('riz_september_2026_shifts', JSON.stringify(resData.schedule_shifts));
-      localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, new Date().toISOString());
+    const data = await response.json();
+    if (data.status === 'success' || data.schedule_shifts) {
+      const syncTime = new Date().toISOString();
+      localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, syncTime);
+      if (typeof window !== 'undefined') {
+        try {
+          window.dispatchEvent(new CustomEvent('riz_google_sheet_synced', {
+            detail: { timestamp: syncTime, success: true }
+          }));
+        } catch (e) {}
+      }
       return {
         success: true,
-        message: `Berhasil menarik ${resData.schedule_shifts.length} jadwal shift dari Google Sheet!`,
-        timestamp: new Date().toISOString(),
-        details: resData
+        message: 'Data jadwal shift berhasil ditarik dari Google Sheet!',
+        timestamp: syncTime,
+        details: data
       };
     } else {
       return {
         success: false,
-        message: resData.message || 'Gagal memproses data dari Google Sheet',
+        message: data.message || 'Gagal menarik data dari Google Sheet',
         timestamp: new Date().toISOString()
       };
     }
   } catch (error: any) {
     return {
       success: false,
-      message: `Error saat menarik data: ${error.message || 'Koneksi bermasalah'}`,
+      message: `Error koneksi ke Google Sheet: ${error.message || 'Jaringan bermasalah'}`,
       timestamp: new Date().toISOString()
     };
   }
 }
 
-/**
- * Complete Google Apps Script template for deployment in user's Google Spreadsheet
- */
-export const GOOGLE_APPS_SCRIPT_TEMPLATE = `/**
- * =========================================================================================
- * GOOGLE APPS SCRIPT: PT. RIZ PRODUCTION MULTI KREASI REAL-TIME SYNC BRIDGE
- * Spreadsheet Target: https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit
- * =========================================================================================
- * PETUNJUK DEPLOYMENT (3 LANGKAH MUDAH):
- * 1. Di Google Sheet, buka menu: Ekstensi (Extensions) > Apps Script
- * 2. Hapus seluruh kode lama di editor, paste seluruh kode ini, lalu klik icon Save (Ctrl+S)
- * 3. Klik tombol "Terapkan" (Deploy) di kanan atas > "Deployment baru" (New deployment)
- *    - Pilih Jenis: "Aplikasi Web" (Web app)
- *    - Jalankan sebagai: "Saya" (Me)
- *    - Siapa yang memiliki akses: "Siapa saja" (Anyone)
- * 4. Klik Terapkan (Deploy), berikan izin akses akun Google, lalu COPY URL Aplikasi Web.
- * 5. Paste URL Web App tersebut ke Panel Admin di aplikasi RIZ-PRODUCTION!
- * =========================================================================================
- */
+// ─────────────────────────────────────────────────────────────
+// OFFICIAL GOOGLE APPS SCRIPT TEMPLATE CODE (Code.gs)
+// Salin kode di bawah ini ke Editor Google Apps Script di Google Sheets
+// ─────────────────────────────────────────────────────────────
+export const GOOGLE_APPS_SCRIPT_TEMPLATE = `// =============================================================
+// PT. RIZ PRODUCTION - OPERATIONAL LOGBOOK GOOGLE APPS SCRIPT
+// Deployment: Web App (Execute as: Me, Who has access: Anyone)
+// Spreadsheet ID: 1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA
+// =============================================================
 
 function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(30000);
+
   try {
-    var rawContents = e.postData.contents;
-    var payload = JSON.parse(rawContents);
-    var action = payload.action;
+    var raw = e.postData.contents;
+    var payload = JSON.parse(raw);
+    var action = payload.action || '';
     
     // Otomatis buka Spreadsheet PT. RIZ Production (berfungsi baik dari Ekstensi Sheet maupun Standalone script.new)
     var ss = null;
@@ -423,7 +432,12 @@ function doPost(e) {
         writeFleetAssignmentsSheet(ss, data.fleet_assignments);
       }
 
-      // 6. Sync Schedule Shifts
+      // 6. Sync Findings & Work Orders
+      if (data.findings_wo && data.findings_wo.length > 0) {
+        writeFindingsSheet(ss, data.findings_wo);
+      }
+
+      // 7. Sync Schedule Shifts
       if (data.schedule_shifts && data.schedule_shifts.length > 0) {
         writeScheduleShiftsSheet(ss, data.schedule_shifts);
       }
@@ -608,6 +622,35 @@ function writeFleetAssignmentsSheet(ss, assignments) {
 
   sheet.getRange(1, 1, rows.length, headers.length).setValues(rows);
   sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#431407').setFontColor('#ffffff');
+  sheet.autoResizeColumns(1, headers.length);
+}
+
+function writeFindingsSheet(ss, findingsList) {
+  var sheet = getOrCreateSheet(ss, 'TEMUAN_QC_WORK_ORDER');
+  sheet.clearContents();
+
+  var headers = ['ID', 'Tipe', 'Nama Alat / Judul', 'Divisi', 'Kendala / Deskripsi', 'Prioritas', 'PIC', 'Target Selesai / Deadline', 'Status', 'Approved Oleh'];
+  var rows = [headers];
+
+  for (var i = 0; i < findingsList.length; i++) {
+    var item = findingsList[i];
+    var isWO = Boolean(item.deadline !== undefined);
+    rows.push([
+      item.id || '',
+      isWO ? 'Work Order' : 'Temuan QC',
+      item.equipment || item.title || '',
+      item.division || '',
+      item.issue || item.description || '',
+      item.priority || 'Normal',
+      item.pic || '',
+      item.targetDate || item.deadline || '',
+      item.status || '',
+      item.approvedBy || '-'
+    ]);
+  }
+
+  sheet.getRange(1, 1, rows.length, headers.length).setValues(rows);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#831843').setFontColor('#ffffff');
   sheet.autoResizeColumns(1, headers.length);
 }
 
