@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { normalizeStaffMaster } from '../data';
+import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
 
 export interface DeviceOSInfo {
   os: 'Windows' | 'macOS' | 'iOS' | 'Android' | 'Linux' | 'Unknown';
@@ -286,14 +287,16 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
 
       // Normalize Speaker dBTech T15 No. 18 (Sedang, Team Service / Mboh, 2026-09-08)
       if (eq.includes('t15') || eq.includes('dbtech') || eq.includes('dbtechnologies') || pic.includes('heri') || id === '1' || id === 'find-20260903-dbtech18') {
+        const currentStatus = f.status === 'Close' || f.approvedBy ? 'Close' : (f.status || 'Open');
         return {
+          ...f,
           id: 'find-20260903-dbtech18',
           equipment: 'Speaker dBTech DVA T15 No. 18',
           issue: 'DB Tech No.18 Ada Kendala dibagian Modul Amplifiernya, saat terkena beban input besar, hasuil suara yang di keluarkan menjadi serak, tapi masih aman dan bisa digunakan untuk Event. Rekomendasi untuk di cek oleh team service terutama pada modul Amplifier.',
           priority: 'Sedang',
           pic: 'Team Service / Mboh',
           targetDate: '2026-09-08',
-          status: f.status || 'Open',
+          status: currentStatus,
           approvedBy: f.approvedBy,
           approvedAt: f.approvedAt,
           dateCreated: f.dateCreated || '2026-09-03'
@@ -303,6 +306,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       // Normalize Panel Distribusi Listrik Audio 3 Phase (Sedang, Opik / Buluk, 2026-09-05, Close)
       if (eq.includes('panel') || eq.includes('distribusi') || eq.includes('legrand') || id === '2' || id === 'find-20260904-panel-audio') {
         return {
+          ...f,
           id: 'find-20260904-panel-audio',
           equipment: 'Panel Distribusi Listrik Audio 3 Phase',
           issue: 'Pengecekan Panel 3 Unit: 2 panel Sudah OK. 1 Ganti Stop Kontak, 1 Ganti Legran Cewe (Perbaikan selesai dilakukan Opik & Mboh pada 5 Sept, panel aman & siap pakai).',
@@ -453,11 +457,28 @@ export function subscribeCloudCollection<T = any>(
             const mergedMap = new Map<string, any>();
             const nameToId = new Map<string, string>();
 
+            // Read cached state if available to prevent initialFallback from resurrecting unapproved/open status
+            let cachedMap = new Map<string, any>();
+            try {
+              const cachedRaw = localStorage.getItem(localCacheKey);
+              if (cachedRaw) {
+                const parsedCached = JSON.parse(cachedRaw);
+                if (Array.isArray(parsedCached)) {
+                  parsedCached.forEach((c: any) => {
+                    const cId = String(c?.id || c?.no || c?.name || '');
+                    if (cId) cachedMap.set(cId, c);
+                  });
+                }
+              }
+            } catch (e) {}
+
             (initialFallback || []).forEach((fb: any) => {
               const fbId = String(fb?.id || fb?.no || fb?.name || '');
               const normName = String(fb?.name || fb?.fullName || fb?.title || '').toLowerCase().trim();
               if (fbId && !deletedIds.has(fbId)) {
-                mergedMap.set(fbId, fb);
+                const cachedDoc = cachedMap.get(fbId);
+                const baseDoc = cachedDoc ? mergeCleanDoc(fb, cachedDoc) : fb;
+                mergedMap.set(fbId, baseDoc);
                 if (normName) nameToId.set(normName, fbId);
               }
             });
@@ -682,6 +703,9 @@ export async function saveCloudDoc(
       data: cleanData
     });
   }
+
+  // Auto-update ke Google Sheet di latar belakang secara otomatis (tanpa menunggu perintah user)
+  triggerAutoSyncToGoogleSheet(1500);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -726,6 +750,7 @@ export async function deleteCloudDoc(
       collectionName,
       docId
     });
+    triggerAutoSyncToGoogleSheet(1500);
     return;
   }
 
@@ -743,6 +768,9 @@ export async function deleteCloudDoc(
       docId
     });
   }
+
+  // Auto-update ke Google Sheet di latar belakang secara otomatis
+  triggerAutoSyncToGoogleSheet(1500);
 }
 
 // ─────────────────────────────────────────────────────────────

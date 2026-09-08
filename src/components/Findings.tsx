@@ -62,6 +62,20 @@ export default function Findings({
   const [selectedWODetail, setSelectedWODetail] = useState<WorkOrder | null>(null);
   const [selectedFindingDetail, setSelectedFindingDetail] = useState<Finding | null>(null);
 
+  // Management access check (Owner, Direktur, Admin, Supervisor, Manager)
+  const isManagement = Boolean(
+    currentUser && (
+      currentUser.role === 'Admin' ||
+      currentUser.role === 'Supervisor' ||
+      currentUser.role === 'Manager' ||
+      currentUser.role === 'Owner' ||
+      currentUser.role === 'Direktur' ||
+      currentUser.division === 'Admin' ||
+      currentUser.id === 'director-wahyu' ||
+      String(currentUser.name || '').toLowerCase().includes('wahyu')
+    )
+  );
+
   // Filter/Search State
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('All');
@@ -158,7 +172,12 @@ export default function Findings({
 
   const handleToggleStatus = (id: string, currentStatus: 'Open' | 'Close') => {
     const nextStatus = currentStatus === 'Open' ? 'Close' : 'Open';
-    onUpdateFindingStatus(id, nextStatus);
+    const today = new Date().toISOString().split('T')[0];
+    if (nextStatus === 'Close' && isManagement) {
+      onUpdateFindingStatus(id, nextStatus, currentUser.name, today);
+    } else {
+      onUpdateFindingStatus(id, nextStatus);
+    }
     // P1.3: saat finding di-Close, update kondisi aset terkait ke 'Baik'
     if (nextStatus === 'Close' && onUpdateAssetCondition && assets && assets.length > 0) {
       const finding = findings.find(f => f?.id === id);
@@ -684,7 +703,7 @@ export default function Findings({
                         )}
 
                         {/* Tombol Approval Khusus Admin jika status masih Open */}
-                        {isOpen && (currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                        {isOpen && isManagement && (
                           <button
                             onClick={() => handleAdminApproveFinding(finding)}
                             className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs cursor-pointer"
@@ -718,7 +737,7 @@ export default function Findings({
                         </button>
 
                         {/* Delete Button */}
-                        {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                        {isManagement && (
                           <button
                             onClick={() => {
                               if (confirm('Yakin ingin menghapus temuan ini dari history?')) {
@@ -957,7 +976,7 @@ export default function Findings({
                     <div className="flex flex-col gap-2 pt-1">
                       <div className="flex items-center gap-2">
                         {/* Tombol Approval Khusus Admin jika WO belum berstatus Completed */}
-                        {!isCompleted && (currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                        {!isCompleted && isManagement && (
                           <button
                             onClick={() => handleAdminApproveWorkOrder(wo)}
                             className="flex-1 py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
@@ -991,7 +1010,7 @@ export default function Findings({
                         </button>
 
                         {/* Delete Work Order */}
-                        {onDeleteWorkOrder && (currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                        {onDeleteWorkOrder && isManagement && (
                           <button
                             onClick={() => {
                               if (confirm('Yakin ingin menghapus Work Order ini?')) {

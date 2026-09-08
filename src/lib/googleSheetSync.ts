@@ -42,10 +42,12 @@ export function setGoogleSheetWebhookUrl(url: string): void {
 export function isGoogleSheetAutoSyncEnabled(): boolean {
   try {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      return localStorage.getItem(GOOGLE_SHEET_AUTO_SYNC_KEY) === 'true';
+      const val = localStorage.getItem(GOOGLE_SHEET_AUTO_SYNC_KEY);
+      if (val === 'false') return false;
+      return true; // Default auto-sync aktif tanpa menunggu perintah manual
     }
   } catch (e) {}
-  return false;
+  return true;
 }
 
 export function setGoogleSheetAutoSyncEnabled(enabled: boolean): void {
@@ -142,29 +144,91 @@ export function getExportPayloadForGoogleSheet() {
     }
   };
 
-  const logs = parseStorage('riz_daily_logs', []);
+  const logs = parseStorage('riz_logbook_entries', []);
+  const reports = parseStorage('riz_daily_reports', []);
   const staff = parseStorage('riz_master_staff_list', []);
   const freelance = parseStorage('riz_freelance_workers', []);
   const vehicles = parseStorage('riz_master_vehicles', []);
   const drivers = parseStorage('riz_fleet_drivers', []);
   const fleetAssignments = parseStorage('riz_fleet_assignments', []);
-  const findings = parseStorage('riz_findings_wo', []);
-  const schedules = parseStorage('riz_september_2026_shifts', []);
+  const findings = parseStorage('riz_findings', []);
+  const workOrders = parseStorage('riz_work_orders', []);
+  const schedules = parseStorage('riz_september_2026_schedule', []);
+
+  // Format combined daily logs & reports for Google Sheet
+  const formattedDailyLogs = [
+    ...logs.map((l: any) => ({
+      id: l.id || '',
+      date: l.date || '',
+      division: l.division || '',
+      staffName: l.staffName || '',
+      staffRole: 'Staff / Teknisi',
+      title: l.activity || '',
+      category: 'QC Checklist',
+      status: l.result || l.status || '',
+      description: l.followUp || '',
+      createdAt: l.date || ''
+    })),
+    ...reports.map((r: any) => ({
+      id: r.id || '',
+      date: r.date || '',
+      division: r.division || '',
+      staffName: r.staffName || '',
+      staffRole: 'Staff Operasional',
+      title: r.activity || '',
+      category: 'Laporan Harian Lapangan',
+      status: r.status || '',
+      description: r.notes || '',
+      createdAt: r.date || ''
+    }))
+  ];
+
+  // Format schedule shifts for Google Sheet
+  const formattedSchedules = schedules.map((s: any) => ({
+    id: s.id || `row-${s.no || ''}`,
+    name: s.name || s.fullName || '',
+    division: s.division || '',
+    shifts: s.shifts || {}
+  }));
 
   return {
     spreadsheetId: DEFAULT_SPREADSHEET_ID,
     timestamp: new Date().toISOString(),
     data: {
-      daily_logs: logs,
+      daily_logs: formattedDailyLogs,
       staff_members: staff,
       freelance_workers: freelance,
       vehicles: vehicles,
       drivers: drivers,
       fleet_assignments: fleetAssignments,
-      findings_wo: findings,
-      schedule_shifts: schedules
+      findings_wo: [...findings, ...workOrders],
+      schedule_shifts: formattedSchedules
     }
   };
+}
+
+// Debounce auto-sync timer for Google Sheet
+let googleSheetAutoSyncTimer: any = null;
+
+/**
+ * Otomatis memicu update ke Google Sheet di latar belakang (Background Auto-Sync)
+ * Setiap kali terjadi mutasi data (Simpan QC, Logbook, Finding, WO, dsb.)
+ */
+export function triggerAutoSyncToGoogleSheet(delayMs: number = 2000): void {
+  if (typeof window === 'undefined') return;
+  if (!isGoogleSheetAutoSyncEnabled()) return;
+
+  if (googleSheetAutoSyncTimer) {
+    clearTimeout(googleSheetAutoSyncTimer);
+  }
+
+  googleSheetAutoSyncTimer = setTimeout(async () => {
+    try {
+      await syncAllToGoogleSheet();
+    } catch (e) {
+      console.warn('[Auto-Sync] Background Google Sheet auto-update notification:', e);
+    }
+  }, delayMs);
 }
 
 /**
@@ -263,6 +327,7 @@ export async function pullDataFromGoogleSheet(webhookUrl?: string): Promise<Goog
     const resData = JSON.parse(text);
 
     if (resData.status === 'success' && resData.schedule_shifts) {
+      localStorage.setItem('riz_september_2026_schedule', JSON.stringify(resData.schedule_shifts));
       localStorage.setItem('riz_september_2026_shifts', JSON.stringify(resData.schedule_shifts));
       localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, new Date().toISOString());
       return {
