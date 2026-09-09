@@ -444,6 +444,17 @@ export const INITIAL_FINDINGS: Finding[] = [
     targetDate: '2026-09-05',
     status: 'Close',
     dateCreated: '2026-09-04'
+  },
+  {
+    id: 'find-20260907-parled',
+    equipment: 'PAR LED Warm White (Lighting)',
+    issue: 'Parled Warm mati No. 12, 25, 29 & Warm separo No. 3, 32',
+    priority: 'Sedang',
+    pic: 'Heri',
+    division: 'Lighting',
+    targetDate: '2026-09-09',
+    status: 'Open',
+    dateCreated: '2026-09-07'
   }
 ];
 
@@ -621,6 +632,21 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
       'Cek Cable XLR': { status: 'OK', notes: 'Kontinuitas kabel XLR mikrofon dan snake normal' },
       'Cek Cable Jack to Jack': { status: 'OK', notes: 'Kontinuitas kabel instrumen Jack to Jack normal' }
     }
+  },
+  {
+    id: 'log-20260907-01',
+    date: '2026-09-07',
+    division: 'Lighting',
+    staffName: 'Heri',
+    activity: 'Cek unit, cleaning, cek colour parled',
+    result: 'NG',
+    followUp: 'Parled Warm mati No. 12, 25, 29 & Warm separo No. 3, 32',
+    status: 'Open',
+    verification: 'Fahrul (Manager)',
+    checklists: {
+      'Cek Unit & Cleaning Parled': { status: 'OK', notes: 'Pembersihan unit parled selesai' },
+      'Cek Colour & Nyala LED': { status: 'NG', notes: 'Parled Warm mati No. 12, 25, 29 & Warm separo No. 3, 32' }
+    }
   }
 ];
 
@@ -769,6 +795,18 @@ export const INITIAL_DAILY_REPORTS: DailyReport[] = [
     photos: [
       'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'
     ]
+  },
+  {
+    id: 'rep-20260907-heri',
+    date: '2026-09-07',
+    staffName: 'Heri',
+    division: 'Lighting',
+    activity: 'Cek unit, cleaning, cek colour parled',
+    notes: '- Cek unit, cleaning, cek colour parled\nREMARK:\n- Parled Warm mati No. 12, 25, 29 & Warm separo No. 3, 32',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80'
+    ]
   }
 ];
 
@@ -864,6 +902,19 @@ export const INITIAL_DAILY_TASKS: DailyTask[] = [
     dueDate: '2026-09-06',
     createdAt: '2026-09-06',
     createdBy: 'Dani'
+  },
+  {
+    id: 'dt-20260907-01',
+    title: 'Cek unit, cleaning, cek colour parled',
+    description: '- Cek unit, cleaning, cek colour parled\nREMARK:\n- Parled Warm mati No. 12, 25, 29 & Warm separo No. 3, 32',
+    division: 'Lighting',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-heri',
+    assignedName: 'Heri',
+    dueDate: '2026-09-07',
+    createdAt: '2026-09-07',
+    createdBy: 'Heri'
   }
 ];
 

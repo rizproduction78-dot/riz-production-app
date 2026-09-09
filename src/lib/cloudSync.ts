@@ -286,7 +286,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const id = String(f.id || '');
 
       // Normalize Speaker dBTech T15 No. 18 (Sedang, Team Service / Mboh, 2026-09-08)
-      if (eq.includes('t15') || eq.includes('dbtech') || eq.includes('dbtechnologies') || pic.includes('heri') || id === '1' || id === 'find-20260903-dbtech18') {
+      if (eq.includes('t15') || eq.includes('dbtech') || eq.includes('dbtechnologies') || id === '1' || id === 'find-20260903-dbtech18') {
         const currentStatus = f.status === 'Close' || f.approvedBy ? 'Close' : (f.status || 'Open');
         return {
           ...f,
@@ -317,6 +317,24 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
           approvedBy: f.approvedBy,
           approvedAt: f.approvedAt,
           dateCreated: f.dateCreated || '2026-09-04'
+        };
+      }
+
+      // Normalize PAR LED Warm White (Lighting, Sedang, Heri, 2026-09-07)
+      if (eq.includes('parled') || eq.includes('par led') || id === 'find-20260907-parled') {
+        return {
+          ...f,
+          id: 'find-20260907-parled',
+          equipment: 'PAR LED Warm White (Lighting)',
+          issue: 'Parled Warm mati No. 12, 25, 29 & Warm separo No. 3, 32',
+          priority: 'Sedang',
+          pic: 'Heri',
+          division: 'Lighting',
+          targetDate: '2026-09-09',
+          status: f.status || 'Open',
+          approvedBy: f.approvedBy,
+          approvedAt: f.approvedAt,
+          dateCreated: f.dateCreated || '2026-09-07'
         };
       }
 
