@@ -58,7 +58,9 @@ import {
   Sparkles,
   Sliders,
   Truck,
-  Download
+  Download,
+  Smartphone,
+  Share
 } from 'lucide-react';
 import {
   subscribeCloudCollection,
@@ -94,8 +96,20 @@ export default function App() {
   // PWA Install Prompt State
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
   const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [showIOSInstallGuide, setShowIOSInstallGuide] = useState(false);
+  const [isIOSDevice, setIsIOSDevice] = useState(false);
 
   useEffect(() => {
+    // Check if running on iOS (iPhone/iPad)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOSDevice(isIOS);
+
+    // Check if already launched as standalone PWA (iOS Safari / Android Chrome)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+    if (isStandalone) {
+      setIsAppInstalled(true);
+    }
+
     const unsubStaff = subscribeCloudCollection<Staff>(
       'master_staff',
       'riz_master_staff_list',
@@ -124,13 +138,16 @@ export default function App() {
   }, []);
 
   const handleInstallPWA = async () => {
-    if (!deferredInstallPrompt) return;
-    deferredInstallPrompt.prompt();
-    const { outcome } = await deferredInstallPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setIsAppInstalled(true);
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsAppInstalled(true);
+      }
+      setDeferredInstallPrompt(null);
+    } else if (isIOSDevice && !isAppInstalled) {
+      setShowIOSInstallGuide(true);
     }
-    setDeferredInstallPrompt(null);
   };
 
   // Define tab navigation elements based on current user role (Hak Akses)
@@ -963,14 +980,14 @@ export default function App() {
 
         {/* Staff Footer & Logout */}
         <div className="flex-none px-3.5 pt-3 pb-4 border-t border-[#1e293b] bg-[#0c1322] space-y-2.5">
-          {deferredInstallPrompt && !isAppInstalled && (
+          {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
             <button
               onClick={handleInstallPWA}
               className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-[11px] font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer animate-pulse"
-              title="Install Aplikasi RIZ-PRO LOG ke perangkat (PWA)"
+              title={isIOSDevice ? "Panduan Install di iPhone/iPad (iOS)" : "Install Aplikasi RIZ-PRO LOG ke perangkat"}
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Install Aplikasi (PWA)</span>
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>{isIOSDevice ? "Install di iPhone/iPad" : "Install Aplikasi (PWA)"}</span>
             </button>
           )}
           <div className="flex items-center gap-2.5 bg-slate-900/80 p-2 rounded-lg border border-slate-800/90">
@@ -1018,6 +1035,18 @@ export default function App() {
       {mobileMenuOpen && (
         <div className="no-print md:hidden bg-[#0f172a] text-slate-300 fixed inset-0 top-[57px] z-40 flex flex-col p-4 space-y-3 border-t border-[#1e293b] overflow-y-auto">
           <div className="flex-1 space-y-3">
+            {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
+              <button
+                onClick={() => {
+                  handleInstallPWA();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span>{isIOSDevice ? "Install di iPhone/iPad (iOS)" : "Install Aplikasi (PWA)"}</span>
+              </button>
+            )}
             {Object.entries(groupedNavItems).map(([category, items]) => (
               <div key={category} className="space-y-1">
                 <div className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest px-2 pt-1">
@@ -1092,14 +1121,14 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {deferredInstallPrompt && !isAppInstalled && (
+            {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
               <button
                 onClick={handleInstallPWA}
                 className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Install PWA ke HP / Komputer"
+                title={isIOSDevice ? "Panduan Pasang di iPhone/iPad" : "Install PWA ke HP / Komputer"}
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Install PWA</span>
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>{isIOSDevice ? "Install di iOS" : "Install PWA"}</span>
               </button>
             )}
             <button
@@ -1286,6 +1315,66 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* iOS PWA Add to Home Screen Instructions Modal */}
+      {showIOSInstallGuide && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-[#0f172a] text-white border border-slate-700 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Pasang di iPhone / iPad (iOS)</h3>
+                  <p className="text-[11px] text-slate-400">Jalankan RIZ-PRO LOG seperti aplikasi bawaan iOS</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowIOSInstallGuide(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300">
+              <div className="flex items-start gap-3 p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                <span className="flex-none w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center">1</span>
+                <div>
+                  <span className="font-semibold text-white">Buka di Browser Safari:</span>
+                  <p className="text-slate-400 text-[11px] mt-0.5">Pastikan Anda membuka tautan sistem ini menggunakan browser resmi Safari di iPhone/iPad.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                <span className="flex-none w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center">2</span>
+                <div className="space-y-1">
+                  <span className="font-semibold text-white flex items-center gap-1.5">
+                    Ketuk tombol Bagikan <Share className="w-3.5 h-3.5 text-blue-400 inline" /> (Share)
+                  </span>
+                  <p className="text-slate-400 text-[11px]">Tombol kotak dengan panah ke atas di bilah navigasi Safari bagian bawah layar.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                <span className="flex-none w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center">3</span>
+                <div>
+                  <span className="font-semibold text-white">Pilih "Tambah ke Layar Utama" (Add to Home Screen)</span>
+                  <p className="text-slate-400 text-[11px] mt-0.5">Gulir ke bawah pada menu bagikan, pilih <strong>Add to Home Screen</strong> dan tekan <strong>Tambah / Add</strong> di pojok kanan atas.</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowIOSInstallGuide(false)}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-lg shadow-blue-500/20"
+            >
+              Saya Mengerti
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

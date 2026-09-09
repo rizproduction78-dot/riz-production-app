@@ -217,6 +217,22 @@ if (fs.existsSync(swPath)) {
   expect(swContent.includes("addEventListener('fetch'"), 'Service Worker handles fetch caching and offline fallback');
 }
 
+const indexPath = path.resolve(process.cwd(), 'index.html');
+expect(fs.existsSync(indexPath), 'index.html exists');
+if (fs.existsSync(indexPath)) {
+  const indexHtml = fs.readFileSync(indexPath, 'utf-8');
+  expect(indexHtml.includes('viewport-fit=cover'), 'Enables iOS safe area viewport-fit=cover');
+  expect(indexHtml.includes('apple-mobile-web-app-capable'), 'Configures iOS Safari web app capability');
+  expect(indexHtml.includes('apple-touch-icon'), 'Includes apple-touch-icon for iOS Home Screen');
+}
+
+const cssPath = path.resolve(process.cwd(), 'src/index.css');
+expect(fs.existsSync(cssPath), 'src/index.css exists');
+if (fs.existsSync(cssPath)) {
+  const cssContent = fs.readFileSync(cssPath, 'utf-8');
+  expect(cssContent.includes('safe-area-inset-top'), 'Includes iOS/Android notch and gesture safe area utilities');
+}
+
 // 11. Test Summary
 console.log('\n================================================================');
 console.log(`TEST SUMMARY: ${passedTests}/${totalTests} Tests Passed (${Math.round((passedTests / totalTests) * 100)}%)`);
