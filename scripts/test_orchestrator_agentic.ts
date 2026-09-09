@@ -160,7 +160,31 @@ expect(wsKey === 'riz_daily_reports', 'Primary workspace storage key intact');
 const allWorkspaces = workspaceManager.getAllWorkspaces();
 expect(allWorkspaces.length >= 2, `Multiple isolated workspaces registered (${allWorkspaces.length} workspaces)`);
 
-// 8. Test Summary
+// 8. Test Multi-Division Position: Mulyana / Kharo (Videotron & Service)
+console.log('\n--- 8. Testing Multi-Division Staff: Mulyana / Kharo (Videotron & Service) ---');
+const mulyanaStaff = STAFF_LIST.find(s => s.id === 'staff-mulyana');
+expect(mulyanaStaff !== undefined, 'Mulyana staff record found in STAFF_LIST');
+expect(mulyanaStaff?.division === 'Service', 'Mulyana primary division is Service');
+expect(mulyanaStaff?.secondaryDivision === 'Videotron', 'Mulyana secondary division is Videotron');
+expect(Array.isArray(mulyanaStaff?.divisions) && mulyanaStaff.divisions.includes('Service') && mulyanaStaff.divisions.includes('Videotron'), 'Mulyana holds both Service and Videotron divisions');
+
+// Test that monthly orchestrated report credits Mulyana's activities to both Videotron and Service productivity
+const monthlyOrchTest = generateOrchestratedReport('Bulanan', 'September 2026', {
+  dailyReports: INITIAL_DAILY_REPORTS,
+  logbookEntries: INITIAL_LOGBOOK_ENTRIES,
+  findings: INITIAL_FINDINGS,
+  workOrders: INITIAL_WORK_ORDERS,
+  staffList: STAFF_LIST,
+  assets: INITIAL_ASSETS
+});
+
+const vProd = monthlyOrchTest.detailedSections.divisionProductivity.find(d => d.division === 'Videotron');
+const sProd = monthlyOrchTest.detailedSections.divisionProductivity.find(d => d.division.includes('Service'));
+
+expect(vProd !== undefined && vProd.totalActivities > 0, `Videotron productivity includes Mulyana dual-division data (${vProd?.totalActivities} activities)`);
+expect(sProd !== undefined && sProd.totalActivities > 0, `Service productivity includes Mulyana dual-division data (${sProd?.totalActivities} activities)`);
+
+// 9. Test Summary
 console.log('\n================================================================');
 console.log(`TEST SUMMARY: ${passedTests}/${totalTests} Tests Passed (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('================================================================\n');

@@ -10,6 +10,7 @@ import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { saveCloudDoc, deleteCloudDoc, subscribeCloudCollection } from '../lib/cloudSync';
+import { getStaffDivisions, isStaffInDivision } from '../utils/kpiCalculator';
 import {
   ClipboardList,
   CheckCircle2,
@@ -481,14 +482,20 @@ export default function LogTaskModule({
     document.body.removeChild(link);
   };
 
-  // Filtered Tasks - Staff only sees their own division; Management can filter or see All
+  // Filtered Tasks - Staff only sees their own division(s); Management can filter or see All
+  const userDivs = getStaffDivisions(currentUser);
+  const isDualStaffName = (name?: string) => {
+    const lower = (name || '').toLowerCase();
+    return lower.includes('mulyana') || lower.includes('kharo') || lower.includes('karo');
+  };
+
   const filteredTasks = tasks.filter(t => {
     const matchSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         (t.assignedName && t.assignedName.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchDiv = isManagement
-      ? (filterDivision === 'All' || t.division === filterDivision)
-      : (t.division === currentUser.division);
+      ? (filterDivision === 'All' || t.division === filterDivision || (isDualStaffName(t.assignedName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
+      : (userDivs.includes(t.division) || isDualStaffName(t.assignedName));
     const matchPri = filterPriority === 'All' || t.priority === filterPriority;
     return matchSearch && matchDiv && matchPri;
   });
@@ -497,14 +504,14 @@ export default function LogTaskModule({
   const progressTasks = filteredTasks.filter(t => t.status === 'In Progress');
   const doneTasks = filteredTasks.filter(t => t.status === 'Done');
 
-  // Filtered Reports for Logbook View - Staff only sees their own division
+  // Filtered Reports for Logbook View - Staff sees reports from all assigned divisions
   const filteredReports = dailyReports.filter(r => {
     const matchSearch = r.staffName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         r.activity.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         r.notes.toLowerCase().includes(searchQuery.toLowerCase());
     const matchDiv = isManagement
-      ? (filterDivision === 'All' || r.division === filterDivision)
-      : (r.division === currentUser.division);
+      ? (filterDivision === 'All' || r.division === filterDivision || (isDualStaffName(r.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
+      : (userDivs.includes(r.division) || isDualStaffName(r.staffName));
     return matchSearch && matchDiv;
   });
 
@@ -816,6 +823,18 @@ export default function LogTaskModule({
                         <option value="Multimedia">🎥 Multimedia</option>
                         <option value="Gudang">📦 Gudang</option>
                         <option value="Service">🔧 Service</option>
+                      </select>
+                    ) : userDivs.length > 1 ? (
+                      <select
+                        value={qcDivision}
+                        onChange={(e) => setQcDivision(e.target.value as any)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-indigo-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
+                      >
+                        {userDivs.map(d => (
+                          <option key={d} value={d}>
+                            {DIVISION_CONFIG[d]?.icon} {d} (Multi-Posisi)
+                          </option>
+                        ))}
                       </select>
                     ) : (
                       <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -1222,6 +1241,18 @@ export default function LogTaskModule({
                       <option value="Gudang">Gudang</option>
                       <option value="Admin">Admin</option>
                       <option value="Service">Service</option>
+                    </select>
+                  ) : userDivs.length > 1 ? (
+                    <select
+                      value={logDivision}
+                      onChange={(e) => setLogDivision(e.target.value as Division)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-blue-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
+                    >
+                      {userDivs.map(d => (
+                        <option key={d} value={d}>
+                          {DIVISION_CONFIG[d]?.icon} {d} (Multi-Posisi)
+                        </option>
+                      ))}
                     </select>
                   ) : (
                     <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center gap-1.5">

@@ -39,7 +39,7 @@ export const STAFF_LIST: Staff[] = [
 
   // 7. Service
   { id: 'staff-damri', name: 'Damri', fullName: 'Damri', nickname: 'Mang Damri', email: 'damri.service@rizproduction.com', phone: '081288990011', division: 'Service', role: 'Team Leader', level: 5 },
-  { id: 'staff-mulyana', name: 'Mulyana', fullName: 'Mulyana', nickname: 'Kharo', email: 'tabitakharo@gmail.com', phone: '089523134060', division: 'Service', role: 'Staff', level: 3 }
+  { id: 'staff-mulyana', name: 'Mulyana', fullName: 'Mulyana', nickname: 'Kharo', email: 'tabitakharo@gmail.com', phone: '089523134060', division: 'Service', secondaryDivision: 'Videotron', divisions: ['Service', 'Videotron'], role: 'Staff', level: 3 }
 ];
 
 export const MASTER_STAFF: Staff[] = [...STAFF_LIST];
@@ -178,6 +178,8 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
         fullName: 'Mulyana',
         nickname: 'Kharo',
         division: 'Service',
+        secondaryDivision: 'Videotron',
+        divisions: ['Service', 'Videotron'],
         role: 'Staff',
         level: 3
       };

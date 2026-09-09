@@ -11,7 +11,7 @@ import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';
 import { OFFICIAL_COMPETENCY_MATRICES } from '../data/competencyMatrixData';
 import { STAFF_LIST } from '../data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../data/september2026Schedule';
-import { isStaffMatch } from '../utils/kpiCalculator';
+import { isStaffMatch, isStaffInDivision } from '../utils/kpiCalculator';
 import { Asset, LogbookEntry, DailyReport, Finding, WorkOrder, AttendanceLog, WarehouseLog } from '../types';
 import { agenticMemory, ShortTermMemoryItem, LongTermMemoryItem } from './agenticMemory';
 
@@ -830,11 +830,34 @@ export function generateOrchestratedReport(
   ];
 
   const divisionProductivity = standardDivisions.map(d => {
-    const dr = dailyReports.filter(r => r.division === d.key).length;
-    const qc = logbookEntries.filter(e => e.division === d.key).length;
-    const maint = workOrders.filter(w => w.division === d.key).length;
+    // Menghitung aktivitas per divisi:
+    // Khusus Mulyana / Kharo yang memegang 2 posisi divisi (Videotron & Service),
+    // seluruh aktivitas Daily Task & QC yang dikerjakannya diakui dan menjadi data bagi kedua divisi.
+    const isDualStaffEntry = (authorName?: string) => {
+      const lower = (authorName || '').toLowerCase();
+      return lower.includes('mulyana') || lower.includes('kharo') || lower.includes('karo');
+    };
+
+    const dr = dailyReports.filter(r => {
+      if (r.division === d.key) return true;
+      if ((d.key === 'Videotron' || d.key === 'Service') && isDualStaffEntry(r.staffName)) return true;
+      return false;
+    }).length;
+
+    const qc = logbookEntries.filter(e => {
+      if (e.division === d.key) return true;
+      if ((d.key === 'Videotron' || d.key === 'Service') && isDualStaffEntry(e.staffName)) return true;
+      return false;
+    }).length;
+
+    const maint = workOrders.filter(w => {
+      if (w.division === d.key) return true;
+      if ((d.key === 'Videotron' || d.key === 'Service') && isDualStaffEntry(w.pic)) return true;
+      return false;
+    }).length;
+
     const totalActs = dr + qc + maint;
-    const staffInDiv = activeStaffList.filter(s => s.staff.division === d.key);
+    const staffInDiv = activeStaffList.filter(s => isStaffInDivision(s.staff, d.key));
     const avgScore = staffInDiv.length > 0
       ? Math.round(staffInDiv.reduce((acc, s) => acc + s.score, 0) / staffInDiv.length)
       : 0;

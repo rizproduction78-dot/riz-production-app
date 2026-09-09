@@ -8,6 +8,7 @@ import { DailyReport as DailyReportType, Division, Finding, Staff } from '../typ
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { FileText, Plus, Calendar, User, Briefcase, CheckCircle2, Clipboard, Image as ImageIcon, Trash2, Search, Send, AlertOctagon, Eye, X, Upload } from 'lucide-react';
 import { subscribeCloudCollection } from '../lib/cloudSync';
+import { isStaffInDivision, getStaffDivisions } from '../utils/kpiCalculator';
 
 interface DailyReportProps {
   reports: DailyReportType[];
@@ -138,14 +139,20 @@ export default function DailyReport({
     setFaultyUnitPriority('Sedang');
   };
 
-  // Filter reports - Staff only sees their own division
+  // Filter reports - Staff sees reports from any division they belong to (supports multi-division like Mulyana/Kharo)
+  const userDivisions = getStaffDivisions(currentUser);
+  const isDualStaffName = (name?: string) => {
+    const lower = (name || '').toLowerCase();
+    return lower.includes('mulyana') || lower.includes('kharo') || lower.includes('karo');
+  };
+
   const filteredReports = reports.filter(r => {
     const matchSearch = r.staffName.toLowerCase().includes(searchTerm.toLowerCase()) || 
                         r.activity.toLowerCase().includes(searchTerm.toLowerCase()) || 
                         r.notes.toLowerCase().includes(searchTerm.toLowerCase());
     const matchDivision = isManagement 
-      ? (filterDivision === 'All' || r.division === filterDivision)
-      : (r.division === currentUser.division);
+      ? (filterDivision === 'All' || r.division === filterDivision || (isDualStaffName(r.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
+      : (userDivisions.includes(r.division) || isDualStaffName(r.staffName));
     return matchSearch && matchDivision;
   });
 
@@ -239,6 +246,14 @@ export default function DailyReport({
                       <option value="Gudang">Gudang</option>
                       <option value="Admin">Admin / Management</option>
                       <option value="Service">Service (Perbaikan)</option>
+                    </>
+                  ) : userDivisions.length > 1 ? (
+                    <>
+                      {userDivisions.map(d => (
+                        <option key={d} value={d}>
+                          {d === 'Audio' ? 'Audio (Sound)' : d === 'Videotron' ? 'Videotron (LED / Videotron)' : d === 'Service' ? 'Service (Perbaikan)' : d}
+                        </option>
+                      ))}
                     </>
                   ) : (
                     <option value={currentUser.division}>

@@ -29,7 +29,7 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
-import { calculateAllStaffKpis } from '../utils/kpiCalculator';
+import { calculateAllStaffKpis, isStaffInDivision } from '../utils/kpiCalculator';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { Staff, MaintenanceSchedule } from '../types';
@@ -200,13 +200,38 @@ export default function Dashboard({
   ];
 
   const divisionStatsDynamic = divisionListConfig.map(d => {
-    const dr = activeDailyReports.filter(r => r.division === d.key).length;
-    const qc = activeLogbookEntries.filter(e => e.division === d.key).length;
-    const wo = activeWorkOrders.filter(w => w.division === d.key).length;
+    // Staff Mulyana/Kharo berada di 2 posisi divisi: Videotron & Service
+    const isDualStaff = (name?: string) => {
+      const lower = (name || '').toLowerCase();
+      return lower.includes('mulyana') || lower.includes('kharo') || lower.includes('karo');
+    };
+
+    const dr = activeDailyReports.filter(r => {
+      if (r.division === d.key) return true;
+      if ((d.key === 'Videotron' || d.key === 'Service') && isDualStaff(r.staffName)) return true;
+      return false;
+    }).length;
+
+    const qc = activeLogbookEntries.filter(e => {
+      if (e.division === d.key) return true;
+      if ((d.key === 'Videotron' || d.key === 'Service') && isDualStaff(e.staffName)) return true;
+      return false;
+    }).length;
+
+    const wo = activeWorkOrders.filter(w => {
+      if (w.division === d.key) return true;
+      if ((d.key === 'Videotron' || d.key === 'Service') && isDualStaff(w.pic)) return true;
+      return false;
+    }).length;
+
     const totalActs = dr + qc + wo;
     
     // Dynamic KPI for this division
-    const divStaff = activeStaffProductivityData.filter(s => s.division === d.key);
+    const divStaff = activeStaffProductivityData.filter(s => {
+      if (s.division === d.key) return true;
+      const foundStaff = staffList.find(st => st.id === s.id);
+      return isStaffInDivision(foundStaff, d.key);
+    });
     const avgKpi = divStaff.length > 0 
       ? Math.round(divStaff.reduce((acc, s) => acc + s.kpi, 0) / divStaff.length)
       : 0;

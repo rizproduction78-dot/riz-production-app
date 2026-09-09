@@ -222,6 +222,42 @@ export function isStaffMatch(staff: Staff, inputName?: string): boolean {
 }
 
 /**
+ * Mengambil seluruh divisi yang diemban oleh staff.
+ * Mendukung staff dengan peran multi-divisi (misalnya: Mulyana/Kharo di Videotron dan Service).
+ */
+export function getStaffDivisions(staff: Staff | null | undefined): Division[] {
+  if (!staff) return [];
+  const divs: Division[] = [];
+  if (staff.division) divs.push(staff.division);
+  if (staff.secondaryDivision && !divs.includes(staff.secondaryDivision)) {
+    divs.push(staff.secondaryDivision);
+  }
+  if (Array.isArray(staff.divisions)) {
+    staff.divisions.forEach(d => {
+      if (!divs.includes(d)) divs.push(d);
+    });
+  }
+  // Khusus Mulyana / Kharo: Selalu berada di 2 posisi divisi resmi: Videotron & Service
+  const sId = (staff.id || '').toLowerCase();
+  const sName = (staff.name || '').toLowerCase();
+  const sNick = (staff.nickname || '').toLowerCase();
+  if (sId === 'staff-mulyana' || sName.includes('mulyana') || sNick.includes('kharo') || sNick.includes('karo')) {
+    if (!divs.includes('Service')) divs.push('Service');
+    if (!divs.includes('Videotron')) divs.push('Videotron');
+  }
+  return divs;
+}
+
+/**
+ * Memeriksa apakah staff terdaftar pada divisi tertentu (mendukung multi-divisi).
+ */
+export function isStaffInDivision(staff: Staff | null | undefined, targetDivision: Division | string): boolean {
+  if (!staff || !targetDivision) return false;
+  const staffDivs = getStaffDivisions(staff);
+  return staffDivs.some(d => d.toLowerCase() === targetDivision.toLowerCase());
+}
+
+/**
  * Menghitung KPI akurat untuk seorang staff dengan menghitung:
  * - Komponen asli: Disiplin, Produktivitas, Quality, Kompleksitas Tugas, Teamwork
  * - DITAMBAH DENGAN: Jumlah Absen & Uji Kompetensi yang Diikuti

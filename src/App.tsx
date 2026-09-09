@@ -343,7 +343,7 @@ export default function App() {
       level: 5
     }, 'System Auto-Sync').catch(() => {});
 
-    // Sinkronisasi data Mulyana (Staff Service) ke Cloud master_staff
+    // Sinkronisasi data Mulyana (Staff Service & Videotron) ke Cloud master_staff
     saveCloudDoc('master_staff', 'staff-mulyana', {
       id: 'staff-mulyana',
       name: 'Mulyana',
@@ -352,6 +352,8 @@ export default function App() {
       email: 'tabitakharo@gmail.com',
       phone: '089523134060',
       division: 'Service',
+      secondaryDivision: 'Videotron',
+      divisions: ['Service', 'Videotron'],
       role: 'Staff',
       level: 3
     }, 'System Auto-Sync').catch(() => {});
