@@ -57,7 +57,8 @@ import {
   RefreshCw,
   Sparkles,
   Sliders,
-  Truck
+  Truck,
+  Download
 } from 'lucide-react';
 import {
   subscribeCloudCollection,
@@ -90,6 +91,10 @@ export default function App() {
   // Master Staff List State with Cloud Sync
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
 
+  // PWA Install Prompt State
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+
   useEffect(() => {
     const unsubStaff = subscribeCloudCollection<Staff>(
       'master_staff',
@@ -97,8 +102,36 @@ export default function App() {
       setStaffList,
       STAFF_LIST
     );
-    return () => unsubStaff();
+
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setDeferredInstallPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      unsubStaff();
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
+
+  const handleInstallPWA = async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsAppInstalled(true);
+    }
+    setDeferredInstallPrompt(null);
+  };
 
   // Define tab navigation elements based on current user role (Hak Akses)
   interface NavigationItem {
@@ -930,6 +963,16 @@ export default function App() {
 
         {/* Staff Footer & Logout */}
         <div className="flex-none px-3.5 pt-3 pb-4 border-t border-[#1e293b] bg-[#0c1322] space-y-2.5">
+          {deferredInstallPrompt && !isAppInstalled && (
+            <button
+              onClick={handleInstallPWA}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-[11px] font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer animate-pulse"
+              title="Install Aplikasi RIZ-PRO LOG ke perangkat (PWA)"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Install Aplikasi (PWA)</span>
+            </button>
+          )}
           <div className="flex items-center gap-2.5 bg-slate-900/80 p-2 rounded-lg border border-slate-800/90">
             <div className="w-8 h-8 rounded-full bg-blue-600/30 text-blue-400 border border-blue-500/40 flex items-center justify-center font-bold text-xs shrink-0">
               {currentUser.name.substring(0, 1).toUpperCase()}
@@ -1049,6 +1092,16 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            {deferredInstallPrompt && !isAppInstalled && (
+              <button
+                onClick={handleInstallPWA}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Install PWA ke HP / Komputer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Install PWA</span>
+              </button>
+            )}
             <button
               onClick={handleManualSync}
               disabled={syncStatus.isSyncing}

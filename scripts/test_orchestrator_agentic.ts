@@ -194,7 +194,30 @@ expect(Array.isArray(sheetPayload.data.daily_logs) && sheetPayload.data.daily_lo
 expect(sheetPayload.data.daily_logs.some((l: any) => l.category === 'Daily Task (Kanban)'), 'Integrates Daily Task (Kanban) into daily_logs feed');
 expect(sheetPayload.data.staff_members.some((s: any) => s.id === 'staff-mulyana' && s.secondaryDivision === 'Videotron'), 'Staff Mulyana dual-division preserved in Google Sheet payload');
 
-// 10. Test Summary
+// 10. Progressive Web App (PWA) Verification
+console.log('\n--- 10. PWA Configuration & Offline Capabilities ---');
+import * as fs from 'fs';
+import * as path from 'path';
+
+const manifestPath = path.resolve(process.cwd(), 'public/manifest.json');
+expect(fs.existsSync(manifestPath), 'public/manifest.json exists');
+if (fs.existsSync(manifestPath)) {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  expect(manifest.display === 'standalone', `PWA display mode is standalone: "${manifest.display}"`);
+  expect(manifest.start_url === '/', `PWA start_url is root: "${manifest.start_url}"`);
+  expect(Array.isArray(manifest.icons) && manifest.icons.length > 0, `PWA defines ${manifest.icons?.length} icon definitions`);
+}
+
+const swPath = path.resolve(process.cwd(), 'public/sw.js');
+expect(fs.existsSync(swPath), 'public/sw.js exists');
+if (fs.existsSync(swPath)) {
+  const swContent = fs.readFileSync(swPath, 'utf-8');
+  expect(swContent.includes("addEventListener('install'"), 'Service Worker handles install event');
+  expect(swContent.includes("addEventListener('activate'"), 'Service Worker handles activate event');
+  expect(swContent.includes("addEventListener('fetch'"), 'Service Worker handles fetch caching and offline fallback');
+}
+
+// 11. Test Summary
 console.log('\n================================================================');
 console.log(`TEST SUMMARY: ${passedTests}/${totalTests} Tests Passed (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('================================================================\n');

@@ -1,18 +1,44 @@
 {
   "name": "RIZ-PROLOG — Warehouse Log-Book & Daily Task",
   "short_name": "RIZ-PROLOG",
-  "description": "Sistem Log-Book & Daily Task Operasional Warehouse Multi-Divisi",
+  "description": "Sistem Log-Book, Daily Task, QC dan Operasional Warehouse Multi-Divisi PT. Riz Production",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "any",
+  "lang": "id",
+  "categories": ["business", "productivity", "utilities"],
   "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
     {
       "src": "/icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Daily Task & Logbook",
+      "short_name": "Daily Task",
+      "description": "Buka modul Daily Task dan QC Logbook",
+      "url": "/#logtask",
+      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Presensi Lapangan",
+      "short_name": "Presensi",
+      "description": "Buka modul Absensi dan Roster",
+      "url": "/#absensi",
+      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
     }
   ]
 }
