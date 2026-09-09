@@ -212,7 +212,11 @@ export default function Gudang({
       emergencyContact: driverFormData.emergencyContact?.trim() || '',
       address: driverFormData.address?.trim() || '',
       notes: driverFormData.notes?.trim() || '',
-      createdAt: new Date().toISOString().split('T')[0]
+      createdAt: new Date().toISOString().split('T')[0],
+      _syncMeta: {
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.name
+      }
     };
     const updated = [...driverList, newDrv];
     await saveDriverList(updated, { type: 'save', id: newDrv.id, doc: newDrv });
@@ -224,7 +228,14 @@ export default function Gudang({
     let updatedDoc: FleetDriver | null = null;
     const updated = driverList.map(d => {
       if (d.id === selectedDriver.id) {
-        updatedDoc = { ...d, ...driverFormData } as FleetDriver;
+        updatedDoc = {
+          ...d,
+          ...driverFormData,
+          _syncMeta: {
+            updatedAt: new Date().toISOString(),
+            updatedBy: currentUser.name
+          }
+        } as FleetDriver;
         return updatedDoc;
       }
       return d;
@@ -374,11 +385,15 @@ export default function Gudang({
       pic: picName || currentUser.name,
       notes,
       assetCode: assetCodeInput || undefined,
-      photoUrl: scannedPhoto || undefined
+      photoUrl: scannedPhoto || undefined,
+      _syncMeta: {
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.name
+      }
     };
 
     setWarehouseLogs(prev => [newLog, ...prev]);
-    saveCloudDoc('warehouse_logs', newLog.id, newLog);
+    saveCloudDoc('warehouse_logs', newLog.id, newLog, currentUser.name);
     onLogActivity(currentUser.name, currentUser.role, `Mencatat log gudang: ${type} - ${itemName} sebanyak ${qty} Unit`);
     
     // Auto-update asset status & location if matched

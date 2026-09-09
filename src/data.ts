@@ -310,7 +310,7 @@ export function getMasterFreelanceList(): FreelanceWorker[] {
             .filter((w: any) => w && !deletedSet.has(String(w.id || '')))
             .map((w: any) => ({
               ...w,
-              dailyRate: (w.dailyRate && Number(w.dailyRate) > 0)
+              dailyRate: (w.dailyRate !== undefined && w.dailyRate !== null && !isNaN(Number(w.dailyRate)))
                 ? Number(w.dailyRate)
                 : (w.roleTitle?.toLowerCase().includes('operator') ? 350000 : w.specialization === 'Driver' ? 250000 : 200000)
             }));

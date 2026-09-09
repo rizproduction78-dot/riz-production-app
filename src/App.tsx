@@ -751,17 +751,28 @@ export default function App() {
     const newAsset: Asset = {
       ...asset,
       id: 'ast-' + Date.now(),
-      repairHistory: []
+      repairHistory: [],
+      _syncMeta: {
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser?.name || 'User'
+      }
     };
     setAssets(prev => [newAsset, ...prev]);
-    saveCloudDoc('assets', newAsset.id, newAsset);
+    saveCloudDoc('assets', newAsset.id, newAsset, currentUser?.name);
   };
 
   const handleUpdateAsset = (id: string, updatedFields: Partial<Asset>) => {
     setAssets(prev => prev.map(a => {
       if (a.id === id) {
-        const updated = { ...a, ...updatedFields };
-        saveCloudDoc('assets', id, updated);
+        const updated = {
+          ...a,
+          ...updatedFields,
+          _syncMeta: {
+            updatedAt: new Date().toISOString(),
+            updatedBy: currentUser?.name || 'User'
+          }
+        };
+        saveCloudDoc('assets', id, updated, currentUser?.name);
         return updated;
       }
       return a;

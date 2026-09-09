@@ -378,6 +378,65 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     return Array.from(map.values()) as T[];
   }
 
+  // Normalization for freelance_workers to ensure valid numeric dailyRate is preserved and deduplicated
+  if (collectionName === 'freelance_workers') {
+    const cleaned = items.map((w: any) => {
+      if (!w) return w;
+      const rate = (w.dailyRate !== undefined && w.dailyRate !== null && !isNaN(Number(w.dailyRate)))
+        ? Number(w.dailyRate)
+        : (w.roleTitle?.toLowerCase().includes('operator') ? 350000 : w.specialization === 'Driver' ? 250000 : 200000);
+      return {
+        ...w,
+        dailyRate: rate
+      };
+    });
+
+    const map = new Map<string, any>();
+    cleaned.forEach((item: any) => {
+      if (item && item.id) {
+        map.set(item.id, item);
+      }
+    });
+    return Array.from(map.values()) as T[];
+  }
+
+  // Normalization for fleet_drivers to ensure deduplication and canonical fields
+  if (collectionName === 'fleet_drivers') {
+    const cleaned = items.map((d: any) => {
+      if (!d) return d;
+      return {
+        ...d,
+        id: String(d.id || `drv-${Date.now()}`),
+        name: String(d.name || 'Pengemudi'),
+        status: d.status || 'Siap Jalan',
+        driverType: d.driverType || 'Internal',
+        simType: d.simType || 'SIM B1',
+        simExpiry: d.simExpiry || new Date().toISOString().split('T')[0]
+      };
+    });
+
+    const map = new Map<string, any>();
+    cleaned.forEach((item: any) => {
+      const idKey = String(item?.id || item?.name || '');
+      if (idKey) {
+        map.set(idKey, item);
+      }
+    });
+    return Array.from(map.values()) as T[];
+  }
+
+  // Normalization for assets to ensure deduplication and canonical code/division
+  if (collectionName === 'assets') {
+    const map = new Map<string, any>();
+    items.forEach((item: any) => {
+      if (item && (item.id || item.code)) {
+        const idKey = String(item.id || item.code);
+        map.set(idKey, item);
+      }
+    });
+    return Array.from(map.values()) as T[];
+  }
+
   return items;
 }
 
@@ -425,6 +484,9 @@ export function subscribeCloudCollection<T = any>(
             if (incoming.approvedBy !== undefined) merged.approvedBy = incoming.approvedBy;
             if (incoming.approvedAt !== undefined) merged.approvedAt = incoming.approvedAt;
             if (incoming.progress !== undefined) merged.progress = incoming.progress;
+            if (incoming.dailyRate !== undefined && incoming.dailyRate !== null && !isNaN(Number(incoming.dailyRate))) {
+              merged.dailyRate = Number(incoming.dailyRate);
+            }
 
             for (const key of Object.keys(existing)) {
               const exVal = existing[key];
@@ -442,7 +504,7 @@ export function subscribeCloudCollection<T = any>(
                   }
                 }
               } else if (typeof exVal === 'number' && exVal > 0 && (inVal === undefined || inVal === null || inVal === 0)) {
-                if (key !== 'progress') {
+                if (key !== 'progress' && key !== 'dailyRate') {
                   const inMeta = incoming?._syncMeta?.updatedAt;
                   const exMeta = existing?._syncMeta?.updatedAt;
                   if (!inMeta || (exMeta && exMeta >= inMeta)) {
@@ -469,6 +531,8 @@ export function subscribeCloudCollection<T = any>(
           if (
             collectionName === 'master_staff' ||
             collectionName === 'freelance_workers' ||
+            collectionName === 'fleet_drivers' ||
+            collectionName === 'assets' ||
             collectionName === 'september_2026_schedule' ||
             collectionName === 'logbook_entries' ||
             collectionName === 'daily_reports' ||

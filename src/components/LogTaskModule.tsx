@@ -132,6 +132,7 @@ export default function LogTaskModule({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDivision, setFilterDivision] = useState<string>(isManagement ? 'All' : currentUser.division);
   const [filterPriority, setFilterPriority] = useState<string>('All');
+  const [taskSortBy, setTaskSortBy] = useState<'flow' | 'division' | 'priority' | 'date'>('flow');
 
   // New Task Modal
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -500,9 +501,37 @@ export default function LogTaskModule({
     return matchSearch && matchDiv && matchPri;
   });
 
-  const pendingTasks = filteredTasks.filter(t => t.status === 'Pending');
-  const progressTasks = filteredTasks.filter(t => t.status === 'In Progress');
-  const doneTasks = filteredTasks.filter(t => t.status === 'Done');
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (taskSortBy === 'flow') {
+      // Urutan struktur alur kerja operasional: Admin -> Audio -> Lighting -> Videotron -> Multimedia -> Service -> Gudang
+      const divWorkflowOrder: Record<string, number> = {
+        'Admin': 1,
+        'Audio': 2,
+        'Lighting': 3,
+        'Videotron': 4,
+        'Multimedia': 5,
+        'Service': 6,
+        'Gudang': 7
+      };
+      const prioOrder: Record<string, number> = { 'Tinggi': 1, 'Sedang': 2, 'Rendah': 3 };
+      const diffDiv = (divWorkflowOrder[a.division] || 99) - (divWorkflowOrder[b.division] || 99);
+      if (diffDiv !== 0) return diffDiv;
+      const diffPrio = (prioOrder[a.priority] || 99) - (prioOrder[b.priority] || 99);
+      if (diffPrio !== 0) return diffPrio;
+      return (b.dueDate || '').localeCompare(a.dueDate || '');
+    } else if (taskSortBy === 'division') {
+      return a.division.localeCompare(b.division);
+    } else if (taskSortBy === 'priority') {
+      const prioOrder: Record<string, number> = { 'Tinggi': 1, 'Sedang': 2, 'Rendah': 3 };
+      return (prioOrder[a.priority] || 99) - (prioOrder[b.priority] || 99);
+    } else {
+      return (b.dueDate || '').localeCompare(a.dueDate || '');
+    }
+  });
+
+  const pendingTasks = sortedTasks.filter(t => t.status === 'Pending');
+  const progressTasks = sortedTasks.filter(t => t.status === 'In Progress');
+  const doneTasks = sortedTasks.filter(t => t.status === 'Done');
 
   // Filtered Reports for Logbook View - Staff sees reports from all assigned divisions
   const filteredReports = dailyReports.filter(r => {
@@ -622,16 +651,30 @@ export default function LogTaskModule({
           </select>
 
           {subTab === 'kanban' && (
-            <select
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            >
-              <option value="All">Semua Prioritas</option>
-              <option value="Tinggi">🔴 Tinggi</option>
-              <option value="Sedang">🟡 Sedang</option>
-              <option value="Rendah">🟢 Rendah</option>
-            </select>
+            <>
+              <select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="All">Semua Prioritas</option>
+                <option value="Tinggi">🔴 Tinggi</option>
+                <option value="Sedang">🟡 Sedang</option>
+                <option value="Rendah">🟢 Rendah</option>
+              </select>
+
+              <select
+                value={taskSortBy}
+                onChange={(e) => setTaskSortBy(e.target.value as any)}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium text-slate-700"
+                title="Urutkan Berdasarkan Struktur Kerja"
+              >
+                <option value="flow">📊 Urut: Alur Struktur Kerja</option>
+                <option value="division">🏢 Urut: Divisi</option>
+                <option value="priority">🔥 Urut: Prioritas</option>
+                <option value="date">📅 Urut: Tanggal Jatuh Tempo</option>
+              </select>
+            </>
           )}
         </div>
       </div>

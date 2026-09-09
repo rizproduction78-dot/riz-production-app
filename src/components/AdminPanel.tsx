@@ -129,6 +129,7 @@ export default function AdminPanel({
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
 
   const [staffSearch, setStaffSearch] = useState('');
+  const [staffSortBy, setStaffSortBy] = useState<'hierarchy' | 'division' | 'name'>('hierarchy');
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showEditStaffModal, setShowEditStaffModal] = useState(false);
   const [activeStaffForEdit, setActiveStaffForEdit] = useState<Staff | null>(null);
@@ -399,7 +400,11 @@ export default function AdminPanel({
       skills: freelanceFormData.skills?.trim() || '',
       address: freelanceFormData.address?.trim() || '',
       notes: freelanceFormData.notes?.trim() || '',
-      createdAt: new Date().toISOString().split('T')[0]
+      createdAt: new Date().toISOString().split('T')[0],
+      _syncMeta: {
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.name
+      }
     };
     const updated = [...freelanceList, newWorker];
     setShowAddFreelanceModal(false);
@@ -484,8 +489,12 @@ export default function AdminPanel({
       rating: Number(freelanceFormData.rating || activeFreelanceForEdit.rating || 5),
       skills: updatedSkills,
       address: freelanceFormData.address !== undefined ? freelanceFormData.address.trim() : (activeFreelanceForEdit.address || ''),
-      notes: freelanceFormData.notes !== undefined ? freelanceFormData.notes.trim() : (activeFreelanceForEdit.notes || '')
-    };
+      notes: freelanceFormData.notes !== undefined ? freelanceFormData.notes.trim() : (activeFreelanceForEdit.notes || ''),
+      _syncMeta: {
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.name
+      }
+    } as FreelanceWorker;
 
     const updated = freelanceList.map(w => w.id === activeFreelanceForEdit.id ? updatedWorkerObj : w);
 
@@ -775,7 +784,11 @@ export default function AdminPanel({
       emergencyContact: driverFormData.emergencyContact?.trim() || '',
       address: driverFormData.address?.trim() || '',
       notes: driverFormData.notes?.trim() || '',
-      createdAt: new Date().toISOString().split('T')[0]
+      createdAt: new Date().toISOString().split('T')[0],
+      _syncMeta: {
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.name
+      }
     };
     const updated = [...driverList, newDriver];
     await saveDriverList(updated, { type: 'save', id: newDriver.id, doc: newDriver });
@@ -823,7 +836,11 @@ export default function AdminPanel({
           status: (driverFormData.status as any) || d.status,
           emergencyContact: driverFormData.emergencyContact?.trim() || '',
           address: driverFormData.address?.trim() || '',
-          notes: driverFormData.notes?.trim() || ''
+          notes: driverFormData.notes?.trim() || '',
+          _syncMeta: {
+            updatedAt: new Date().toISOString(),
+            updatedBy: currentUser.name
+          }
         };
         return updatedDriverObj;
       }
@@ -1446,6 +1463,16 @@ export default function AdminPanel({
                     className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
                   />
                 </div>
+                <select
+                  value={staffSortBy}
+                  onChange={(e) => setStaffSortBy(e.target.value as any)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
+                  title="Urutan Master Staf"
+                >
+                  <option value="hierarchy">👑 Hierarki Jabatan & Level</option>
+                  <option value="division">🏢 Berdasarkan Divisi</option>
+                  <option value="name">🔤 Nama (A - Z)</option>
+                </select>
                 <button
                   onClick={() => {
                     setStaffFormData({ name: '', division: 'Audio', role: 'Staff', phone: '', email: '', avatar: '' });
@@ -1543,7 +1570,32 @@ export default function AdminPanel({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {staffList
+                    {[...staffList]
+                      .sort((a, b) => {
+                        const levelA = a.level || (a.role === 'Owner' ? 8 : a.role === 'Manager' ? 6 : a.role === 'Team Leader' ? 5 : a.role === 'Admin' ? 4 : a.division === 'Gudang' ? 3 : 2);
+                        const levelB = b.level || (b.role === 'Owner' ? 8 : b.role === 'Manager' ? 6 : b.role === 'Team Leader' ? 5 : b.role === 'Admin' ? 4 : b.division === 'Gudang' ? 3 : 2);
+
+                        if (staffSortBy === 'hierarchy') {
+                          if (levelB !== levelA) return levelB - levelA;
+                          return (a.fullName || a.name).localeCompare(b.fullName || b.name);
+                        } else if (staffSortBy === 'division') {
+                          const divOrder: Record<string, number> = {
+                            'Admin': 1,
+                            'Audio': 2,
+                            'Lighting': 3,
+                            'Videotron': 4,
+                            'Multimedia': 5,
+                            'Service': 6,
+                            'Gudang': 7
+                          };
+                          const diffDiv = (divOrder[a.division] || 99) - (divOrder[b.division] || 99);
+                          if (diffDiv !== 0) return diffDiv;
+                          if (levelB !== levelA) return levelB - levelA;
+                          return (a.fullName || a.name).localeCompare(b.fullName || b.name);
+                        } else {
+                          return (a.fullName || a.name).localeCompare(b.fullName || b.name);
+                        }
+                      })
                       .filter(s => 
                         (s.fullName && s.fullName.toLowerCase().includes(staffSearch.toLowerCase())) ||
                         (s.nickname && s.nickname.toLowerCase().includes(staffSearch.toLowerCase())) ||

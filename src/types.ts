@@ -127,6 +127,13 @@ export interface WarehouseLog {
   notes: string;
   assetCode?: string;
   photoUrl?: string;
+  _syncMeta?: {
+    updatedAt: string;
+    updatedBy: string;
+    deviceOS?: string;
+    deviceType?: string;
+    browser?: string;
+  };
 }
 
 export interface QCItem {
@@ -190,6 +197,13 @@ export interface Asset {
   location: string;
   condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat';
   repairHistory: { date: string; description: string; cost: number; PIC: string }[];
+  _syncMeta?: {
+    updatedAt: string;
+    updatedBy: string;
+    deviceOS?: string;
+    deviceType?: string;
+    browser?: string;
+  };
 }
 
 export interface WorkOrder {
@@ -264,6 +278,13 @@ export interface FreelanceWorker {
   address?: string;
   notes?: string;
   createdAt: string;
+  _syncMeta?: {
+    updatedAt: string;
+    updatedBy: string;
+    deviceOS?: string;
+    deviceType?: string;
+    browser?: string;
+  };
 }
 
 export interface FleetDriver {
@@ -280,5 +301,12 @@ export interface FleetDriver {
   address?: string;
   notes?: string;
   createdAt: string;
+  _syncMeta?: {
+    updatedAt: string;
+    updatedBy: string;
+    deviceOS?: string;
+    deviceType?: string;
+    browser?: string;
+  };
 }
 
