@@ -26,7 +26,8 @@ import {
   Briefcase,
   Award,
   PenTool,
-  CheckSquare
+  CheckSquare,
+  PieChart
 } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis, isStaffInDivision } from '../utils/kpiCalculator';
@@ -66,8 +67,8 @@ export default function Dashboard({
     return () => unsub();
   }, []);
 
-  // State for switching dashboard modes: 'harian' (ringkasan), 'daily_report', 'weekly_report', 'monthly_report'
-  const [activeTab, setActiveTab] = React.useState<'harian' | 'daily_report' | 'weekly_report' | 'monthly_report'>('monthly_report');
+  // State for switching dashboard modes: 'harian' (ringkasan), 'graphic_view', 'daily_report', 'weekly_report', 'monthly_report'
+  const [activeTab, setActiveTab] = React.useState<'harian' | 'graphic_view' | 'daily_report' | 'weekly_report' | 'monthly_report'>('monthly_report');
   
   // Custom states for the report period & editable notes
   const [targetDate, setTargetDate] = React.useState('2026-09-05');
@@ -401,6 +402,15 @@ export default function Dashboard({
             Ringkasan Harian
           </button>
           <button
+            onClick={() => setActiveTab('graphic_view')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'graphic_view' ? 'bg-indigo-600 text-white shadow-sm font-extrabold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <PieChart className="w-3.5 h-3.5" />
+            <span>Graphic View</span>
+          </button>
+          <button
             onClick={() => setActiveTab('daily_report')}
             className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
               activeTab === 'daily_report' ? 'bg-white text-indigo-700 shadow-sm font-extrabold' : 'text-slate-500 hover:text-slate-900'
@@ -576,6 +586,209 @@ export default function Dashboard({
             </div>
           </div>
         </>
+      ) : activeTab === 'graphic_view' ? (
+        /* DEDICATED GRAPHIC VIEW / VISUAL CHART ANALYTICS */
+        <div className="space-y-6">
+          {/* Header Graphic View */}
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <span className="bg-indigo-500/30 text-indigo-300 border border-indigo-400/30 text-[10px] font-mono px-3 py-1 rounded-full font-bold uppercase tracking-wider">
+                Visual Analytics & Charts
+              </span>
+              <h1 className="text-2xl font-black tracking-tight mt-2 flex items-center gap-2.5">
+                <PieChart className="w-6 h-6 text-indigo-400" />
+                <span>GRAPHIC VIEW — RIZ-PRO LOG</span>
+              </h1>
+              <p className="text-xs text-slate-400 mt-1">
+                Visualisasi grafis interaktif produktivitas divisi, kelulusan QC, statistik kerusakan, dan skor KPI seluruh staff.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 font-mono text-xs bg-slate-800/80 px-3 py-2 rounded-xl border border-slate-700 text-slate-300">
+              <Calendar className="w-4 h-4 text-indigo-400" />
+              <span>{targetMonth}</span>
+            </div>
+          </div>
+
+          {/* Graphic Grid 1: Produktivitas Divisi Bar Chart & QC Pass/Fail Ratio */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Chart 1: Bar Chart Produktivitas Divisi */}
+            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <BarChart2 className="w-5 h-5 text-blue-600" />
+                  <h2 className="font-bold text-sm text-slate-900 uppercase tracking-tight">Grafik Produktivitas Operasional per Divisi</h2>
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 font-semibold">Total {totalDailyReportsCount + totalQCCount + workOrders.length} Kegiatan</span>
+              </div>
+
+              <div className="space-y-3.5 pt-2">
+                {divisionStatsDynamic.map((d, idx) => {
+                  const percent = maxDivisionActs > 0 ? Math.round((d.totalActs / maxDivisionActs) * 100) : 0;
+                  return (
+                    <div key={idx} className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-semibold">
+                        <span className="text-slate-800 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                          {d.label}
+                        </span>
+                        <div className="flex items-center gap-2 font-mono text-[11px]">
+                          <span className="text-slate-500">Lap: {d.dr} | QC: {d.qc} | WO: {d.wo}</span>
+                          <strong className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-bold">{d.totalActs} Acts</strong>
+                        </div>
+                      </div>
+                      <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 flex">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-700 flex items-center justify-end pr-2"
+                          style={{ width: `${Math.max(percent, 4)}%` }}
+                        >
+                          {percent >= 25 && <span className="text-[9px] text-white font-mono font-bold">{percent}%</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Chart 2: QC Kelulusan OK vs NG Donut / Ratio Bar */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+              <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-emerald-600" />
+                  <h2 className="font-bold text-sm text-slate-900 uppercase tracking-tight">Rasio Kelulusan QC</h2>
+                </div>
+                <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                  {percentOK}% Lulus
+                </span>
+              </div>
+
+              {/* Graphical Visual Ring / Meter */}
+              <div className="flex flex-col items-center justify-center py-4">
+                <div className="relative w-36 h-36 rounded-full border-8 border-slate-100 flex items-center justify-center shadow-inner">
+                  <div
+                    className="absolute inset-0 rounded-full border-8 border-emerald-500 border-t-transparent transition-all duration-1000"
+                    style={{ transform: `rotate(${Math.round((percentOK / 100) * 360)}deg)` }}
+                  ></div>
+                  <div className="text-center">
+                    <span className="text-3xl font-black text-slate-900 font-mono tracking-tight">{percentOK}%</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Kondisi OK</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-slate-100 font-mono text-xs">
+                <div className="flex justify-between items-center bg-emerald-50/70 p-2 rounded-lg border border-emerald-100 text-emerald-900 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Unit Siap Pakai (OK)
+                  </span>
+                  <span>{totalOK} Unit</span>
+                </div>
+                <div className="flex justify-between items-center bg-rose-50/70 p-2 rounded-lg border border-rose-100 text-rose-900 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                    Butuh Perbaikan (NG)
+                  </span>
+                  <span>{totalNG} Unit</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Graphic Grid 2: Leaderboard KPI Staff & Tingkat Kerusakan */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Chart 3: Leaderboard Visual Bar KPI Karyawan */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-500" />
+                  <h2 className="font-bold text-sm text-slate-900 uppercase tracking-tight">Grafik Skor KPI Karyawan Teratas</h2>
+                </div>
+                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-mono">10 Staff Teraktif</span>
+              </div>
+
+              <div className="space-y-3 pt-1">
+                {activeStaffProductivityData.slice(0, 10).map((staff, idx) => {
+                  const barColor = staff.kpi >= 80 ? 'from-emerald-500 to-teal-600' : staff.kpi >= 60 ? 'from-blue-500 to-indigo-600' : 'from-amber-500 to-orange-500';
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-slate-800 flex items-center gap-2">
+                          <span className="w-4 h-4 rounded-full bg-slate-100 text-slate-600 font-mono text-[10px] flex items-center justify-center font-bold">
+                            {idx + 1}
+                          </span>
+                          {staff.name} <span className="text-[10px] text-slate-400 font-normal">({staff.division})</span>
+                        </span>
+                        <span className="font-mono font-bold text-indigo-700 text-xs">{staff.kpi}%</span>
+                      </div>
+                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                        <div
+                          className={`h-full bg-gradient-to-r ${barColor} rounded-full transition-all duration-500`}
+                          style={{ width: `${Math.max(staff.kpi, 5)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Chart 4: Grafik Tingkat Kerusakan & Top Problematic Assets */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-rose-500" />
+                  <h2 className="font-bold text-sm text-slate-900 uppercase tracking-tight">Grafik Kerusakan Peralatan & Work Order</h2>
+                </div>
+                <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded font-mono">
+                  {findings.length} Kasus
+                </span>
+              </div>
+
+              <div className="space-y-3 pt-1">
+                {topEquipmentsWithIssues.slice(0, 5).map((eq, idx) => {
+                  const maxIssue = Math.max(...topEquipmentsWithIssues.map(e => e.count), 1);
+                  const percent = Math.round((eq.count / maxIssue) * 100);
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex justify-between items-center text-xs font-semibold">
+                        <span className="text-slate-800 truncate max-w-[200px]">{eq.name}</span>
+                        <span className="font-mono text-rose-600 text-xs font-bold">{eq.count} Kali Bermasalah</span>
+                      </div>
+                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                        <div
+                          className="h-full bg-gradient-to-r from-rose-400 to-red-600 rounded-full transition-all duration-500"
+                          style={{ width: `${percent}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {topEquipmentsWithIssues.length === 0 && (
+                  <div className="text-center py-8 text-slate-400 text-xs italic">
+                    Belum ada riwayat kerusakan alat. Seluruh peralatan dalam kondisi prima.
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-center font-mono text-xs">
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Ringan</span>
+                  <strong className="text-amber-600 text-sm mt-0.5 block">{findings.filter(f => f.priority === 'Rendah').length}</strong>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Sedang</span>
+                  <strong className="text-orange-600 text-sm mt-0.5 block">{findings.filter(f => f.priority === 'Sedang').length}</strong>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Berat</span>
+                  <strong className="text-rose-600 text-sm mt-0.5 block">{findings.filter(f => f.priority === 'Tinggi').length}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         /* 15 SECTIONS OPERATION REPORT (HARIAN, MINGGUAN, BULANAN) */
         <div id="monthly-operation-report-view" className="space-y-8 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
