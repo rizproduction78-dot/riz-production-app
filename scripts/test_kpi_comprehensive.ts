@@ -62,23 +62,28 @@ allResults.forEach((res) => {
   expect(componentsValid, `All 6 KPI pillars computed properly for ${res.name}`);
 });
 
-// 3. Test Sorting and Leaderboard
-console.log('\n--- 3. Testing KPI Ranking Order ---');
+// 3. Test Sorting and Leaderboard (QC Checked -> Daily Report -> Work Order / Temuan -> Uji Kompetensi -> Absensi)
+console.log('\n--- 3. Testing KPI Ranking Order (QC Checked -> Daily Report -> Work Order -> Uji Komp -> Absensi) ---');
 let isSortedCorrectly = true;
 for (let i = 1; i < allResults.length; i++) {
   const prev = allResults[i - 1];
   const curr = allResults[i];
-  if (curr.reports > prev.reports) {
+  if (curr.qcs > prev.qcs) {
     isSortedCorrectly = false;
     break;
-  } else if (curr.reports === prev.reports) {
-    if (curr.qcs > prev.qcs) {
+  } else if (curr.qcs === prev.qcs) {
+    if (curr.reports > prev.reports) {
       isSortedCorrectly = false;
       break;
+    } else if (curr.reports === prev.reports) {
+      if (curr.wos > prev.wos) {
+        isSortedCorrectly = false;
+        break;
+      }
     }
   }
 }
-expect(isSortedCorrectly, 'Leaderboard ranks staff strictly by Daily Report, QC Checklist, WO Selesai, Uji Komp, Kehadiran');
+expect(isSortedCorrectly, 'Leaderboard ranks staff strictly by QC Checked, Daily Report, Work Order / Temuan, Uji Komp, Jumlah Absensi');
 
 // 4. Testing Attendance & Schedule Roster Status (Deactivated)
 console.log('\n--- 4. Testing Attendance & Schedule Roster Status (Deactivated) ---');

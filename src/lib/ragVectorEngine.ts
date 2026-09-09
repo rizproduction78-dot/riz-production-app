@@ -760,7 +760,16 @@ export function generateOrchestratedReport(
     }
   });
 
-  const activeStaffList = Object.values(staffActivityMap).sort((a, b) => b.score - a.score);
+  const activeStaffList = Object.values(staffActivityMap).sort((a, b) => {
+    // 1. QC Checked
+    if (b.qcs !== a.qcs) return b.qcs - a.qcs;
+    // 2. Daily Report
+    if (b.reports !== a.reports) return b.reports - a.reports;
+    // 3. Work Order / Temuan
+    if (b.wos !== a.wos) return b.wos - a.wos;
+    // 4. Skor KPI
+    return b.score - a.score;
+  });
   const activeStaffCount = activeStaffList.length;
   const topPerformers = activeStaffList.slice(0, 3).map(s => ({
     name: s.staff.name,

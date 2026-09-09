@@ -454,8 +454,13 @@ export function calculateStaffKpi(
 }
 
 /**
- * Menghitung KPI untuk seluruh daftar staff dengan perangkingan adil berdasarkan kontribusi riil
- * (Kehadiran & Jam Kerja dinon-aktifkan sementara)
+ * Menghitung KPI untuk seluruh daftar staff dengan perangkingan resmi berdasarkan urutan prioritas:
+ * 1. QC Checked (Checklist & Inspeksi QC)
+ * 2. Daily Report (Laporan Aktivitas Harian)
+ * 3. Work Order / Temuan (Penyelesaian Perbaikan & Temuan)
+ * 4. Uji Kompetensi yang Diikuti
+ * 5. Jumlah Absensi (Kehadiran Resmi)
+ * 6. Nilai Total KPI (%)
  */
 export function calculateAllStaffKpis(
   staffList: Staff[],
@@ -481,19 +486,22 @@ export function calculateAllStaffKpis(
       )
     )
     .sort((a, b) => {
-      // 1. Prioritas 1: Daily Report
-      if (b.reports !== a.reports) return b.reports - a.reports;
-
-      // 2. Prioritas 2: QC Checklist
+      // 1. Prioritas 1: QC Checked
       if (b.qcs !== a.qcs) return b.qcs - a.qcs;
 
-      // 3. Prioritas 3: WO Selesai
+      // 2. Prioritas 2: Daily Report
+      if (b.reports !== a.reports) return b.reports - a.reports;
+
+      // 3. Prioritas 3: Work Order / Temuan
       if (b.wos !== a.wos) return b.wos - a.wos;
 
       // 4. Prioritas 4: Uji Kompetensi yang Diikuti
       if (b.competencyCount !== a.competencyCount) return b.competencyCount - a.competencyCount;
 
-      // 5. Nilai Total KPI (%)
+      // 5. Prioritas 5: Jumlah Absensi (Kehadiran)
+      if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
+
+      // 6. Nilai Total KPI (%)
       return b.kpi - a.kpi;
     });
 }
