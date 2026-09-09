@@ -691,6 +691,7 @@ export default function Reports({
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="bg-slate-50 text-slate-800 font-mono border-b border-slate-300 uppercase sticky top-0 z-10">
+                    <th className="p-2 border-r border-slate-300 text-center w-10">No</th>
                     <th className="p-2 border-r border-slate-300">Nama</th>
                     <th className="p-2 border-r border-slate-300">Divisi</th>
                     <th className="p-2 border-r border-slate-300 text-center">Daily Report</th>
@@ -703,8 +704,9 @@ export default function Reports({
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
                   {activeStaffKpis.length > 0 ? (
-                    activeStaffKpis.map((staff) => (
+                    activeStaffKpis.slice(0, 10).map((staff, idx) => (
                       <tr key={staff.id} className="hover:bg-slate-50">
+                        <td className="p-2 border-r border-slate-300 text-center font-bold text-slate-600 font-mono">{idx + 1}</td>
                         <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
                         <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
                         <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.reports}</td>
@@ -719,7 +721,7 @@ export default function Reports({
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="p-4 text-center text-slate-500 font-sans italic">
+                      <td colSpan={9} className="p-4 text-center text-slate-500 font-sans italic">
                         Tidak ada aktifitas pekerjaan staff pada periode ini.
                       </td>
                     </tr>
@@ -730,9 +732,9 @@ export default function Reports({
 
             {activeStaffKpis.length > 0 && (
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
-                <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider block mb-2">TOP PERFORMER (BERDASARKAN AKTIFITAS RIIL)</span>
+                <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider block mb-2">TOP 10 PERFORMER (BERDASARKAN AKTIFITAS RIIL)</span>
                 <ol className="list-decimal pl-5 space-y-1 text-xs text-slate-700 font-sans">
-                  {activeStaffKpis.slice(0, 5).map((staff) => (
+                  {activeStaffKpis.slice(0, 10).map((staff) => (
                     <li key={staff.id}>
                        <strong className="text-indigo-600">{staff.name}</strong> (Divisi {staff.division}) — Nilai KPI: <strong className="text-emerald-600">{staff.kpi}%</strong> ({staff.reports} Daily Report, {staff.qcs} QC)
                     </li>

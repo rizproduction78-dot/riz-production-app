@@ -185,8 +185,8 @@ export default function Dashboard({
   const countGradeC = activeStaffProductivityData.filter(s => s.grade === 'C').length;
   const countGradeD = activeStaffProductivityData.filter(s => s.grade === 'D').length;
 
-  // Top 5 performers (hanya staf dengan aktifitas)
-  const topPerformers = activeStaffProductivityData.slice(0, 5);
+  // Top 10 performers (hanya staf dengan aktifitas)
+  const topPerformers = activeStaffProductivityData.slice(0, 10);
 
   // 100% Dynamic Division Metrics
   const divisionListConfig = [
@@ -781,10 +781,11 @@ export default function Dashboard({
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Productivity Table */}
-              <div className="lg:col-span-2 overflow-x-auto border border-slate-100 rounded-xl max-h-[300px] overflow-y-auto">
+              <div className="lg:col-span-2 overflow-x-auto border border-slate-100 rounded-xl max-h-[360px] overflow-y-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px] sticky top-0 z-10">
+                      <th className="p-3 text-center w-12">No</th>
                       <th className="p-3">Nama Staff</th>
                       <th className="p-3">Divisi</th>
                       <th className="p-3 text-center">Daily Report</th>
@@ -799,6 +800,7 @@ export default function Dashboard({
                     {activeStaffProductivityData.length > 0 ? (
                       activeStaffProductivityData.slice(0, 10).map((staff, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="p-3 text-center font-bold text-slate-500 font-mono">{idx + 1}</td>
                           <td className="p-3 font-sans font-bold text-slate-800">{staff.name}</td>
                           <td className="p-3 font-sans text-slate-600">{staff.division}</td>
                           <td className="p-3 text-center text-slate-700">{staff.reports}</td>
@@ -815,7 +817,7 @@ export default function Dashboard({
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={8} className="p-4 text-center text-slate-400 italic">
+                        <td colSpan={9} className="p-4 text-center text-slate-400 italic">
                           Tidak ada aktifitas staff tercatat pada periode ini.
                         </td>
                       </tr>
@@ -824,18 +826,18 @@ export default function Dashboard({
                 </table>
               </div>
 
-              {/* Top Performers (1 to 5 List) */}
+              {/* Top Performers (1 to 10 List) */}
               <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 flex flex-col justify-between space-y-4">
                 <div>
                   <div className="flex items-center gap-1.5 mb-3">
                     <Award className="w-4 h-4 text-emerald-600" />
-                    <h3 className="font-extrabold text-slate-900 uppercase text-[10px] tracking-wider">Top Performer Bulan Ini</h3>
+                    <h3 className="font-extrabold text-slate-900 uppercase text-[10px] tracking-wider">Top 10 Performer Bulan Ini</h3>
                   </div>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                     {topPerformers.length > 0 ? (
-                      topPerformers.map((p, index) => (
-                        <div key={index} className="flex items-center justify-between bg-white px-3 py-2.5 rounded-lg border border-slate-200">
+                      topPerformers.slice(0, 10).map((p, index) => (
+                        <div key={index} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200">
                           <div className="flex items-center gap-2.5">
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold ${
                               index === 0 ? 'bg-amber-100 text-amber-800' :
