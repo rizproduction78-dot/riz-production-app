@@ -15,7 +15,8 @@ import {
   INITIAL_WORK_ORDERS,
   INITIAL_FREELANCE_WORKERS,
   INITIAL_VEHICLES,
-  INITIAL_FLEET_DRIVERS
+  INITIAL_FLEET_DRIVERS,
+  INITIAL_DAILY_TASKS
 } from '../data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../data/september2026Schedule';
 
@@ -166,6 +167,7 @@ export function getExportPayloadForGoogleSheet() {
   const findings = parseStorage('riz_findings', INITIAL_FINDINGS);
   const workOrders = parseStorage('riz_work_orders', INITIAL_WORK_ORDERS);
   const schedules = parseStorage('riz_september_2026_schedule', OFFICIAL_SEPTEMBER_2026_SCHEDULE);
+  const dailyTasks = parseStorage('riz_daily_tasks', INITIAL_DAILY_TASKS);
 
   const activeLogs = Array.isArray(logs) && logs.length > 0 ? logs : INITIAL_LOGBOOK_ENTRIES;
   const activeReports = Array.isArray(reports) && reports.length > 0 ? reports : INITIAL_DAILY_REPORTS;
@@ -176,8 +178,9 @@ export function getExportPayloadForGoogleSheet() {
   const activeFindings = Array.isArray(findings) && findings.length > 0 ? findings : INITIAL_FINDINGS;
   const activeWorkOrders = Array.isArray(workOrders) && workOrders.length > 0 ? workOrders : INITIAL_WORK_ORDERS;
   const activeSchedules = Array.isArray(schedules) && schedules.length > 0 ? schedules : OFFICIAL_SEPTEMBER_2026_SCHEDULE;
+  const activeTasks = Array.isArray(dailyTasks) && dailyTasks.length > 0 ? dailyTasks : INITIAL_DAILY_TASKS;
 
-  // Format combined daily logs & reports for Google Sheet
+  // Format combined daily logs, reports & daily tasks for Google Sheet
   const formattedDailyLogs = [
     ...activeLogs.map((l: any) => ({
       id: l.id || '',
@@ -202,8 +205,35 @@ export function getExportPayloadForGoogleSheet() {
       status: r.status || '',
       description: r.notes || '',
       createdAt: r.date || ''
+    })),
+    ...activeTasks.map((t: any) => ({
+      id: t.id || '',
+      date: t.dueDate || t.createdAt || '',
+      division: t.division || '',
+      staffName: t.assignedName || t.createdBy || '',
+      staffRole: 'Teknisi / Tim PIC',
+      title: t.title || '',
+      category: 'Daily Task (Kanban)',
+      status: t.status || '',
+      description: t.description || '',
+      createdAt: t.createdAt || ''
     }))
   ];
+
+  // Format daily tasks specifically for DAILY_TASKS sheet
+  const formattedDailyTasks = activeTasks.map((t: any) => ({
+    id: t.id || '',
+    title: t.title || '',
+    description: t.description || '',
+    division: t.division || '',
+    priority: t.priority || 'Sedang',
+    status: t.status || 'Pending',
+    assignedTo: t.assignedTo || '',
+    assignedName: t.assignedName || '',
+    dueDate: t.dueDate || '',
+    createdAt: t.createdAt || '',
+    createdBy: t.createdBy || ''
+  }));
 
   // Format schedule shifts for Google Sheet
   const formattedSchedules = activeSchedules.map((s: any) => ({
@@ -218,6 +248,7 @@ export function getExportPayloadForGoogleSheet() {
     timestamp: new Date().toISOString(),
     data: {
       daily_logs: formattedDailyLogs,
+      daily_tasks: formattedDailyTasks,
       staff_members: activeStaff,
       freelance_workers: activeFreelance,
       vehicles: activeVehicles,
@@ -446,6 +477,11 @@ function doPost(e) {
         writeDailyLogsSheet(ss, data.daily_logs);
       }
 
+      // 1b. Sync Daily Tasks (Kanban)
+      if (data.daily_tasks && data.daily_tasks.length > 0) {
+        writeDailyTasksSheet(ss, data.daily_tasks);
+      }
+
       // 2. Sync Staff Members
       if (data.staff_members && data.staff_members.length > 0) {
         writeStaffSheet(ss, data.staff_members);
@@ -553,20 +589,51 @@ function writeDailyLogsSheet(ss, logs) {
   sheet.autoResizeColumns(1, headers.length);
 }
 
+function writeDailyTasksSheet(ss, tasks) {
+  var sheet = getOrCreateSheet(ss, 'DAILY_TASKS');
+  sheet.clearContents();
+  
+  var headers = ['ID Task', 'Judul Task', 'Deskripsi / Rincian', 'Divisi', 'Prioritas', 'Status', 'Ditugaskan Ke', 'PIC / Pelaksana', 'Target Selesai (Due Date)', 'Tanggal Dibuat', 'Dibuat Oleh'];
+  var rows = [headers];
+
+  for (var i = 0; i < tasks.length; i++) {
+    var t = tasks[i];
+    rows.push([
+      t.id || '',
+      t.title || '',
+      t.description || '',
+      t.division || '',
+      t.priority || 'Sedang',
+      t.status || 'Pending',
+      t.assignedTo || '',
+      t.assignedName || '',
+      t.dueDate || '',
+      t.createdAt || '',
+      t.createdBy || ''
+    ]);
+  }
+
+  sheet.getRange(1, 1, rows.length, headers.length).setValues(rows);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#2563eb').setFontColor('#ffffff');
+  sheet.autoResizeColumns(1, headers.length);
+}
+
 function writeStaffSheet(ss, staffList) {
   var sheet = getOrCreateSheet(ss, 'MASTER_STAFF');
   sheet.clearContents();
 
-  var headers = ['ID Staf', 'Nama Lengkap (KTP)', 'Nama Panggilan', 'Divisi', 'Role / Jabatan', 'Jenjang Level', 'No. WhatsApp / Telp', 'Email'];
+  var headers = ['ID Staf', 'Nama Lengkap (KTP)', 'Nama Panggilan', 'Divisi Utama', 'Divisi Sekunder / Tambahan', 'Role / Jabatan', 'Jenjang Level', 'No. WhatsApp / Telp', 'Email'];
   var rows = [headers];
 
   for (var i = 0; i < staffList.length; i++) {
     var s = staffList[i];
+    var secDiv = s.secondaryDivision || (Array.isArray(s.divisions) && s.divisions.length > 1 ? s.divisions.filter(function(d){ return d !== s.division; }).join(', ') : '-');
     rows.push([
       s.id || '',
       s.fullName || s.name || '',
       s.nickname || s.name || '',
       s.division || '',
+      secDiv,
       s.role || '',
       s.level ? 'Level ' + s.level : 'Level 2',
       s.phone || '',

@@ -6,6 +6,7 @@
 import { STAFF_LIST, INITIAL_DAILY_REPORTS, INITIAL_LOGBOOK_ENTRIES, INITIAL_FINDINGS, INITIAL_WORK_ORDERS, INITIAL_ASSETS } from '../src/data';
 import { generateOrchestratedReport, queryAgenticRAG, agenticMemory } from '../src/lib/ragVectorEngine';
 import { workspaceManager } from '../src/lib/workspaceConfig';
+import { getExportPayloadForGoogleSheet, DEFAULT_SPREADSHEET_ID } from '../src/lib/googleSheetSync';
 
 console.log('================================================================');
 console.log('    TEST SUITE: AGENTIC AI MULTI-AGENT ORCHESTRATOR & RAG       ');
@@ -184,7 +185,16 @@ const sProd = monthlyOrchTest.detailedSections.divisionProductivity.find(d => d.
 expect(vProd !== undefined && vProd.totalActivities > 0, `Videotron productivity includes Mulyana dual-division data (${vProd?.totalActivities} activities)`);
 expect(sProd !== undefined && sProd.totalActivities > 0, `Service productivity includes Mulyana dual-division data (${sProd?.totalActivities} activities)`);
 
-// 9. Test Summary
+// 9. Test Google Sheet Daily Task Sync Engine
+console.log('\n--- 9. Testing Google Sheets Daily Task Sync Engine ---');
+const sheetPayload = getExportPayloadForGoogleSheet();
+expect(sheetPayload.spreadsheetId === DEFAULT_SPREADSHEET_ID, `Target Spreadsheet ID matches: ${DEFAULT_SPREADSHEET_ID}`);
+expect(Array.isArray(sheetPayload.data.daily_tasks) && sheetPayload.data.daily_tasks.length > 0, `Exports daily tasks to Google Sheet payload (${sheetPayload.data.daily_tasks.length} tasks)`);
+expect(Array.isArray(sheetPayload.data.daily_logs) && sheetPayload.data.daily_logs.length > 0, `Exports daily logs and QC (${sheetPayload.data.daily_logs.length} logs)`);
+expect(sheetPayload.data.daily_logs.some((l: any) => l.category === 'Daily Task (Kanban)'), 'Integrates Daily Task (Kanban) into daily_logs feed');
+expect(sheetPayload.data.staff_members.some((s: any) => s.id === 'staff-mulyana' && s.secondaryDivision === 'Videotron'), 'Staff Mulyana dual-division preserved in Google Sheet payload');
+
+// 10. Test Summary
 console.log('\n================================================================');
 console.log(`TEST SUMMARY: ${passedTests}/${totalTests} Tests Passed (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('================================================================\n');

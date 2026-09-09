@@ -3067,8 +3067,8 @@ export default function AdminPanel({
                   <Upload className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-extrabold text-xs text-white">1. Kirim & Sinkronkan Seluruh Data</div>
-                  <div className="text-[10px] text-emerald-200/70">Upload Logs QC, Staf, Freelance, Armada & Shift ke Google Sheet</div>
+                  <div className="font-extrabold text-xs text-white">1. Kirim & Sinkronkan Seluruh Data Daily Task</div>
+                  <div className="text-[10px] text-emerald-200/70">Upload Daily Tasks (Kanban), QC Logs, Staf, Freelance, Armada & Shift ke Google Sheet</div>
                 </div>
               </button>
 
