@@ -7,6 +7,18 @@
  * Direct Bi-Directional Integration via Google Apps Script Webhook
  */
 
+import {
+  STAFF_LIST,
+  INITIAL_LOGBOOK_ENTRIES,
+  INITIAL_DAILY_REPORTS,
+  INITIAL_FINDINGS,
+  INITIAL_WORK_ORDERS,
+  INITIAL_FREELANCE_WORKERS,
+  INITIAL_VEHICLES,
+  INITIAL_FLEET_DRIVERS
+} from '../data';
+import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../data/september2026Schedule';
+
 export const DEFAULT_SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
 export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470';
 export const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz9X5jRobwEhxyVoilLuqqeH8eGrGZ8XuLcbQ0vRQqbWj8D-tNfLlwoZcTEEiix3YLBiA/exec';
@@ -144,20 +156,30 @@ export function getExportPayloadForGoogleSheet() {
     }
   };
 
-  const logs = parseStorage('riz_logbook_entries', []);
-  const reports = parseStorage('riz_daily_reports', []);
-  const staff = parseStorage('riz_master_staff_list', []);
-  const freelance = parseStorage('riz_freelance_workers', []);
-  const vehicles = parseStorage('riz_master_vehicles', []);
-  const drivers = parseStorage('riz_fleet_drivers', []);
+  const logs = parseStorage('riz_logbook_entries', INITIAL_LOGBOOK_ENTRIES);
+  const reports = parseStorage('riz_daily_reports', INITIAL_DAILY_REPORTS);
+  const staff = parseStorage('riz_master_staff_list', STAFF_LIST);
+  const freelance = parseStorage('riz_freelance_workers', INITIAL_FREELANCE_WORKERS);
+  const vehicles = parseStorage('riz_master_vehicles', INITIAL_VEHICLES);
+  const drivers = parseStorage('riz_fleet_drivers', INITIAL_FLEET_DRIVERS);
   const fleetAssignments = parseStorage('riz_fleet_assignments', []);
-  const findings = parseStorage('riz_findings', []);
-  const workOrders = parseStorage('riz_work_orders', []);
-  const schedules = parseStorage('riz_september_2026_schedule', []);
+  const findings = parseStorage('riz_findings', INITIAL_FINDINGS);
+  const workOrders = parseStorage('riz_work_orders', INITIAL_WORK_ORDERS);
+  const schedules = parseStorage('riz_september_2026_schedule', OFFICIAL_SEPTEMBER_2026_SCHEDULE);
+
+  const activeLogs = Array.isArray(logs) && logs.length > 0 ? logs : INITIAL_LOGBOOK_ENTRIES;
+  const activeReports = Array.isArray(reports) && reports.length > 0 ? reports : INITIAL_DAILY_REPORTS;
+  const activeStaff = Array.isArray(staff) && staff.length > 0 ? staff : STAFF_LIST;
+  const activeFreelance = Array.isArray(freelance) && freelance.length > 0 ? freelance : INITIAL_FREELANCE_WORKERS;
+  const activeVehicles = Array.isArray(vehicles) && vehicles.length > 0 ? vehicles : INITIAL_VEHICLES;
+  const activeDrivers = Array.isArray(drivers) && drivers.length > 0 ? drivers : INITIAL_FLEET_DRIVERS;
+  const activeFindings = Array.isArray(findings) && findings.length > 0 ? findings : INITIAL_FINDINGS;
+  const activeWorkOrders = Array.isArray(workOrders) && workOrders.length > 0 ? workOrders : INITIAL_WORK_ORDERS;
+  const activeSchedules = Array.isArray(schedules) && schedules.length > 0 ? schedules : OFFICIAL_SEPTEMBER_2026_SCHEDULE;
 
   // Format combined daily logs & reports for Google Sheet
   const formattedDailyLogs = [
-    ...logs.map((l: any) => ({
+    ...activeLogs.map((l: any) => ({
       id: l.id || '',
       date: l.date || '',
       division: l.division || '',
@@ -169,7 +191,7 @@ export function getExportPayloadForGoogleSheet() {
       description: l.followUp || '',
       createdAt: l.date || ''
     })),
-    ...reports.map((r: any) => ({
+    ...activeReports.map((r: any) => ({
       id: r.id || '',
       date: r.date || '',
       division: r.division || '',
@@ -184,7 +206,7 @@ export function getExportPayloadForGoogleSheet() {
   ];
 
   // Format schedule shifts for Google Sheet
-  const formattedSchedules = schedules.map((s: any) => ({
+  const formattedSchedules = activeSchedules.map((s: any) => ({
     id: s.id || `row-${s.no || ''}`,
     name: s.name || s.fullName || '',
     division: s.division || '',
@@ -196,12 +218,12 @@ export function getExportPayloadForGoogleSheet() {
     timestamp: new Date().toISOString(),
     data: {
       daily_logs: formattedDailyLogs,
-      staff_members: staff,
-      freelance_workers: freelance,
-      vehicles: vehicles,
-      drivers: drivers,
+      staff_members: activeStaff,
+      freelance_workers: activeFreelance,
+      vehicles: activeVehicles,
+      drivers: activeDrivers,
       fleet_assignments: fleetAssignments,
-      findings_wo: [...findings, ...workOrders],
+      findings_wo: [...activeFindings, ...activeWorkOrders],
       schedule_shifts: formattedSchedules
     }
   };
