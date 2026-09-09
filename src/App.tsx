@@ -275,10 +275,12 @@ export default function App() {
     ];
   })();
 
-  // Helper untuk memeriksa status aktif jalur penghubung (termasuk sub-jalur seperti 'qc' dan 'daily')
+  // Helper untuk memeriksa status aktif jalur penghubung (termasuk sub-jalur seperti 'qc', 'daily', dan 'work_orders')
   const isTabActive = (tabId: string) => {
     if (activeTab === tabId) return true;
     if (tabId === 'log_task' && (activeTab === 'daily' || activeTab === 'qc')) return true;
+    if (tabId === 'findings' && activeTab === 'work_orders') return true;
+    if (tabId === 'gudang' && activeTab === 'armada') return true;
     return false;
   };
 
@@ -1173,7 +1175,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'findings' && (
+        {(activeTab === 'findings' || activeTab === 'work_orders') && (
           <Findings
             findings={findings}
             workOrders={workOrders}
@@ -1189,6 +1191,7 @@ export default function App() {
             onUpdateAssetCondition={handleUpdateAssetCondition}
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
+            initialSubTab={activeTab === 'work_orders' ? 'work_orders' : 'findings'}
           />
         )}
 
@@ -1292,6 +1295,7 @@ export default function App() {
             onUpdateAssetCondition={handleUpdateAssetCondition}
             onAddFinding={handleAddFinding}
             onLogActivity={handleLogActivity}
+            onNavigateTab={setActiveTab}
           />
         )}
 
@@ -1304,6 +1308,7 @@ export default function App() {
             onAddFinding={handleAddFinding}
             onLogActivity={handleLogActivity}
             forceSubTab="armada_governance"
+            onNavigateTab={setActiveTab}
           />
         )}
 

@@ -463,27 +463,43 @@ export default function Dashboard({
 
           {/* Stat Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2">Checked Today</div>
+            <div
+              onClick={() => onNavigate('qc')}
+              className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
+              title="Buka QC Checklist"
+            >
+              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2 group-hover:text-blue-600 transition-colors">Checked Today</div>
               <div className="text-2xl font-bold text-slate-900 flex items-baseline">
                 {totalQCOk + totalQCNg}
-                <span className="text-xs font-normal text-slate-500 ml-1.5">Units</span>
+                <span className="text-xs font-normal text-slate-500 ml-1.5">Units &rarr;</span>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2">Condition OK</div>
-              <div className="text-2xl font-bold text-[#10b981]">{totalQCOk}</div>
+            <div
+              onClick={() => onNavigate('qc')}
+              className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all group"
+              title="Buka QC Checklist"
+            >
+              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2 group-hover:text-emerald-600 transition-colors">Condition OK</div>
+              <div className="text-2xl font-bold text-[#10b981]">{totalQCOk} <span className="text-xs font-normal text-slate-400">&rarr;</span></div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2">Requires Action (NG)</div>
-              <div className="text-2xl font-bold text-[#ef4444]">{totalQCNg}</div>
+            <div
+              onClick={() => onNavigate('findings')}
+              className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer hover:border-rose-300 hover:shadow-md transition-all group"
+              title="Buka Temuan QC & WO"
+            >
+              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2 group-hover:text-rose-600 transition-colors">Requires Action (NG)</div>
+              <div className="text-2xl font-bold text-[#ef4444]">{totalQCNg} <span className="text-xs font-normal text-slate-400">&rarr;</span></div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2">Pending Repairs</div>
-              <div className="text-2xl font-bold text-[#f59e0b]">{openIssues}</div>
+            <div
+              onClick={() => onNavigate('work_orders')}
+              className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer hover:border-amber-300 hover:shadow-md transition-all group"
+              title="Buka Work Order Perbaikan"
+            >
+              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2 group-hover:text-amber-600 transition-colors">Pending Repairs</div>
+              <div className="text-2xl font-bold text-[#f59e0b]">{openIssues} <span className="text-xs font-normal text-slate-400">&rarr;</span></div>
             </div>
           </div>
 
@@ -567,7 +583,15 @@ export default function Dashboard({
               </div>
 
               <div className="pt-4 border-t border-slate-100 space-y-3">
-                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Critical Issues</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Critical Issues</div>
+                  <button
+                    onClick={() => onNavigate('findings')}
+                    className="text-[11px] text-rose-600 hover:text-rose-700 font-bold hover:underline cursor-pointer"
+                  >
+                    Buka Temuan QC &rarr;
+                  </button>
+                </div>
                 <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
                   {findings.filter(f => f.status === 'Open').slice(0, 2).map((f) => (
                     <div key={f.id} className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-xs">
@@ -618,7 +642,15 @@ export default function Dashboard({
                   <BarChart2 className="w-5 h-5 text-blue-600" />
                   <h2 className="font-bold text-sm text-slate-900 uppercase tracking-tight">Grafik Produktivitas Operasional per Divisi</h2>
                 </div>
-                <span className="text-[11px] font-mono text-slate-500 font-semibold">Total {totalDailyReportsCount + totalQCCount + workOrders.length} Kegiatan</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono text-slate-500 font-semibold">Total {totalDailyReportsCount + totalQCCount + workOrders.length} Kegiatan</span>
+                  <button
+                    onClick={() => onNavigate('log_task')}
+                    className="text-[11px] text-blue-600 hover:text-blue-800 font-bold hover:underline cursor-pointer"
+                  >
+                    Buka Daily Task &rarr;
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-3.5 pt-2">
@@ -704,7 +736,12 @@ export default function Dashboard({
                   <Award className="w-5 h-5 text-amber-500" />
                   <h2 className="font-bold text-sm text-slate-900 uppercase tracking-tight">Grafik Skor KPI Karyawan Teratas</h2>
                 </div>
-                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-mono">10 Staff Teraktif</span>
+                <button
+                  onClick={() => onNavigate('kinerja_karyawan')}
+                  className="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold hover:underline cursor-pointer"
+                >
+                  Detail KPI &rarr;
+                </button>
               </div>
 
               <div className="space-y-3 pt-1">
@@ -740,9 +777,12 @@ export default function Dashboard({
                   <AlertTriangle className="w-5 h-5 text-rose-500" />
                   <h2 className="font-bold text-sm text-slate-900 uppercase tracking-tight">Grafik Kerusakan Peralatan & Work Order</h2>
                 </div>
-                <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded font-mono">
-                  {findings.length} Kasus
-                </span>
+                <button
+                  onClick={() => onNavigate('findings')}
+                  className="text-[11px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
+                >
+                  Kelola Temuan ({findings.length}) &rarr;
+                </button>
               </div>
 
               <div className="space-y-3 pt-1">

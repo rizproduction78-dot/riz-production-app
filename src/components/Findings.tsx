@@ -24,6 +24,7 @@ interface FindingsProps {
   onUpdateAssetCondition?: (id: string, condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat') => void;
   currentUser: any;
   onLogActivity: (username: string, role: string, action: string) => void;
+  initialSubTab?: 'findings' | 'work_orders';
 }
 
 export default function Findings({
@@ -41,6 +42,7 @@ export default function Findings({
   onUpdateAssetCondition,
   currentUser,
   onLogActivity,
+  initialSubTab = 'findings',
 }: FindingsProps) {
   // Dynamic Master Staff List
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
@@ -56,7 +58,13 @@ export default function Findings({
   }, []);
 
   // View Tab: Findings vs Work Orders
-  const [activeSubTab, setActiveSubTab] = useState<'findings' | 'work_orders'>('findings');
+  const [activeSubTab, setActiveSubTab] = useState<'findings' | 'work_orders'>(initialSubTab);
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
 
   // Detail Modal State for Accessing Finished Log Data
   const [selectedWODetail, setSelectedWODetail] = useState<WorkOrder | null>(null);
@@ -167,6 +175,7 @@ export default function Findings({
     });
 
     onLogActivity(currentUser.name, currentUser.role, `Menerbitkan Work Order Perbaikan dari Temuan QC: ${finding.equipment}`);
+    setActiveSubTab('work_orders');
     alert(`Work Order untuk unit "${finding.equipment}" berhasil diterbitkan dan dialokasikan ke Divisi Service (${defaultPic})!`);
   };
 

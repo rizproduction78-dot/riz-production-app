@@ -56,6 +56,7 @@ interface GudangProps {
   onAddFinding?: (finding: Omit<import('../types').Finding, 'id' | 'dateCreated'>) => void;
   onLogActivity: (username: string, role: string, action: string) => void;
   forceSubTab?: 'logs' | 'scanner' | 'armada_governance';
+  onNavigateTab?: (tab: string) => void;
 }
 
 export default function Gudang({
@@ -65,7 +66,8 @@ export default function Gudang({
   onUpdateAssetCondition,
   onAddFinding,
   onLogActivity,
-  forceSubTab
+  forceSubTab,
+  onNavigateTab
 }: GudangProps) {
   // Warehouse Logs State - Bersih dari data dummy
   const [warehouseLogs, setWarehouseLogs] = useState<WarehouseLog[]>(() => {
@@ -821,7 +823,10 @@ export default function Gudang({
 
           {isAdminDivision && (
             <button
-              onClick={() => setWarehouseSubTab('armada_governance')}
+              onClick={() => {
+                setWarehouseSubTab('armada_governance');
+                if (onNavigateTab) onNavigateTab('armada');
+              }}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
                 warehouseSubTab === 'armada_governance' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
               }`}
