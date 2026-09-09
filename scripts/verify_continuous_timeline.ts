@@ -5,7 +5,7 @@ console.log('================================================================');
 console.log('  VERIFIKASI KONTINUITAS DATA OPERASIONAL HARIAN & BULANAN      ');
 console.log('================================================================');
 
-const dates = ['2026-09-01', '2026-09-03', '2026-09-04', '2026-09-05', '2026-09-06', '2026-09-07'];
+const dates = ['2026-09-01', '2026-09-03', '2026-09-04', '2026-09-05', '2026-09-06', '2026-09-07', '2026-09-09'];
 
 dates.forEach(d => {
   const reps = INITIAL_DAILY_REPORTS.filter(r => r.date === d);

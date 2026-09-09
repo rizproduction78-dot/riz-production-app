@@ -247,8 +247,8 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Forced one-time re-sync for all 22 official inhouse staff (including Wahyudin / Unyim) & 50+ official freelance & exact daily task sheet & lighting Heri 7 Sept
-  const REF_SYNC_KEY = 'riz_ref_synced_v28_lighting_heri_sept7';
+  // Forced one-time re-sync for all official data including 9 September 2026 (Videotron Kharo/Wigi/Ayong & Audio Buluk/Opik/Butong/Dani)
+  const REF_SYNC_KEY = 'riz_ref_synced_v29_september9_live';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));

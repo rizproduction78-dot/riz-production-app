@@ -455,6 +455,17 @@ export const INITIAL_FINDINGS: Finding[] = [
     targetDate: '2026-09-09',
     status: 'Open',
     dateCreated: '2026-09-07'
+  },
+  {
+    id: 'find-20260909-audio-snack',
+    equipment: 'Snack Audio 8ch & 16ch, Rumbay Drum, Mic EWD',
+    issue: 'Perbaikan : 1. snack 8 ch, 2. snack 16 ch, 3. rumbay drum, 4. Cek Mic EWD/ Ganti Spul',
+    priority: 'Tinggi',
+    pic: 'Buluk / Opik / Butong / Dani',
+    division: 'Audio',
+    targetDate: '2026-09-10',
+    status: 'Open',
+    dateCreated: '2026-09-09'
   }
 ];
 
@@ -647,6 +658,109 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
       'Cek Unit & Cleaning Parled': { status: 'OK', notes: 'Pembersihan unit parled selesai' },
       'Cek Colour & Nyala LED': { status: 'NG', notes: 'Parled Warm mati No. 12, 25, 29 & Warm separo No. 3, 32' }
     }
+  },
+  {
+    id: 'log-20260909-01',
+    date: '2026-09-09',
+    division: 'Videotron',
+    staffName: 'Kharo',
+    activity: 'Repair dead pixel & Copot Masking',
+    result: 'OK',
+    followUp: 'Repair dead pixel & Copot Masking modul kabinet LED bersama Wigi & Ayong',
+    status: 'Open',
+    verification: 'Ayong (Team Leader)',
+    checklists: {
+      'Repair Dead Pixel': { status: 'OK', notes: 'Penggantian dan penyolderan dead pixel kabinet LED' },
+      'Copot Masking Modul': { status: 'OK', notes: 'Pelepasan masking pelindung modul LED selesai' }
+    }
+  },
+  {
+    id: 'log-20260909-02',
+    date: '2026-09-09',
+    division: 'Videotron',
+    staffName: 'Wigi',
+    activity: 'Repair dead pixel & Copot Masking',
+    result: 'OK',
+    followUp: 'Pengerjaan pelepasan masking dan asistensi perbaikan dead pixel bersama Kharo & Ayong',
+    status: 'Open',
+    verification: 'Ayong (Team Leader)',
+    checklists: {
+      'Copot Masking Modul': { status: 'OK', notes: 'Pelepasan masking pelindung modul LED selesai' }
+    }
+  },
+  {
+    id: 'log-20260909-03',
+    date: '2026-09-09',
+    division: 'Videotron',
+    staffName: 'Ayong',
+    activity: 'Repair dead pixel & Copot Masking',
+    result: 'OK',
+    followUp: 'QC & supervisi repair dead pixel serta copot masking modul videotron',
+    status: 'Open',
+    verification: 'Ayong (Team Leader)',
+    checklists: {
+      'Supervisi & QC Modul LED': { status: 'OK', notes: 'Supervisi perbaikan dead pixel dan pencopotan masking modul LED' }
+    }
+  },
+  {
+    id: 'log-20260909-04',
+    date: '2026-09-09',
+    division: 'Audio',
+    staffName: 'Buluk',
+    activity: 'Perbaikan snack 8 ch, 16 ch, rumbay drum, Cek Mic EWD / Ganti Spul',
+    result: 'OK',
+    followUp: 'Perbaikan snack 8 ch, snack 16 ch, rumbay drum, cek Mic EWD/ ganti spul bersama Opik, Butong, Dani',
+    status: 'Open',
+    verification: 'Mboh (Team Leader)',
+    checklists: {
+      'Perbaikan Snack 8 ch': { status: 'OK', notes: 'Pengecekan pinout & perbaikan solderan snake cable 8 channel' },
+      'Perbaikan Snack 16 ch': { status: 'OK', notes: 'Pengecekan pinout & perbaikan snake cable 16 channel' },
+      'Perbaikan Rumbay Drum': { status: 'OK', notes: 'Perbaikan jalur rumbay drum audio' },
+      'Cek Mic EWD & Ganti Spul': { status: 'OK', notes: 'Cek mic wireless EWD dan penggantian spul mic' }
+    }
+  },
+  {
+    id: 'log-20260909-05',
+    date: '2026-09-09',
+    division: 'Audio',
+    staffName: 'Opik',
+    activity: 'Perbaikan snack 8 ch, 16 ch, rumbay drum, Cek Mic EWD / Ganti Spul',
+    result: 'OK',
+    followUp: 'Perbaikan snack kabel & cek mic EWD bersama Buluk, Butong, Dani',
+    status: 'Open',
+    verification: 'Mboh (Team Leader)',
+    checklists: {
+      'Perbaikan Snack Cable': { status: 'OK', notes: 'Perbaikan jalur snake cable 8ch & 16ch' },
+      'Cek Mic Wireless EWD': { status: 'OK', notes: 'Pengujian transmisi mic EWD dan spul mic baru' }
+    }
+  },
+  {
+    id: 'log-20260909-06',
+    date: '2026-09-09',
+    division: 'Audio',
+    staffName: 'Butong',
+    activity: 'Perbaikan snack 8 ch, 16 ch, rumbay drum, Cek Mic EWD / Ganti Spul',
+    result: 'OK',
+    followUp: 'Pengecekan konektor XLR snake cable & perakitan rumbay drum',
+    status: 'Open',
+    verification: 'Mboh (Team Leader)',
+    checklists: {
+      'Perbaikan Rumbay Drum': { status: 'OK', notes: 'Pengecekan fisik dan continuity konektor rumbay drum' }
+    }
+  },
+  {
+    id: 'log-20260909-07',
+    date: '2026-09-09',
+    division: 'Audio',
+    staffName: 'Dani',
+    activity: 'Perbaikan snack 8 ch, 16 ch, rumbay drum, Cek Mic EWD / Ganti Spul',
+    result: 'OK',
+    followUp: 'Uji kontinuitas kabel jack, pin XLR snake, dan cek mic EWD',
+    status: 'Open',
+    verification: 'Mboh (Team Leader)',
+    checklists: {
+      'Uji Kontinuitas Snake': { status: 'OK', notes: 'Testing signal tester kabel snake 8ch & 16ch' }
+    }
   }
 ];
 
@@ -807,6 +921,90 @@ export const INITIAL_DAILY_REPORTS: DailyReport[] = [
     photos: [
       'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80'
     ]
+  },
+  {
+    id: 'rep-20260909-kharo',
+    date: '2026-09-09',
+    staffName: 'Kharo',
+    division: 'Videotron',
+    activity: 'Repair dead pixel & Copot Masking',
+    notes: '- Repair dead pixel\n- Copot Masking',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260909-wigi',
+    date: '2026-09-09',
+    staffName: 'Wigi',
+    division: 'Videotron',
+    activity: 'Repair dead pixel & Copot Masking',
+    notes: '- Repair dead pixel & Copot Masking bersama Kharo dan Ayong',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260909-ayong',
+    date: '2026-09-09',
+    staffName: 'Ayong',
+    division: 'Videotron',
+    activity: 'Repair dead pixel & Copot Masking',
+    notes: '- QC & supervisi repair dead pixel serta copot masking modul videotron',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260909-buluk',
+    date: '2026-09-09',
+    staffName: 'Buluk',
+    division: 'Audio',
+    activity: 'Perbaikan snack 8 ch, 16 ch, rumbay drum, Cek Mic EWD / Ganti Spul',
+    notes: '- Perbaikan :\n1. snack 8 ch\n2. snack 16 ch\n3. rumbay drum\n4. Cek Mic EWD/ Ganti Spul',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260909-opik',
+    date: '2026-09-09',
+    staffName: 'Opik',
+    division: 'Audio',
+    activity: 'Perbaikan snack 8 ch, 16 ch, rumbay drum, Cek Mic EWD / Ganti Spul',
+    notes: '- Perbaikan snack kabel & cek mic EWD bersama Buluk, Butong, Dani',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260909-butong',
+    date: '2026-09-09',
+    staffName: 'Butong',
+    division: 'Audio',
+    activity: 'Perbaikan snack 8 ch, 16 ch, rumbay drum, Cek Mic EWD / Ganti Spul',
+    notes: '- Perbaikan rumbay drum dan kabel snake bersama Buluk, Opik, Dani',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'
+    ]
+  },
+  {
+    id: 'rep-20260909-dani',
+    date: '2026-09-09',
+    staffName: 'Dani',
+    division: 'Audio',
+    activity: 'Perbaikan snack 8 ch, 16 ch, rumbay drum, Cek Mic EWD / Ganti Spul',
+    notes: '- Uji kontinuitas kabel dan cek mic EWD bersama tim sound',
+    status: 'Submitted',
+    photos: [
+      'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80'
+    ]
   }
 ];
 
@@ -915,6 +1113,32 @@ export const INITIAL_DAILY_TASKS: DailyTask[] = [
     dueDate: '2026-09-07',
     createdAt: '2026-09-07',
     createdBy: 'Heri'
+  },
+  {
+    id: 'dt-20260909-01',
+    title: 'Repair dead pixel & Copot Masking',
+    description: '- Repair dead pixel\n- Copot Masking',
+    division: 'Videotron',
+    priority: 'Sedang',
+    status: 'In Progress',
+    assignedTo: 'staff-mulyana',
+    assignedName: 'Kharo, Wigi, Ayong',
+    dueDate: '2026-09-09',
+    createdAt: '2026-09-09',
+    createdBy: 'Kharo'
+  },
+  {
+    id: 'dt-20260909-02',
+    title: 'Perbaikan snack 8 ch, 16 ch, rumbay drum, Cek Mic EWD / Ganti Spul',
+    description: '- Perbaikan :\n1. snack 8 ch\n2. snack 16 ch\n3. rumbay drum\n4. Cek Mic EWD/ Ganti Spul',
+    division: 'Audio',
+    priority: 'Tinggi',
+    status: 'In Progress',
+    assignedTo: 'staff-suryana',
+    assignedName: 'Buluk, Opik, Butong, Dani',
+    dueDate: '2026-09-09',
+    createdAt: '2026-09-09',
+    createdBy: 'Buluk'
   }
 ];
 
