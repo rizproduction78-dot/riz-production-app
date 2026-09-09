@@ -271,6 +271,14 @@ export async function syncAllToGoogleSheet(webhookUrl?: string): Promise<GoogleS
     ...getExportPayloadForGoogleSheet()
   };
 
+  const recordLastSync = (time: string) => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, time);
+      }
+    } catch (e) {}
+  };
+
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -287,7 +295,7 @@ export async function syncAllToGoogleSheet(webhookUrl?: string): Promise<GoogleS
     } catch (e) {
       if (response.ok) {
         const syncTime = new Date().toISOString();
-        localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, syncTime);
+        recordLastSync(syncTime);
         if (typeof window !== 'undefined') {
           try {
             window.dispatchEvent(new CustomEvent('riz_google_sheet_synced', {
@@ -305,7 +313,7 @@ export async function syncAllToGoogleSheet(webhookUrl?: string): Promise<GoogleS
 
     if (resData.status === 'success' || response.ok) {
       const syncTime = new Date().toISOString();
-      localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, syncTime);
+      recordLastSync(syncTime);
       if (typeof window !== 'undefined') {
         try {
           window.dispatchEvent(new CustomEvent('riz_google_sheet_synced', {
@@ -360,7 +368,11 @@ export async function pullDataFromGoogleSheet(webhookUrl?: string): Promise<Goog
     const data = await response.json();
     if (data.status === 'success' || data.schedule_shifts) {
       const syncTime = new Date().toISOString();
-      localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, syncTime);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(GOOGLE_SHEET_LAST_SYNC_KEY, syncTime);
+        }
+      } catch (e) {}
       if (typeof window !== 'undefined') {
         try {
           window.dispatchEvent(new CustomEvent('riz_google_sheet_synced', {
