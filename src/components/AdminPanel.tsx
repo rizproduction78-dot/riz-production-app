@@ -177,7 +177,7 @@ export default function AdminPanel({
       (rawItems) => {
         const flat = (rawItems || []).flatMap(item => (item && Array.isArray((item as any).list)) ? (item as any).list : [item]);
         const valid = flat.filter((d): d is FleetDriver => Boolean(d && typeof d === 'object' && d.name));
-        setDriverList(valid.length > 0 ? valid : INITIAL_FLEET_DRIVERS);
+        setDriverList(valid);
       },
       INITIAL_FLEET_DRIVERS
     );
@@ -745,7 +745,7 @@ export default function AdminPanel({
     notes: ''
   });
 
-  const saveDriverList = async (updated: FleetDriver[], actionDoc?: { type: 'save' | 'delete', id: string, doc?: FleetDriver }) => {
+  const saveDriverList = async (updated: FleetDriver[], actionDoc?: { type: 'save' | 'delete', id: string, doc?: FleetDriver, name?: string }) => {
     setDriverList(updated);
     localStorage.setItem('riz_fleet_drivers', JSON.stringify(updated));
     pushCollectionToCloud('fleet_drivers', updated, currentUser.name);
@@ -753,7 +753,7 @@ export default function AdminPanel({
       if (actionDoc.type === 'save' && actionDoc.doc) {
         await saveCloudDoc('fleet_drivers', actionDoc.id, actionDoc.doc, currentUser.name);
       } else if (actionDoc.type === 'delete') {
-        await deleteCloudDoc('fleet_drivers', actionDoc.id);
+        await deleteCloudDoc('fleet_drivers', actionDoc.id, actionDoc.name);
       }
     }
     onLogActivity(currentUser.name, currentUser.role, 'Memperbarui master database driver armada');
@@ -840,13 +840,18 @@ export default function AdminPanel({
   };
 
   const handleDeleteDriver = async (id: string) => {
-    const target = driverList.find(d => d.id === id);
+    const target = driverList.find(d => d.id === id || d.name === id);
     const targetName = target?.name || id;
+    const targetId = target?.id || id;
     if (confirm(`Yakin ingin menghapus data driver "${targetName}" dari sistem?`)) {
-      const updated = driverList.filter(d => d.id !== id);
+      const updated = driverList.filter(d => d.id !== targetId && d.name !== targetName);
       onLogActivity(currentUser.name, currentUser.role, `Menghapus driver: ${targetName}`);
       try {
-        await saveDriverList(updated, { type: 'delete', id });
+        await saveDriverList(updated, { type: 'delete', id: targetId, name: targetName });
+        if (targetName && targetName !== targetId) {
+          await deleteCloudDoc('fleet_drivers', targetName.toLowerCase().trim());
+          await deleteCloudDoc('fleet_drivers', targetName.trim());
+        }
       } catch (e) {
         console.warn('[Driver] Background delete error:', e);
       }
@@ -2680,7 +2685,7 @@ export default function AdminPanel({
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={() => handleDeleteDriver(driver.id)}
+                                onClick={() => handleDeleteDriver(driver.id || driver.name)}
                                 className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
                                 title="Hapus Data Driver"
                               >

@@ -4,7 +4,7 @@
  */
 
 import { STAFF_LIST, INITIAL_DAILY_REPORTS, INITIAL_LOGBOOK_ENTRIES, INITIAL_FINDINGS, INITIAL_WORK_ORDERS, INITIAL_ASSETS } from '../src/data';
-import { generateOrchestratedReport, queryAgenticRAG } from '../src/lib/ragVectorEngine';
+import { generateOrchestratedReport, queryAgenticRAG, agenticMemory } from '../src/lib/ragVectorEngine';
 
 console.log('================================================================');
 console.log('    TEST SUITE: AGENTIC AI MULTI-AGENT ORCHESTRATOR & RAG       ');
@@ -106,7 +106,46 @@ expect(mdOutput.includes('TOP 10 PERALATAN PALING SERING BERMASALAH'), 'Markdown
 expect(mdOutput.includes('ANALISIS MANAJEMEN'), 'Markdown contains Analisis Manajemen 4 poin');
 expect(mdOutput.includes('Wahyu'), 'Markdown contains Direktur signature');
 
-// 6. Test Summary
+// 6. Test Short-Term & Long-Term Memory Engine
+console.log('\n--- 6. Testing Short-Term & Long-Term Memory Engine ---');
+const memoryStats = agenticMemory.getStats();
+expect(memoryStats.longTermCount >= 4, `Long-term episodic memory seeded (${memoryStats.longTermCount} items)`);
+
+// Test adding Short-Term Memory
+agenticMemory.addShortTerm({
+  role: 'user',
+  agentRole: 'qc',
+  content: 'Inspeksi koneksi camlock panel MDP Audio sebelum show',
+  division: 'Audio',
+  contextTags: ['camlock', 'mdp', 'qc']
+});
+const stmItems = agenticMemory.getShortTerm(5);
+expect(stmItems.length > 0, 'Records and retrieves Short-Term working memory');
+expect(stmItems[0].contextTags.includes('camlock'), 'Preserves Short-Term context tags and recency');
+
+// Test adding Long-Term Memory
+const newLTM = agenticMemory.addLongTerm({
+  category: 'SOP Clarification',
+  division: 'Audio',
+  topic: 'Prosedur Kalibrasi Level Subwoofer D&B Audiotechnik',
+  insight: 'Kalibrasi DSP ArrayProcessing wajib diverifikasi dengan RTA calibrated microphone sebelum acara dimulai.',
+  confidenceScore: 0.99,
+  importance: 5,
+  tags: ['d&b', 'subwoofer', 'dsp', 'rta', 'audio']
+});
+expect(newLTM.id.startsWith('ltm-'), 'Generates valid Long-Term Memory ID');
+
+// Test searching Long-Term Memory with scoring
+const ltmSearch = agenticMemory.searchLongTerm('subwoofer kalibrasi dsp', 'Audio');
+expect(ltmSearch.length > 0, 'Retrieves relevant Long-Term Memory by semantic tokens');
+expect(ltmSearch[0].topic.includes('Subwoofer'), 'Ranks high importance Long-Term items first');
+
+// Test queryAgenticRAG incorporating Memory Context
+const ragMemoryResp = queryAgenticRAG('Genset Grounding 3-Phase Camlock', 'service', 'Service');
+expect(ragMemoryResp.memoryContext !== undefined, 'Injects memory context into Agentic RAG response');
+expect(ragMemoryResp.memoryContext!.longTermMatches.length > 0, 'Matches official Long-Term grounding items in RAG query');
+
+// 7. Test Summary
 console.log('\n================================================================');
 console.log(`TEST SUMMARY: ${passedTests}/${totalTests} Tests Passed (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('================================================================\n');

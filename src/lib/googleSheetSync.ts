@@ -172,7 +172,7 @@ export function getExportPayloadForGoogleSheet() {
   const activeStaff = Array.isArray(staff) && staff.length > 0 ? staff : STAFF_LIST;
   const activeFreelance = Array.isArray(freelance) && freelance.length > 0 ? freelance : INITIAL_FREELANCE_WORKERS;
   const activeVehicles = Array.isArray(vehicles) && vehicles.length > 0 ? vehicles : INITIAL_VEHICLES;
-  const activeDrivers = Array.isArray(drivers) && drivers.length > 0 ? drivers : INITIAL_FLEET_DRIVERS;
+  const activeDrivers = Array.isArray(drivers) ? drivers : INITIAL_FLEET_DRIVERS;
   const activeFindings = Array.isArray(findings) && findings.length > 0 ? findings : INITIAL_FINDINGS;
   const activeWorkOrders = Array.isArray(workOrders) && workOrders.length > 0 ? workOrders : INITIAL_WORK_ORDERS;
   const activeSchedules = Array.isArray(schedules) && schedules.length > 0 ? schedules : OFFICIAL_SEPTEMBER_2026_SCHEDULE;

@@ -13,6 +13,7 @@ import { STAFF_LIST } from '../data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../data/september2026Schedule';
 import { isStaffMatch } from '../utils/kpiCalculator';
 import { Asset, LogbookEntry, DailyReport, Finding, WorkOrder, AttendanceLog, WarehouseLog } from '../types';
+import { agenticMemory, ShortTermMemoryItem, LongTermMemoryItem } from './agenticMemory';
 
 export interface VectorDocument {
   id: string;
@@ -49,6 +50,10 @@ export interface AgenticResponse {
   rawGroundingDocs: VectorDocument[];
   confidenceScore: number;
   timestamp: string;
+  memoryContext?: {
+    shortTermCount: number;
+    longTermMatches: { topic: string; division: string; insight: string }[];
+  };
 }
 
 // Tokenizer & Stopwords filter
@@ -258,6 +263,20 @@ class RAGVectorStore {
         content: `Aktivitas Gudang: ${w.type}. Nama Barang: ${w.itemName}. Jumlah: ${w.qty} Unit. PIC: ${w.pic}. Kode Asset: ${w.assetCode || '-'}. Catatan: ${w.notes}. Tanggal: ${w.date}.`,
         keywords: tokenize(`${w.type} ${w.itemName} ${w.pic} ${w.assetCode || ''} ${w.notes}`),
         timestamp: w.date
+      });
+    });
+
+    // Ingest Long-Term Memory Insights
+    agenticMemory.getLongTerm().forEach(ltm => {
+      this.documents.push({
+        id: `ltm-vec-${ltm.id}`,
+        title: `Memori Epik: ${ltm.topic} (${ltm.division})`,
+        category: 'Live Operational Data',
+        division: ltm.division,
+        sourceRef: `Long-Term Memory [${ltm.category}]`,
+        content: `Insight Long-Term Memory: ${ltm.topic}. Kategori: ${ltm.category}. Divisi: ${ltm.division}. Rangkuman Insight: ${ltm.insight}. Tags: ${ltm.tags.join(', ')}.`,
+        keywords: tokenize(`${ltm.topic} ${ltm.category} ${ltm.division} ${ltm.insight} ${ltm.tags.join(' ')}`),
+        timestamp: ltm.createdAt.split('T')[0]
       });
     });
 
@@ -482,7 +501,34 @@ export function queryAgenticRAG(
     }
   }
 
-  return {
+  // 4B. Injeksi Konteks Memori Terpadu (Short-Term & Long-Term Memory)
+  const memoryContext = agenticMemory.getUnifiedMemoryContext(query, divisionFilter);
+  if (memoryContext.longTermInsights.length > 0) {
+    memoryContext.longTermInsights.forEach(ltInsight => {
+      detailedAnalysis.push(ltInsight);
+    });
+  }
+
+  // Rekam interaksi ke Short-Term Working Memory
+  agenticMemory.addShortTerm({
+    role: 'user',
+    agentRole,
+    content: query,
+    query,
+    division: divisionFilter,
+    contextTags: topDocs.flatMap(d => d.matchedKeywords)
+  });
+
+  agenticMemory.addShortTerm({
+    role: 'agent',
+    agentRole,
+    content: summary,
+    query,
+    division: divisionFilter,
+    contextTags: [agentRole, divisionFilter]
+  });
+
+  const response: AgenticResponse = {
     agentRole,
     agentName: agentNames[agentRole] || 'Master Agent',
     query,
@@ -492,9 +538,22 @@ export function queryAgenticRAG(
     citations,
     rawGroundingDocs: topDocs.map(t => t.document),
     confidenceScore: hasGrounding ? Math.min(0.98, Math.max(0.75, topDocs[0].similarityScore + 0.35)) : 0.2,
-    timestamp: new Date().toLocaleTimeString('id-ID')
+    timestamp: new Date().toLocaleTimeString('id-ID'),
+    memoryContext: {
+      shortTermCount: agenticMemory.getShortTerm().length,
+      longTermMatches: agenticMemory.searchLongTerm(query, divisionFilter).map(l => ({
+        topic: l.topic,
+        division: l.division,
+        insight: l.insight
+      }))
+    }
   };
+
+  return response;
 }
+
+// Alias backward compatibility
+export const queryAgenticAI = queryAgenticRAG;
 
 export interface OrchestratedReportResult {
   reportType: 'Harian' | 'Mingguan' | 'Bulanan';
@@ -1044,3 +1103,8 @@ export function generateOrchestratedReport(
     toMarkdownString
   };
 }
+
+// Export Memory Engine instance & interfaces for direct usage
+export { agenticMemory };
+export type { ShortTermMemoryItem, LongTermMemoryItem };
+

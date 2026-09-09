@@ -27,13 +27,20 @@ import {
   Download,
   Send,
   Zap,
-  RefreshCw
+  RefreshCw,
+  Brain,
+  Clock,
+  Database,
+  Trash
 } from 'lucide-react';
 import {
   queryAgenticRAG,
   generateOrchestratedReport,
   AgenticResponse,
-  OrchestratedReportResult
+  OrchestratedReportResult,
+  agenticMemory,
+  ShortTermMemoryItem,
+  LongTermMemoryItem
 } from '../lib/ragVectorEngine';
 import { DailyReport, LogbookEntry, Finding, WorkOrder, Staff, Asset } from '../types';
 
@@ -60,7 +67,7 @@ export default function AgenticOrchestratorModal({
   assets = [],
   currentUser
 }: AgenticOrchestratorModalProps) {
-  const [activeMode, setActiveMode] = useState<'consultation' | 'reporting'>('reporting');
+  const [activeMode, setActiveMode] = useState<'consultation' | 'reporting' | 'memory'>('reporting');
   
   // Reporting State
   const [reportType, setReportType] = useState<'Harian' | 'Mingguan' | 'Bulanan'>('Bulanan');
@@ -84,6 +91,54 @@ export default function AgenticOrchestratorModal({
   const [selectedDivision, setSelectedDivision] = useState('All');
   const [chatHistory, setChatHistory] = useState<AgenticResponse[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Memory Engine State (Short-Term & Long-Term)
+  const [shortTermList, setShortTermList] = useState<ShortTermMemoryItem[]>(() => agenticMemory.getShortTerm(20));
+  const [longTermList, setLongTermList] = useState<LongTermMemoryItem[]>(() => agenticMemory.getLongTerm());
+  const [memorySearchQuery, setMemorySearchQuery] = useState('');
+  const [newMemoryTopic, setNewMemoryTopic] = useState('');
+  const [newMemoryInsight, setNewMemoryInsight] = useState('');
+  const [newMemoryDivision, setNewMemoryDivision] = useState('All');
+  const [newMemoryCategory, setNewMemoryCategory] = useState<LongTermMemoryItem['category']>('Strategic Decision');
+  const [newMemoryImportance, setNewMemoryImportance] = useState<number>(4);
+
+  const refreshMemoryState = () => {
+    setShortTermList(agenticMemory.getShortTerm(20));
+    setLongTermList(agenticMemory.getLongTerm());
+  };
+
+  const handleClearShortTerm = () => {
+    if (confirm('Bersihkan Short-Term Memory percakapan aktif?')) {
+      agenticMemory.clearShortTerm();
+      refreshMemoryState();
+    }
+  };
+
+  const handleAddLongTermMemory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMemoryTopic.trim() || !newMemoryInsight.trim()) return;
+
+    agenticMemory.addLongTerm({
+      topic: newMemoryTopic.trim(),
+      insight: newMemoryInsight.trim(),
+      division: newMemoryDivision === 'All' ? 'Semua Divisi' : newMemoryDivision,
+      category: newMemoryCategory,
+      importance: newMemoryImportance,
+      confidenceScore: 0.98,
+      tags: [newMemoryCategory.toLowerCase(), newMemoryDivision.toLowerCase(), ...newMemoryTopic.toLowerCase().split(/\s+/)]
+    });
+
+    setNewMemoryTopic('');
+    setNewMemoryInsight('');
+    refreshMemoryState();
+  };
+
+  const handleDeleteLongTerm = (id: string) => {
+    if (confirm('Hapus item Long-Term Memory ini?')) {
+      agenticMemory.deleteLongTerm(id);
+      refreshMemoryState();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -197,7 +252,21 @@ export default function AgenticOrchestratorModal({
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Konsultasi & Knowledge Grounding</span>
+              <span>Konsultasi & Grounding</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveMode('memory');
+                refreshMemoryState();
+              }}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                activeMode === 'memory'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Brain className="w-3.5 h-3.5 text-purple-600" />
+              <span>Memory Hub (Short & Long)</span>
             </button>
           </div>
 
@@ -566,6 +635,208 @@ export default function AgenticOrchestratorModal({
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          ) : (
+            /* Memory Hub Mode (Short-Term & Long-Term) */
+            <div className="space-y-6">
+              {/* Header Info */}
+              <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-slate-50 p-4 rounded-xl border border-purple-200/80 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                    <Brain className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Arsitektur Memori Terpadu Agentic AI</h3>
+                    <p className="text-[11px] text-slate-600">
+                      Sinkronisasi Short-Term Context Buffer (Session) & Long-Term Persistent Knowledge (Decay & Importance Grounded).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="bg-purple-100 text-purple-800 text-[10px] font-mono px-2.5 py-1 rounded-full font-bold">
+                    Short-Term: {shortTermList.length} items
+                  </span>
+                  <span className="bg-indigo-100 text-indigo-800 text-[10px] font-mono px-2.5 py-1 rounded-full font-bold">
+                    Long-Term: {longTermList.length} insights
+                  </span>
+                </div>
+              </div>
+
+              {/* Memory Layout Columns: Left (Short-Term) & Right (Long-Term) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 1. SHORT-TERM WORKING MEMORY */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-purple-600" />
+                      <h4 className="text-xs font-bold text-slate-900 uppercase font-mono tracking-wider">
+                        Short-Term Memory (Context Buffer)
+                      </h4>
+                    </div>
+                    {shortTermList.length > 0 && (
+                      <button
+                        onClick={handleClearShortTerm}
+                        className="text-[10px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash className="w-3 h-3" />
+                        <span>Bersihkan Sesi</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+                    {shortTermList.length === 0 ? (
+                      <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
+                        Belum ada interaksi pada sesi aktif. Ajukan pertanyaan pada menu <strong>Konsultasi & Grounding</strong> untuk mengisi Short-Term Memory.
+                      </div>
+                    ) : (
+                      shortTermList.map(st => (
+                        <div key={st.id} className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between text-[10px] text-slate-500">
+                            <span className={`px-2 py-0.5 rounded font-bold ${
+                              st.role === 'user' ? 'bg-indigo-50 text-indigo-700' : 'bg-purple-50 text-purple-700'
+                            }`}>
+                              {st.role === 'user' ? 'Pertanyaan User' : `Respon ${st.agentRole.toUpperCase()}`}
+                            </span>
+                            <span className="font-mono">{new Date(st.timestamp).toLocaleTimeString('id-ID')}</span>
+                          </div>
+                          <p className="text-slate-800 leading-relaxed font-medium">
+                            {st.content}
+                          </p>
+                          {st.contextTags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-1">
+                              {st.contextTags.slice(0, 4).map((tag, tIdx) => (
+                                <span key={tIdx} className="bg-slate-100 text-slate-600 text-[9px] font-mono px-1.5 py-0.5 rounded">
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. LONG-TERM PERSISTENT MEMORY */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Database className="w-4 h-4 text-indigo-600" />
+                      <h4 className="text-xs font-bold text-slate-900 uppercase font-mono tracking-wider">
+                        Long-Term Knowledge (Episodic Store)
+                      </h4>
+                    </div>
+                  </div>
+
+                  {/* Form Input New Long-Term Memory */}
+                  <form onSubmit={handleAddLongTermMemory} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 text-xs">
+                    <span className="font-bold text-slate-800 text-[11px] block">
+                      + Tambah Insight / Keputusan Resmi ke Long-Term Memory:
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Topik (misal: Standar Grounding Genset)"
+                        value={newMemoryTopic}
+                        onChange={e => setNewMemoryTopic(e.target.value)}
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                      <select
+                        value={newMemoryCategory}
+                        onChange={e => setNewMemoryCategory(e.target.value as any)}
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
+                        <option value="Strategic Decision">Strategic Decision</option>
+                        <option value="SOP Clarification">SOP Clarification</option>
+                        <option value="Equipment Incident">Equipment Incident</option>
+                        <option value="Operational KPI Milestone">KPI Milestone</option>
+                        <option value="Division Preference">Division Preference</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={newMemoryDivision}
+                        onChange={e => setNewMemoryDivision(e.target.value)}
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
+                        <option value="All">Semua Divisi</option>
+                        <option value="Audio">Audio</option>
+                        <option value="Lighting">Lighting</option>
+                        <option value="Videotron">Videotron</option>
+                        <option value="Multimedia">Multimedia</option>
+                        <option value="Gudang">Gudang</option>
+                        <option value="Service">Service</option>
+                      </select>
+
+                      <select
+                        value={newMemoryImportance}
+                        onChange={e => setNewMemoryImportance(Number(e.target.value))}
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
+                        <option value={5}>Prioritas: 5 (Kritis)</option>
+                        <option value={4}>Prioritas: 4 (Tinggi)</option>
+                        <option value={3}>Prioritas: 3 (Standar)</option>
+                      </select>
+                    </div>
+
+                    <textarea
+                      placeholder="Rangkuman insight / keputusan teknis operasional yang wajib diingat AI..."
+                      value={newMemoryInsight}
+                      onChange={e => setNewMemoryInsight(e.target.value)}
+                      rows={2}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={!newMemoryTopic.trim() || !newMemoryInsight.trim()}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded-lg text-xs transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      Simpan ke Long-Term Memory
+                    </button>
+                  </form>
+
+                  {/* List of Long-Term Memories */}
+                  <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                    {longTermList.map(ltm => (
+                      <div key={ltm.id} className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-1.5 text-xs relative group">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-900">{ltm.topic}</span>
+                            <span className="bg-indigo-50 text-indigo-700 text-[9px] font-mono px-1.5 py-0.5 rounded">
+                              {ltm.division}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono text-slate-400">
+                              Akses: {ltm.accessCount}x
+                            </span>
+                            <button
+                              onClick={() => handleDeleteLongTerm(ltm.id)}
+                              className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer"
+                              title="Hapus memori"
+                            >
+                              <Trash className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-slate-700 leading-relaxed font-normal bg-slate-50/70 p-2 rounded-lg border border-slate-100">
+                          {ltm.insight}
+                        </p>
+
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                          <span>Kategori: <strong>{ltm.category}</strong></span>
+                          <span>Prioritas: <strong>{'★'.repeat(ltm.importance)}</strong></span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}

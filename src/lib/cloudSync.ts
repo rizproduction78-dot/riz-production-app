@@ -454,10 +454,14 @@ export function subscribeCloudCollection<T = any>(
             return merged;
           };
 
-          // Filter out explicitly deleted items
+          // Filter out explicitly deleted items (check both ID and name to prevent resurrection)
           items = items.filter(it => {
-            const itId = String((it as any)?.id || (it as any)?.no || '');
-            return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+            const itId = String((it as any)?.id || (it as any)?.no || '').trim();
+            const itName = String((it as any)?.name || (it as any)?.fullName || '').trim().toLowerCase();
+            if ((it as any)?._deleted) return false;
+            if (itId && deletedIds.has(itId)) return false;
+            if (itName && (deletedIds.has(itName) || deletedIds.has(String((it as any)?.name || '').trim()))) return false;
+            return Boolean(itId || itName);
           });
 
           // Khusus data operasional & master referensi resmi:
@@ -569,8 +573,12 @@ export function subscribeCloudCollection<T = any>(
                   localItems = localItems.flatMap(item => (item && Array.isArray((item as any)?.list)) ? (item as any).list : [item]);
                 }
                 localItems = localItems.filter(it => {
-                  const itId = String((it as any)?.id || (it as any)?.no || '');
-                  return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+                  const itId = String((it as any)?.id || (it as any)?.no || '').trim();
+                  const itName = String((it as any)?.name || (it as any)?.fullName || '').trim().toLowerCase();
+                  if ((it as any)?._deleted) return false;
+                  if (itId && deletedIds.has(itId)) return false;
+                  if (itName && (deletedIds.has(itName) || deletedIds.has(String((it as any)?.name || '').trim()))) return false;
+                  return Boolean(itId || itName);
                 });
                 localItems = normalizeCollectionItems(collectionName, localItems);
                 if (localItems.length > 0) {
@@ -582,8 +590,12 @@ export function subscribeCloudCollection<T = any>(
             } catch { /* ignore */ }
           }
           let validFallback = initialFallback.filter(it => {
-            const itId = String((it as any)?.id || (it as any)?.no || '');
-            return itId && !deletedIds.has(itId) && !(it as any)._deleted;
+            const itId = String((it as any)?.id || (it as any)?.no || '').trim();
+            const itName = String((it as any)?.name || (it as any)?.fullName || '').trim().toLowerCase();
+            if ((it as any)?._deleted) return false;
+            if (itId && deletedIds.has(itId)) return false;
+            if (itName && (deletedIds.has(itName) || deletedIds.has(String((it as any)?.name || '').trim()))) return false;
+            return Boolean(itId || itName);
           });
           validFallback = normalizeCollectionItems(collectionName, validFallback);
           onData(validFallback);
@@ -592,6 +604,15 @@ export function subscribeCloudCollection<T = any>(
       (error) => {
         console.warn(`[Sync] Real-time listener warning for ${collectionName}:`, error);
         const deletedIds = getDeletedIds(collectionName);
+        const filterItem = (it: any) => {
+          const itId = String(it?.id || it?.no || '').trim();
+          const itName = String(it?.name || it?.fullName || '').trim().toLowerCase();
+          if (it?._deleted) return false;
+          if (itId && deletedIds.has(itId)) return false;
+          if (itName && (deletedIds.has(itName) || deletedIds.has(String(it?.name || '').trim()))) return false;
+          return Boolean(itId || itName);
+        };
+
         const cached = localStorage.getItem(localCacheKey);
         if (cached) {
           try {
@@ -602,33 +623,21 @@ export function subscribeCloudCollection<T = any>(
               } else if (localItems.some(item => item && Array.isArray(item?.list))) {
                 localItems = localItems.flatMap(item => (item && Array.isArray(item?.list)) ? item.list : [item]);
               }
-              localItems = localItems.filter(it => {
-                const itId = String((it as any)?.id || (it as any)?.no || '');
-                return itId && !deletedIds.has(itId) && !(it as any)._deleted;
-              });
+              localItems = localItems.filter(filterItem);
               localItems = normalizeCollectionItems(collectionName, localItems);
               onData(localItems);
               return;
             }
-            let validFallback = initialFallback.filter(it => {
-              const itId = String((it as any)?.id || (it as any)?.no || '');
-              return itId && !deletedIds.has(itId) && !(it as any)._deleted;
-            });
+            let validFallback = initialFallback.filter(filterItem);
             validFallback = normalizeCollectionItems(collectionName, validFallback);
             onData(validFallback);
           } catch {
-            let validFallback = initialFallback.filter(it => {
-              const itId = String((it as any)?.id || (it as any)?.no || '');
-              return itId && !deletedIds.has(itId) && !(it as any)._deleted;
-            });
+            let validFallback = initialFallback.filter(filterItem);
             validFallback = normalizeCollectionItems(collectionName, validFallback);
             onData(validFallback);
           }
         } else {
-          let validFallback = initialFallback.filter(it => {
-            const itId = String((it as any)?.id || (it as any)?.no || '');
-            return itId && !deletedIds.has(itId) && !(it as any)._deleted;
-          });
+          let validFallback = initialFallback.filter(filterItem);
           validFallback = normalizeCollectionItems(collectionName, validFallback);
           onData(validFallback);
         }
@@ -740,9 +749,18 @@ export async function saveCloudDoc(
 // ─────────────────────────────────────────────────────────────
 export async function deleteCloudDoc(
   collectionName: string,
-  docId: string
+  docId: string,
+  extraIdOrName?: string
 ): Promise<void> {
-  recordDeletedId(collectionName, docId);
+  const primaryId = String(docId || '').trim();
+  if (primaryId) {
+    recordDeletedId(collectionName, primaryId);
+  }
+  const extra = String(extraIdOrName || '').trim();
+  if (extra) {
+    recordDeletedId(collectionName, extra);
+    recordDeletedId(collectionName, extra.toLowerCase());
+  }
 
   // 1. Immediately purge from localStorage cache
   try {
@@ -753,7 +771,16 @@ export async function deleteCloudDoc(
         try {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed)) {
-            const filtered = parsed.filter(item => String(item?.id || item?.no || '') !== String(docId));
+            const filtered = parsed.filter(item => {
+              const itId = String(item?.id || item?.no || '').trim();
+              const itName = String(item?.name || item?.fullName || '').trim().toLowerCase();
+              if (primaryId && itId === primaryId) return false;
+              if (extra) {
+                if (itId === extra) return false;
+                if (itName === extra.toLowerCase()) return false;
+              }
+              return true;
+            });
             localStorage.setItem(reg.key, JSON.stringify(filtered));
             if (syncBroadcastChannel) {
               syncBroadcastChannel.postMessage({
