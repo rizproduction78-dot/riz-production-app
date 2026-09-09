@@ -73,6 +73,7 @@ import {
   getGoogleSheetLastSync,
   GOOGLE_APPS_SCRIPT_TEMPLATE
 } from '../lib/googleSheetSync';
+import { workspaceManager, AppWorkspace } from '../lib/workspaceConfig';
 
 interface AdminPanelProps {
   currentUser: Staff;
@@ -3095,6 +3096,60 @@ export default function AdminPanel({
                 {sheetMessage.text}
               </div>
             )}
+          </div>
+
+          {/* DEDICATED WORKSPACE STATUS & ISOLATION CARD */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shrink-0 font-black text-sm">
+                  WS
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-extrabold text-slate-900">Dedicated Application Workspace</h2>
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold">
+                      {workspaceManager.getActiveWorkspace().environment.toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Workspace Mandiri Resmi: <strong className="text-slate-800">{workspaceManager.getActiveWorkspace().name}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right font-mono text-xs">
+                <span className="text-slate-400">Kode Workspace: </span>
+                <strong className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                  {workspaceManager.getActiveWorkspace().code}
+                </strong>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-400 font-mono block uppercase">ID Workspace</span>
+                <span className="font-mono font-bold text-slate-800 block truncate">
+                  {workspaceManager.getActiveWorkspace().id}
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-400 font-mono block uppercase">Prefiks Storage Lokal & DB</span>
+                <span className="font-mono font-bold text-indigo-600 block">
+                  {workspaceManager.getActiveWorkspace().storagePrefix}*
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-400 font-mono block uppercase">Organisasi Induk</span>
+                <span className="font-bold text-slate-800 block truncate">
+                  {workspaceManager.getActiveWorkspace().organization}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+              Aplikasi ini berjalan dalam workspace tersendiri yang terisolasi penuh, memastikan integritas seluruh transaksi QC, Daily Tasks, Jadwal Shift, dan Inventaris Armada terlindungi dari polusi data eksternal.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

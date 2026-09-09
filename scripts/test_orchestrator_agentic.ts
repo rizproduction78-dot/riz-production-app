@@ -5,6 +5,7 @@
 
 import { STAFF_LIST, INITIAL_DAILY_REPORTS, INITIAL_LOGBOOK_ENTRIES, INITIAL_FINDINGS, INITIAL_WORK_ORDERS, INITIAL_ASSETS } from '../src/data';
 import { generateOrchestratedReport, queryAgenticRAG, agenticMemory } from '../src/lib/ragVectorEngine';
+import { workspaceManager } from '../src/lib/workspaceConfig';
 
 console.log('================================================================');
 console.log('    TEST SUITE: AGENTIC AI MULTI-AGENT ORCHESTRATOR & RAG       ');
@@ -145,7 +146,21 @@ const ragMemoryResp = queryAgenticRAG('Genset Grounding 3-Phase Camlock', 'servi
 expect(ragMemoryResp.memoryContext !== undefined, 'Injects memory context into Agentic RAG response');
 expect(ragMemoryResp.memoryContext!.longTermMatches.length > 0, 'Matches official Long-Term grounding items in RAG query');
 
-// 7. Test Summary
+// 7. Test Dedicated Application Workspace System
+console.log('\n--- 7. Testing Dedicated Application Workspace System ---');
+const activeWs = workspaceManager.getActiveWorkspace();
+expect(activeWs.id === 'ws-riz-production-main', `Active workspace is dedicated: ${activeWs.name}`);
+expect(activeWs.code === 'RIZ-PROD', 'Active workspace code is RIZ-PROD');
+expect(activeWs.organization === 'PT. Riz Production Multi Kreasi', 'Workspace organization verified');
+expect(activeWs.storagePrefix === 'riz_', 'Storage isolation prefix is riz_');
+
+const wsKey = workspaceManager.getWorkspaceStorageKey('riz_daily_reports');
+expect(wsKey === 'riz_daily_reports', 'Primary workspace storage key intact');
+
+const allWorkspaces = workspaceManager.getAllWorkspaces();
+expect(allWorkspaces.length >= 2, `Multiple isolated workspaces registered (${allWorkspaces.length} workspaces)`);
+
+// 8. Test Summary
 console.log('\n================================================================');
 console.log(`TEST SUMMARY: ${passedTests}/${totalTests} Tests Passed (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('================================================================\n');

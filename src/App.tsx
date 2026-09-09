@@ -67,8 +67,11 @@ import {
   subscribeSyncStatus,
   SyncStatus
 } from './lib/cloudSync';
+import { workspaceManager } from './lib/workspaceConfig';
 
 export default function App() {
+  const activeWorkspace = workspaceManager.getActiveWorkspace();
+
   // Session State
   const [currentUser, setCurrentUser] = useState<Staff | null>(() => {
     const saved = localStorage.getItem('riz_current_user');
@@ -880,9 +883,13 @@ export default function App() {
           <div className="font-extrabold text-base tracking-tight flex items-center gap-2">
             <span className="text-white font-black tracking-wider">RIZ-PRO</span>
             <span className="bg-blue-600 text-white text-[10px] font-mono px-2 py-0.5 rounded font-bold">LOG</span>
+            <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono px-1.5 py-0.2 rounded">
+              {activeWorkspace.code}
+            </span>
           </div>
-          <div className="text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider">
-            QC & OPERATIONAL SYSTEM v2.0
+          <div className="text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider flex items-center justify-between">
+            <span>QC & OPS SYSTEM v2.0</span>
+            <span className="text-indigo-400 font-mono text-[9px] lowercase">workspace</span>
           </div>
         </div>
 
