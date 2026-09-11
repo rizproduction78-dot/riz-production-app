@@ -479,13 +479,27 @@ export function subscribeCloudCollection<T = any>(
             // Incoming (from Firestore / live user changes) always takes priority
             const merged = { ...existing, ...incoming };
 
-            // Explicitly preserve crucial incoming mutable fields even if existing had values
-            if (incoming.status !== undefined) merged.status = incoming.status;
-            if (incoming.approvedBy !== undefined) merged.approvedBy = incoming.approvedBy;
-            if (incoming.approvedAt !== undefined) merged.approvedAt = incoming.approvedAt;
-            if (incoming.progress !== undefined) merged.progress = incoming.progress;
-            if (incoming.dailyRate !== undefined && incoming.dailyRate !== null && !isNaN(Number(incoming.dailyRate))) {
-              merged.dailyRate = Number(incoming.dailyRate);
+            // Compare timestamps to ensure we don't overwrite newer local changes with stale incoming data
+            const inMeta = incoming?._syncMeta?.updatedAt;
+            const exMeta = existing?._syncMeta?.updatedAt;
+            const isExistingNewer = exMeta && inMeta && new Date(exMeta) > new Date(inMeta);
+
+            if (isExistingNewer) {
+              // If existing (local cache) is newer than incoming (server snapshot), preserve mutable fields
+              if (existing.status !== undefined) merged.status = existing.status;
+              if (existing.approvedBy !== undefined) merged.approvedBy = existing.approvedBy;
+              if (existing.approvedAt !== undefined) merged.approvedAt = existing.approvedAt;
+              if (existing.progress !== undefined) merged.progress = existing.progress;
+              if (existing.dailyRate !== undefined) merged.dailyRate = existing.dailyRate;
+            } else {
+              // Otherwise incoming takes priority
+              if (incoming.status !== undefined) merged.status = incoming.status;
+              if (incoming.approvedBy !== undefined) merged.approvedBy = incoming.approvedBy;
+              if (incoming.approvedAt !== undefined) merged.approvedAt = incoming.approvedAt;
+              if (incoming.progress !== undefined) merged.progress = incoming.progress;
+              if (incoming.dailyRate !== undefined && incoming.dailyRate !== null && !isNaN(Number(incoming.dailyRate))) {
+                merged.dailyRate = Number(incoming.dailyRate);
+              }
             }
 
             for (const key of Object.keys(existing)) {

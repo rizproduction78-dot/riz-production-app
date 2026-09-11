@@ -53,7 +53,18 @@ export default function EmployeePerformanceModule({
   findings = [],
   workOrders = []
 }: EmployeePerformanceModuleProps) {
-  const isManagement = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
+  const isManagement = Boolean(
+    currentUser && (
+      currentUser.role === 'Admin' ||
+      currentUser.role === 'Supervisor' ||
+      currentUser.role === 'Manager' ||
+      currentUser.role === 'Owner' ||
+      currentUser.role === 'Direktur' ||
+      currentUser.division === 'Admin' ||
+      currentUser.id === 'director-wahyu' ||
+      String(currentUser.name || '').toLowerCase().includes('wahyu')
+    )
+  );
 
   // Load Master Staff List dynamically with Cloud Subscription
   const [masterStaffList, setMasterStaffList] = useState<Staff[]>(() => getMasterStaffList());

@@ -34,7 +34,18 @@ export default function DailyReport({
   currentUser,
   onLogActivity,
 }: DailyReportProps) {
-  const isManagement = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
+  const isManagement = Boolean(
+    currentUser && (
+      currentUser.role === 'Admin' ||
+      currentUser.role === 'Supervisor' ||
+      currentUser.role === 'Manager' ||
+      currentUser.role === 'Owner' ||
+      currentUser.role === 'Direktur' ||
+      currentUser.division === 'Admin' ||
+      currentUser.id === 'director-wahyu' ||
+      String(currentUser.name || '').toLowerCase().includes('wahyu')
+    )
+  );
 
   // Dynamic Master Staff State with Cloud Subscription
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());

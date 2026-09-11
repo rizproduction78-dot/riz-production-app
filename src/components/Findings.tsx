@@ -767,8 +767,14 @@ export default function Findings({
             })}
 
             {filteredFindings.length === 0 && (
-              <div className="col-span-full bg-white py-12 text-center rounded-2xl border border-slate-200 text-slate-400 text-xs">
-                Tidak ada temuan kerusakan yang terdeteksi dengan kriteria pencarian ini.
+              <div className="col-span-full bg-slate-50/50 py-16 flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-slate-200">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle className="w-8 h-8" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-700 mb-1">Peralatan dalam Kondisi Prima</h3>
+                <p className="text-slate-500 text-xs max-w-sm">
+                  Tidak ada temuan kerusakan yang terdeteksi atau cocok dengan kriteria pencarian Anda saat ini.
+                </p>
               </div>
             )}
           </div>

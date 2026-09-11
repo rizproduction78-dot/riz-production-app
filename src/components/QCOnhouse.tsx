@@ -62,7 +62,18 @@ export default function QCOnhouse({
   const overallPct = Math.round((totalCompetenciesChecked / (totalEligible * 6)) * 100) || 0;
   
   // Determine if user has management permissions to see/change all divisions
-  const isManagement = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
+  const isManagement = Boolean(
+    currentUser && (
+      currentUser.role === 'Admin' ||
+      currentUser.role === 'Supervisor' ||
+      currentUser.role === 'Manager' ||
+      currentUser.role === 'Owner' ||
+      currentUser.role === 'Direktur' ||
+      currentUser.division === 'Admin' ||
+      currentUser.id === 'director-wahyu' ||
+      String(currentUser.name || '').toLowerCase().includes('wahyu')
+    )
+  );
   
   // Get allowed divisions for the user
   const allowedDivisions = isManagement

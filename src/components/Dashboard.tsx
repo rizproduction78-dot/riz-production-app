@@ -602,7 +602,15 @@ export default function Dashboard({
                     ))}
                     {logbookEntries.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-slate-400 italic">Belum ada aktivitas QC tercatat.</td>
+                        <td colSpan={5} className="px-4 py-12 text-center bg-slate-50/50">
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2">
+                              <CheckCircle2 className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm font-bold text-slate-700">Tidak Ada Aktivitas QC</span>
+                            <span className="text-xs text-slate-500 mt-1">Belum ada aktivitas inspeksi QC yang tercatat.</span>
+                          </div>
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -1289,7 +1297,11 @@ export default function Dashboard({
                       </div>
                     ))}
                     {findings.length === 0 && (
-                      <div className="text-slate-400 text-xs text-center py-2">Belum ada temuan kerusakan tercatat.</div>
+                      <div className="bg-emerald-50 text-emerald-600 rounded-lg p-3 text-center border border-emerald-100 flex flex-col items-center">
+                        <CheckCircle2 className="w-5 h-5 mb-1 opacity-75" />
+                        <span className="text-[10px] font-bold">KONDISI PRIMA</span>
+                        <span className="text-[9px] opacity-80">Tidak ada kerusakan</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1347,8 +1359,14 @@ export default function Dashboard({
                   ))}
                   {topEquipmentsWithIssues.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="p-6 text-center text-slate-400 font-sans">
-                        Belum ada data temuan peralatan bermasalah.
+                      <td colSpan={4} className="p-12 text-center bg-slate-50/50 font-sans">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2">
+                            <Shield className="w-5 h-5" />
+                          </div>
+                          <span className="text-sm font-bold text-slate-700">Aman Terkendali</span>
+                          <span className="text-xs text-slate-500 mt-1">Belum ada temuan kerusakan alat atau peralatan yang sering bermasalah.</span>
+                        </div>
                       </td>
                     </tr>
                   )}

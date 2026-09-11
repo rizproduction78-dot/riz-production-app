@@ -97,7 +97,18 @@ export default function LogTaskModule({
   workOrders = [],
   initialSubTab = 'kanban'
 }: LogTaskModuleProps) {
-  const isManagement = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
+  const isManagement = Boolean(
+    currentUser && (
+      currentUser.role === 'Admin' ||
+      currentUser.role === 'Supervisor' ||
+      currentUser.role === 'Manager' ||
+      currentUser.role === 'Owner' ||
+      currentUser.role === 'Direktur' ||
+      currentUser.division === 'Admin' ||
+      currentUser.id === 'director-wahyu' ||
+      String(currentUser.name || '').toLowerCase().includes('wahyu')
+    )
+  );
 
   // Active sub-tab
   const [subTab, setSubTab] = useState<'kanban' | 'qc_checklist' | 'logbook' | 'rekap'>(initialSubTab);
@@ -1209,8 +1220,14 @@ export default function LogTaskModule({
                     ))}
 
                   {logbookEntries.filter(e => isManagement || e.division === currentUser.division).length === 0 && (
-                    <div className="text-center py-8 text-slate-400 text-xs italic">
-                      Belum ada riwayat inspeksi QC untuk divisi ini.
+                    <div className="col-span-full bg-slate-50/50 py-16 flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-slate-200">
+                      <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+                        <CheckCircle2 className="w-8 h-8" />
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-700 mb-1">Tidak Ada Temuan QC</h3>
+                      <p className="text-slate-500 text-xs max-w-sm">
+                        Belum ada riwayat inspeksi QC untuk divisi ini, atau peralatan dalam kondisi sangat baik.
+                      </p>
                     </div>
                   )}
                 </div>
