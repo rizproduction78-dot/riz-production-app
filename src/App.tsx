@@ -639,53 +639,7 @@ export default function App() {
     localStorage.setItem('riz_active_month_key', activeMonth);
   }, [activeMonth]);
 
-  // Google Sheet Daily Log Pull — Auto-Sync setiap 30 menit
-  const handleSyncDailyLogFromSheet = async (gid: string = SHEET_GID_SEPTEMBER_2026) => {
-    setIsSyncingSheet(true);
-    setSheetPullMessage({ text: 'Mengambil data terbaru dari Google Sheet...', type: 'info' });
-    try {
-      // Kumpulkan semua ID daily_reports yang sudah ada untuk dedup
-      const existingIds = new Set<string>(dailyReports.map(r => r.id).concat(findings.map(f => f.id)));
-
-      const result = await pullDailyLogFromGviz(
-        gid,
-        async (id, doc) => { await saveCloudDoc('daily_reports', id, doc); },
-        async (id, doc) => { await saveCloudDoc('findings', id, doc); },
-        existingIds
-      );
-
-      setSheetPullMessage({ text: result.message, type: result.success ? 'success' : 'error' });
-      if (result.success) {
-        const ts = new Date().toISOString();
-        setLastSheetPull(ts);
-        handleLogActivity('System Auto-Sync', 'Server', `Sinkronisasi Google Sheet: ${result.newReportsCount} laporan + ${result.newFindingsCount} temuan baru`);
-      }
-    } catch (e: any) {
-      setSheetPullMessage({ text: `Gagal: ${e?.message || 'Koneksi bermasalah'}`, type: 'error' });
-    } finally {
-      setIsSyncingSheet(false);
-      setTimeout(() => setSheetPullMessage(null), 6000);
-    }
-  };
-
-  // Auto-sync setiap 30 menit
-  useEffect(() => {
-    const AUTO_SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 menit
-    // Jalankan sekali saat startup (setelah 5 detik)
-    const startupTimer = setTimeout(() => {
-      handleSyncDailyLogFromSheet();
-    }, 5000);
-    // Kemudian ulangi setiap 30 menit
-    const interval = setInterval(() => {
-      handleSyncDailyLogFromSheet();
-    }, AUTO_SYNC_INTERVAL_MS);
-    return () => {
-      clearTimeout(startupTimer);
-      clearInterval(interval);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Logging Activity helper
+  // Logging Activity helper (defined first — diperlukan oleh handleSyncDailyLogFromSheet)
   const handleLogActivity = (username: string, role: string, action: string) => {
     const newAct: UserActivity = {
       id: 'act-' + Date.now(),
@@ -697,6 +651,111 @@ export default function App() {
     setActivities(prev => [newAct, ...prev]);
     saveCloudDoc('activities', newAct.id, newAct);
   };
+
+  // Google Sheet Daily Log Pull — Auto-Sync setiap 30 menit
+  const handleSyncDailyLogFromSheet = async (gid: string = SHEET_GID_SEPTEMBER_2026) => {
+    setIsSyncingSheet(true);
+    setSheetPullMessage({ text: 'Mengambil data terbaru dari Google Sheet...', type: 'info' });
+    try {
+      // Kumpulkan semua ID daily_reports yang sudah ada untuk dedup
+      // Gunakan Set dari state saat ini (mungkin stale tapi cukup untuk prevent obvious dup)
+      const existingIds = new Set<string>();
+      // Baca dari localStorage sebagai sumber dedup yang selalu fresh
+      try {
+        const savedReports = JSON.parse(localStorage.getItem('riz_daily_reports') || '[]');
+        const savedFindings = JSON.parse(localStorage.getItem('riz_findings') || '[]');
+        (savedReports as any[]).forEach((r: any) => existingIds.add(r.id));
+        (savedFindings as any[]).forEach((f: any) => existingIds.add(f.id));
+      } catch (_e) {}
+
+      // Kumpulkan entry baru (sementara) untuk update state lokal langsung
+      const newReportDocs: any[] = [];
+      const newFindingDocs: any[] = [];
+
+      const result = await pullDailyLogFromGviz(
+        gid,
+        async (id, doc) => {
+          // Simpan ke Firestore
+          saveCloudDoc('daily_reports', id, doc).catch(e => console.error('[Sheet Sync] Firestore report save error:', e));
+          // Kumpulkan untuk update state lokal
+          newReportDocs.push(doc);
+        },
+        async (id, doc) => {
+          // Simpan ke Firestore
+          saveCloudDoc('findings', id, doc).catch(e => console.error('[Sheet Sync] Firestore finding save error:', e));
+          // Kumpulkan untuk update state lokal
+          newFindingDocs.push(doc);
+        },
+        existingIds
+      );
+
+      // Update state lokal LANGSUNG tanpa menunggu Firestore subscription
+      if (newReportDocs.length > 0) {
+        setDailyReports(prev => {
+          const existingIdsSet = new Set(prev.map(r => r.id));
+          const trulyNew = newReportDocs.filter(d => !existingIdsSet.has(d.id));
+          // Simpan ke localStorage
+          const merged = [...trulyNew, ...prev];
+          try { localStorage.setItem('riz_daily_reports', JSON.stringify(merged)); } catch (_e) {}
+          return merged as any;
+        });
+      }
+      if (newFindingDocs.length > 0) {
+        setFindings(prev => {
+          const existingIdsSet = new Set(prev.map(f => f.id));
+          const trulyNew = newFindingDocs.filter(d => !existingIdsSet.has(d.id));
+          const merged = [...trulyNew, ...prev];
+          try { localStorage.setItem('riz_findings', JSON.stringify(merged)); } catch (_e) {}
+          return merged as any;
+        });
+      }
+
+      setSheetPullMessage({ text: result.message, type: result.success ? 'success' : 'error' });
+      if (result.success && (result.newReportsCount > 0 || result.newFindingsCount > 0)) {
+        const ts = new Date().toISOString();
+        setLastSheetPull(ts);
+        try { localStorage.setItem('riz_daily_log_last_pull', ts); } catch (_e) {}
+        handleLogActivity('System Auto-Sync', 'Server', `Sinkronisasi Google Sheet: ${result.newReportsCount} laporan + ${result.newFindingsCount} temuan baru dari sheet September 2026`);
+      } else if (result.success) {
+        setLastSheetPull(new Date().toISOString());
+        try { localStorage.setItem('riz_daily_log_last_pull', new Date().toISOString()); } catch (_e) {}
+      }
+      console.log('[Sheet Sync] Result:', result.message);
+    } catch (e: any) {
+      console.error('[Sheet Sync] ERROR:', e);
+      setSheetPullMessage({ text: `Gagal: ${e?.message || 'Koneksi bermasalah'}`, type: 'error' });
+    } finally {
+      setIsSyncingSheet(false);
+      setTimeout(() => setSheetPullMessage(null), 8000);
+    }
+  };
+
+  // Ref untuk selalu memanggil versi terbaru handleSyncDailyLogFromSheet (fix stale closure)
+  const syncHandlerRef = React.useRef(handleSyncDailyLogFromSheet);
+  syncHandlerRef.current = handleSyncDailyLogFromSheet;
+
+  // Auto-sync setiap 30 menit — gunakan ref agar tidak stale
+  useEffect(() => {
+    const AUTO_SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 menit
+    // Jalankan sekali saat startup (setelah 8 detik, beri waktu Firestore inisialisasi)
+    const startupTimer = setTimeout(() => {
+      syncHandlerRef.current();
+    }, 8000);
+    // Kemudian ulangi setiap 30 menit
+    const interval = setInterval(() => {
+      syncHandlerRef.current();
+    }, AUTO_SYNC_INTERVAL_MS);
+    return () => {
+      clearTimeout(startupTimer);
+      clearInterval(interval);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // (handleLogActivity now defined above)
+  // Keep this dummy line to avoid breaking any references
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleLogActivityAlias = handleLogActivity;
+
 
   // Logbook functions
   const handleAddLogbookEntry = (entry: Omit<LogbookEntry, 'id'>) => {
