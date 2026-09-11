@@ -6,7 +6,7 @@
  * PT. RIZ PRODUCTION MULTI KREASI
  * 
  * SUMBER ACUAN RESMI PRIORITAS PENILAIAN UTAMA KPI:
- * Spreadsheet: https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470
+ * Spreadsheet: https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit?gid=198998470#gid=198998470
  * 
  * PRINSIP INTEGRITAS DATA:
  * - 100% Data Riil dari input operasional & spreadsheet resmi (tanpa halusinasi/data fiktif)
@@ -20,7 +20,7 @@
  * 6. Disiplin & Teamwork - Bobot 15%
  */
 
-export const KPI_SPREADSHEET_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470';
+export const KPI_SPREADSHEET_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit?gid=198998470#gid=198998470';
 export const KPI_SPREADSHEET_GID = '198998470';
 
 import { Staff, Division, DailyReport, LogbookEntry, Finding, AttendanceLog, WorkOrder } from '../types';

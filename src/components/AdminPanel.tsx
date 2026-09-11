@@ -3225,7 +3225,7 @@ export default function AdminPanel({
                 </div>
               </div>
               <a
-                href="https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470"
+                href="https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit?gid=198998470#gid=198998470"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 rounded-xl text-xs font-bold text-blue-200 transition-all cursor-pointer shrink-0"
@@ -3239,7 +3239,7 @@ export default function AdminPanel({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-mono uppercase block">Sheet Target</span>
-                <span className="font-bold text-blue-300 font-mono block text-[11px] truncate">1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA</span>
+                <span className="font-bold text-blue-300 font-mono block text-[11px] truncate">1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc</span>
               </div>
               <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-mono uppercase block">Tab Aktif</span>

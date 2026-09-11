@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * 
  * GOOGLE SHEETS REAL-TIME SYNC ENGINE
- * Target Spreadsheet: https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit
+ * Target Spreadsheet: https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit
  * Direct Bi-Directional Integration via Google Apps Script Webhook
  */
 
@@ -20,9 +20,9 @@ import {
 } from '../data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../data/september2026Schedule';
 
-export const DEFAULT_SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
-export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470';
-export const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz9X5jRobwEhxyVoilLuqqeH8eGrGZ8XuLcbQ0vRQqbWj8D-tNfLlwoZcTEEiix3YLBiA/exec';
+export const DEFAULT_SPREADSHEET_ID = '1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc';
+export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit?gid=198998470#gid=198998470';
+export const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxwCU17QZZ_1Z-9Wd2rznC15gIX25xydANyPNWbdyRrrRZzDVAYn9BETiCKAc7f7QUp0w/exec';
 
 export const GOOGLE_SHEET_WEBHOOK_KEY = 'riz_google_sheet_webhook_url';
 export const GOOGLE_SHEET_LAST_SYNC_KEY = 'riz_google_sheet_last_sync';
@@ -440,7 +440,7 @@ export async function pullDataFromGoogleSheet(webhookUrl?: string): Promise<Goog
 export const GOOGLE_APPS_SCRIPT_TEMPLATE = `// =============================================================
 // PT. RIZ PRODUCTION - OPERATIONAL LOGBOOK GOOGLE APPS SCRIPT
 // Deployment: Web App (Execute as: Me, Who has access: Anyone)
-// Spreadsheet ID: 1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA
+// Spreadsheet ID: 1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc
 // =============================================================
 
 function doPost(e) {
@@ -458,7 +458,7 @@ function doPost(e) {
       ss = SpreadsheetApp.getActiveSpreadsheet();
     } catch(e) {}
     if (!ss) {
-      ss = SpreadsheetApp.openById("1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA");
+      ss = SpreadsheetApp.openById("1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc");
     }
 
     if (action === 'PING') {
@@ -813,7 +813,7 @@ function readScheduleShiftsSheet(ss) {
 // Cukup Google Sheet di-set "Share → Anyone with the link → Viewer"
 // ─────────────────────────────────────────────────────────────
 
-export const DAILY_LOG_SHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
+export const DAILY_LOG_SHEET_ID = '1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc';
 
 /** GID untuk setiap tab sheet daily log */
 export const SHEET_GID_SEPTEMBER_2026 = '198998470';
