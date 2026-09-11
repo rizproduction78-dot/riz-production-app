@@ -30,7 +30,7 @@ import {
   PieChart
 } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
-import { calculateAllStaffKpis, isStaffInDivision, isStaffMatch } from '../utils/kpiCalculator';
+import { calculateAllStaffKpis, isStaffInDivision, isStaffMatch, isStaffInGoogleSheet } from '../utils/kpiCalculator';
 import { getScheduleByKey, StaffScheduleRow, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { Staff, MaintenanceSchedule } from '../types';
@@ -232,8 +232,10 @@ export default function Dashboard({
   // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
   const staffProductivityData = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
   
-  // Filter hanya staf yang memiliki aktifitas riil (laporan, QC, atau WO)
-  const activeStaffProductivityData = staffProductivityData.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);
+  // Filter hanya staf yang bertugas sesuai data referensi Google Sheet (yang tidak tertulis nama staf tidak disertakan/ditampilkan)
+  const activeStaffProductivityData = staffProductivityData.filter(s => 
+    isStaffInGoogleSheet(s, activeDailyReports, activeLogbookEntries) && (s.reports > 0 || s.qcs > 0 || s.wos > 0)
+  );
 
   // Grade distributions dynamically calculated from real active data
   const countGradeA = activeStaffProductivityData.filter(s => s.grade === 'A').length;

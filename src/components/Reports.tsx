@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, MaintenanceSchedule } from '../types';
 import { FileText, Printer, FileDown, Download, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
-import { calculateAllStaffKpis, isStaffMatch } from '../utils/kpiCalculator';
+import { calculateAllStaffKpis, isStaffMatch, isStaffInGoogleSheet } from '../utils/kpiCalculator';
 import { getScheduleByKey, StaffScheduleRow } from '../data/staffSchedules';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { generateOrchestratedReport } from '../lib/ragVectorEngine';
@@ -152,8 +152,10 @@ export default function Reports({
   // 3. WO Selesai
   const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
   
-  // Filter hanya staf yang memiliki aktifitas riil pada periode yang dipilih
-  const activeStaffKpis = staffKpis.filter(staff => staff.reports > 0 || staff.qcs > 0 || staff.wos > 0);
+  // Filter hanya staf yang bertugas sesuai data referensi Google Sheet (yang tidak tertulis nama staf tidak disertakan/ditampilkan)
+  const activeStaffKpis = staffKpis.filter(staff => 
+    isStaffInGoogleSheet(staff, activeDailyReports, activeLogbookEntries) && (staff.reports > 0 || staff.qcs > 0 || staff.wos > 0)
+  );
 
   // Dynamic metrics per division (7 Divisi Resmi)
   const reportDivisions = [

@@ -185,6 +185,15 @@ export function isStaffMatch(staff: Staff, inputName?: string): boolean {
   const rawInput = inputName.toLowerCase().trim();
   if (!rawInput) return false;
 
+  // Safeguard: Director Wahyu (Admin) tidak boleh mencocokkan staf Wahyudin / Unyim (Audio)
+  if (staff.id === 'director-wahyu' && (rawInput.includes('wahyudin') || rawInput.includes('unyin') || rawInput.includes('unyim'))) {
+    return false;
+  }
+  // Safeguard: Audio staff Wahyudin tidak mencocokkan Wahyu / Direktur / Owner
+  if (staff.id === 'staff-unyin' && (rawInput === 'wahyu' || rawInput === 'pak wahyu' || rawInput === 'direktur' || rawInput === 'owner')) {
+    return false;
+  }
+
   const aliases = getAllStaffAliases(staff);
   
   // 1. Direct match check
@@ -516,3 +525,63 @@ export function calculateAllStaffKpis(
       return b.kpi - a.kpi;
     });
 }
+
+/**
+ * Daftar resmi nama staf yang bertugas sesuai referensi Google Sheet (September 2026).
+ * Seluruh staf yang tidak tertulis nama stafnya dalam data referensi Google Sheet tidak disertakan/ditampilkan.
+ */
+export const OFFICIAL_GSHEET_STAFF_NAMES = [
+  'taufik diana',
+  'suryana',
+  'muhamad rahmat',
+  'ramdani',
+  'iwan kurniawan',
+  'heri',
+  'mulyana',
+  'mulyadi',
+  'yudishtira purnama a',
+  'ayong sumarsih',
+  'dedi agus wigiantoro',
+  'wahyudin'
+];
+
+/**
+ * Memeriksa apakah seorang staf termasuk dalam daftar nama staf yang bertugas sesuai data referensi Google Sheet.
+ */
+export function isStaffInGoogleSheet(
+  staff: Staff | { id?: string; name: string },
+  activeDailyReports?: DailyReport[],
+  activeLogbookEntries?: LogbookEntry[]
+): boolean {
+  if (!staff) return false;
+  if (staff.id === 'director-wahyu' || staff.name === 'Wahyu') return false;
+  if (staff.id === 'staff-damri' || staff.name === 'Damri') return false;
+  if (staff.id === 'staff-agustino' || staff.name === 'Agustino Setiawan') return false;
+  if (staff.id === 'staff-fahrul' || staff.name === 'M. Fahruyana . A') return false;
+  if (staff.id === 'staff-syalsa' || staff.name === 'Syalsa Sri Hestariana') return false;
+  if (staff.id === 'staff-seno' || staff.name === 'Seno Subroto') return false;
+  if (staff.id === 'staff-absobur' || staff.name === 'Abah Sobur') return false;
+  if (staff.id === 'staff-gatot' || staff.name === 'Gatot Wiliyanto') return false;
+  if (staff.id === 'staff-udin' || staff.name === 'Udin Saepudin') return false;
+  if (staff.id === 'staff-irvan' || staff.name === 'Muhamad Irvan') return false;
+
+  const normName = (staff.name || '').toLowerCase().trim();
+
+  // 1. Cek dari daftar 12 staf resmi yang bertugas di sheet acuan September 2026
+  if (OFFICIAL_GSHEET_STAFF_NAMES.some(n => normName === n || normName.includes(n) || n.includes(normName))) {
+    return true;
+  }
+
+  // 2. Cek dinamis jika ada nama staf baru yang ditarik dari Google Sheet
+  if (activeDailyReports || activeLogbookEntries) {
+    const isPresent = (activeDailyReports || []).some(
+      r => (r._source === 'google_sheet' || r.id.startsWith('gsheet')) && isStaffMatch(staff as any, r.staffName)
+    ) || (activeLogbookEntries || []).some(
+      l => (l._source === 'google_sheet' || l.id.startsWith('gsheet') || l.id.startsWith('log-gsheet')) && isStaffMatch(staff as any, l.staffName)
+    );
+    if (isPresent) return true;
+  }
+
+  return false;
+}
+
