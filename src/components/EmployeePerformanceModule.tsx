@@ -858,7 +858,7 @@ export default function EmployeePerformanceModule({
                     <span className="font-bold text-slate-800 block truncate">{act.title}</span>
                     <span className="text-slate-400 text-[10px] block font-mono">{act.date} • {act.type}</span>
                   </div>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase shrink-0 ${act.status === 'Submitted' || act.status === 'Close' || act.status === 'Done' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase shrink-0 ${(String(act.status || '')) === 'Submitted' || (String(act.status || '')) === 'Close' || (String(act.status || '')) === 'Done' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                     {act.status || 'OK'}
                   </span>
                 </div>

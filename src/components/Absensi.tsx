@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Staff, AttendanceLog, WorkSchedule } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import {
-  OFFICIAL_SEPTEMBER_2026_SCHEDULE,
-  SEPTEMBER_2026_DAYS,
   SHIFT_LEGEND,
   SCHEDULE_NOTE,
-  StaffScheduleRow
-} from '../data/september2026Schedule';
+  StaffScheduleRow,
+  getScheduleByKey,
+  generateMonthDays
+} from '../data/staffSchedules';
 import {
   Calendar,
   Clock,
@@ -170,9 +170,12 @@ interface AbsensiProps {
   currentUser: Staff;
   onLogActivity: (username: string, role: string, action: string) => void;
   forceSubTab?: 'self' | 'schedule' | 'progress' | 'maintenance_dashboard';
+  activeMonth?: string;
+  onActiveMonthChange?: (monthKey: string) => void;
+  scheduleData?: StaffScheduleRow[];
 }
 
-export default function Absensi({ currentUser, onLogActivity, forceSubTab }: AbsensiProps) {
+export default function Absensi({ currentUser, onLogActivity, forceSubTab, activeMonth = '2026-09', onActiveMonthChange, scheduleData = [] }: AbsensiProps) {
   // Tabs: 'self' (Check In/Out), 'schedule' (1-31 Scheduling Grid), 'progress' (Kenaikan Status & Kelistrikan), or 'maintenance_dashboard'
   const [activeSubTab, setActiveSubTab] = useState<'self' | 'schedule' | 'progress' | 'maintenance_dashboard'>(
     forceSubTab || 'self'
@@ -298,13 +301,9 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
     return saved ? JSON.parse(saved) : null;
   });
 
-  // Official September 2026 Schedule State
-  const [scheduleViewMode, setScheduleViewMode] = useState<'september2026' | 'custom'>('september2026');
-  const [septemberScheduleData, setSeptemberScheduleData] = useState<StaffScheduleRow[]>(() => {
-    const saved = localStorage.getItem('riz_september_2026_schedule');
-    return saved ? JSON.parse(saved) : OFFICIAL_SEPTEMBER_2026_SCHEDULE;
-  });
-  const [septemberDivisionFilter, setSeptemberDivisionFilter] = useState<string>('All');
+  // Official Schedule State
+  const [scheduleViewMode, setScheduleViewMode] = useState<'official' | 'custom'>('official');
+  const [divisionFilter, setDivisionFilter] = useState<string>('All');
 
   // Active check in / out state for current user on today's date
   const todayStr = new Date().toISOString().split('T')[0];
@@ -332,16 +331,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
       []
     );
 
-    const unsubSchedule = subscribeCloudCollection<StaffScheduleRow>(
-      'september_2026_schedule',
-      'riz_september_2026_schedule',
-      setSeptemberScheduleData,
-      OFFICIAL_SEPTEMBER_2026_SCHEDULE
-    );
-
     return () => {
       unsubAttendance();
-      unsubSchedule();
     };
   }, []);
 
@@ -354,16 +345,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
     localStorage.setItem('riz_work_schedule', JSON.stringify(schedule));
   }, [schedule]);
 
-  useEffect(() => {
-    localStorage.setItem('riz_september_2026_schedule', JSON.stringify(septemberScheduleData));
-  }, [septemberScheduleData]);
-
-  // Handler to toggle / cycle September shift with Cloud Firestore push
-  const handleToggleSeptemberShift = (staffNo: number, day: number) => {
+  // Handler to toggle / cycle shift with Cloud Firestore push
+  const handleToggleShift = (staffNo: number, day: number) => {
     if (currentUser.role !== 'Admin' && currentUser.role !== 'Supervisor' && currentUser.role !== 'Manager') return;
 
     const cycle: string[] = ['MD', 'P', 'M', 'PM', 'L', 'Cuti', '-'];
-    const updated = septemberScheduleData.map(row => {
+    const updated = scheduleData.map(row => {
       if (row.no === staffNo) {
         const currentShift = row.shifts[day] || '-';
         const nextIdx = (cycle.indexOf(currentShift) + 1) % cycle.length;
@@ -378,9 +365,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
       return row;
     });
 
-    setSeptemberScheduleData(updated);
-    localStorage.setItem('riz_september_2026_schedule', JSON.stringify(updated));
-    pushCollectionToCloud('september_2026_schedule', updated, currentUser.name);
+    localStorage.setItem(`riz_schedule_${activeMonth}`, JSON.stringify(updated));
+    pushCollectionToCloud(`schedule_${activeMonth}`, updated, currentUser.name);
   };
 
   useEffect(() => {
@@ -949,15 +935,15 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
             <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl text-xs font-bold">
               <button
                 type="button"
-                onClick={() => setScheduleViewMode('september2026')}
+                onClick={() => setScheduleViewMode('official')}
                 className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${
-                  scheduleViewMode === 'september2026'
+                  scheduleViewMode === 'official'
                     ? 'bg-emerald-600 text-white shadow-xs font-black'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Calendar className="w-4 h-4" />
-                <span>📅 Schedule September 2026 (Resmi)</span>
+                <span>📅 Schedule Resmi Bulanan</span>
               </button>
               <button
                 type="button"
@@ -985,422 +971,101 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab }: Abs
           </div>
 
           {/* ────────────────────────────────────────────────────────── */}
-          {/* MODE 1: OFFICIAL SEPTEMBER 2026 SCHEDULE                   */}
+          {/* MODE 1: OFFICIAL MONTHLY SCHEDULE                          */}
           {/* ────────────────────────────────────────────────────────── */}
-          {scheduleViewMode === 'september2026' && (
-            <div className="space-y-6">
-              {/* Header Banner */}
-              <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 p-5 rounded-2xl text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-200 block">
-                    DOKUMEN OPERASIONAL RESMI RIZ-PRODUCTION
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight">SCHEDULE BULAN SEPTEMBER 2026</h2>
-                  <p className="text-xs text-emerald-100 mt-0.5 font-medium">
-                    Sistem Manajemen Jadwal & Shift Kerja Warehouse, Show Operasional & Workshop
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 bg-emerald-900/60 backdrop-blur-sm p-1.5 rounded-xl border border-emerald-600/50 text-xs">
-                  <span className="text-[11px] font-bold text-emerald-200 uppercase px-1">Filter Divisi:</span>
-                  <select
-                    value={septemberDivisionFilter}
-                    onChange={(e) => setSeptemberDivisionFilter(e.target.value)}
-                    className="bg-emerald-950 text-white font-bold px-3 py-1.5 rounded-lg border border-emerald-700 focus:outline-none cursor-pointer"
+          {scheduleViewMode === 'official' && (
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row gap-3 justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div className="flex flex-col md:flex-row gap-2 w-full">
+                  <select 
+                    value={divisionFilter}
+                    onChange={(e) => setDivisionFilter(e.target.value)}
+                    className="text-xs p-2 border border-slate-200 rounded font-semibold text-slate-700 outline-none w-full md:w-auto min-w-[200px]"
                   >
-                    <option value="All">Semua Divisi (20 Personel)</option>
+                    <option value="All">--- Semua Divisi ---</option>
                     <option value="GUDANG">Gudang</option>
-                    <option value="LED">LED (Videotron)</option>
-                    <option value="ADMIN">Admin</option>
-                    <option value="SOUND">Sound (Audio)</option>
+                    <option value="LED">Videotron (LED)</option>
+                    <option value="ADMIN">Admin / Manajemen</option>
+                    <option value="SOUND">Sound / Audio</option>
                     <option value="LIGHTING">Lighting</option>
                     <option value="MULTIMEDIA">Multimedia</option>
+                    <option value="SERVICE">Service</option>
                   </select>
+                  
+                  {onActiveMonthChange && (
+                    <select 
+                      value={activeMonth}
+                      onChange={(e) => onActiveMonthChange(e.target.value)}
+                      className="text-xs p-2 border border-slate-200 rounded font-semibold text-slate-700 outline-none w-full md:w-auto"
+                    >
+                      <option value="2026-09">September 2026</option>
+                      <option value="2026-10">Oktober 2026</option>
+                      <option value="2026-11">November 2026</option>
+                      <option value="2026-12">Desember 2026</option>
+                    </select>
+                  )}
+                </div>
+                
+                <div className="flex flex-wrap gap-2 text-[9px] w-full justify-end font-semibold text-slate-500">
+                  {Object.values(SHIFT_LEGEND).map(sh => (
+                    <span key={sh.code} className={`px-1.5 py-0.5 rounded border ${sh.bg} ${sh.border} ${sh.text}`}>
+                      {sh.code} = {sh.name}
+                    </span>
+                  ))}
                 </div>
               </div>
 
-              {/* Informational edit hint */}
-              <div className="flex items-center justify-between text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span>
-                    <strong>Tips Shift:</strong> <code>MD</code> = <strong>Middle Day</strong> • <code>P</code> = Pagi • <code>M</code> = Malam • <code>PM</code> = Afternoon • <code>L</code> = Libur • <code>Cuti</code> = Cuti
-                  </span>
-                </span>
-                {currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager' ? (
-                  <span className="text-emerald-700 font-bold text-[11px]">✍️ Klik pada kotak shift untuk mengedit status</span>
-                ) : (
-                  <span className="text-slate-400 italic text-[11px]">Hanya Admin / Supervisor yang dapat mengedit shift</span>
-                )}
-              </div>
-
-              {/* ────────────────────────────────────────────────────── */}
-              {/* TABEL BAGIAN 1: TANGGAL 1 - 20 SEPTEMBER 2026           */}
-              {/* ────────────────────────────────────────────────────── */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                    <span>Tabel 1: Periode Tanggal 1 - 20 September 2026</span>
-                  </h3>
-                  <span className="text-[10px] text-slate-400 font-mono">20 Hari Pertama</span>
-                </div>
-
-                <div className="overflow-x-auto border border-slate-300 rounded-xl shadow-xs">
-                  <table className="min-w-full divide-y divide-slate-200 text-xs font-sans border-collapse">
-                    <thead>
-                      {/* Baris Nama Hari */}
-                      <tr className="bg-amber-100/70 text-slate-700 text-[11px] font-black border-b border-slate-300">
-                        <th className="px-2 py-1 text-center w-10 border-r border-slate-300 bg-amber-200/80">No</th>
-                        <th className="px-3 py-1 text-left w-48 border-r border-slate-300 bg-amber-200/80">Divisi / Nama</th>
-                        {SEPTEMBER_2026_DAYS.slice(0, 20).map(d => (
-                          <th
-                            key={d.day}
-                            className={`px-1 py-1 text-center min-w-[34px] border-r border-slate-300 ${
-                              d.isWeekend ? 'bg-amber-300/80 text-amber-950 font-black' : ''
-                            }`}
-                          >
-                            {d.dayName}
-                          </th>
-                        ))}
-                      </tr>
-
-                      {/* Baris Tanggal */}
-                      <tr className="bg-amber-200/60 text-slate-900 text-xs font-black border-b border-slate-300">
-                        <th className="px-2 py-1.5 text-center border-r border-slate-300">#</th>
-                        <th className="px-3 py-1.5 text-left border-r border-slate-300">Hari / Tanggal</th>
-                        {SEPTEMBER_2026_DAYS.slice(0, 20).map(d => (
-                          <th
-                            key={d.day}
-                            className={`px-1 py-1.5 text-center font-mono border-r border-slate-300 ${
-                              d.isWeekend ? 'bg-amber-300 text-amber-950 font-black' : ''
-                            }`}
-                          >
-                            {d.day}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-
-                    <tbody className="divide-y divide-slate-200 bg-white">
-                      {septemberScheduleData
-                        .filter(row => septemberDivisionFilter === 'All' || row.division === septemberDivisionFilter)
-                        .map((row) => (
-                          <tr key={row.no} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="px-2 py-1.5 text-center font-mono text-slate-500 font-bold border-r border-slate-200 bg-slate-50">
-                              {row.no}
+              <div className="overflow-x-auto border border-slate-200 rounded-lg shadow-sm">
+                <table className="w-full text-[10px] text-left border-collapse min-w-max">
+                  <thead>
+                    <tr className="bg-slate-800 text-slate-100 uppercase font-black text-center">
+                      <th className="p-2 border-r border-slate-600 sticky left-0 bg-slate-800 z-10 whitespace-nowrap" rowSpan={2}>No</th>
+                      <th className="p-2 border-r border-slate-600 sticky left-8 bg-slate-800 z-10 whitespace-nowrap" rowSpan={2}>Divisi</th>
+                      <th className="p-2 border-r border-slate-600 sticky left-24 bg-slate-800 z-10 whitespace-nowrap" rowSpan={2}>Nama Crew</th>
+                      <th className="p-1 border-b border-slate-600" colSpan={getScheduleByKey(activeMonth)?.totalDays || 30}>
+                        TANGGAL ({getScheduleByKey(activeMonth)?.label || 'Bulan'})
+                      </th>
+                    </tr>
+                    <tr className="bg-slate-700 text-slate-200 text-[9px] text-center font-bold">
+                      {(getScheduleByKey(activeMonth)?.days || generateMonthDays(2026, 9)).map(d => (
+                        <th key={d.day} className={`p-1 border border-slate-600 min-w-[28px] ${d.isWeekend ? 'bg-rose-900/40 text-rose-200' : ''}`}>
+                          {d.day}<br/>
+                          <span className="text-[8px] font-normal">{d.dayName}</span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scheduleData
+                      .filter(row => divisionFilter === 'All' || row.division === divisionFilter)
+                      .map((row, idx) => (
+                      <tr key={row.no} className="border-b border-slate-200 hover:bg-slate-50 transition-colors text-center font-bold">
+                        <td className="p-1.5 border-r border-slate-200 text-slate-500 sticky left-0 bg-white group-hover:bg-slate-50 z-10">{idx + 1}</td>
+                        <td className="p-1.5 border-r border-slate-200 text-indigo-700 sticky left-8 bg-white group-hover:bg-slate-50 z-10">{row.division}</td>
+                        <td className="p-1.5 border-r border-slate-200 text-slate-800 sticky left-24 bg-white group-hover:bg-slate-50 z-10 uppercase whitespace-nowrap text-left pl-2">
+                          {row.name}
+                        </td>
+                        {(getScheduleByKey(activeMonth)?.days || generateMonthDays(2026, 9)).map(d => {
+                          const shiftCode = row.shifts[d.day] || '-';
+                          const shiftInfo = SHIFT_LEGEND[shiftCode];
+                          return (
+                            <td 
+                              key={d.day} 
+                              className={`p-1 border border-slate-200 text-center ${shiftInfo?.bg || 'bg-white'} ${shiftInfo?.text || 'text-slate-800'} ${d.isWeekend ? 'border-r-rose-200' : ''}`}
+                              title={shiftInfo?.timeRange}
+                              onClick={() => handleToggleShift(row.no, d.day)}
+                            >
+                              {shiftCode}
                             </td>
-                            <td className="px-3 py-1.5 border-r border-slate-200 whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
-                                  row.division === 'GUDANG' ? 'bg-emerald-100 text-emerald-800' :
-                                  row.division === 'LED' ? 'bg-cyan-100 text-cyan-800' :
-                                  row.division === 'ADMIN' ? 'bg-slate-200 text-slate-800' :
-                                  row.division === 'SOUND' ? 'bg-purple-100 text-purple-800' :
-                                  row.division === 'LIGHTING' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {row.division}
-                                </span>
-                                <span className="font-bold text-slate-900">{row.name}</span>
-                              </div>
-                            </td>
-
-                            {SEPTEMBER_2026_DAYS.slice(0, 20).map(d => {
-                              const shift = row.shifts[d.day] || '-';
-                              const shiftConfig = SHIFT_LEGEND[shift] || SHIFT_LEGEND['-'];
-                              const canEdit = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
-
-                              return (
-                                <td key={d.day} className="p-0.5 border-r border-slate-200 text-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleSeptemberShift(row.no, d.day)}
-                                    disabled={!canEdit}
-                                    title={`${row.name} (Tgl ${d.day} Sep): ${shiftConfig.name} - ${shiftConfig.timeRange}`}
-                                    className={`w-full h-7 rounded text-[10px] font-black transition-all flex items-center justify-center border ${shiftConfig.bg} ${shiftConfig.text} ${shiftConfig.border} ${
-                                      canEdit ? 'hover:scale-105 cursor-pointer shadow-xs' : 'cursor-default'
-                                    }`}
-                                  >
-                                    {shift}
-                                  </button>
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* ────────────────────────────────────────────────────── */}
-              {/* TABEL BAGIAN 2: TANGGAL 21 - 30 SEPTEMBER 2026          */}
-              {/* ────────────────────────────────────────────────────── */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                    <span>Tabel 2: Periode Tanggal 21 - 30 September 2026</span>
-                  </h3>
-                  <span className="text-[10px] text-slate-400 font-mono">10 Hari Terakhir</span>
-                </div>
-
-                <div className="overflow-x-auto border border-slate-300 rounded-xl shadow-xs">
-                  <table className="min-w-full divide-y divide-slate-200 text-xs font-sans border-collapse">
-                    <thead>
-                      {/* Baris Nama Hari */}
-                      <tr className="bg-amber-100/70 text-slate-700 text-[11px] font-black border-b border-slate-300">
-                        <th className="px-2 py-1 text-center w-10 border-r border-slate-300 bg-amber-200/80">No</th>
-                        <th className="px-3 py-1 text-left w-48 border-r border-slate-300 bg-amber-200/80">Divisi / Nama</th>
-                        {SEPTEMBER_2026_DAYS.slice(20, 30).map(d => (
-                          <th
-                            key={d.day}
-                            className={`px-1 py-1 text-center min-w-[34px] border-r border-slate-300 ${
-                              d.isWeekend ? 'bg-amber-300/80 text-amber-950 font-black' : ''
-                            }`}
-                          >
-                            {d.dayName}
-                          </th>
-                        ))}
+                          );
+                        })}
                       </tr>
-
-                      {/* Baris Tanggal */}
-                      <tr className="bg-amber-200/60 text-slate-900 text-xs font-black border-b border-slate-300">
-                        <th className="px-2 py-1.5 text-center border-r border-slate-300">#</th>
-                        <th className="px-3 py-1.5 text-left border-r border-slate-300">Hari / Tanggal</th>
-                        {SEPTEMBER_2026_DAYS.slice(20, 30).map(d => (
-                          <th
-                            key={d.day}
-                            className={`px-1 py-1.5 text-center font-mono border-r border-slate-300 ${
-                              d.isWeekend ? 'bg-amber-300 text-amber-950 font-black' : ''
-                            }`}
-                          >
-                            {d.day}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-
-                    <tbody className="divide-y divide-slate-200 bg-white">
-                      {septemberScheduleData
-                        .filter(row => septemberDivisionFilter === 'All' || row.division === septemberDivisionFilter)
-                        .map((row) => (
-                          <tr key={row.no} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="px-2 py-1.5 text-center font-mono text-slate-500 font-bold border-r border-slate-200 bg-slate-50">
-                              {row.no}
-                            </td>
-                            <td className="px-3 py-1.5 border-r border-slate-200 whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
-                                  row.division === 'GUDANG' ? 'bg-emerald-100 text-emerald-800' :
-                                  row.division === 'LED' ? 'bg-cyan-100 text-cyan-800' :
-                                  row.division === 'ADMIN' ? 'bg-slate-200 text-slate-800' :
-                                  row.division === 'SOUND' ? 'bg-purple-100 text-purple-800' :
-                                  row.division === 'LIGHTING' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {row.division}
-                                </span>
-                                <span className="font-bold text-slate-900">{row.name}</span>
-                              </div>
-                            </td>
-
-                            {SEPTEMBER_2026_DAYS.slice(20, 30).map(d => {
-                              const shift = row.shifts[d.day] || '-';
-                              const shiftConfig = SHIFT_LEGEND[shift] || SHIFT_LEGEND['-'];
-                              const canEdit = currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager';
-
-                              return (
-                                <td key={d.day} className="p-0.5 border-r border-slate-200 text-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleSeptemberShift(row.no, d.day)}
-                                    disabled={!canEdit}
-                                    title={`${row.name} (Tgl ${d.day} Sep): ${shiftConfig.name} - ${shiftConfig.timeRange}`}
-                                    className={`w-full h-7 rounded text-[10px] font-black transition-all flex items-center justify-center border ${shiftConfig.bg} ${shiftConfig.text} ${shiftConfig.border} ${
-                                      canEdit ? 'hover:scale-105 cursor-pointer shadow-xs' : 'cursor-default'
-                                    }`}
-                                  >
-                                    {shift}
-                                  </button>
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* ────────────────────────────────────────────────────── */}
-              {/* LEGENDA SHIFT & ATURAN NOTE RESMI                      */}
-              {/* ────────────────────────────────────────────────────── */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
-                {/* Legenda Waktu Shift - EXACT REPLICA OF OFFICIAL DOCUMENT */}
-                <div className="bg-white border-2 border-slate-300 p-4 rounded-2xl shadow-sm space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-amber-600" />
-                      <span>Tabel Referensi Keterangan & Waktu Shift</span>
-                    </h4>
-                    <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">Resmi</span>
-                  </div>
-
-                  <div className="overflow-hidden border-2 border-black rounded-lg shadow-sm">
-                    <table className="w-full border-collapse text-black font-sans text-xs">
-                      <thead>
-                        <tr className="bg-[#ffff00] border-b-2 border-black font-black text-sm">
-                          <th colSpan={2} className="py-2 px-3 border-r-2 border-black text-center uppercase tracking-wide">
-                            Keterangan
-                          </th>
-                          <th className="py-2 px-3 text-center uppercase tracking-wide">
-                            Waktu
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Gudang Section */}
-                        <tr className="bg-[#a9d08e] border-b border-black font-bold">
-                          <td rowSpan={3} className="py-2 px-3 border-r-2 border-black font-black text-center text-sm align-middle bg-[#a9d08e] text-slate-900">
-                            Gudang
-                          </td>
-                          <td className="py-1.5 px-3 border-r border-black text-left">
-                            <span className="inline-block w-8 font-black text-center">P</span>
-                            <span className="font-bold">Pagi</span>
-                          </td>
-                          <td className="py-1.5 px-3 font-black text-center">
-                            07.00 - 19.00
-                          </td>
-                        </tr>
-                        <tr className="bg-[#a9d08e] border-b border-black font-bold">
-                          <td className="py-1.5 px-3 border-r border-black text-left">
-                            <span className="inline-block w-8 font-black text-center">MD</span>
-                            <span className="font-bold">Middle</span>
-                          </td>
-                          <td className="py-1.5 px-3 font-black text-center">
-                            10.00 - 22.00
-                          </td>
-                        </tr>
-                        <tr className="bg-[#a9d08e] border-b-2 border-black font-bold">
-                          <td className="py-1.5 px-3 border-r border-black text-left">
-                            <span className="inline-block w-8 font-black text-center">M</span>
-                            <span className="font-bold">Malam</span>
-                          </td>
-                          <td className="py-1.5 px-3 font-black text-center">
-                            19.00 - 07.00
-                          </td>
-                        </tr>
-
-                        {/* Admin Section */}
-                        <tr className="bg-[#ffd966] border-b border-black font-bold">
-                          <td rowSpan={4} className="py-2 px-3 border-r-2 border-black font-black text-center text-sm align-middle bg-[#ffd966] text-slate-900">
-                            Admin
-                          </td>
-                          <td className="py-1.5 px-3 border-r border-black text-left">
-                            <span className="inline-block w-8 font-black text-center">P</span>
-                            <span className="font-bold">Pagi</span>
-                          </td>
-                          <td className="py-1.5 px-3 font-black text-center">
-                            07.00 - 15.00
-                          </td>
-                        </tr>
-                        <tr className="bg-[#ffd966] border-b border-black font-bold">
-                          <td className="py-1.5 px-3 border-r border-black text-left">
-                            <span className="inline-block w-8 font-black text-center">MD</span>
-                            <span className="font-bold">Middle</span>
-                          </td>
-                          <td className="py-1.5 px-3 font-black text-center">
-                            09.00 - 17.00
-                          </td>
-                        </tr>
-                        <tr className="bg-[#ffd966] border-b border-black font-bold">
-                          <td className="py-1.5 px-3 border-r border-black text-left">
-                            <span className="inline-block w-8 font-black text-center">MD</span>
-                            <span className="font-bold">Middle</span>
-                          </td>
-                          <td className="py-1.5 px-3 font-black text-center">
-                            12.00 - 20.00
-                          </td>
-                        </tr>
-                        <tr className="bg-[#ffd966] border-b-2 border-black font-bold">
-                          <td className="py-1.5 px-3 border-r border-black text-left">
-                            <span className="inline-block w-8 font-black text-center">PM</span>
-                            <span className="font-bold">Afternoon</span>
-                          </td>
-                          <td className="py-1.5 px-3 font-black text-center">
-                            16.00 - 00.00
-                          </td>
-                        </tr>
-
-                        {/* Sound, Lighting, LED, Multimedia Section */}
-                        <tr className="bg-[#00b0f0] border-b-2 border-black text-black font-black">
-                          <td className="py-2.5 px-3 border-r-2 border-black text-center text-xs leading-tight">
-                            <div>Sound</div>
-                            <div>Lighting, LED</div>
-                            <div>Multimedia</div>
-                          </td>
-                          <td className="py-2.5 px-3 border-r border-black text-center text-sm">
-                            ( MD ) Middle
-                          </td>
-                          <td className="py-2.5 px-3 text-center text-sm">
-                            10.00 - 18.00
-                          </td>
-                        </tr>
-
-                        {/* L - Libur Section */}
-                        <tr className="bg-[#f4b183] border-b-2 border-black font-black text-sm">
-                          <td colSpan={2} className="py-2 px-3 border-r-2 border-black text-center text-base tracking-widest">
-                            L
-                          </td>
-                          <td className="py-2 px-3 text-center">
-                            Libur
-                          </td>
-                        </tr>
-
-                        {/* CUTI Section */}
-                        <tr className="bg-[#ff0000] font-black text-black">
-                          <td colSpan={3} className="py-2.5 px-3 text-center tracking-widest text-lg text-black font-black">
-                            CUTI
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* NOTE Resmi */}
-                <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-5 rounded-2xl shadow-xs space-y-3 flex flex-col justify-between">
-                  <div>
-                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-400" />
-                      <span>NOTE & REGULASI SHIFT EVENT</span>
-                    </h4>
-
-                    <div className="space-y-2.5 mt-3 text-xs text-slate-300">
-                      <div className="flex items-start gap-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
-                        <span className="text-amber-400 font-black shrink-0">1.</span>
-                        <p className="leading-relaxed">
-                          {SCHEDULE_NOTE.rule1}
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
-                        <span className="text-amber-400 font-black shrink-0">2.</span>
-                        <p className="leading-relaxed">
-                          {SCHEDULE_NOTE.rule2}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-[10px] text-slate-400 font-mono pt-3 border-t border-white/10 flex items-center justify-between">
-                    <span>Dokumen Disahkan: PT RIZ-PRODUCTION</span>
-                    <span>Periode Aktif: 1 - 30 September 2026</span>
-                  </div>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
-
           {/* ────────────────────────────────────────────────────────── */}
           {/* MODE 2: CUSTOM 1-31 GENERATOR (LEGACY / EXPERIMENTAL)      */}
           {/* ────────────────────────────────────────────────────────── */}

@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis, isStaffInDivision } from '../utils/kpiCalculator';
-import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
+import { getScheduleByKey, StaffScheduleRow, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { Staff, MaintenanceSchedule } from '../types';
 
@@ -43,6 +43,8 @@ interface DashboardProps {
   schedules?: MaintenanceSchedule[];
   currentUser: any;
   onNavigate: (tab: string) => void;
+  activeMonth?: string;
+  onActiveMonthChange?: (monthKey: string) => void;
 }
 
 export default function Dashboard({
@@ -53,6 +55,8 @@ export default function Dashboard({
   schedules = [],
   currentUser,
   onNavigate,
+  activeMonth = '2026-09',
+  onActiveMonthChange,
 }: DashboardProps) {
   // Master Staff Dynamic State with Cloud Subscription
   const [staffList, setStaffList] = React.useState<Staff[]>(() => getMasterStaffList());
@@ -74,7 +78,16 @@ export default function Dashboard({
   const [targetDate, setTargetDate] = React.useState('2026-09-05');
   const [targetStartDate, setTargetStartDate] = React.useState('2026-09-01');
   const [targetEndDate, setTargetEndDate] = React.useState('2026-09-07');
-  const [targetMonth, setTargetMonth] = React.useState('September 2026');
+  const [targetMonth, setTargetMonth] = React.useState(() => {
+    const defaultSch = getScheduleByKey(activeMonth);
+    return defaultSch ? defaultSch.label : 'September 2026';
+  });
+
+  // Update targetMonth when activeMonth changes
+  React.useEffect(() => {
+    const defaultSch = getScheduleByKey(activeMonth);
+    if (defaultSch) setTargetMonth(defaultSch.label);
+  }, [activeMonth]);
 
   const [notesKendala, setNotesKendala] = React.useState('');
   const [notesAkar, setNotesAkar] = React.useState('');
@@ -144,7 +157,7 @@ export default function Dashboard({
   let totalQCNg = 0;
 
   activeLogbookEntries.forEach(entry => {
-    Object.values(entry.checklists || {}).forEach(ch => {
+    Object.values(entry.checklists || {}).forEach((ch: any) => {
       if (ch.status === 'OK') totalQCOk++;
       if (ch.status === 'NG') totalQCNg++;
     });
@@ -264,8 +277,8 @@ export default function Dashboard({
   const totalQC = activeLogbookEntries.length;
   const totalOK = activeLogbookEntries.filter(e => e.result === 'OK').length;
   const totalNG = activeLogbookEntries.filter(e => e.result === 'NG').length;
-  const percentOK = totalQC > 0 ? ((totalOK / totalQC) * 100).toFixed(1) : '0.0';
-  const percentNG = totalQC > 0 ? ((totalNG / totalQC) * 100).toFixed(1) : '0.0';
+  const percentOK = totalQC > 0 ? parseFloat(((totalOK / totalQC) * 100).toFixed(1)) : 0;
+  const percentNG = totalQC > 0 ? parseFloat(((totalNG / totalQC) * 100).toFixed(1)) : 0;
 
   // Dynamic Top 10 Equipment with Issues
   const equipmentFrequencyMap: Record<string, { count: number; lastStatus: string }> = {};
@@ -295,7 +308,7 @@ export default function Dashboard({
     let okCount = 0;
     let ngCount = 0;
     divEntries.forEach(e => {
-      Object.values(e.checklists || {}).forEach(ch => {
+      Object.values(e.checklists || {}).forEach((ch: any) => {
         if (ch.status === 'OK') okCount++;
         if (ch.status === 'NG') ngCount++;
       });
@@ -324,15 +337,59 @@ export default function Dashboard({
     const saved = localStorage.getItem('riz_attendance_logs');
     if (saved) rawAttendanceLogs = JSON.parse(saved);
   } catch (e) {}
+  const [monthlyScheduleData, setMonthlyScheduleData] = React.useState<StaffScheduleRow[]>(() => {
+    try {
+      const saved = localStorage.getItem(`riz_schedule_${activeMonth}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    const defaultSch = getScheduleByKey(activeMonth);
+    return defaultSch ? defaultSch.rows : [];
+  });
 
-  let septemberSchedule: StaffScheduleRow[] = OFFICIAL_SEPTEMBER_2026_SCHEDULE;
-  try {
-    const savedSched = localStorage.getItem('riz_september_2026_schedule');
-    if (savedSched) septemberSchedule = JSON.parse(savedSched);
-  } catch (e) {}
+  React.useEffect(() => {
+    const unsubSchedule = subscribeCloudCollection<any>(
+      `schedule_${activeMonth}`,
+      `riz_schedule_${activeMonth}`,
+      (data) => {
+        if (data.length > 0) {
+          const flatItems = data.flatMap((item: any) => {
+            if (item && Array.isArray(item.list)) return item.list;
+            return item;
+          });
+          const validItems = flatItems.filter((i: any) => i && typeof i === 'object' && i.no);
+          if (validItems.length > 0) {
+            validItems.sort((a, b) => (a.no || 0) - (b.no || 0));
+            setMonthlyScheduleData(validItems);
+          } else {
+            const defaultSch = getScheduleByKey(activeMonth);
+            setMonthlyScheduleData(defaultSch ? defaultSch.rows : []);
+          }
+        } else {
+          const defaultSch = getScheduleByKey(activeMonth);
+          setMonthlyScheduleData(defaultSch ? defaultSch.rows : []);
+        }
+      },
+      getScheduleByKey(activeMonth)?.rows || []
+    );
+    return () => unsubSchedule();
+  }, [activeMonth]);
+
+  // Aggregate staff KPI metrics dynamically over all operational data
+  const staffKpiList = React.useMemo(() => {
+    return calculateAllStaffKpis(
+      staffList, 
+      activeLogbookEntries, 
+      activeDailyReports, 
+      activeWorkOrders,
+      monthlyScheduleData
+    ).sort((a, b) => b.kpi - a.kpi);
+  }, [staffList, activeLogbookEntries, activeDailyReports, activeWorkOrders, monthlyScheduleData]);
 
   const divisionAttendanceStats = divisionsAttendanceList.map(div => {
-    const staffInDiv = septemberSchedule.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
+    const staffInDiv = monthlyScheduleData.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
     let hadirCount = 0;
     let terlambatCount = 0;
     let izinCount = 0;
@@ -341,7 +398,7 @@ export default function Dashboard({
 
     staffInDiv.forEach(s => {
       Object.values(s.shifts || {}).forEach(shift => {
-        const up = shift.toUpperCase();
+        const up = (String(shift || '')).toUpperCase();
         if (['P', 'MD', 'M', 'PM', 'MASUK'].includes(up)) {
           hadirCount++;
         } else if (up === 'IZIN') {

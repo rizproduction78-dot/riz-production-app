@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Staff, Asset, MaintenanceSchedule, WorkOrder, Finding, LogbookEntry, DailyReport, DailyTask, VehicleMaster, FreelanceWorker, FleetDriver } from './types';
+import { Staff, Asset, MaintenanceSchedule, WorkOrder, Finding, LogbookEntry, DailyReport, DailyTask, VehicleMaster, FreelanceWorker, FleetDriver, VehicleMaintenanceRecord } from './types';
 
 export const STAFF_LIST: Staff[] = [
   // 1. Gudang
@@ -412,12 +412,14 @@ export const INITIAL_WORK_ORDERS: WorkOrder[] = [
     id: 'wo-20260904-panel-01',
     findingId: 'find-20260904-panel-audio',
     title: 'Perbaikan Panel Listrik Audio 3 Phase (Ganti Stop Kontak & Legrand Cewek)',
+    description: 'Perbaikan panel listrik 3 phase audio: ganti stop kontak & legrand cewek yang rusak. Pelaksanaan: Opik & Mboh.',
     equipment: 'Panel Distribusi Listrik Audio 3 Phase',
     priority: 'Sedang',
     pic: 'Opik / Mboh',
     dateCreated: '2026-09-04',
     deadline: '2026-09-05',
     status: 'Completed',
+    progress: 100,
     notes: 'Perbaikan panel listrik selesai dilakukan Opik & Mboh pada 5 Sept 2026. 1 Ganti Stop Kontak, 1 Ganti Legrand Cewek. Panel listrik dalam kondisi aman dan siap digunakan untuk event.',
     division: 'Audio'
   }
@@ -623,7 +625,7 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
     division: 'Videotron',
     staffName: 'Kharo',
     activity: 'Repair Ganti Pixel Kabinet LED 2 Box (Lanjutan)',
-    result: 'In Progress',
+    result: 'NG',
     followUp: 'Repair ganti pixel kabinet led 2 box lanjutan sedang dalam pengerjaan',
     status: 'Open',
     verification: 'Ayong (Team Leader)',
@@ -666,14 +668,14 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
     date: '2026-09-09',
     division: 'Videotron',
     staffName: 'Kharo',
-    activity: 'Repair dead pixel & Copot Masking',
+    activity: 'Repair Dead Pixel 1 Box & Copot Masking 7 Box',
     result: 'OK',
-    followUp: 'Repair dead pixel & Copot Masking modul kabinet LED bersama Wigi & Ayong',
+    followUp: 'Repair dead pixel 1 box & copot masking 7 box modul kabinet LED bersama Wigi & Ayong',
     status: 'Open',
     verification: 'Ayong (Team Leader)',
     checklists: {
-      'Repair Dead Pixel': { status: 'OK', notes: 'Penggantian dan penyolderan dead pixel kabinet LED' },
-      'Copot Masking Modul': { status: 'OK', notes: 'Pelepasan masking pelindung modul LED selesai' }
+      'Repair Dead Pixel 1 Box': { status: 'OK', notes: 'Penggantian dan penyolderan dead pixel 1 kabinet LED selesai' },
+      'Copot Masking 7 Box': { status: 'OK', notes: 'Pelepasan masking pelindung 7 box modul LED selesai' }
     }
   },
   {
@@ -681,13 +683,13 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
     date: '2026-09-09',
     division: 'Videotron',
     staffName: 'Wigi',
-    activity: 'Repair dead pixel & Copot Masking',
+    activity: 'Repair Dead Pixel 1 Box & Copot Masking 7 Box',
     result: 'OK',
-    followUp: 'Pengerjaan pelepasan masking dan asistensi perbaikan dead pixel bersama Kharo & Ayong',
+    followUp: 'Pengerjaan pelepasan masking 7 box dan asistensi perbaikan dead pixel 1 box bersama Kharo & Ayong',
     status: 'Open',
     verification: 'Ayong (Team Leader)',
     checklists: {
-      'Copot Masking Modul': { status: 'OK', notes: 'Pelepasan masking pelindung modul LED selesai' }
+      'Copot Masking 7 Box': { status: 'OK', notes: 'Pelepasan masking pelindung 7 box modul LED selesai' }
     }
   },
   {
@@ -695,13 +697,13 @@ export const INITIAL_LOGBOOK_ENTRIES: LogbookEntry[] = [
     date: '2026-09-09',
     division: 'Videotron',
     staffName: 'Ayong',
-    activity: 'Repair dead pixel & Copot Masking',
+    activity: 'Repair Dead Pixel 1 Box & Copot Masking 7 Box',
     result: 'OK',
-    followUp: 'QC & supervisi repair dead pixel serta copot masking modul videotron',
+    followUp: 'QC & supervisi repair dead pixel 1 box serta copot masking 7 box modul videotron',
     status: 'Open',
     verification: 'Ayong (Team Leader)',
     checklists: {
-      'Supervisi & QC Modul LED': { status: 'OK', notes: 'Supervisi perbaikan dead pixel dan pencopotan masking modul LED' }
+      'Supervisi & QC Modul LED': { status: 'OK', notes: 'Supervisi perbaikan dead pixel 1 box dan pencopotan masking 7 box modul LED' }
     }
   },
   {
@@ -929,8 +931,8 @@ export const INITIAL_DAILY_REPORTS: DailyReport[] = [
     date: '2026-09-09',
     staffName: 'Kharo',
     division: 'Videotron',
-    activity: 'Repair dead pixel & Copot Masking',
-    notes: '- Repair dead pixel\n- Copot Masking',
+    activity: 'Repair Dead Pixel 1 Box & Copot Masking 7 Box',
+    notes: '- Repair dead pixel 1 box\n- Copot Masking 7 box',
     status: 'Submitted',
     photos: [
       'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'
@@ -941,8 +943,8 @@ export const INITIAL_DAILY_REPORTS: DailyReport[] = [
     date: '2026-09-09',
     staffName: 'Wigi',
     division: 'Videotron',
-    activity: 'Repair dead pixel & Copot Masking',
-    notes: '- Repair dead pixel & Copot Masking bersama Kharo dan Ayong',
+    activity: 'Repair Dead Pixel 1 Box & Copot Masking 7 Box',
+    notes: '- Repair dead pixel 1 box & Copot Masking 7 box bersama Kharo dan Ayong',
     status: 'Submitted',
     photos: [
       'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'
@@ -953,8 +955,8 @@ export const INITIAL_DAILY_REPORTS: DailyReport[] = [
     date: '2026-09-09',
     staffName: 'Ayong',
     division: 'Videotron',
-    activity: 'Repair dead pixel & Copot Masking',
-    notes: '- QC & supervisi repair dead pixel serta copot masking modul videotron',
+    activity: 'Repair Dead Pixel 1 Box & Copot Masking 7 Box',
+    notes: '- QC & supervisi repair dead pixel 1 box serta copot masking 7 box modul videotron',
     status: 'Submitted',
     photos: [
       'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80'

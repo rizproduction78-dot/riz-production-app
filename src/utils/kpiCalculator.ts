@@ -23,7 +23,7 @@
 export const KPI_SPREADSHEET_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470';
 export const KPI_SPREADSHEET_GID = '198998470';
 
-import { Staff, DailyReport, LogbookEntry, Finding, AttendanceLog, WorkOrder } from '../types';
+import { Staff, Division, DailyReport, LogbookEntry, Finding, AttendanceLog, WorkOrder } from '../types';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 
 export interface StaffKpiResult {

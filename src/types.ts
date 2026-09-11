@@ -208,6 +208,7 @@ export interface Asset {
 
 export interface WorkOrder {
   id: string;
+  findingId?: string;
   title: string;
   description: string;
   pic: string;
@@ -218,6 +219,9 @@ export interface WorkOrder {
   dateCreated: string;
   approvedBy?: string;
   approvedAt?: string;
+  equipment?: string;
+  priority?: string;
+  notes?: string;
 }
 
 export interface MaintenanceSchedule {
@@ -308,5 +312,17 @@ export interface FleetDriver {
     deviceType?: string;
     browser?: string;
   };
+}
+
+export interface VehicleMaintenanceRecord {
+  id: string;
+  vehicleId: string;
+  date: string;
+  type: 'Service Rutin' | 'Ganti Oli' | 'Ganti Ban' | 'Perbaikan' | 'Lainnya';
+  description: string;
+  cost?: number;
+  technician?: string;
+  nextServiceDate?: string;
+  notes?: string;
 }
 

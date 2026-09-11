@@ -57,6 +57,19 @@ interface GudangProps {
   onLogActivity: (username: string, role: string, action: string) => void;
   forceSubTab?: 'logs' | 'scanner' | 'armada_governance';
   onNavigateTab?: (tab: string) => void;
+  // Shared lifted state from App.tsx
+  driverList?: FleetDriver[];
+  onAddDriver?: (driver: Omit<FleetDriver, 'id'>) => void;
+  onUpdateDriver?: (id: string, updated: Partial<FleetDriver>) => void;
+  onDeleteDriver?: (id: string) => void;
+  vehicles?: VehicleMaster[];
+  onAddVehicle?: (vehicle: Omit<VehicleMaster, 'id'>) => void;
+  onUpdateVehicle?: (id: string, updated: Partial<VehicleMaster>) => void;
+  onDeleteVehicle?: (id: string) => void;
+  fleetAssignments?: FleetAssignment[];
+  onAddFleetAssignment?: (assignment: FleetAssignment) => void;
+  onUpdateFleetAssignment?: (id: string, updated: Partial<FleetAssignment>) => void;
+  onDeleteFleetAssignment?: (id: string) => void;
 }
 
 export default function Gudang({
@@ -67,7 +80,19 @@ export default function Gudang({
   onAddFinding,
   onLogActivity,
   forceSubTab,
-  onNavigateTab
+  onNavigateTab,
+  driverList: propDriverList,
+  onAddDriver: propOnAddDriver,
+  onUpdateDriver: propOnUpdateDriver,
+  onDeleteDriver: propOnDeleteDriver,
+  vehicles: propVehicles,
+  onAddVehicle: propOnAddVehicle,
+  onUpdateVehicle: propOnUpdateVehicle,
+  onDeleteVehicle: propOnDeleteVehicle,
+  fleetAssignments: propFleetAssignments,
+  onAddFleetAssignment: propOnAddFleetAssignment,
+  onUpdateFleetAssignment: propOnUpdateFleetAssignment,
+  onDeleteFleetAssignment: propOnDeleteFleetAssignment
 }: GudangProps) {
   // Warehouse Logs State - Bersih dari data dummy
   const [warehouseLogs, setWarehouseLogs] = useState<WarehouseLog[]>(() => {
@@ -87,37 +112,39 @@ export default function Gudang({
     return [];
   });
 
-  // Fleet Assignments State (Tata Kelola Armada Tri-Party)
-  const [fleetAssignments, setFleetAssignments] = useState<FleetAssignment[]>(() => {
+  // Fleet Assignments State - use props if available
+  const [localFleetAssignments, setLocalFleetAssignments] = useState<FleetAssignment[]>(() => {
     try {
       const saved = localStorage.getItem('riz_fleet_assignments');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const flat = parsed.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
-          const valid = flat.filter(f => Boolean(f && typeof f === 'object' && (f.spjNumber || f.driverName)));
+          const flat = parsed.flatMap((item: any) => (item && Array.isArray(item.list)) ? item.list : [item]);
+          const valid = flat.filter((f: any) => Boolean(f && typeof f === 'object' && (f.spjNumber || f.driverName)));
           return valid;
         }
       }
     } catch (e) {}
     return [];
   });
+  const fleetAssignments = propFleetAssignments !== undefined ? propFleetAssignments : localFleetAssignments;
 
-  // Master Vehicles State
-  const [vehicles, setVehicles] = useState<VehicleMaster[]>(() => {
+  // Master Vehicles State - use props if available
+  const [localVehicles, setLocalVehicles] = useState<VehicleMaster[]>(() => {
     try {
       const saved = localStorage.getItem('riz_master_vehicles');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const flat = parsed.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
-          const valid = flat.filter(v => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
+          const flat = parsed.flatMap((item: any) => (item && Array.isArray(item.list)) ? item.list : [item]);
+          const valid = flat.filter((v: any) => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
           if (valid.length > 0) return valid;
         }
       }
     } catch (e) {}
     return INITIAL_VEHICLES;
   });
+  const vehicles = propVehicles !== undefined ? propVehicles : localVehicles;
 
   // Assets database matching
   const [localAssets, setLocalAssets] = useState<Asset[]>(() => {
@@ -150,21 +177,23 @@ export default function Gudang({
   // Subtab inside Armada Governance: 'trips' | 'vehicles' | 'drivers' | 'costs'
   const [fleetSection, setFleetSection] = useState<'trips' | 'vehicles' | 'drivers' | 'costs'>('trips');
 
-  // Master Driver Armada State in Gudang
-  const [driverList, setDriverList] = useState<FleetDriver[]>(() => {
+  // Master Driver Armada State - use props if available, otherwise local state as fallback
+  const [localDriverList, setLocalDriverList] = useState<FleetDriver[]>(() => {
     try {
       const saved = localStorage.getItem('riz_fleet_drivers');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const flat = parsed.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
-          const valid = flat.filter(d => Boolean(d && typeof d === 'object' && d.name));
+          const flat = parsed.flatMap((item: any) => (item && Array.isArray(item.list)) ? item.list : [item]);
+          const valid = flat.filter((d: any) => Boolean(d && typeof d === 'object' && d.name));
           if (valid.length > 0) return valid;
         }
       }
     } catch (e) {}
     return INITIAL_FLEET_DRIVERS;
   });
+  // Resolve: use props from App.tsx if provided (single source of truth), else local fallback
+  const driverList = propDriverList !== undefined ? propDriverList : localDriverList;
 
   const [showAddDriverModal, setShowAddDriverModal] = useState(false);
   const [showEditDriverModal, setShowEditDriverModal] = useState(false);
@@ -184,7 +213,7 @@ export default function Gudang({
   });
 
   const saveDriverList = async (updated: FleetDriver[], actionDoc?: { type: 'save' | 'delete', id: string, name?: string, doc?: FleetDriver }) => {
-    setDriverList(updated);
+    setLocalDriverList(updated);
     localStorage.setItem('riz_fleet_drivers', JSON.stringify(updated));
     pushCollectionToCloud('fleet_drivers', updated, currentUser.name);
     if (actionDoc) {
@@ -218,32 +247,30 @@ export default function Gudang({
         updatedBy: currentUser.name
       }
     };
-    const updated = [...driverList, newDrv];
-    await saveDriverList(updated, { type: 'save', id: newDrv.id, doc: newDrv });
+    if (propOnAddDriver) {
+      propOnAddDriver(newDrv);
+    } else {
+      const updated = [...localDriverList, newDrv];
+      await saveDriverList(updated, { type: 'save', id: newDrv.id, doc: newDrv });
+    }
     setShowAddDriverModal(false);
   };
 
   const handleSaveEditDriver = async () => {
     if (!selectedDriver || !driverFormData.name?.trim()) return;
-    let updatedDoc: FleetDriver | null = null;
-    const updated = driverList.map(d => {
-      if (d.id === selectedDriver.id) {
-        updatedDoc = {
-          ...d,
-          ...driverFormData,
-          _syncMeta: {
-            updatedAt: new Date().toISOString(),
-            updatedBy: currentUser.name
-          }
-        } as FleetDriver;
-        return updatedDoc;
+    const updatedDoc: FleetDriver = {
+      ...selectedDriver,
+      ...driverFormData,
+      _syncMeta: {
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.name
       }
-      return d;
-    });
-    if (updatedDoc) {
-      await saveDriverList(updated, { type: 'save', id: selectedDriver.id, doc: updatedDoc });
+    } as FleetDriver;
+    if (propOnUpdateDriver) {
+      propOnUpdateDriver(selectedDriver.id, updatedDoc);
     } else {
-      await saveDriverList(updated);
+      const updated = localDriverList.map(d => d.id === selectedDriver.id ? updatedDoc : d);
+      await saveDriverList(updated, { type: 'save', id: selectedDriver.id, doc: updatedDoc });
     }
     setShowEditDriverModal(false);
     setSelectedDriver(null);
@@ -254,13 +281,17 @@ export default function Gudang({
     const targetName = target?.name || id;
     const targetId = target?.id || id;
     if (confirm(`Yakin ingin menghapus data pengemudi (driver) "${targetName}" ini?`)) {
-      const updated = driverList.filter(d => d.id !== targetId && d.name !== targetName);
       onLogActivity(currentUser.name, currentUser.role, `Gudang menghapus driver: ${targetName}`);
       try {
-        await saveDriverList(updated, { type: 'delete', id: targetId, name: targetName });
-        if (targetName && targetName !== targetId) {
-          await deleteCloudDoc('fleet_drivers', targetName.toLowerCase().trim());
-          await deleteCloudDoc('fleet_drivers', targetName.trim());
+        if (propOnDeleteDriver) {
+          propOnDeleteDriver(targetId);
+        } else {
+          const updated = localDriverList.filter(d => d.id !== targetId && d.name !== targetName);
+          await saveDriverList(updated, { type: 'delete', id: targetId, name: targetName });
+          if (targetName && targetName !== targetId) {
+            await deleteCloudDoc('fleet_drivers', targetName.toLowerCase().trim());
+            await deleteCloudDoc('fleet_drivers', targetName.trim());
+          }
         }
       } catch (e) {
         console.warn('[Gudang] Background delete error:', e);
@@ -451,15 +482,18 @@ export default function Gudang({
     setShowLogForm(false);
   };
 
-  // Fleet, Drivers, and Vehicles Subscriptions
+  // Fleet, Drivers, and Vehicles Subscriptions (only if no props passed from App.tsx)
   useEffect(() => {
+    // If props are passed, App.tsx already subscribes - skip to avoid double subscription
+    if (propFleetAssignments !== undefined && propVehicles !== undefined && propDriverList !== undefined) return;
+
     const unsubAssignments = subscribeCloudCollection<FleetAssignment>(
       'fleet_assignments',
       'riz_fleet_assignments',
       (rawItems) => {
         const flat = (rawItems || []).flatMap(item => (item && Array.isArray((item as any).list)) ? (item as any).list : [item]);
         const valid = flat.filter((f): f is FleetAssignment => Boolean(f && typeof f === 'object' && (f.spjNumber || f.driverName)));
-        setFleetAssignments(valid);
+        setLocalFleetAssignments(valid);
       },
       []
     );
@@ -469,7 +503,7 @@ export default function Gudang({
       (rawItems) => {
         const flat = (rawItems || []).flatMap(item => (item && Array.isArray((item as any).list)) ? (item as any).list : [item]);
         const valid = flat.filter((v): v is VehicleMaster => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
-        setVehicles(valid.length > 0 ? valid : INITIAL_VEHICLES);
+        setLocalVehicles(valid.length > 0 ? valid : INITIAL_VEHICLES);
       },
       INITIAL_VEHICLES
     );
@@ -479,7 +513,7 @@ export default function Gudang({
       (rawItems) => {
         const flat = (rawItems || []).flatMap(item => (item && Array.isArray((item as any).list)) ? (item as any).list : [item]);
         const valid = flat.filter((d): d is FleetDriver => Boolean(d && typeof d === 'object' && d.name));
-        setDriverList(valid);
+        setLocalDriverList(valid);
       },
       INITIAL_FLEET_DRIVERS
     );
@@ -489,20 +523,32 @@ export default function Gudang({
       unsubVehicles();
       unsubDrivers();
     };
-  }, []);
+  }, [propFleetAssignments, propVehicles, propDriverList]);
 
   const saveFleetAssignments = (updated: FleetAssignment[]) => {
-    setFleetAssignments(updated);
-    localStorage.setItem('riz_fleet_assignments', JSON.stringify(updated));
-    pushCollectionToCloud('fleet_assignments', updated, currentUser.name);
+    if (propOnAddFleetAssignment) {
+      // handled by props
+      localStorage.setItem('riz_fleet_assignments', JSON.stringify(updated));
+      pushCollectionToCloud('fleet_assignments', updated, currentUser.name);
+    } else {
+      setLocalFleetAssignments(updated);
+      localStorage.setItem('riz_fleet_assignments', JSON.stringify(updated));
+      pushCollectionToCloud('fleet_assignments', updated, currentUser.name);
+    }
     onLogActivity(currentUser.name, currentUser.role, 'Gudang memperbarui penugasan armada');
   };
 
   // Master Vehicles Subscription / Persistence
   const saveVehicles = (updated: VehicleMaster[]) => {
-    setVehicles(updated);
-    localStorage.setItem('riz_master_vehicles', JSON.stringify(updated));
-    pushCollectionToCloud('master_vehicles', updated, currentUser.name);
+    if (propOnUpdateVehicle) {
+      // handled by props
+      localStorage.setItem('riz_master_vehicles', JSON.stringify(updated));
+      pushCollectionToCloud('master_vehicles', updated, currentUser.name);
+    } else {
+      setLocalVehicles(updated);
+      localStorage.setItem('riz_master_vehicles', JSON.stringify(updated));
+      pushCollectionToCloud('master_vehicles', updated, currentUser.name);
+    }
     onLogActivity(currentUser.name, currentUser.role, 'Gudang memperbarui database kendaraan armada');
   };
 

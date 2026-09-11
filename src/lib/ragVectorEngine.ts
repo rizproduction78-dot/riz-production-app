@@ -12,7 +12,7 @@ import { OFFICIAL_COMPETENCY_MATRICES } from '../data/competencyMatrixData';
 import { STAFF_LIST } from '../data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../data/september2026Schedule';
 import { isStaffMatch, isStaffInDivision } from '../utils/kpiCalculator';
-import { Asset, LogbookEntry, DailyReport, Finding, WorkOrder, AttendanceLog, WarehouseLog } from '../types';
+import { Asset, LogbookEntry, DailyReport, Finding, WorkOrder, AttendanceLog, WarehouseLog, Staff } from '../types';
 import { agenticMemory, ShortTermMemoryItem, LongTermMemoryItem } from './agenticMemory';
 
 export interface VectorDocument {
@@ -188,7 +188,7 @@ class RAGVectorStore {
         category: 'Master Staff & Schedule',
         division: sch.division,
         sourceRef: `Jadwal Kerja September 2026 No. ${sch.no}`,
-        content: `Jadwal Shift Kerja Resmi September 2026 (30 Hari). Nama: ${sch.name}. Divisi: ${sch.division}. Total Hari Kerja: ${sch.totalHadir} Hari. Total Libur: ${sch.totalLibur} Hari. Shift Harian: ${Object.entries(sch.shifts).map(([d, s]) => `Tgl ${d}:${s}`).join(', ')}.`,
+        content: `Jadwal Shift Kerja Resmi September 2026 (30 Hari). Nama: ${sch.name}. Divisi: ${sch.division}. Shift Harian: ${Object.entries(sch.shifts).map(([d, s]) => `Tgl ${d}:${s}`).join(', ')}.`,
         keywords: tokenize(`${sch.name} ${sch.division} jadwal shift september 2026 dinas`),
         timestamp: '2026-09-01'
       });

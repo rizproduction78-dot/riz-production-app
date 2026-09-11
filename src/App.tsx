@@ -18,6 +18,7 @@ import {
   INITIAL_FREELANCE_WORKERS
 } from './data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from './data/september2026Schedule';
+import { getActiveMonthKey } from './data/staffSchedules';
 
 import LoginScreen from './components/LoginScreen';
 import Dashboard from './components/Dashboard';
@@ -86,6 +87,9 @@ export default function App() {
     const saved = localStorage.getItem('riz_active_tab');
     return saved && saved !== 'assets' ? saved : 'dashboard';
   });
+
+  // Active Month for multi-month schedule system (Sep 2026, Okt 2026, dst)
+  const [activeMonth, setActiveMonth] = useState<string>(getActiveMonthKey);
 
   // Mobile sidebar menu open
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -620,6 +624,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('riz_active_tab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('riz_active_month_key', activeMonth);
+  }, [activeMonth]);
 
   // Logging Activity helper
   const handleLogActivity = (username: string, role: string, action: string) => {
@@ -1166,6 +1174,8 @@ export default function App() {
             schedules={schedules}
             currentUser={currentUser}
             onNavigate={setActiveTab}
+            activeMonth={activeMonth}
+            onActiveMonthChange={setActiveMonth}
           />
         )}
 
@@ -1229,6 +1239,8 @@ export default function App() {
             schedules={schedules}
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
+            activeMonth={activeMonth}
+            onActiveMonthChange={setActiveMonth}
           />
         )}
 
@@ -1237,6 +1249,8 @@ export default function App() {
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
             forceSubTab="self"
+            activeMonth={activeMonth}
+            onActiveMonthChange={setActiveMonth}
           />
         )}
 
@@ -1245,6 +1259,8 @@ export default function App() {
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
             forceSubTab="schedule"
+            activeMonth={activeMonth}
+            onActiveMonthChange={setActiveMonth}
           />
         )}
 
@@ -1253,6 +1269,8 @@ export default function App() {
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
             forceSubTab="maintenance_dashboard"
+            activeMonth={activeMonth}
+            onActiveMonthChange={setActiveMonth}
           />
         )}
 

@@ -523,7 +523,7 @@ export default function AgenticOrchestratorModal({
                 </div>
               )}
             </div>
-          ) : (
+          ) : activeMode === 'consultation' ? (
             /* Consultation Mode */
             <div className="space-y-6">
               {/* Agent selector & search box */}

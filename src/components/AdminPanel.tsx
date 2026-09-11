@@ -9,7 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import { Staff, Division, QCItem, Finding, WorkOrder, MaintenanceSchedule, Asset, VehicleMaster, FleetAssignment, FreelanceWorker, FleetDriver, FreelanceSpecialization, DailyReport, LogbookEntry } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, getMasterStaffList, getMasterFreelanceList } from '../data';
-import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
+import { getScheduleByKey, StaffScheduleRow, getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
 import {
   Users,
   CheckSquare,
@@ -124,6 +124,52 @@ export default function AdminPanel({
   const [activeTab, setActiveTab] = useState<'staff' | 'findings_wo' | 'maintenance' | 'gudang' | 'kendaraan' | 'qc_checklist' | 'schedule' | 'database'>('staff');
 
   // ─────────────────────────────────────────────────────────────
+  // ACTIVE MONTH STATE (Multi-Bulan)
+  // ─────────────────────────────────────────────────────────────
+  const [activeMonth, setActiveMonth] = useState<string>(getActiveMonthKey);
+  const [scheduleData, setScheduleData] = useState<StaffScheduleRow[]>(() => {
+    try {
+      const key = getActiveMonthKey();
+      const saved = localStorage.getItem(`riz_schedule_${key}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    const defaultSch = getScheduleByKey(getActiveMonthKey());
+    return defaultSch ? defaultSch.rows : [];
+  });
+
+  // Reload schedule data when activeMonth changes
+  React.useEffect(() => {
+    const unsubSched = subscribeCloudCollection<any>(
+      `schedule_${activeMonth}`,
+      `riz_schedule_${activeMonth}`,
+      (data) => {
+        if (data.length > 0) {
+          const flatItems = data.flatMap((item: any) => {
+            if (item && Array.isArray(item.list)) return item.list;
+            return item;
+          });
+          const validItems = flatItems.filter((i: any) => i && typeof i === 'object' && i.no);
+          if (validItems.length > 0) {
+            validItems.sort((a: any, b: any) => (a.no || 0) - (b.no || 0));
+            setScheduleData(validItems);
+          } else {
+            const defaultSch = getScheduleByKey(activeMonth);
+            setScheduleData(defaultSch ? defaultSch.rows : []);
+          }
+        } else {
+          const defaultSch = getScheduleByKey(activeMonth);
+          setScheduleData(defaultSch ? defaultSch.rows : []);
+        }
+      },
+      getScheduleByKey(activeMonth)?.rows || []
+    );
+    return () => unsubSched();
+  }, [activeMonth]);
+
+  // ─────────────────────────────────────────────────────────────
   // 1. MASTER STAF STATE
   // ─────────────────────────────────────────────────────────────
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
@@ -203,20 +249,12 @@ export default function AdminPanel({
       },
       []
     );
-    const unsubSchedule = subscribeCloudCollection<StaffScheduleRow>(
-      'september_2026_schedule',
-      'riz_september_2026_schedule',
-      setSeptemberSchedule,
-      OFFICIAL_SEPTEMBER_2026_SCHEDULE
-    );
-
     return () => {
       unsubStaff();
       unsubFreelance();
       unsubDrivers();
       unsubVehicles();
       unsubAssignments();
-      unsubSchedule();
     };
   }, []);
 
@@ -1193,24 +1231,15 @@ export default function AdminPanel({
   // ─────────────────────────────────────────────────────────────
   // 6. SCHEDULE ROSTER STATE
   // ─────────────────────────────────────────────────────────────
-  const [septemberSchedule, setSeptemberSchedule] = useState<StaffScheduleRow[]>(() => {
-    try {
-      const saved = localStorage.getItem('riz_september_2026_schedule');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return OFFICIAL_SEPTEMBER_2026_SCHEDULE;
-  });
-
   const saveSchedule = (updated: StaffScheduleRow[]) => {
-    setSeptemberSchedule(updated);
-    localStorage.setItem('riz_september_2026_schedule', JSON.stringify(updated));
-    pushCollectionToCloud('september_2026_schedule', updated, currentUser.name);
-    onLogActivity(currentUser.name, currentUser.role, 'Memperbarui jadwal dinas operasional shift September 2026');
+    localStorage.setItem(`riz_schedule_${activeMonth}`, JSON.stringify(updated));
+    pushCollectionToCloud(`schedule_${activeMonth}`, updated, currentUser.name);
+    onLogActivity(currentUser.name, currentUser.role, `Memperbarui jadwal dinas operasional shift ${getScheduleByKey(activeMonth)?.label}`);
   };
 
   const handleUpdateDayShift = (staffId: string, day: number, newShift: string) => {
-    const updated = septemberSchedule.map(s => {
-      if (s.id === staffId) {
+    const updated = scheduleData.map(s => {
+      if ((s as any).id === staffId || String(s.no) === String(staffId)) {
         return {
           ...s,
           shifts: {
@@ -1284,7 +1313,7 @@ export default function AdminPanel({
     setSheetSyncing(false);
     setSheetMessage({ text: res.message, type: res.success ? 'success' : 'error' });
     if (res.success && res.details?.schedule_shifts) {
-      setSeptemberSchedule(res.details.schedule_shifts);
+      saveSchedule(res.details.schedule_shifts);
       setSheetLastSync(new Date().toISOString());
       onLogActivity(currentUser.name, currentUser.role, 'Menarik data jadwal shift dari Google Sheet Spreadsheet');
     }
@@ -2964,12 +2993,24 @@ export default function AdminPanel({
       {/* ───────────────────────────────────────────────────────────── */}
       {activeTab === 'schedule' && (
         <div className="space-y-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex justify-between items-center">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap justify-between items-center gap-3">
             <div>
-              <h2 className="text-sm font-extrabold text-slate-900 uppercase">Jadwal Shift Operasional September 2026</h2>
+              <h2 className="text-sm font-extrabold text-slate-900 uppercase">
+                Jadwal Shift Operasional — {ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonth)?.label || 'September 2026'}
+              </h2>
               <p className="text-xs text-slate-500 mt-0.5">Edit shift kerja harian per staf secara langsung</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Dropdown Pilih Bulan */}
+              <select
+                value={activeMonth}
+                onChange={(e) => setActiveMonth(e.target.value)}
+                className="text-xs font-bold bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
+              >
+                {ALL_MONTHLY_SCHEDULES.map(s => (
+                  <option key={s.key} value={s.key}>{s.label}</option>
+                ))}
+              </select>
               <span className="text-[10px] bg-slate-100 px-2 py-1 rounded font-mono font-bold text-slate-700">P = Pagi</span>
               <span className="text-[10px] bg-slate-100 px-2 py-1 rounded font-mono font-bold text-slate-700">MD = Middle</span>
               <span className="text-[10px] bg-slate-100 px-2 py-1 rounded font-mono font-bold text-slate-700">M = Malam</span>
@@ -2983,7 +3024,7 @@ export default function AdminPanel({
                 <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-bold text-[10px]">
                   <th className="p-3 sticky left-0 bg-slate-50 z-10">Nama Staf</th>
                   <th className="p-3">Divisi</th>
-                  {Array.from({ length: 30 }, (_, i) => (
+                  {Array.from({ length: ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonth)?.totalDays || 30 }, (_, i) => (
                     <th key={i + 1} className="p-2 text-center w-8 border-l border-slate-200/60">
                       {i + 1}
                     </th>
@@ -2991,8 +3032,8 @@ export default function AdminPanel({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {septemberSchedule.map(s => (
-                  <tr key={s.id} className="hover:bg-slate-50/50">
+                {scheduleData.map(s => (
+                  <tr key={s.no} className="hover:bg-slate-50/50">
                     <td className="p-3 font-sans font-bold text-slate-900 sticky left-0 bg-white z-10">{s.name}</td>
                     <td className="p-3 font-sans text-slate-500">{s.division}</td>
                     {Array.from({ length: 30 }, (_, i) => {
@@ -3002,7 +3043,7 @@ export default function AdminPanel({
                         <td key={day} className="p-1 text-center border-l border-slate-100">
                           <select
                             value={shift}
-                            onChange={(e) => handleUpdateDayShift(s.id, day, e.target.value)}
+                            onChange={(e) => handleUpdateDayShift(String(s.no), day, e.target.value)}
                             className="bg-transparent text-[10px] font-black focus:outline-none cursor-pointer text-slate-800"
                           >
                             <option value="P">P</option>
@@ -3134,7 +3175,7 @@ export default function AdminPanel({
                 </div>
                 <div>
                   <div className="font-extrabold text-xs text-white">2. Tarik Data Jadwal dari Google Sheet</div>
-                  <div className="text-[10px] text-indigo-200/70">Import perubahan shift jadwal September 2026 dari Spreadsheet</div>
+                  <div className="text-[10px] text-indigo-200/70">Import perubahan shift jadwal dari Spreadsheet</div>
                 </div>
               </button>
             </div>

@@ -8,7 +8,7 @@ import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, Ma
 import { FileText, Printer, FileDown, Download, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis } from '../utils/kpiCalculator';
-import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
+import { getScheduleByKey, StaffScheduleRow } from '../data/staffSchedules';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { generateOrchestratedReport } from '../lib/ragVectorEngine';
 
@@ -20,6 +20,8 @@ interface ReportsProps {
   schedules?: MaintenanceSchedule[];
   currentUser: any;
   onLogActivity: (username: string, role: string, action: string) => void;
+  activeMonth?: string;
+  onActiveMonthChange?: (monthKey: string) => void;
 }
 
 export default function Reports({
@@ -30,6 +32,8 @@ export default function Reports({
   schedules = [],
   currentUser,
   onLogActivity,
+  activeMonth = '2026-09',
+  onActiveMonthChange,
 }: ReportsProps) {
   // Master Staff Dynamic State with Cloud Subscription
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
@@ -46,9 +50,13 @@ export default function Reports({
 
   const [reportType, setReportType] = useState<'Harian' | 'Mingguan' | 'Bulanan'>('Harian');
   const [targetMonth, setTargetMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return activeMonth;
   });
+
+  // Update targetMonth when activeMonth changes
+  useEffect(() => {
+    setTargetMonth(activeMonth);
+  }, [activeMonth]);
   const [targetDate, setTargetDate] = useState(() => {
     return '2026-09-06';
   });
@@ -195,14 +203,48 @@ export default function Reports({
     if (saved) rawAttendanceLogs = JSON.parse(saved);
   } catch (e) {}
 
-  let septemberSchedule: StaffScheduleRow[] = OFFICIAL_SEPTEMBER_2026_SCHEDULE;
-  try {
-    const savedSched = localStorage.getItem('riz_september_2026_schedule');
-    if (savedSched) septemberSchedule = JSON.parse(savedSched);
-  } catch (e) {}
+  const [monthlyScheduleData, setMonthlyScheduleData] = useState<StaffScheduleRow[]>(() => {
+    try {
+      const saved = localStorage.getItem(`riz_schedule_${activeMonth}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    const defaultSch = getScheduleByKey(activeMonth);
+    return defaultSch ? defaultSch.rows : [];
+  });
+
+  useEffect(() => {
+    const unsubSchedule = subscribeCloudCollection<any>(
+      `schedule_${activeMonth}`,
+      `riz_schedule_${activeMonth}`,
+      (data) => {
+        if (data.length > 0) {
+          const flatItems = data.flatMap((item: any) => {
+            if (item && Array.isArray(item.list)) return item.list;
+            return item;
+          });
+          const validItems = flatItems.filter((i: any) => i && typeof i === 'object' && i.no);
+          if (validItems.length > 0) {
+            validItems.sort((a, b) => (a.no || 0) - (b.no || 0));
+            setMonthlyScheduleData(validItems);
+          } else {
+            const defaultSch = getScheduleByKey(activeMonth);
+            setMonthlyScheduleData(defaultSch ? defaultSch.rows : []);
+          }
+        } else {
+          const defaultSch = getScheduleByKey(activeMonth);
+          setMonthlyScheduleData(defaultSch ? defaultSch.rows : []);
+        }
+      },
+      getScheduleByKey(activeMonth)?.rows || []
+    );
+    return () => unsubSchedule();
+  }, [activeMonth]);
 
   const divisionAttendanceStats = reportAttendanceDivisions.map(div => {
-    const staffInDiv = septemberSchedule.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
+    const staffInDiv = monthlyScheduleData.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
     let hadirCount = 0;
     let terlambatCount = 0;
     let izinCount = 0;
@@ -211,7 +253,7 @@ export default function Reports({
 
     staffInDiv.forEach(s => {
       Object.values(s.shifts || {}).forEach(shift => {
-        const up = shift.toUpperCase();
+        const up = (String(shift || '')).toUpperCase();
         if (['P', 'MD', 'M', 'PM', 'MASUK'].includes(up)) {
           hadirCount++;
         } else if (up === 'IZIN') {
