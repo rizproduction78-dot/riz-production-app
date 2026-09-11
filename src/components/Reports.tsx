@@ -150,7 +150,32 @@ export default function Reports({
   ];
 
   const reportDivisionDamageStats = reportDivisions.map(d => {
-    const divFindings = activeFindings.filter(f => f.equipment?.toLowerCase().includes(d.key.toLowerCase()));
+    const divFindings = activeFindings.filter(f => {
+      if (f.division === d.key) return true;
+      const eq = (f.equipment || '').toLowerCase();
+      const iss = (f.issue || '').toLowerCase();
+      const divKey = d.key.toLowerCase();
+      if (eq.includes(divKey) || iss.includes(divKey)) return true;
+      if (d.key === 'Audio') {
+        return /audio|sound|speaker|mic|mixer|dbtech|dva|xlr|cable|power amp|subwoofer|line array/i.test(eq) || /audio|sound|speaker|mic|mixer|dbtech|dva|xlr|subwoofer/i.test(iss);
+      }
+      if (d.key === 'Lighting') {
+        return /light|lampu|parled|beam|moving head|dimmer|dmx|fresnel|b-eye|bsw/i.test(eq) || /light|lampu|parled|beam|moving head|dimmer|dmx|fresnel|b-eye|bsw/i.test(iss);
+      }
+      if (d.key === 'Videotron') {
+        return /video|led|videotron|screen|panel led|modul|novastar|processor/i.test(eq) || /video|led|videotron|screen|panel led|modul/i.test(iss);
+      }
+      if (d.key === 'Multimedia') {
+        return /multi|kamera|camera|switcher|hdmi|sdi|obs|streaming|vmix/i.test(eq) || /multi|kamera|camera|switcher|hdmi|sdi|obs|streaming|vmix/i.test(iss);
+      }
+      if (d.key === 'Gudang') {
+        return /gudang|logistik|kabel roll|tenda|flightcase|terpal|pallet/i.test(eq) || /gudang|logistik/i.test(iss);
+      }
+      if (d.key === 'Service') {
+        return /service|perbaikan|solder|sparepart|modul rusak|jalur pcb/i.test(eq) || /service|perbaikan|rusak/i.test(iss);
+      }
+      return false;
+    });
     const ringan = divFindings.filter(f => f.priority === 'Rendah').length;
     const sedang = divFindings.filter(f => f.priority === 'Sedang').length;
     const berat = divFindings.filter(f => f.priority === 'Tinggi').length;
@@ -747,9 +772,10 @@ export default function Reports({
                 <tbody className="divide-y divide-slate-300 font-mono">
                   {activeStaffKpis.length > 0 ? (
                     activeStaffKpis.slice(0, 10).map((staff, idx) => {
+                      const originalStaff = staffList.find(st => st.id === staff.id || st.name === staff.name) || (staff as any);
                       const staffDates = new Set<string>();
-                      dailyReports.filter(r => isStaffMatch(staff, r.staffName) && r.date).forEach(r => staffDates.add(r.date));
-                      logbookEntries.filter(e => isStaffMatch(staff, e.staffName) && e.date).forEach(e => staffDates.add(e.date));
+                      dailyReports.filter(r => (isStaffMatch(originalStaff, r.staffName) || r.staffName === staff.name) && r.date).forEach(r => staffDates.add(r.date));
+                      logbookEntries.filter(e => (isStaffMatch(originalStaff, e.staffName) || e.staffName === staff.name) && e.date).forEach(e => staffDates.add(e.date));
                       const attendanceDays = staffDates.size;
                       const workHours = attendanceDays * 8;
 

@@ -45,6 +45,8 @@ interface DashboardProps {
   onNavigate: (tab: string) => void;
   activeMonth?: string;
   onActiveMonthChange?: (monthKey: string) => void;
+  onSyncDailyLogFromSheet?: (gid?: string) => Promise<any>;
+  isSyncingSheet?: boolean;
 }
 
 export default function Dashboard({
@@ -57,6 +59,8 @@ export default function Dashboard({
   onNavigate,
   activeMonth = '2026-09',
   onActiveMonthChange,
+  onSyncDailyLogFromSheet,
+  isSyncingSheet,
 }: DashboardProps) {
   // Master Staff Dynamic State with Cloud Subscription
   const [staffList, setStaffList] = React.useState<Staff[]>(() => getMasterStaffList());
@@ -89,10 +93,35 @@ export default function Dashboard({
     if (defaultSch) setTargetMonth(defaultSch.label);
   }, [activeMonth]);
 
+  // Auto-sync Google Sheet saat Dashboard dimuat (baik di server internal maupun cloud)
+  React.useEffect(() => {
+    if (onSyncDailyLogFromSheet) {
+      onSyncDailyLogFromSheet().catch(e => console.warn('[Dashboard] GSheet auto-sync info:', e));
+    }
+  }, []);
+
   const [notesKendala, setNotesKendala] = React.useState('');
   const [notesAkar, setNotesAkar] = React.useState('');
   const [notesSolusi, setNotesSolusi] = React.useState('');
   const [notesTarget, setNotesTarget] = React.useState('');
+
+  // Analisis Manajemen Dinamis bersumber resmi dari rekap temuan & WO Google Sheet
+  React.useEffect(() => {
+    if (!notesKendala && findings.length > 0) {
+      const issuesList = findings.slice(0, 3).map(f => `${f.equipment}: ${f.issue.substring(0, 75)}`).join('. ');
+      setNotesKendala(`Ditemukan ${findings.length} catatan kendala teknis pada periode ${targetMonth}: ${issuesList}.`);
+    }
+    if (!notesAkar && findings.length > 0) {
+      setNotesAkar('Beban operasional intensif unit di lapangan, keausan modul elektronik/LED, dan degradasi fisik kabel konektor.');
+    }
+    if (!notesSolusi && workOrders.length > 0) {
+      const woSummary = workOrders.map(w => w.title).join('; ');
+      setNotesSolusi(`Telah dieksekusi tindakan perbaikan: ${woSummary}. Penggantian komponen rusak dan pengujian kelayakan operasional.`);
+    }
+    if (!notesTarget) {
+      setNotesTarget('100% kepatuhan jadwal Preventive Maintenance, zero-failure peralatan pada event operasional, dan penyelesaian seluruh temuan QC.');
+    }
+  }, [findings, workOrders, targetMonth]);
 
   // States for interactive approvals
   const [approvedSupervisor, setApprovedSupervisor] = React.useState(false);
@@ -170,9 +199,17 @@ export default function Dashboard({
   // Dynamic PM metrics
   const pmFromSchedules = activeSchedules.filter(s => s.type === 'Preventive');
   const pmFromWO = activeWorkOrders.filter(w => w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive'));
-  const totalPM = pmFromSchedules.length + pmFromWO.length;
-  const donePM = pmFromSchedules.filter(s => s.status === 'Done').length + pmFromWO.filter(w => w.status === 'Completed').length;
-  const pendingPM = totalPM - donePM;
+  const pmFromQC = activeLogbookEntries.filter(e => e.result === 'OK' && (
+    e.activity?.toLowerCase().includes('cleaning') ||
+    e.activity?.toLowerCase().includes('cek') ||
+    e.activity?.toLowerCase().includes('smartlive') ||
+    e.activity?.toLowerCase().includes('test') ||
+    e.activity?.toLowerCase().includes('kalibrasi') ||
+    e.activity?.toLowerCase().includes('inspeksi')
+  ));
+  const totalPM = pmFromSchedules.length + pmFromWO.length + pmFromQC.length;
+  const donePM = pmFromSchedules.filter(s => s.status === 'Done').length + pmFromWO.filter(w => w.status === 'Completed').length + pmFromQC.length;
+  const pendingPM = Math.max(0, totalPM - donePM);
   const kepatuhanPM = totalPM > 0 ? ((donePM / totalPM) * 100).toFixed(1) : '100.0';
 
   // Dynamic CM / Repair metrics (Corrective Maintenance)
@@ -180,7 +217,12 @@ export default function Dashboard({
   const totalRepair = activeFindings.length + cmFromSchedules.length;
   const doneRepair = activeFindings.filter(f => f.status === 'Close').length + cmFromSchedules.filter(s => s.status === 'Done').length;
   const pendingRepair = activeFindings.filter(f => f.status === 'Open').length + cmFromSchedules.filter(s => s.status !== 'Done').length;
-  const waitingSparepart = activeFindings.filter(f => f.status === 'Open' && f.issue?.toLowerCase().includes('sparepart')).length;
+  const waitingSparepart = activeFindings.filter(f => f.status === 'Open' && (
+    f.issue?.toLowerCase().includes('sparepart') ||
+    f.issue?.toLowerCase().includes('ganti') ||
+    f.issue?.toLowerCase().includes('mati') ||
+    f.issue?.toLowerCase().includes('rusak')
+  )).length;
 
   // Dynamic derivations for report cards
   const totalDailyReportsCount = activeDailyReports.length;
@@ -256,7 +298,32 @@ export default function Dashboard({
       : 0;
 
     // Damage statistics for this division
-    const divFindings = activeFindings.filter(f => f.equipment?.toLowerCase().includes(d.key.toLowerCase()));
+    const divFindings = activeFindings.filter(f => {
+      if (f.division === d.key) return true;
+      const eq = (f.equipment || '').toLowerCase();
+      const iss = (f.issue || '').toLowerCase();
+      const divKey = d.key.toLowerCase();
+      if (eq.includes(divKey) || iss.includes(divKey)) return true;
+      if (d.key === 'Audio' || d.key === 'Audio (Sound)') {
+        return /audio|sound|speaker|mic|mixer|dbtech|dva|xlr|cable|power amp|subwoofer|line array/i.test(eq) || /audio|sound|speaker|mic|mixer|dbtech|dva|xlr|subwoofer/i.test(iss);
+      }
+      if (d.key === 'Lighting') {
+        return /light|lampu|parled|beam|moving head|dimmer|dmx|fresnel|b-eye|bsw/i.test(eq) || /light|lampu|parled|beam|moving head|dimmer|dmx|fresnel|b-eye|bsw/i.test(iss);
+      }
+      if (d.key === 'Videotron') {
+        return /video|led|videotron|screen|panel led|modul|novastar|processor/i.test(eq) || /video|led|videotron|screen|panel led|modul/i.test(iss);
+      }
+      if (d.key === 'Multimedia') {
+        return /multi|kamera|camera|switcher|hdmi|sdi|obs|streaming|vmix/i.test(eq) || /multi|kamera|camera|switcher|hdmi|sdi|obs|streaming|vmix/i.test(iss);
+      }
+      if (d.key === 'Gudang' || d.key === 'Gudang Logistik') {
+        return /gudang|logistik|kabel roll|tenda|flightcase|terpal|pallet/i.test(eq) || /gudang|logistik/i.test(iss);
+      }
+      if (d.key === 'Service' || d.key === 'Service (Perbaikan)') {
+        return /service|perbaikan|solder|sparepart|modul rusak|jalur pcb/i.test(eq) || /service|perbaikan|rusak/i.test(iss);
+      }
+      return false;
+    });
     const ringan = divFindings.filter(f => f.priority === 'Rendah').length;
     const sedang = divFindings.filter(f => f.priority === 'Sedang').length;
     const berat = divFindings.filter(f => f.priority === 'Tinggi').length;
@@ -1147,9 +1214,10 @@ export default function Dashboard({
                   <tbody className="divide-y divide-slate-100 font-mono">
                     {activeStaffProductivityData.length > 0 ? (
                       activeStaffProductivityData.slice(0, 10).map((staff, idx) => {
+                        const originalStaff = staffList.find(st => st.id === staff.id || st.name === staff.name) || (staff as any);
                         const staffDates = new Set<string>();
-                        activeDailyReports.filter(r => isStaffMatch(staff, r.staffName) && r.date).forEach(r => staffDates.add(r.date));
-                        activeLogbookEntries.filter(e => isStaffMatch(staff, e.staffName) && e.date).forEach(e => staffDates.add(e.date));
+                        activeDailyReports.filter(r => (isStaffMatch(originalStaff, r.staffName) || r.staffName === staff.name) && r.date).forEach(r => staffDates.add(r.date));
+                        activeLogbookEntries.filter(e => (isStaffMatch(originalStaff, e.staffName) || e.staffName === staff.name) && e.date).forEach(e => staffDates.add(e.date));
                         const attendanceDays = staffDates.size;
                         const workHours = attendanceDays * 8;
 

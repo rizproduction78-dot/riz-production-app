@@ -1339,6 +1339,8 @@ export default function App() {
             onNavigate={setActiveTab}
             activeMonth={activeMonth}
             onActiveMonthChange={setActiveMonth}
+            onSyncDailyLogFromSheet={handleSyncDailyLogFromSheet}
+            isSyncingSheet={isSyncingSheet}
           />
         )}
 
