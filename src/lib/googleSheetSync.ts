@@ -805,3 +805,290 @@ function readScheduleShiftsSheet(ss) {
   return result;
 }
 `;
+
+
+// ─────────────────────────────────────────────────────────────
+// GVIZ DIRECT PULL — Baca Daily Log dari Google Sheet Publik
+// Tidak memerlukan webhook / Apps Script deployment
+// Cukup Google Sheet di-set "Share → Anyone with the link → Viewer"
+// ─────────────────────────────────────────────────────────────
+
+export const DAILY_LOG_SHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
+
+/** GID untuk setiap tab sheet daily log */
+export const SHEET_GID_SEPTEMBER_2026 = '198998470';
+export const SHEET_GID_HISTORICAL     = '0'; // Mei 2026 (historis)
+
+/** Key localStorage untuk timestamp terakhir pull daily log */
+export const DAILY_LOG_LAST_PULL_KEY = 'riz_daily_log_last_pull';
+
+/** Keyword pada kolom REMARK yang menandakan temuan/masalah */
+const FINDING_KEYWORDS = [
+  'harus service', 'service', 'rusak', 'kendala', 'masalah',
+  'error', 'mati', 'tidak berfungsi', 'ganti', 'perbaikan',
+  'repair', 'tidak ok', 'ng', 'perlu'
+];
+
+/** Mapping nama panggilan staf dari Google Sheet ke nama canonical di STAFF_LIST */
+const STAFF_NAME_MAP: Record<string, string> = {
+  'mboh': 'Muhamad Rahmat',
+  'opik': 'Taufik Diana',
+  'buluk': 'Suryana',
+  'bulux': 'Suryana',
+  'butong': 'Iwan Kurniawan',
+  'butonk': 'Iwan Kurniawan',
+  'yudish': 'Yudishtira Purnama A',
+  'dani': 'Ramdani',
+  'kharo': 'Mulyana',
+  'jay': 'Mulyadi',
+  'heri': 'Heri',
+  'wigi': 'Dedi Agus Wigiantoro',
+  'ayong': 'Ayong Sumarsih',
+  'unyim': 'Wahyudin',
+  'mulyana': 'Mulyana',
+  'ramdani': 'Ramdani',
+  'taufik': 'Taufik Diana',
+  'suryana': 'Suryana',
+  'wahyudin': 'Wahyudin',
+  'iwan': 'Iwan Kurniawan',
+};
+
+/** Determine division from which column has activity */
+function detectDivision(sound: string, lighting: string, led: string, multimedia: string): string {
+  if (sound && sound.trim()) return 'Audio';
+  if (lighting && lighting.trim()) return 'Lighting';
+  if (led && led.trim()) return 'Videotron';
+  if (multimedia && multimedia.trim()) return 'Multimedia';
+  return 'Audio'; // default
+}
+
+/** Normalize staff name from sheet (may have prefix "- ") */
+function normalizeStaffName(raw: string): string {
+  if (!raw) return '';
+  const cleaned = raw.replace(/^[-–]\s*/, '').trim();
+  const lower = cleaned.toLowerCase();
+  return STAFF_NAME_MAP[lower] || cleaned;
+}
+
+/** Parse "1 September 2026" → "2026-09-01" */
+function parseIndonesianDate(dateStr: string): string | null {
+  if (!dateStr) return null;
+  const months: Record<string, string> = {
+    'januari': '01', 'februari': '02', 'maret': '03', 'april': '04',
+    'mei': '05', 'juni': '06', 'juli': '07', 'agustus': '08',
+    'september': '09', 'oktober': '10', 'november': '11', 'desember': '12'
+  };
+  // Also handle Date(yyyy,m,d) from gviz JSON
+  const gvizMatch = dateStr.match(/Date\((\d+),(\d+),(\d+)\)/);
+  if (gvizMatch) {
+    const y = gvizMatch[1];
+    const m = String(parseInt(gvizMatch[2]) + 1).padStart(2, '0');
+    const d = String(gvizMatch[3]).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const parts = dateStr.toLowerCase().trim().split(/\s+/);
+  if (parts.length >= 3) {
+    const day = parts[0].replace(/\D/g, '').padStart(2, '0');
+    const month = months[parts[1]] || '01';
+    const year = parts[2];
+    if (day && month && year) return `${year}-${month}-${day}`;
+  }
+  // try range like "22-23 Mei 2026" → take first date
+  const rangeMatch = dateStr.match(/(\d+)[-–]\d+\s+(\w+)\s+(\d{4})/i);
+  if (rangeMatch) {
+    const day = rangeMatch[1].padStart(2, '0');
+    const month = months[rangeMatch[2].toLowerCase()] || '01';
+    const year = rangeMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+  return null;
+}
+
+/** Check if remark text indicates a finding/issue */
+function isFindingRemark(remark: string): boolean {
+  if (!remark || !remark.trim()) return false;
+  const lower = remark.toLowerCase();
+  return FINDING_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+/** Build dedup key for a daily report entry */
+function buildDedupKey(date: string, staffName: string, activity: string): string {
+  const actHash = activity.trim().substring(0, 40).replace(/\s+/g, '_');
+  const staff = staffName.replace(/\s+/g, '_');
+  return `gsheet-${date}-${staff}-${actHash}`;
+}
+
+export interface GvizPullResult {
+  success: boolean;
+  message: string;
+  timestamp: string;
+  newReportsCount: number;
+  newFindingsCount: number;
+  skippedCount: number;
+}
+
+/**
+ * Pull daily log data langsung dari Google Sheet publik via gviz/tq API.
+ * Hasilnya diparse menjadi DailyReport[] dan Finding[] untuk disimpan ke Firestore.
+ * 
+ * @param gid - GID tab sheet (default: September 2026)
+ * @param onSaveDailyReport - callback untuk simpan ke Firestore
+ * @param onSaveFinding - callback untuk simpan temuan ke Firestore
+ * @param existingReportIds - Set ID report yang sudah ada (untuk dedup)
+ */
+export async function pullDailyLogFromGviz(
+  gid: string = SHEET_GID_SEPTEMBER_2026,
+  onSaveDailyReport: (id: string, doc: any) => Promise<void>,
+  onSaveFinding: (id: string, doc: any) => Promise<void>,
+  existingReportIds: Set<string> = new Set()
+): Promise<GvizPullResult> {
+  const url = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+
+  let newReports = 0;
+  let newFindings = 0;
+  let skipped = 0;
+
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+      return {
+        success: false,
+        message: `Gagal mengambil data dari Google Sheet (HTTP ${response.status})`,
+        timestamp: new Date().toISOString(),
+        newReportsCount: 0,
+        newFindingsCount: 0,
+        skippedCount: 0
+      };
+    }
+
+    const text = await response.text();
+    // gviz response wrapped in: google.visualization.Query.setResponse({...});
+    const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?\s*$/);
+    if (!jsonMatch) {
+      return {
+        success: false,
+        message: 'Format respons Google Sheet tidak dikenali',
+        timestamp: new Date().toISOString(),
+        newReportsCount: 0,
+        newFindingsCount: 0,
+        skippedCount: 0
+      };
+    }
+
+    const parsed = JSON.parse(jsonMatch[1]);
+    const rows: any[] = parsed?.table?.rows || [];
+
+    // State carry-over: tanggal terakhir yang diketahui (bisa null dalam satu baris)
+    let currentDate: string | null = null;
+
+    for (const row of rows) {
+      const cells = row.c || [];
+      const rawDate   = cells[0]?.f || cells[0]?.v || '';
+      const rawStaff  = cells[1]?.v || '';
+      const sound     = cells[2]?.v || '';
+      const lighting  = cells[3]?.v || '';
+      const led       = cells[4]?.v || '';
+      const multimedia= cells[5]?.v || '';
+      const remark    = cells[6]?.v || '';
+
+      // Pertahankan tanggal dari baris sebelumnya jika baris ini tidak punya tanggal
+      if (rawDate) {
+        const parsed = parseIndonesianDate(String(rawDate));
+        if (parsed) currentDate = parsed;
+      }
+
+      if (!currentDate) continue;
+
+      const staffName = normalizeStaffName(String(rawStaff));
+      const activity = [sound, lighting, led, multimedia].filter(Boolean).join('; ').trim();
+
+      // Hanya proses baris yang punya aktivitas
+      if (!activity && !remark) continue;
+
+      const division = detectDivision(String(sound), String(lighting), String(led), String(multimedia));
+
+      // Buat DailyReport jika ada activity
+      if (activity) {
+        const dedupKey = buildDedupKey(currentDate, staffName, activity);
+
+        if (!existingReportIds.has(dedupKey)) {
+          const reportDoc = {
+            id: dedupKey,
+            date: currentDate,
+            staffName: staffName || 'Tim Operasional',
+            division: division as any,
+            activity,
+            notes: remark || '',
+            status: 'Submitted',
+            _source: 'google_sheet',
+            _syncedAt: new Date().toISOString()
+          };
+          await onSaveDailyReport(dedupKey, reportDoc);
+          existingReportIds.add(dedupKey);
+          newReports++;
+        } else {
+          skipped++;
+        }
+      }
+
+      // Buat Finding jika remark mengindikasikan masalah
+      if (isFindingRemark(String(remark))) {
+        const findingKey = `gsheet-finding-${currentDate}-${String(remark).trim().substring(0, 30).replace(/\s+/g, '_')}`;
+        if (!existingReportIds.has(findingKey)) {
+          const findingDoc = {
+            id: findingKey,
+            equipment: activity || 'Unit Operasional',
+            issue: String(remark).trim(),
+            priority: 'Sedang',
+            pic: staffName || 'Tim Operasional',
+            targetDate: currentDate,
+            status: 'Open',
+            dateCreated: currentDate,
+            division: division as any,
+            _source: 'google_sheet',
+            _syncedAt: new Date().toISOString()
+          };
+          await onSaveFinding(findingKey, findingDoc);
+          existingReportIds.add(findingKey);
+          newFindings++;
+        }
+      }
+    }
+
+    // Simpan timestamp pull terakhir
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(DAILY_LOG_LAST_PULL_KEY, new Date().toISOString());
+      }
+    } catch (e) {}
+
+    return {
+      success: true,
+      message: `Sinkronisasi berhasil! ${newReports} laporan harian + ${newFindings} temuan baru diimpor dari Google Sheet.${skipped > 0 ? ` (${skipped} data sudah ada, dilewati)` : ''}`,
+      timestamp: new Date().toISOString(),
+      newReportsCount: newReports,
+      newFindingsCount: newFindings,
+      skippedCount: skipped
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: `Error saat mengambil data dari Google Sheet: ${error.message || 'Koneksi bermasalah'}`,
+      timestamp: new Date().toISOString(),
+      newReportsCount: 0,
+      newFindingsCount: 0,
+      skippedCount: 0
+    };
+  }
+}
+
+/** Get last daily log pull timestamp */
+export function getDailyLogLastPull(): string | null {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem(DAILY_LOG_LAST_PULL_KEY);
+    }
+  } catch (e) {}
+  return null;
+}
+

@@ -72,6 +72,11 @@ import {
   SyncStatus
 } from './lib/cloudSync';
 import { workspaceManager } from './lib/workspaceConfig';
+import {
+  pullDailyLogFromGviz,
+  SHEET_GID_SEPTEMBER_2026,
+  getDailyLogLastPull
+} from './lib/googleSheetSync';
 
 export default function App() {
   const activeWorkspace = workspaceManager.getActiveWorkspace();
@@ -531,6 +536,11 @@ export default function App() {
     ];
   });
 
+  // Google Sheet Daily Log Pull State
+  const [isSyncingSheet, setIsSyncingSheet] = useState<boolean>(false);
+  const [lastSheetPull, setLastSheetPull] = useState<string | null>(() => getDailyLogLastPull());
+  const [sheetPullMessage, setSheetPullMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+
   // Cloud Sync State
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
@@ -628,6 +638,52 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('riz_active_month_key', activeMonth);
   }, [activeMonth]);
+
+  // Google Sheet Daily Log Pull — Auto-Sync setiap 30 menit
+  const handleSyncDailyLogFromSheet = async (gid: string = SHEET_GID_SEPTEMBER_2026) => {
+    setIsSyncingSheet(true);
+    setSheetPullMessage({ text: 'Mengambil data terbaru dari Google Sheet...', type: 'info' });
+    try {
+      // Kumpulkan semua ID daily_reports yang sudah ada untuk dedup
+      const existingIds = new Set<string>(dailyReports.map(r => r.id).concat(findings.map(f => f.id)));
+
+      const result = await pullDailyLogFromGviz(
+        gid,
+        async (id, doc) => { await saveCloudDoc('daily_reports', id, doc); },
+        async (id, doc) => { await saveCloudDoc('findings', id, doc); },
+        existingIds
+      );
+
+      setSheetPullMessage({ text: result.message, type: result.success ? 'success' : 'error' });
+      if (result.success) {
+        const ts = new Date().toISOString();
+        setLastSheetPull(ts);
+        handleLogActivity('System Auto-Sync', 'Server', `Sinkronisasi Google Sheet: ${result.newReportsCount} laporan + ${result.newFindingsCount} temuan baru`);
+      }
+    } catch (e: any) {
+      setSheetPullMessage({ text: `Gagal: ${e?.message || 'Koneksi bermasalah'}`, type: 'error' });
+    } finally {
+      setIsSyncingSheet(false);
+      setTimeout(() => setSheetPullMessage(null), 6000);
+    }
+  };
+
+  // Auto-sync setiap 30 menit
+  useEffect(() => {
+    const AUTO_SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 menit
+    // Jalankan sekali saat startup (setelah 5 detik)
+    const startupTimer = setTimeout(() => {
+      handleSyncDailyLogFromSheet();
+    }, 5000);
+    // Kemudian ulangi setiap 30 menit
+    const interval = setInterval(() => {
+      handleSyncDailyLogFromSheet();
+    }, AUTO_SYNC_INTERVAL_MS);
+    return () => {
+      clearTimeout(startupTimer);
+      clearInterval(interval);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Logging Activity helper
   const handleLogActivity = (username: string, role: string, action: string) => {
@@ -1296,6 +1352,10 @@ export default function App() {
             onDeleteAsset={handleDeleteAsset}
             dailyReports={dailyReports}
             logbookEntries={logbookEntries}
+            onSyncDailyLogFromSheet={handleSyncDailyLogFromSheet}
+            isSyncingSheet={isSyncingSheet}
+            lastSheetPull={lastSheetPull}
+            sheetPullMessage={sheetPullMessage}
           />
         )}
 

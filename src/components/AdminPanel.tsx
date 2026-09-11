@@ -71,7 +71,8 @@ import {
   syncAllToGoogleSheet,
   pullDataFromGoogleSheet,
   getGoogleSheetLastSync,
-  GOOGLE_APPS_SCRIPT_TEMPLATE
+  GOOGLE_APPS_SCRIPT_TEMPLATE,
+  SHEET_GID_SEPTEMBER_2026
 } from '../lib/googleSheetSync';
 import { workspaceManager, AppWorkspace } from '../lib/workspaceConfig';
 
@@ -96,6 +97,10 @@ interface AdminPanelProps {
   onDeleteAsset: (id: string) => void;
   dailyReports?: DailyReport[];
   logbookEntries?: LogbookEntry[];
+  onSyncDailyLogFromSheet?: (gid?: string) => Promise<void>;
+  isSyncingSheet?: boolean;
+  lastSheetPull?: string | null;
+  sheetPullMessage?: { text: string; type: 'success' | 'error' | 'info' } | null;
 }
 
 export default function AdminPanel({
@@ -118,7 +123,11 @@ export default function AdminPanel({
   onUpdateAsset,
   onDeleteAsset,
   dailyReports = [],
-  logbookEntries = []
+  logbookEntries = [],
+  onSyncDailyLogFromSheet,
+  isSyncingSheet = false,
+  lastSheetPull = null,
+  sheetPullMessage = null
 }: AdminPanelProps) {
   // Navigation Sub-tabs
   const [activeTab, setActiveTab] = useState<'staff' | 'findings_wo' | 'maintenance' | 'gudang' | 'kendaraan' | 'qc_checklist' | 'schedule' | 'database'>('staff');
@@ -3191,7 +3200,106 @@ export default function AdminPanel({
             )}
           </div>
 
+          {/* SINKRONISASI DAILY LOG DARI GOOGLE SHEET (GVIZ DIRECT PULL) */}
+          <div className="bg-gradient-to-br from-blue-900 via-slate-900 to-slate-950 rounded-2xl border border-blue-500/30 p-6 text-white shadow-lg space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 border-b border-blue-800/40">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-blue-500/20 border border-blue-400/40 flex items-center justify-center text-blue-400 shrink-0">
+                  <Download className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-base font-black text-white">Sinkronisasi Daily Log & QC dari Google Sheet</h2>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                      Auto-Sync 30 Menit
+                    </span>
+                    {isSyncingSheet && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30 animate-pulse">
+                        ⟳ Sedang Sinkronisasi...
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-blue-200/80 mt-0.5">
+                    Baca langsung data Daily Log & QC yang diisi di Google Sheet → simpan ke aplikasi & Firestore secara otomatis
+                  </p>
+                </div>
+              </div>
+              <a
+                href="https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 rounded-xl text-xs font-bold text-blue-200 transition-all cursor-pointer shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka Sheet September 2026</span>
+              </a>
+            </div>
+
+            {/* Status Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-400 font-mono uppercase block">Sheet Target</span>
+                <span className="font-bold text-blue-300 font-mono block text-[11px] truncate">1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA</span>
+              </div>
+              <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-400 font-mono uppercase block">Tab Aktif</span>
+                <span className="font-bold text-white block">September 2026 (gid=198998470)</span>
+              </div>
+              <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
+                <span className="text-[10px] text-slate-400 font-mono uppercase block">Terakhir Pull</span>
+                <span className="font-bold text-emerald-300 font-mono block text-[11px]">
+                  {lastSheetPull
+                    ? new Date(lastSheetPull).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                    : 'Belum pernah'}
+                </span>
+              </div>
+            </div>
+
+            {/* Pull action buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onClick={() => onSyncDailyLogFromSheet?.(SHEET_GID_SEPTEMBER_2026)}
+                disabled={isSyncingSheet}
+                className="p-3.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 rounded-xl text-left transition-all cursor-pointer disabled:opacity-40 flex items-center gap-3"
+              >
+                <div className="w-9 h-9 rounded-lg bg-blue-500/30 text-blue-300 flex items-center justify-center shrink-0">
+                  <RefreshCw className={`w-4 h-4 ${isSyncingSheet ? 'animate-spin' : ''}`} />
+                </div>
+                <div>
+                  <div className="font-extrabold text-xs text-white">
+                    {isSyncingSheet ? 'Sedang Mengambil Data...' : '🔄 Sync Daily Log September 2026'}
+                  </div>
+                  <div className="text-[10px] text-blue-200/70">Baca sheet aktif Sep 2026 → impor ke Daily Reports & Temuan QC</div>
+                </div>
+              </button>
+
+              <div className="p-3.5 bg-slate-800/50 border border-slate-700/40 rounded-xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-slate-700/50 text-slate-400 flex items-center justify-center shrink-0">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-extrabold text-xs text-slate-300">Auto-Sync Aktif</div>
+                  <div className="text-[10px] text-slate-400">
+                    Sistem otomatis tarik data baru dari Google Sheet setiap <strong className="text-white">30 menit</strong> dan saat aplikasi dibuka
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pull result message */}
+            {sheetPullMessage && (
+              <div className={`p-3 rounded-xl text-xs font-medium border ${
+                sheetPullMessage.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' :
+                sheetPullMessage.type === 'error' ? 'bg-rose-500/10 border-rose-500/40 text-rose-300' :
+                'bg-blue-500/10 border-blue-500/40 text-blue-300'
+              }`}>
+                {sheetPullMessage.text}
+              </div>
+            )}
+          </div>
+
           {/* DEDICATED WORKSPACE STATUS & ISOLATION CARD */}
+
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
