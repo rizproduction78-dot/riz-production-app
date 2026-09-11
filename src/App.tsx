@@ -1406,6 +1406,8 @@ export default function App() {
             onLogActivity={handleLogActivity}
             activeMonth={activeMonth}
             onActiveMonthChange={setActiveMonth}
+            onSyncDailyLogFromSheet={handleSyncDailyLogFromSheet}
+            isSyncingSheet={isSyncingSheet}
           />
         )}
 

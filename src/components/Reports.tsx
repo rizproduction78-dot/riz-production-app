@@ -22,6 +22,8 @@ interface ReportsProps {
   onLogActivity: (username: string, role: string, action: string) => void;
   activeMonth?: string;
   onActiveMonthChange?: (monthKey: string) => void;
+  onSyncDailyLogFromSheet?: (gid?: string) => Promise<any>;
+  isSyncingSheet?: boolean;
 }
 
 export default function Reports({
@@ -34,9 +36,18 @@ export default function Reports({
   onLogActivity,
   activeMonth = '2026-09',
   onActiveMonthChange,
+  onSyncDailyLogFromSheet,
+  isSyncingSheet = false,
 }: ReportsProps) {
   // Master Staff Dynamic State with Cloud Subscription
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
+
+  // Auto-sync Google Sheet saat membuka Pusat Laporan
+  useEffect(() => {
+    if (onSyncDailyLogFromSheet) {
+      onSyncDailyLogFromSheet().catch(e => console.warn('[Reports] GSheet auto-sync info:', e));
+    }
+  }, []);
 
   useEffect(() => {
     const unsub = subscribeCloudCollection<Staff>(
@@ -57,9 +68,15 @@ export default function Reports({
   useEffect(() => {
     setTargetMonth(activeMonth);
   }, [activeMonth]);
-  const [targetDate, setTargetDate] = useState(() => {
-    return '2026-09-06';
-  });
+  const latestDateAvailable = React.useMemo(() => {
+    const dates = [
+      ...dailyReports.map(r => r.date),
+      ...logbookEntries.map(e => e.date)
+    ].filter(Boolean).sort();
+    return dates.length > 0 ? dates[dates.length - 1] : '2026-09-11';
+  }, [dailyReports, logbookEntries]);
+
+  const [targetDate, setTargetDate] = useState(() => latestDateAvailable);
   const [targetStartDate, setTargetStartDate] = useState('2026-09-01');
   const [targetEndDate, setTargetEndDate] = useState('2026-09-07');
 
@@ -331,30 +348,63 @@ export default function Reports({
     window.print();
   };
 
-  // CSV Export Handler
+  // CSV / Excel Export Handler (Agregasi Data QC & Daily Report Staff Harian)
   const handleExportCSV = () => {
     onLogActivity(currentUser.name, currentUser.role, `Mengekspor Laporan ${reportType} ke format CSV/Excel`);
     
-    // Generate CSV string based on active filtered period
-    const headers = ['No', 'Tanggal', 'Divisi', 'Nama Staff', 'Aktivitas', 'Hasil QC', 'Status', 'Tindak Lanjut'];
-    const rows = activeLogbookEntries.map((e, idx) => [
-      idx + 1,
-      e.date,
-      e.division,
-      e.staffName,
-      e.activity,
-      e.result,
-      e.status,
-      e.followUp.replace(/,/g, ';')
-    ]);
+    // Generate CSV string based on active filtered period aggregating QC & Daily Reports
+    const headers = ['No', 'Kategori Data', 'Tanggal', 'Divisi', 'Nama Staff', 'Aktivitas / QC Item', 'Status / Hasil', 'Catatan / Tindak Lanjut'];
+    
+    const escapeCsv = (val?: any) => {
+      const s = String(val || '').replace(/"/g, '""');
+      return `"${s}"`;
+    };
 
-    const csvContent = "data:text/csv;charset=utf-8," 
+    let counter = 1;
+    const rows: string[][] = [];
+
+    // 1. Agregasi Daily Report Staff Harian
+    activeDailyReports.forEach(r => {
+      rows.push([
+        String(counter++),
+        escapeCsv('Daily Report Staff'),
+        escapeCsv(r.date),
+        escapeCsv(r.division),
+        escapeCsv(r.staffName),
+        escapeCsv(r.activity),
+        escapeCsv(r.status || 'Submitted'),
+        escapeCsv(r.notes || '-')
+      ]);
+    });
+
+    // 2. Agregasi Rekapitulasi Data QC
+    activeLogbookEntries.forEach(e => {
+      rows.push([
+        String(counter++),
+        escapeCsv('QC Checklist'),
+        escapeCsv(e.date),
+        escapeCsv(e.division),
+        escapeCsv(e.staffName),
+        escapeCsv(e.activity),
+        escapeCsv(e.result || 'OK'),
+        escapeCsv(e.followUp || '-')
+      ]);
+    });
+
+    const periodStr = reportType === 'Harian'
+      ? targetDate
+      : reportType === 'Mingguan'
+      ? `${targetStartDate}_sd_${targetEndDate}`
+      : targetMonth;
+
+    // Tambahkan UTF-8 BOM (\uFEFF) agar Microsoft Excel membuka karakter dengan sempurna
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
       + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `RIZ_PRODUCTION_Report_${reportType}_${reportType === 'Harian' ? targetDate : targetMonth}.csv`);
+    link.setAttribute("download", `RIZ_PRODUCTION_Agregasi_QC_DailyReport_${reportType}_${periodStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1163,6 +1213,52 @@ export default function Reports({
                     <tr>
                       <td colSpan={8} className="p-4 text-center text-slate-400 italic">
                         Tidak ada logbook QC terisi pada periode {reportType === 'Harian' ? targetDate : targetMonth}.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* DAILY REPORT STAFF SECTION */}
+          <div className="space-y-4">
+            <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">
+              I.B. LAPORAN DAILY REPORT STAFF HARIAN ({reportType === 'Harian' ? targetDate : targetMonth})
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border border-slate-300 text-xs">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-800 font-mono border-b border-slate-300 uppercase">
+                    <th className="p-2 border-r border-slate-300 w-8">No</th>
+                    <th className="p-2 border-r border-slate-300">Tanggal</th>
+                    <th className="p-2 border-r border-slate-300">Divisi</th>
+                    <th className="p-2 border-r border-slate-300">Nama Staff</th>
+                    <th className="p-2 border-r border-slate-300">Aktivitas Pekerjaan Lapangan</th>
+                    <th className="p-2 border-r border-slate-300">Catatan / Keterangan</th>
+                    <th className="p-2 text-center w-20">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-300">
+                  {activeDailyReports.map((r, idx) => (
+                    <tr key={r.id || idx} className="hover:bg-slate-50 font-mono">
+                      <td className="p-2 border-r border-slate-300 text-center">{idx + 1}</td>
+                      <td className="p-2 border-r border-slate-300">{r.date}</td>
+                      <td className="p-2 border-r border-slate-300 font-sans font-semibold text-indigo-700">{r.division}</td>
+                      <td className="p-2 border-r border-slate-300 font-sans">{r.staffName}</td>
+                      <td className="p-2 border-r border-slate-300 font-sans">{r.activity}</td>
+                      <td className="p-2 border-r border-slate-300 font-sans text-slate-600 italic text-[11px] leading-tight">{r.notes || '-'}</td>
+                      <td className="p-2 text-center">
+                        <span className="text-[10px] uppercase font-bold px-1 rounded bg-slate-100 text-slate-700">
+                          {r.status || 'Submitted'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {activeDailyReports.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="p-4 text-center text-slate-400 italic">
+                        Tidak ada daily report staff terisi pada periode {reportType === 'Harian' ? targetDate : targetMonth}.
                       </td>
                     </tr>
                   )}
