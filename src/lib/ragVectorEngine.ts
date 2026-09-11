@@ -748,7 +748,7 @@ export function generateOrchestratedReport(
     const qCount = logbookEntries.filter(e => isStaffMatch(st, e.staffName)).length;
     const wCount = findings.filter(f => isStaffMatch(st, f.pic) && f.status === 'Close').length;
     
-    if (isStaffInGoogleSheet(st, dailyReports, logbookEntries) && (rCount > 0 || qCount > 0 || wCount > 0)) {
+    if (isStaffInGoogleSheet(st, dailyReports, logbookEntries)) {
       const score = Math.min(100, Math.round((rCount * 35) + (qCount * 30) + (wCount * 20) + 15));
       staffActivityMap[st.id] = {
         staff: st,

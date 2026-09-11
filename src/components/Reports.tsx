@@ -152,9 +152,9 @@ export default function Reports({
   // 3. WO Selesai
   const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
   
-  // Filter hanya staf yang bertugas sesuai data referensi Google Sheet (yang tidak tertulis nama staf tidak disertakan/ditampilkan)
+  // Filter hanya staf yang bertugas sesuai data referensi Google Sheet (selalu tampilkan meskipun hari ini belum ada aktivitas)
   const activeStaffKpis = staffKpis.filter(staff => 
-    isStaffInGoogleSheet(staff, activeDailyReports, activeLogbookEntries) && (staff.reports > 0 || staff.qcs > 0 || staff.wos > 0)
+    isStaffInGoogleSheet(staff, activeDailyReports, activeLogbookEntries)
   );
 
   // Dynamic metrics per division (7 Divisi Resmi)
@@ -704,9 +704,11 @@ export default function Reports({
               </table>
             </div>
 
-            <div className="p-3 border border-amber-200 bg-amber-50/60 rounded text-xs text-amber-900 font-sans">
-              <div className="font-semibold">⚠️ Pencatatan Jumlah Kehadiran & Jam Kerja Dinon-aktifkan Sementara</div>
-              <div className="text-[11px] text-amber-700 mt-0.5">Penilaian KPI & Evaluasi Kinerja saat ini difokuskan 100% pada kontribusi riil: Daily Report, QC Checklist Onhouse, Work Order Perbaikan, dan Uji Kompetensi Teknis.</div>
+            <div className="bg-white rounded border-l-4 border-l-indigo-600 border-y border-r border-slate-300 p-3 shadow-2xs page-break-inside-avoid">
+              <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">2. KEHADIRAN STAFF</div>
+              <div className="mt-2 text-xs text-slate-700 leading-relaxed font-sans">
+                Kehadiran staf bulan {targetMonth} tercatat dan terverifikasi sesuai jadwal dinas. Bobot penilaian kehadiran pada KPI adalah <strong>15%</strong>. Detail kehadiran masing-masing staf dapat dilihat pada tabel KPI Utama di bawah.
+              </div>
             </div>
           </div>
 
@@ -823,7 +825,7 @@ export default function Reports({
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
                   {activeStaffKpis.length > 0 ? (
-                    activeStaffKpis.slice(0, 10).map((staff, idx) => {
+                    activeStaffKpis.map((staff, idx) => {
                       const originalStaff = staffList.find(st => st.id === staff.id || st.name === staff.name) || (staff as any);
                       const staffDates = new Set<string>();
                       dailyReports.filter(r => (isStaffMatch(originalStaff, r.staffName) || r.staffName === staff.name) && r.date).forEach(r => staffDates.add(r.date));
@@ -860,9 +862,9 @@ export default function Reports({
 
             {activeStaffKpis.length > 0 && (
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
-                <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider block mb-2">TOP 10 PERFORMER (BERDASARKAN AKTIFITAS RIIL)</span>
+                <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider block mb-2">TOP PERFORMER (BERDASARKAN AKTIFITAS RIIL)</span>
                 <ol className="list-decimal pl-5 space-y-1 text-xs text-slate-700 font-sans">
-                  {activeStaffKpis.slice(0, 10).map((staff) => (
+                  {activeStaffKpis.map((staff) => (
                     <li key={staff.id}>
                        <strong className="text-indigo-600">{staff.name}</strong> (Divisi {staff.division}) — Nilai KPI: <strong className="text-emerald-600">{staff.kpi}%</strong> ({staff.reports} Daily Report, {staff.qcs} QC)
                     </li>
@@ -1096,20 +1098,32 @@ export default function Reports({
             <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">13. ANALISIS MANAJEMEN</div>
             <div className="p-4 border border-slate-300 bg-slate-50/50 rounded text-xs space-y-3">
               <div>
-                <strong className="text-slate-800 uppercase text-[10px] font-mono block">Kendala Bulan Ini:</strong>
-                <p className="text-slate-600 mt-0.5">Keterlambatan sparepart pengganti untuk Moving Head BSW 380W dari supplier lokal.</p>
+                <strong className="text-slate-800 uppercase text-[10px] font-mono block">Kendala {reportType === 'Harian' ? 'Hari Ini' : reportType === 'Mingguan' ? 'Minggu Ini' : 'Bulan Ini'}:</strong>
+                <p className="text-slate-600 mt-0.5">
+                  {activeFindings.length > 0 
+                    ? `Ditemukan ${activeFindings.length} catatan kendala teknis: ${activeFindings.slice(0, 3).map(f => `${f.equipment}: ${f.issue.substring(0, 75)}`).join('. ')}.` 
+                    : 'Tidak ada kendala operasional yang tercatat.'}
+                </p>
               </div>
               <div>
                 <strong className="text-slate-800 uppercase text-[10px] font-mono block">Akar Masalah:</strong>
-                <p className="text-slate-600 mt-0.5">Stok sparepart motor pan-tilt langka di pasar domestik, memerlukan inden 14 hari kerja.</p>
+                <p className="text-slate-600 mt-0.5">
+                  {activeFindings.length > 0 
+                    ? 'Beban operasional intensif unit di lapangan, keausan modul elektronik/LED, dan degradasi fisik kabel konektor.' 
+                    : 'Kondisi operasional berjalan normal dan peralatan terawat dengan baik.'}
+                </p>
               </div>
               <div>
                 <strong className="text-slate-800 uppercase text-[10px] font-mono block">Solusi:</strong>
-                <p className="text-slate-600 mt-0.5">Melakukan pembelian stok cadangan (safety stock) langsung dari distributor utama luar kota untuk item kritis.</p>
+                <p className="text-slate-600 mt-0.5">
+                  {activeWorkOrders.length > 0 
+                    ? `Telah dieksekusi tindakan perbaikan: ${activeWorkOrders.map(w => w.title).join('; ')}. Pengujian kelayakan operasional telah dilakukan.` 
+                    : 'Monitoring operasional rutin dan pemeliharaan preventif terus berjalan dengan optimal.'}
+                </p>
               </div>
               <div>
-                <strong className="text-slate-800 uppercase text-[10px] font-mono block">Target Bulan Berikutnya:</strong>
-                <p className="text-slate-600 mt-0.5">Mencapai 100% kepatuhan Preventive Maintenance dan penyelesaian seluruh pending repair dalam maksimal 3 hari.</p>
+                <strong className="text-slate-800 uppercase text-[10px] font-mono block">Target Periode Berikutnya:</strong>
+                <p className="text-slate-600 mt-0.5">Mencapai 100% kepatuhan jadwal Preventive Maintenance, zero-failure peralatan pada event operasional, dan penyelesaian seluruh temuan QC.</p>
               </div>
             </div>
           </div>
@@ -1343,7 +1357,7 @@ export default function Reports({
                 IV. LAPORAN KPI & KINERJA ALL STAFF ({reportType === 'Harian' ? `HARIAN: ${targetDate}` : reportType === 'Mingguan' ? `MINGGUAN: ${targetStartDate} s/d ${targetEndDate}` : `BULANAN: ${targetMonth}`})
               </div>
               <span className="text-[10px] font-mono text-indigo-600 font-semibold">
-                Prioritas: Daily Report • QC Checklist • WO Selesai • Uji Komp. (Kehadiran & Jam Kerja Non-Aktif)
+                Prioritas: Kehadiran • Daily Report • QC Checklist • WO Selesai • Uji Komp.
               </span>
             </div>
             <div className="overflow-x-auto max-h-[350px] overflow-y-auto border border-slate-300 rounded">
@@ -1378,8 +1392,8 @@ export default function Reports({
                         <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.wos > 0 ? 'text-emerald-700 bg-emerald-50/30' : 'text-slate-400'}`}>
                           {staff.wos}
                         </td>
-                        <td className="p-2 border-r border-slate-300 text-center text-slate-400">
-                          -
+                        <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.attendanceCount > 0 ? 'text-indigo-700 bg-indigo-50/30' : 'text-slate-400'}`}>
+                          {staff.attendanceCount}/{staff.attendanceTarget}
                         </td>
                         <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
                         <td className="p-2 border-r border-slate-300 text-center text-slate-400">
@@ -1406,7 +1420,7 @@ export default function Reports({
                 <span className="text-[10px] font-mono text-slate-600 uppercase font-bold tracking-wider block">
                   🏆 TOP 3 PERFORMER {reportType.toUpperCase()} ({reportType === 'Harian' ? targetDate : reportType === 'Mingguan' ? `${targetStartDate} s/d ${targetEndDate}` : targetMonth})
                 </span>
-                <span className="text-[9px] font-mono text-slate-400">Peringkat Berdasarkan: Daily Report, QC Checklist, WO Selesai, Uji Komp (Kehadiran Non-Aktif)</span>
+                <span className="text-[9px] font-mono text-slate-400">Peringkat Berdasarkan: Kehadiran, Daily Report, QC Checklist, WO Selesai, Uji Komp.</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {activeStaffKpis.length > 0 ? (

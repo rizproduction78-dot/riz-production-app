@@ -230,12 +230,14 @@ export default function Dashboard({
   const totalWorkOrdersCount = totalRepair + totalPM;
 
   // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
-  const staffProductivityData = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
+  const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
   
-  // Filter hanya staf yang bertugas sesuai data referensi Google Sheet (yang tidak tertulis nama staf tidak disertakan/ditampilkan)
-  const activeStaffProductivityData = staffProductivityData.filter(s => 
-    isStaffInGoogleSheet(s, activeDailyReports, activeLogbookEntries) && (s.reports > 0 || s.qcs > 0 || s.wos > 0)
+  const activeStaff = staffKpis.filter(s => 
+    isStaffInGoogleSheet(s, activeDailyReports, activeLogbookEntries)
   );
+
+  // Filter hanya staf yang bertugas sesuai data referensi Google Sheet (yang tidak tertulis nama staf tidak disertakan/ditampilkan)
+  const activeStaffProductivityData = activeStaff;
 
   // Grade distributions dynamically calculated from real active data
   const countGradeA = activeStaffProductivityData.filter(s => s.grade === 'A').length;
@@ -243,13 +245,12 @@ export default function Dashboard({
   const countGradeC = activeStaffProductivityData.filter(s => s.grade === 'C').length;
   const countGradeD = activeStaffProductivityData.filter(s => s.grade === 'D').length;
 
-  // Top 10 performers diurutkan berdasarkan KPI Score tertinggi, lalu kontribusi QC, Lap, dan WO
   const topPerformers = [...activeStaffProductivityData].sort((a, b) => {
     if (b.kpi !== a.kpi) return b.kpi - a.kpi;
     if (b.qcs !== a.qcs) return b.qcs - a.qcs;
     if (b.reports !== a.reports) return b.reports - a.reports;
     return b.wos - a.wos;
-  }).slice(0, 10);
+  });
 
   // 100% Dynamic Division Metrics
   const divisionListConfig = [
@@ -884,7 +885,7 @@ export default function Dashboard({
               </div>
 
               <div className="space-y-3 pt-1">
-                {activeStaffProductivityData.slice(0, 10).map((staff, idx) => {
+                {activeStaffProductivityData.map((staff, idx) => {
                   const barColor = staff.kpi >= 80 ? 'from-emerald-500 to-teal-600' : staff.kpi >= 60 ? 'from-blue-500 to-indigo-600' : 'from-amber-500 to-orange-500';
                   return (
                     <div key={idx} className="space-y-1">
@@ -1105,14 +1106,15 @@ export default function Dashboard({
               </div>
 
               {/* Status Note - Full Opacity */}
-              <div className="bg-amber-50/90 p-4 rounded-xl border border-amber-300 shadow-sm flex flex-col justify-center space-y-2 text-xs font-medium text-amber-950">
-                <div className="flex items-center gap-1.5 font-bold uppercase text-[10px] tracking-wider text-amber-900">
-                  <span>⚠️</span>
-                  <span>Status Pencatatan</span>
+              <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
-                <p className="text-[11px] leading-relaxed text-amber-900">
-                  Jumlah Kehadiran & Jam Kerja dinon-aktifkan sementara. Evaluasi performa dan KPI staf difokuskan 100% pada kontribusi riil: <strong>Daily Report</strong>, <strong>QC Checklist</strong>, dan <strong>Work Order</strong>.
-                </p>
+                <div className="text-sm text-slate-600">
+                  Pencatatan Kehadiran <strong>telah diaktifkan kembali</strong> dengan bobot <strong>15%</strong>.
+                </div>
               </div>
             </div>
           </div>
@@ -1215,7 +1217,7 @@ export default function Dashboard({
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-mono">
                     {activeStaffProductivityData.length > 0 ? (
-                      activeStaffProductivityData.slice(0, 10).map((staff, idx) => {
+                      activeStaffProductivityData.map((staff, idx) => {
                         const originalStaff = staffList.find(st => st.id === staff.id || st.name === staff.name) || (staff as any);
                         const staffDates = new Set<string>();
                         activeDailyReports.filter(r => (isStaffMatch(originalStaff, r.staffName) || r.staffName === staff.name) && r.date).forEach(r => staffDates.add(r.date));
@@ -1257,12 +1259,12 @@ export default function Dashboard({
                 <div>
                   <div className="flex items-center gap-1.5 mb-3">
                     <Award className="w-4 h-4 text-emerald-600" />
-                    <h3 className="font-extrabold text-slate-900 uppercase text-[10px] tracking-wider">Top 10 Performer Bulan Ini</h3>
+                    <h3 className="font-extrabold text-slate-900 uppercase text-[10px] tracking-wider">Top Performer Bulan Ini</h3>
                   </div>
                   
                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                     {topPerformers.length > 0 ? (
-                      topPerformers.slice(0, 10).map((p, index) => (
+                      topPerformers.map((p, index) => (
                         <div key={index} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200">
                           <div className="flex items-center gap-2.5">
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold ${

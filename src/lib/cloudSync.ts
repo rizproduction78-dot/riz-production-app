@@ -180,24 +180,48 @@ export async function flushPendingQueue(): Promise<number> {
   const queue = getPendingQueue();
   if (queue.length === 0) return 0;
 
-  let successCount = 0;
   const remaining: PendingSyncItem[] = [];
-
-  for (const item of queue) {
+  
+  // Create an array of promises to execute concurrently
+  const promises = queue.map(async (item) => {
     try {
+      // Validasi awal ID untuk menghindari stuck antrean
+      if (!item.docId || String(item.docId).includes('/')) {
+        console.warn(`[Sync] Dropping invalid docId: ${item.docId}`);
+        return { success: true, item }; // Pretend success to remove it from queue
+      }
+
       if (item.type === 'SAVE' && item.data) {
         const docRef = doc(db, item.collectionName, item.docId);
         const cleanData = JSON.parse(JSON.stringify(item.data));
         await setDoc(docRef, cleanData, { merge: true });
-        successCount++;
+        return { success: true, item };
       } else if (item.type === 'DELETE') {
         const docRef = doc(db, item.collectionName, item.docId);
         await deleteDoc(docRef);
-        successCount++;
+        return { success: true, item };
       }
-    } catch (error) {
+      return { success: false, item };
+    } catch (error: any) {
+      // Jika error path invalid, langsung buang dari queue (tidak bisa direcover)
+      if (error?.code === 'invalid-argument' || String(error).includes('Invalid document reference')) {
+        console.warn(`[Sync] Dropping permanently unrecoverable item ${item.id}:`, error);
+        return { success: true, item };
+      }
       console.warn(`[Sync] Failed to flush pending item ${item.id}:`, error);
-      remaining.push(item);
+      return { success: false, item };
+    }
+  });
+
+  // Wait for all operations to complete in parallel
+  const results = await Promise.all(promises);
+  
+  let successCount = 0;
+  for (const result of results) {
+    if (result.success) {
+      successCount++;
+    } else {
+      remaining.push(result.item);
     }
   }
 
@@ -537,7 +561,7 @@ export function subscribeCloudCollection<T = any>(
             // Compare timestamps to ensure we don't overwrite newer local changes with stale incoming data
             const inMeta = incoming?._syncMeta?.updatedAt;
             const exMeta = existing?._syncMeta?.updatedAt;
-            const isExistingNewer = exMeta && inMeta && new Date(exMeta) > new Date(inMeta);
+            const isExistingNewer = exMeta && inMeta && new Date(exMeta) >= new Date(inMeta);
 
             if (isExistingNewer) {
               // If existing (local cache) is newer than incoming (server snapshot), preserve mutable fields
@@ -546,6 +570,9 @@ export function subscribeCloudCollection<T = any>(
               if (existing.approvedAt !== undefined) merged.approvedAt = existing.approvedAt;
               if (existing.progress !== undefined) merged.progress = existing.progress;
               if (existing.dailyRate !== undefined) merged.dailyRate = existing.dailyRate;
+              
+              // CRITICAL: Preserve the newer timestamp so it doesn't get downgraded by older server data
+              if (existing._syncMeta) merged._syncMeta = existing._syncMeta;
             } else {
               // Otherwise incoming takes priority
               if (incoming.status !== undefined) merged.status = incoming.status;
@@ -659,10 +686,83 @@ export function subscribeCloudCollection<T = any>(
             });
 
             items = Array.from(mergedMap.values()) as T[];
+
+            // Deduplikasi temuan (Findings) berdasarkan konten yang sama (equipment + issue + PIC)
+            // Prioritaskan yang manual (fd-*) dibanding yang auto-generated (gsheet-finding-*)
+            if (collectionName === 'findings') {
+              const uniqueFindings = new Map<string, any>();
+              items.forEach((item: any) => {
+                if (!item) return;
+                const eq = String(item.equipment || '').trim().toLowerCase();
+                const iss = String(item.issue || '').trim().toLowerCase();
+                const pic = String(item.pic || '').trim().toLowerCase();
+                // Gabungkan key untuk deteksi duplikat konten
+                const contentKey = `dedup_${eq}_${iss}_${pic}`;
+                
+                if (uniqueFindings.has(contentKey)) {
+                  const existing = uniqueFindings.get(contentKey);
+                  // Jika existing adalah gsheet dan item baru adalah fd-, replace existing
+                  if (String(existing.id).startsWith('gsheet-') && String(item.id).startsWith('fd-')) {
+                    uniqueFindings.set(contentKey, item);
+                  }
+                } else {
+                  uniqueFindings.set(contentKey, item);
+                }
+              });
+              items = Array.from(uniqueFindings.values()) as T[];
+            }
           }
 
           // Apply normalization to guarantee data integrity across all devices
           items = normalizeCollectionItems(collectionName, items);
+
+          // ─────────────────────────────────────────────────────────────
+          // STATUS LOCK: Apply user-initiated status changes that must NOT
+          // be reverted by cloud snapshot. Lock is cleared once Firestore
+          // confirms the change (status matches).
+          // ─────────────────────────────────────────────────────────────
+          if (collectionName === 'findings') {
+            try {
+              const lockKey = 'riz_findings_status_lock';
+              const rawLocks = localStorage.getItem(lockKey);
+              if (rawLocks) {
+                const locks: Record<string, { status: string; approvedBy: string | null; approvedAt: string | null; lockedAt: string }> = JSON.parse(rawLocks);
+                let locksModified = false;
+
+                items = (items as any[]).map((item: any) => {
+                  if (!item?.id) return item;
+                  const lock = locks[item.id];
+                  if (!lock) return item;
+
+                  // If Firestore already has the correct status, clear the lock
+                  if (item.status === lock.status) {
+                    delete locks[item.id];
+                    locksModified = true;
+                    return item;
+                  }
+
+                  // Firestore still has wrong status — apply the lock override
+                  return {
+                    ...item,
+                    status: lock.status,
+                    ...(lock.approvedBy ? { approvedBy: lock.approvedBy } : {}),
+                    ...(lock.approvedAt ? { approvedAt: lock.approvedAt } : {})
+                  };
+                }) as T[];
+
+                if (locksModified) {
+                  localStorage.setItem(lockKey, JSON.stringify(locks));
+                }
+
+                // Also update localStorage cache with lock-applied data
+                try {
+                  localStorage.setItem(localCacheKey, JSON.stringify(items));
+                } catch (e) {}
+              }
+            } catch (e) {
+              console.warn('[Sync] Failed to apply findings status lock:', e);
+            }
+          }
 
           // Update local cache safely
           try {

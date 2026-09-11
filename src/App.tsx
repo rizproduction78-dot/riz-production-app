@@ -500,13 +500,32 @@ export default function App() {
 
   const [findings, setFindings] = useState<Finding[]>(() => {
     const saved = localStorage.getItem('riz_findings');
+    let baseFindings: Finding[] = INITIAL_FINDINGS;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) baseFindings = parsed;
       } catch (e) {}
     }
-    return INITIAL_FINDINGS;
+    // Apply status lock so initial render always shows correct status
+    try {
+      const lockKey = 'riz_findings_status_lock';
+      const rawLocks = localStorage.getItem(lockKey);
+      if (rawLocks) {
+        const locks: Record<string, any> = JSON.parse(rawLocks);
+        return baseFindings.map(f => {
+          const lock = locks[f.id];
+          if (!lock) return f;
+          return {
+            ...f,
+            status: lock.status as 'Open' | 'Close',
+            ...(lock.approvedBy ? { approvedBy: lock.approvedBy } : {}),
+            ...(lock.approvedAt ? { approvedAt: lock.approvedAt } : {})
+          };
+        });
+      }
+    } catch (e) {}
+    return baseFindings;
   });
 
   const [assets, setAssets] = useState<Asset[]>(() => {
@@ -660,31 +679,25 @@ export default function App() {
     try {
       // Kumpulkan semua ID dan (date + staff) daily_reports, findings, dan logbook_entries yang sudah ada untuk dedup
       const existingIds = new Set<string>();
-      // Baca dari localStorage sebagai sumber dedup yang selalu fresh
+      // Baca dari state aktif sebagai sumber utama dedup
+      dailyReports.forEach(r => { if (r.id) existingIds.add(r.id); });
+      findings.forEach(f => {
+        if (f.id) existingIds.add(f.id);
+        if (f.issue) existingIds.add(String(f.issue).trim().toLowerCase().substring(0, 30));
+      });
+      logbookEntries.forEach(l => { if (l.id) existingIds.add(l.id); });
+
+      // Baca dari localStorage sebagai backup
       try {
         const savedReports = JSON.parse(localStorage.getItem('riz_daily_reports') || '[]');
         const savedFindings = JSON.parse(localStorage.getItem('riz_findings') || '[]');
         const savedLogs = JSON.parse(localStorage.getItem('riz_logbook_entries') || '[]');
-        (savedReports as any[]).forEach((r: any) => {
-          if (r.id) existingIds.add(r.id);
-          if (r.date && r.staffName) {
-            const sObj = STAFF_LIST.find(s => isStaffMatch(s, r.staffName));
-            const sId = sObj ? sObj.id : String(r.staffName || '').toLowerCase().trim();
-            existingIds.add(`${r.date}|${sId}`);
-          }
-        });
+        (savedReports as any[]).forEach((r: any) => { if (r.id) existingIds.add(r.id); });
         (savedFindings as any[]).forEach((f: any) => {
           if (f.id) existingIds.add(f.id);
           if (f.issue) existingIds.add(String(f.issue).trim().toLowerCase().substring(0, 30));
         });
-        (savedLogs as any[]).forEach((l: any) => {
-          if (l.id) existingIds.add(l.id);
-          if (l.date && l.staffName) {
-            const sObj = STAFF_LIST.find(s => isStaffMatch(s, l.staffName));
-            const sId = sObj ? sObj.id : String(l.staffName || '').toLowerCase().trim();
-            existingIds.add(`log|${l.date}|${sId}`);
-          }
-        });
+        (savedLogs as any[]).forEach((l: any) => { if (l.id) existingIds.add(l.id); });
       } catch (_e) {}
 
       // Kumpulkan entry baru (sementara) untuk update state lokal langsung
@@ -694,24 +707,39 @@ export default function App() {
 
       const result = await pullDailyLogFromGviz(
         gid,
-        async (id, doc) => {
-          // Simpan ke Firestore
-          saveCloudDoc('daily_reports', id, doc).catch(e => console.error('[Sheet Sync] Firestore report save error:', e));
-          // Kumpulkan untuk update state lokal
-          newReportDocs.push(doc);
+        async (id, docData) => {
+          const { getDoc, doc: firestoreDoc } = await import('firebase/firestore');
+          const { db } = await import('./lib/firebase');
+          const snap = await getDoc(firestoreDoc(db, 'daily_reports', id));
+          if (!snap.exists()) {
+            saveCloudDoc('daily_reports', id, docData).catch(e => console.error('[Sheet Sync] Firestore report save error:', e));
+            newReportDocs.push(docData);
+          }
         },
-        async (id, doc) => {
-          // Simpan ke Firestore
-          saveCloudDoc('findings', id, doc).catch(e => console.error('[Sheet Sync] Firestore finding save error:', e));
-          // Kumpulkan untuk update state lokal
-          newFindingDocs.push(doc);
+        async (id, docData) => {
+          const { getDoc, getDocs, query, where, collection: fsCol, doc: firestoreDoc } = await import('firebase/firestore');
+          const { db } = await import('./lib/firebase');
+          // 1. Cek dari ID yang persis sama
+          const snap = await getDoc(firestoreDoc(db, 'findings', id));
+          if (snap.exists()) return;
+
+          // 2. Cek dari teks issue yang persis sama (menghindari duplikat jika tanggal di Sheet diubah)
+          const q = query(fsCol(db, 'findings'), where('issue', '==', docData.issue));
+          const textSnap = await getDocs(q);
+          if (!textSnap.empty) return;
+
+          saveCloudDoc('findings', id, docData).catch(e => console.error('[Sheet Sync] Firestore finding save error:', e));
+          newFindingDocs.push(docData);
         },
         existingIds,
-        async (id, doc) => {
-          // Simpan ke Firestore
-          saveCloudDoc('logbook_entries', id, doc).catch(e => console.error('[Sheet Sync] Firestore logbook save error:', e));
-          // Kumpulkan untuk update state lokal
-          newLogDocs.push(doc);
+        async (id, docData) => {
+          const { getDoc, doc: firestoreDoc } = await import('firebase/firestore');
+          const { db } = await import('./lib/firebase');
+          const snap = await getDoc(firestoreDoc(db, 'logbook_entries', id));
+          if (!snap.exists()) {
+            saveCloudDoc('logbook_entries', id, docData).catch(e => console.error('[Sheet Sync] Firestore logbook save error:', e));
+            newLogDocs.push(docData);
+          }
         }
       );
 
@@ -860,6 +888,20 @@ export default function App() {
   };
 
   const handleUpdateFindingStatus = (id: string, status: 'Open' | 'Close', approvedBy?: string, approvedAt?: string) => {
+    // CRITICAL: Write status lock to prevent cloud sync from reverting on refresh
+    // This key is NEVER overwritten by cloud sync operations
+    try {
+      const lockKey = 'riz_findings_status_lock';
+      const existingLocks = JSON.parse(localStorage.getItem(lockKey) || '{}');
+      existingLocks[id] = {
+        status,
+        approvedBy: approvedBy || null,
+        approvedAt: approvedAt || null,
+        lockedAt: new Date().toISOString()
+      };
+      localStorage.setItem(lockKey, JSON.stringify(existingLocks));
+    } catch (e) {}
+
     setFindings(prev => prev.map(f => {
       if (f.id === id) {
         const updated = {

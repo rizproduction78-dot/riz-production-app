@@ -665,16 +665,19 @@ export default function EmployeePerformanceModule({
                 </div>
               </div>
 
-              {/* 6. Kehadiran & Jumlah Absensi (Non-aktif Sementara) */}
-              <div className="grid grid-cols-12 py-1.5 items-center bg-slate-50 px-1 rounded opacity-50">
-                <div className="col-span-4 font-bold text-slate-500">
-                  <span>Jumlah Absensi</span>
-                  <span className="block text-[10px] text-amber-600 font-normal">Non-aktif Sementara</span>
+              {/* 6. Kehadiran & Jumlah Absensi */}
+              <div className="grid grid-cols-12 py-1.5 items-center bg-slate-50 px-1 rounded">
+                <div className="col-span-4 font-bold text-slate-700">
+                  <span>Jumlah Absensi (Kehadiran)</span>
+                  <span className="block text-[10px] text-slate-500 font-normal">{staffKpi.attendanceCount} dari {staffKpi.attendanceTarget} Hari</span>
                 </div>
-                <div className="col-span-2 text-center text-slate-400 font-mono font-bold">0%</div>
-                <div className="col-span-2 text-center font-bold text-slate-400">-</div>
+                <div className="col-span-2 text-center text-slate-500 font-mono font-bold">15%</div>
+                <div className="col-span-2 text-center font-bold text-indigo-600">{staffKpi.attendanceScore}%</div>
                 <div className="col-span-4 flex items-center justify-end gap-3">
-                  <span className="font-mono font-bold text-slate-400 w-10 text-right">-</span>
+                  <div className="w-20 bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${staffKpi.attendanceScore}%` }}></div>
+                  </div>
+                  <span className="font-mono font-bold text-slate-900 w-10 text-right">{(staffKpi.attendanceScore * 0.15).toFixed(2)}</span>
                 </div>
               </div>
 

@@ -414,33 +414,37 @@ export function calculateStaffKpi(
   const baseHours = 0;
 
   // ─────────────────────────────────────────────────────────────
-  // 8. TOTAL NILAI KPI (KEHADIRAN & JAM KERJA DINON-AKTIFKAN SEMENTARA)
+  // 8. TOTAL NILAI KPI (KEHADIRAN DIAKTIFKAN KEMBALI)
   // ─────────────────────────────────────────────────────────────
-  // Komposisi Baru (Tanpa Kehadiran & Jam Kerja):
+  // Komposisi:
   // Divisi Non-QC (Gudang, Admin):
-  // - Daily Report: 40%
-  // - Work Order Selesai: 25%
-  // - Uji Kompetensi: 20%
+  // - Kehadiran: 15%
+  // - Daily Report: 35%
+  // - Work Order Selesai: 20%
+  // - Uji Kompetensi: 15%
   // - Teamwork & Pengembangan Diri: 15%
   //
   // Divisi Teknis QC (Audio, Lighting, Videotron, Multimedia, Service):
-  // - Daily Report: 35%
-  // - QC Checklist: 30%
+  // - Kehadiran: 15%
+  // - Daily Report: 25%
+  // - QC Checklist: 25%
   // - Work Order Selesai: 15%
   // - Uji Kompetensi: 15%
   // - Teamwork & Pengembangan Diri: 5%
   let totalKpi: number;
   if (isNonQcDivision) {
     totalKpi = Math.round(
-      (reportScore * 0.40) +
-      (woScore * 0.25) +
-      (competencyScore * 0.20) +
+      (attendanceScore * 0.15) +
+      (reportScore * 0.35) +
+      (woScore * 0.20) +
+      (competencyScore * 0.15) +
       (teamworkScore * 0.15)
     );
   } else {
     totalKpi = Math.round(
-      (reportScore * 0.35) +
-      (qcScore * 0.30) +
+      (attendanceScore * 0.15) +
+      (reportScore * 0.25) +
+      (qcScore * 0.25) +
       (woScore * 0.15) +
       (competencyScore * 0.15) +
       (teamworkScore * 0.05)
@@ -461,9 +465,9 @@ export function calculateStaffKpi(
     name: staff.name,
     division: staff.division,
     role: staff.role,
-    attendanceCount: 0,
+    attendanceCount: attendanceCount,
     attendanceTarget,
-    attendanceScore: 0,
+    attendanceScore: attendanceScore,
     competencyCount,
     competencyTotal,
     competencyScore,

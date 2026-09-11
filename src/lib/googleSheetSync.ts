@@ -890,7 +890,10 @@ function normalizeStaffName(raw: string): string {
 /** Parse and normalize multiple staff names that may appear in a single cell (e.g. "- unyim\n- buluk") */
 export function parseStaffNames(raw: string): string[] {
   if (!raw || !raw.trim()) return [];
-  const lines = raw.split(/[\n,;/]+/).map(s => s.replace(/^[-–*•\s]+/, '').trim()).filter(Boolean);
+  // Split by newlines, commas, semicolons, slashes, or inline separators like " - ", " & ", " dan "
+  const lines = raw.split(/[\n,;/]+|\s+-\s+|\s+&\s+|\s+dan\s+/i)
+    .map(s => s.replace(/^[-–*•\s]+/, '').trim())
+    .filter(Boolean);
   if (lines.length === 0) return [];
   const normalized = lines.map(normalizeStaffName).filter(Boolean);
   return Array.from(new Set(normalized));
@@ -934,14 +937,33 @@ function parseIndonesianDate(dateStr: string): string | null {
 function isFindingRemark(remark: string): boolean {
   if (!remark || !remark.trim()) return false;
   const lower = remark.toLowerCase();
+  
+  // Exclude safe phrases that might contain finding keywords (e.g., "tidak ada kendala")
+  const safeKeywords = [
+    'tidak ada kendala', 
+    'tida ada kendala', 
+    'aman', 
+    'normal', 
+    'selesai', 
+    'ok', 
+    'tidak ada masalah',
+    'siap pakai'
+  ];
+  const hasSafe = safeKeywords.some(kw => lower.includes(kw));
+  const hasExplicitDamage = ['rusak', 'service', 'perbaikan', 'mati', 'error', 'putus', 'serak', 'bongkar'].some(kw => lower.includes(kw));
+  
+  if (hasSafe && !hasExplicitDamage) return false;
+
   return FINDING_KEYWORDS.some(kw => lower.includes(kw));
 }
 
 /** Build dedup key for a daily report entry */
 function buildDedupKey(date: string, staffName: string, activity: string): string {
-  const actHash = activity.trim().substring(0, 40).replace(/\s+/g, '_');
-  const staff = staffName.replace(/\s+/g, '_');
-  return `gsheet-${date}-${staff}-${actHash}`;
+  // Normalize date and activity string to prevent dupes due to spacing
+  const normDate = String(date).trim();
+  const normStaff = String(staffName).trim().replace(/[^a-zA-Z0-9-]/g, '_');
+  const normActivity = String(activity).trim().substring(0, 30).replace(/[^a-zA-Z0-9-]/g, '_');
+  return `gsheet-v2-${normDate}-${normStaff}-${normActivity}`;
 }
 
 export interface GvizPullResult {
@@ -1058,7 +1080,7 @@ export async function pullDailyLogFromGviz(
 
           const dedupKey = buildDedupKey(currentDate, sObj ? sObj.name : staffName, activity);
 
-          if (!existingReportIds.has(dedupKey) && !existingReportIds.has(staffCompositeKey)) {
+          if (!existingReportIds.has(dedupKey)) {
             const reportDoc = {
               id: dedupKey,
               date: currentDate,
@@ -1072,7 +1094,6 @@ export async function pullDailyLogFromGviz(
             };
             await onSaveDailyReport(dedupKey, reportDoc);
             existingReportIds.add(dedupKey);
-            existingReportIds.add(staffCompositeKey);
             newReports++;
           } else {
             skipped++;
@@ -1081,7 +1102,7 @@ export async function pullDailyLogFromGviz(
           // Buat LogbookEntry QC Checklist jika callback disediakan
           if (onSaveLogbookEntry) {
             const logDedupKey = `log-${dedupKey}`;
-            if (!existingReportIds.has(logDedupKey) && !existingReportIds.has(logCompositeKey)) {
+            if (!existingReportIds.has(logDedupKey)) {
               const isNg = isFindingRemark(String(remark));
               const logDoc = {
                 id: logDedupKey,
@@ -1104,7 +1125,6 @@ export async function pullDailyLogFromGviz(
               };
               await onSaveLogbookEntry(logDedupKey, logDoc);
               existingReportIds.add(logDedupKey);
-              existingReportIds.add(logCompositeKey);
             }
           }
         }
@@ -1113,7 +1133,7 @@ export async function pullDailyLogFromGviz(
       // Buat Finding jika remark mengindikasikan masalah
       if (isFindingRemark(String(remark))) {
         const remarkNorm = String(remark).trim().toLowerCase().substring(0, 30);
-        const findingKey = `gsheet-finding-${currentDate}-${String(remark).trim().substring(0, 30).replace(/\s+/g, '_')}`;
+        const findingKey = `gsheet-finding-${currentDate}-${String(remark).trim().substring(0, 30).replace(/[^a-zA-Z0-9-]/g, '_')}`;
         if (!existingReportIds.has(findingKey) && !existingReportIds.has(remarkNorm)) {
           const findingDoc = {
             id: findingKey,
