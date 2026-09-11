@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, MaintenanceSchedule } from '../types';
 import { FileText, Printer, FileDown, Download, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
-import { calculateAllStaffKpis } from '../utils/kpiCalculator';
+import { calculateAllStaffKpis, isStaffMatch } from '../utils/kpiCalculator';
 import { getScheduleByKey, StaffScheduleRow } from '../data/staffSchedules';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { generateOrchestratedReport } from '../lib/ragVectorEngine';
@@ -746,21 +746,29 @@ export default function Reports({
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
                   {activeStaffKpis.length > 0 ? (
-                    activeStaffKpis.slice(0, 10).map((staff, idx) => (
-                      <tr key={staff.id} className="hover:bg-slate-50">
-                        <td className="p-2 border-r border-slate-300 text-center font-bold text-slate-600 font-mono">{idx + 1}</td>
-                        <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
-                        <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
-                        <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.reports}</td>
-                        <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.qcs}</td>
-                        <td className="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
-                        <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
-                        <td className="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
-                        <td className={`p-2 text-center font-bold ${
-                          staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
-                        }`}>{staff.kpi}%</td>
-                      </tr>
-                    ))
+                    activeStaffKpis.slice(0, 10).map((staff, idx) => {
+                      const staffDates = new Set<string>();
+                      dailyReports.filter(r => isStaffMatch(staff, r.staffName) && r.date).forEach(r => staffDates.add(r.date));
+                      logbookEntries.filter(e => isStaffMatch(staff, e.staffName) && e.date).forEach(e => staffDates.add(e.date));
+                      const attendanceDays = staffDates.size;
+                      const workHours = attendanceDays * 8;
+
+                      return (
+                        <tr key={staff.id} className="hover:bg-slate-50">
+                          <td className="p-2 border-r border-slate-300 text-center font-bold text-slate-600 font-mono">{idx + 1}</td>
+                          <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
+                          <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
+                          <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.reports}</td>
+                          <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.qcs}</td>
+                          <td className="p-2 border-r border-slate-300 text-center text-slate-700 font-mono">{attendanceDays > 0 ? `${attendanceDays} Hari` : '-'}</td>
+                          <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
+                          <td className="p-2 border-r border-slate-300 text-center text-slate-700 font-mono">{workHours > 0 ? `${workHours} Jam` : '-'}</td>
+                          <td className={`p-2 text-center font-bold ${
+                            staff.kpi >= 95 ? 'text-emerald-600' : staff.kpi >= 90 ? 'text-indigo-600' : 'text-amber-600'
+                          }`}>{staff.kpi}%</td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan={9} className="p-4 text-center text-slate-500 font-sans italic">

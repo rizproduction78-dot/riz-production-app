@@ -30,7 +30,7 @@ import {
   PieChart
 } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
-import { calculateAllStaffKpis, isStaffInDivision } from '../utils/kpiCalculator';
+import { calculateAllStaffKpis, isStaffInDivision, isStaffMatch } from '../utils/kpiCalculator';
 import { getScheduleByKey, StaffScheduleRow, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { Staff, MaintenanceSchedule } from '../types';
@@ -199,8 +199,13 @@ export default function Dashboard({
   const countGradeC = activeStaffProductivityData.filter(s => s.grade === 'C').length;
   const countGradeD = activeStaffProductivityData.filter(s => s.grade === 'D').length;
 
-  // Top 10 performers (hanya staf dengan aktifitas)
-  const topPerformers = activeStaffProductivityData.slice(0, 10);
+  // Top 10 performers diurutkan berdasarkan KPI Score tertinggi, lalu kontribusi QC, Lap, dan WO
+  const topPerformers = [...activeStaffProductivityData].sort((a, b) => {
+    if (b.kpi !== a.kpi) return b.kpi - a.kpi;
+    if (b.qcs !== a.qcs) return b.qcs - a.qcs;
+    if (b.reports !== a.reports) return b.reports - a.reports;
+    return b.wos - a.wos;
+  }).slice(0, 10);
 
   // 100% Dynamic Division Metrics
   const divisionListConfig = [
@@ -1141,23 +1146,31 @@ export default function Dashboard({
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-mono">
                     {activeStaffProductivityData.length > 0 ? (
-                      activeStaffProductivityData.slice(0, 10).map((staff, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50">
-                          <td className="p-3 text-center font-bold text-slate-500 font-mono">{idx + 1}</td>
-                          <td className="p-3 font-sans font-bold text-slate-800">{staff.name}</td>
-                          <td className="p-3 font-sans text-slate-600">{staff.division}</td>
-                          <td className="p-3 text-center text-slate-700">{staff.reports}</td>
-                          <td className="p-3 text-center text-slate-700">{staff.qcs}</td>
-                          <td className="p-3 text-center text-slate-400 font-sans">-</td>
-                          <td className="p-3 text-center text-slate-700">{staff.competencyCount}/6</td>
-                          <td className="p-3 text-center text-slate-400 font-sans">-</td>
-                          <td className="p-3 text-center">
-                            <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold text-[11px]">
-                              {staff.kpi}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))
+                      activeStaffProductivityData.slice(0, 10).map((staff, idx) => {
+                        const staffDates = new Set<string>();
+                        activeDailyReports.filter(r => isStaffMatch(staff, r.staffName) && r.date).forEach(r => staffDates.add(r.date));
+                        activeLogbookEntries.filter(e => isStaffMatch(staff, e.staffName) && e.date).forEach(e => staffDates.add(e.date));
+                        const attendanceDays = staffDates.size;
+                        const workHours = attendanceDays * 8;
+
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="p-3 text-center font-bold text-slate-500 font-mono">{idx + 1}</td>
+                            <td className="p-3 font-sans font-bold text-slate-800">{staff.name}</td>
+                            <td className="p-3 font-sans text-slate-600">{staff.division}</td>
+                            <td className="p-3 text-center text-slate-700">{staff.reports}</td>
+                            <td className="p-3 text-center text-slate-700">{staff.qcs}</td>
+                            <td className="p-3 text-center text-slate-700 font-sans">{attendanceDays > 0 ? `${attendanceDays} Hari` : '-'}</td>
+                            <td className="p-3 text-center text-slate-700">{staff.competencyCount}/6</td>
+                            <td className="p-3 text-center text-slate-700 font-sans">{workHours > 0 ? `${workHours} Jam` : '-'}</td>
+                            <td className="p-3 text-center">
+                              <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold text-[11px]">
+                                {staff.kpi}%
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan={9} className="p-4 text-center text-slate-400 italic">
