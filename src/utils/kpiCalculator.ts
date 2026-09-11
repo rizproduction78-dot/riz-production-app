@@ -102,7 +102,7 @@ export const KNOWN_STAFF_ALIASES: Record<string, string[]> = {
   'staff-iwan': ['iwan kurniawan', 'iwan', 'kurniawan', 'butonk', 'butong', 'boetonk', 'boetonk2785', 'kang butonk', 'kang butong'],
   'staff-rahmat': ['muhamad rahmat', 'muhammad rahmat', 'rahmat', 'mboh', 'outsideprojectmboh', 'kang mboh', 'mas mboh'],
   'staff-ramdani': ['ramdani', 'dani', 'ismail ramdani', 'ismail', 'ismailramdani'],
-  'staff-suryana': ['suryana', 'nana', 'buluk', 'bulux', 'kang nana', 'kang buluk', 'nana buluk', 'nia', 'kurni', 'nia.kurni1930@gmail.com'],
+  'staff-suryana': ['suryana', 'nana', 'buluk', 'bulux', 'kang nana', 'kang buluk', 'nana buluk'],
   'staff-unyin': ['wahyudin', 'unyin', 'unyim', 'kang unyim', 'kang unyin'],
   'staff-taufik': ['taufik diana', 'taufik', 'diana', 'opik', 'topik', 'taufikdya', 'kang opik', 'opik diana'],
   'staff-yudish': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama', 'yudhisintan'],
@@ -129,7 +129,7 @@ export const STAFF_NAME_ALIAS_MAP: Record<string, string[]> = {
   'Iwan Kurniawan': ['iwan kurniawan', 'iwan', 'kurniawan', 'butonk', 'butong', 'boetonk'],
   'Muhamad Rahmat': ['muhamad rahmat', 'muhammad rahmat', 'rahmat', 'mboh'],
   'Ramdani': ['ramdani', 'dani', 'ismail ramdani', 'ismail'],
-  'Suryana': ['suryana', 'nana', 'buluk', 'bulux', 'kang nana', 'kang buluk', 'nana buluk', 'nia', 'kurni'],
+  'Suryana': ['suryana', 'nana', 'buluk', 'bulux', 'kang nana', 'kang buluk', 'nana buluk'],
   'Wahyudin': ['wahyudin', 'unyin', 'unyim', 'kang unyim', 'kang unyin'],
   'Taufik Diana': ['taufik diana', 'taufik', 'diana', 'opik', 'topik'],
   'Yudishtira Purnama A': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama'],
@@ -191,6 +191,18 @@ export function isStaffMatch(staff: Staff, inputName?: string): boolean {
   }
   // Safeguard: Audio staff Wahyudin tidak mencocokkan Wahyu / Direktur / Owner
   if (staff.id === 'staff-unyin' && (rawInput === 'wahyu' || rawInput === 'pak wahyu' || rawInput === 'direktur' || rawInput === 'owner')) {
+    return false;
+  }
+  // Safeguard: Udin Saepudin (Gudang) tidak mencocokkan Wahyudin (Audio)
+  if (staff.id === 'staff-udin' && (rawInput.includes('wahyudin') || rawInput.includes('unyin') || rawInput.includes('unyim'))) {
+    return false;
+  }
+  // Safeguard: Agustino (Admin) tidak mencocokkan Dedi Agus (Videotron)
+  if (staff.id === 'staff-agustino' && (rawInput.includes('dedi') || rawInput.includes('wigi') || rawInput.includes('dedy'))) {
+    return false;
+  }
+  // Safeguard: Suryana tidak mencocokkan Iwan Kurniawan
+  if (staff.id === 'staff-suryana' && (rawInput.includes('iwan') || rawInput.includes('kurniawan') || rawInput.includes('butong') || rawInput.includes('butonk'))) {
     return false;
   }
 
