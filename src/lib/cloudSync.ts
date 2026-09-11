@@ -16,7 +16,8 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { normalizeStaffMaster } from '../data';
+import { normalizeStaffMaster, STAFF_LIST } from '../data';
+import { isStaffMatch } from '../utils/kpiCalculator';
 import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
 
 export interface DeviceOSInfo {
@@ -346,6 +347,60 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     cleaned.forEach((item: any) => {
       if (item && item.id) {
         map.set(item.id, item);
+      }
+    });
+    return Array.from(map.values()) as T[];
+  }
+
+  // Special normalization for daily_reports: deduplicate strictly by (date + staff)
+  if (collectionName === 'daily_reports') {
+    const map = new Map<string, any>();
+    items.forEach((item: any) => {
+      if (!item || !item.date) return;
+      const staffObj = STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
+      const staffKey = staffObj ? staffObj.id : String(item.staffName || '').toLowerCase().trim();
+      const dedupKey = `${item.date}|${staffKey}`;
+      
+      const normalizedItem = {
+        ...item,
+        staffName: staffObj ? staffObj.name : item.staffName,
+        division: staffObj ? staffObj.division : item.division
+      };
+
+      if (!map.has(dedupKey)) {
+        map.set(dedupKey, normalizedItem);
+      } else {
+        const existing = map.get(dedupKey);
+        const existingNotes = String(existing.notes || '').trim();
+        const incomingNotes = String(normalizedItem.notes || '').trim();
+        if (!existingNotes && incomingNotes) {
+          existing.notes = incomingNotes;
+        } else if (incomingNotes && !existingNotes.includes(incomingNotes)) {
+          existing.notes = `${existingNotes}\n${incomingNotes}`;
+        }
+        map.set(dedupKey, existing);
+      }
+    });
+    return Array.from(map.values()) as T[];
+  }
+
+  // Special normalization for logbook_entries: deduplicate strictly by (date + staff)
+  if (collectionName === 'logbook_entries') {
+    const map = new Map<string, any>();
+    items.forEach((item: any) => {
+      if (!item || !item.date) return;
+      const staffObj = STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
+      const staffKey = staffObj ? staffObj.id : String(item.staffName || '').toLowerCase().trim();
+      const dedupKey = `${item.date}|${staffKey}`;
+      
+      const normalizedItem = {
+        ...item,
+        staffName: staffObj ? staffObj.name : item.staffName,
+        division: staffObj ? staffObj.division : item.division
+      };
+
+      if (!map.has(dedupKey)) {
+        map.set(dedupKey, normalizedItem);
       }
     });
     return Array.from(map.values()) as T[];

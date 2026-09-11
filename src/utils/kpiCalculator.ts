@@ -185,32 +185,17 @@ export function isStaffMatch(staff: Staff, inputName?: string): boolean {
   const rawInput = inputName.toLowerCase().trim();
   if (!rawInput) return false;
 
-  // Safeguard: Director Wahyu (Admin) tidak boleh mencocokkan staf Wahyudin / Unyim (Audio)
-  if (staff.id === 'director-wahyu' && (rawInput.includes('wahyudin') || rawInput.includes('unyin') || rawInput.includes('unyim'))) {
-    return false;
-  }
-  // Safeguard: Audio staff Wahyudin tidak mencocokkan Wahyu / Direktur / Owner
-  if (staff.id === 'staff-unyin' && (rawInput === 'wahyu' || rawInput === 'pak wahyu' || rawInput === 'direktur' || rawInput === 'owner')) {
-    return false;
-  }
-  // Safeguard: Udin Saepudin (Gudang) tidak mencocokkan Wahyudin (Audio)
-  if (staff.id === 'staff-udin' && (rawInput.includes('wahyudin') || rawInput.includes('unyin') || rawInput.includes('unyim'))) {
-    return false;
-  }
-  // Safeguard: Agustino (Admin) tidak mencocokkan Dedi Agus (Videotron)
-  if (staff.id === 'staff-agustino' && (rawInput.includes('dedi') || rawInput.includes('wigi') || rawInput.includes('dedy'))) {
-    return false;
-  }
-  // Safeguard: Suryana tidak mencocokkan Iwan Kurniawan
-  if (staff.id === 'staff-suryana' && (rawInput.includes('iwan') || rawInput.includes('kurniawan') || rawInput.includes('butong') || rawInput.includes('butonk'))) {
-    return false;
-  }
-
   const aliases = getAllStaffAliases(staff);
   
-  // 1. Direct match check
+  // 1. Direct exact match check
   for (const alias of aliases) {
-    if (rawInput === alias) return true;
+    if (rawInput === alias) {
+      if (staff.id === 'director-wahyu' && (rawInput === 'wahyudin' || rawInput === 'unyin' || rawInput === 'unyim')) return false;
+      if (staff.id === 'staff-unyin' && (rawInput === 'wahyu' || rawInput === 'pak wahyu' || rawInput === 'direktur' || rawInput === 'owner')) return false;
+      if (staff.id === 'staff-udin' && (rawInput === 'wahyudin' || rawInput === 'unyin' || rawInput === 'unyim')) return false;
+      if (staff.id === 'staff-agustino' && (rawInput === 'dedi' || rawInput === 'wigi' || rawInput === 'dedy' || rawInput === 'dedi agus')) return false;
+      return true;
+    }
   }
 
   // 2. Tokenized match (handling separators like commas, slashes, ampersands, pluses, 'dan', 'and', 'bersama', etc.)
@@ -220,6 +205,13 @@ export function isStaffMatch(staff: Staff, inputName?: string): boolean {
     .filter(t => t.length > 0);
 
   for (const token of tokens) {
+    // Check token-specific safeguards
+    if (staff.id === 'director-wahyu' && (token === 'wahyudin' || token === 'unyin' || token === 'unyim')) continue;
+    if (staff.id === 'staff-unyin' && (token === 'wahyu' || token === 'pak wahyu' || token === 'direktur' || token === 'owner')) continue;
+    if (staff.id === 'staff-udin' && (token === 'wahyudin' || token === 'unyin' || token === 'unyim')) continue;
+    if (staff.id === 'staff-agustino' && (token === 'dedi' || token === 'wigi' || token === 'dedy' || token === 'dedi agus')) continue;
+    if (staff.id === 'staff-suryana' && (token.includes('iwan') || token.includes('kurniawan') || token.includes('butong') || token.includes('butonk'))) continue;
+
     for (const alias of aliases) {
       if (token === alias) return true;
       if (alias.length >= 3 && token.length >= 3) {
@@ -230,12 +222,20 @@ export function isStaffMatch(staff: Staff, inputName?: string): boolean {
     }
   }
 
-  // 3. Word-boundary substring regex search across full input text
-  for (const alias of aliases) {
-    if (alias.length >= 3) {
-      const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`(^|[^a-zA-Z0-9])${escaped}([^a-zA-Z0-9]|$)`, 'i');
-      if (regex.test(rawInput)) return true;
+  // 3. If single-person string, word-boundary substring regex search across full input text
+  if (tokens.length <= 1) {
+    if (staff.id === 'director-wahyu' && (rawInput.includes('wahyudin') || rawInput.includes('unyin') || rawInput.includes('unyim'))) return false;
+    if (staff.id === 'staff-unyin' && (rawInput === 'wahyu' || rawInput === 'pak wahyu' || rawInput === 'direktur' || rawInput === 'owner')) return false;
+    if (staff.id === 'staff-udin' && (rawInput.includes('wahyudin') || rawInput.includes('unyin') || rawInput.includes('unyim'))) return false;
+    if (staff.id === 'staff-agustino' && (rawInput.includes('dedi') || rawInput.includes('wigi') || rawInput.includes('dedy'))) return false;
+    if (staff.id === 'staff-suryana' && (rawInput.includes('iwan') || rawInput.includes('kurniawan') || rawInput.includes('butong') || rawInput.includes('butonk'))) return false;
+
+    for (const alias of aliases) {
+      if (alias.length >= 3) {
+        const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(^|[^a-zA-Z0-9])${escaped}([^a-zA-Z0-9]|$)`, 'i');
+        if (regex.test(rawInput)) return true;
+      }
     }
   }
 

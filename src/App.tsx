@@ -19,6 +19,7 @@ import {
 } from './data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from './data/september2026Schedule';
 import { getActiveMonthKey } from './data/staffSchedules';
+import { isStaffMatch } from './utils/kpiCalculator';
 
 import LoginScreen from './components/LoginScreen';
 import Dashboard from './components/Dashboard';
@@ -311,8 +312,8 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Forced one-time re-sync for all official data including 9 September 2026 (Videotron Kharo/Wigi/Ayong & Audio Buluk/Opik/Butong/Dani)
-  const REF_SYNC_KEY = 'riz_ref_synced_v29_september9_live';
+  // Forced one-time re-sync for all official data from Google Sheet reference (24 official reports & 12 staff)
+  const REF_SYNC_KEY = 'riz_ref_synced_v32_gsheet_clean_24_canonical';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
@@ -657,16 +658,33 @@ export default function App() {
     setIsSyncingSheet(true);
     setSheetPullMessage({ text: 'Mengambil data terbaru dari Google Sheet...', type: 'info' });
     try {
-      // Kumpulkan semua ID daily_reports, findings, dan logbook_entries yang sudah ada untuk dedup
+      // Kumpulkan semua ID dan (date + staff) daily_reports, findings, dan logbook_entries yang sudah ada untuk dedup
       const existingIds = new Set<string>();
       // Baca dari localStorage sebagai sumber dedup yang selalu fresh
       try {
         const savedReports = JSON.parse(localStorage.getItem('riz_daily_reports') || '[]');
         const savedFindings = JSON.parse(localStorage.getItem('riz_findings') || '[]');
         const savedLogs = JSON.parse(localStorage.getItem('riz_logbook_entries') || '[]');
-        (savedReports as any[]).forEach((r: any) => existingIds.add(r.id));
-        (savedFindings as any[]).forEach((f: any) => existingIds.add(f.id));
-        (savedLogs as any[]).forEach((l: any) => existingIds.add(l.id));
+        (savedReports as any[]).forEach((r: any) => {
+          if (r.id) existingIds.add(r.id);
+          if (r.date && r.staffName) {
+            const sObj = STAFF_LIST.find(s => isStaffMatch(s, r.staffName));
+            const sId = sObj ? sObj.id : String(r.staffName || '').toLowerCase().trim();
+            existingIds.add(`${r.date}|${sId}`);
+          }
+        });
+        (savedFindings as any[]).forEach((f: any) => {
+          if (f.id) existingIds.add(f.id);
+          if (f.issue) existingIds.add(String(f.issue).trim().toLowerCase().substring(0, 30));
+        });
+        (savedLogs as any[]).forEach((l: any) => {
+          if (l.id) existingIds.add(l.id);
+          if (l.date && l.staffName) {
+            const sObj = STAFF_LIST.find(s => isStaffMatch(s, l.staffName));
+            const sId = sObj ? sObj.id : String(l.staffName || '').toLowerCase().trim();
+            existingIds.add(`log|${l.date}|${sId}`);
+          }
+        });
       } catch (_e) {}
 
       // Kumpulkan entry baru (sementara) untuk update state lokal langsung

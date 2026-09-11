@@ -19,6 +19,7 @@ import {
   INITIAL_DAILY_TASKS
 } from '../data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../data/september2026Schedule';
+import { isStaffMatch } from '../utils/kpiCalculator';
 
 export const DEFAULT_SPREADSHEET_ID = '1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc';
 export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit?gid=198998470#gid=198998470';
@@ -1050,14 +1051,19 @@ export async function pullDailyLogFromGviz(
       // Buat DailyReport & LogbookEntry jika ada activity untuk setiap staf yang bertugas
       if (activity) {
         for (const staffName of activeStaffList) {
-          const dedupKey = buildDedupKey(currentDate, staffName, activity);
+          const sObj = STAFF_LIST.find(s => isStaffMatch(s, staffName));
+          const sId = sObj ? sObj.id : String(staffName || '').toLowerCase().trim();
+          const staffCompositeKey = `${currentDate}|${sId}`;
+          const logCompositeKey = `log|${currentDate}|${sId}`;
 
-          if (!existingReportIds.has(dedupKey)) {
+          const dedupKey = buildDedupKey(currentDate, sObj ? sObj.name : staffName, activity);
+
+          if (!existingReportIds.has(dedupKey) && !existingReportIds.has(staffCompositeKey)) {
             const reportDoc = {
               id: dedupKey,
               date: currentDate,
-              staffName: staffName || 'Tim Operasional',
-              division: division as any,
+              staffName: sObj ? sObj.name : (staffName || 'Tim Operasional'),
+              division: (sObj ? sObj.division : division) as any,
               activity,
               notes: remark || '',
               status: 'Submitted',
@@ -1066,6 +1072,7 @@ export async function pullDailyLogFromGviz(
             };
             await onSaveDailyReport(dedupKey, reportDoc);
             existingReportIds.add(dedupKey);
+            existingReportIds.add(staffCompositeKey);
             newReports++;
           } else {
             skipped++;
@@ -1074,13 +1081,13 @@ export async function pullDailyLogFromGviz(
           // Buat LogbookEntry QC Checklist jika callback disediakan
           if (onSaveLogbookEntry) {
             const logDedupKey = `log-${dedupKey}`;
-            if (!existingReportIds.has(logDedupKey)) {
+            if (!existingReportIds.has(logDedupKey) && !existingReportIds.has(logCompositeKey)) {
               const isNg = isFindingRemark(String(remark));
               const logDoc = {
                 id: logDedupKey,
                 date: currentDate,
-                division: division as any,
-                staffName: staffName || 'Tim Operasional',
+                division: (sObj ? sObj.division : division) as any,
+                staffName: sObj ? sObj.name : (staffName || 'Tim Operasional'),
                 activity,
                 result: isNg ? ('NG' as const) : ('OK' as const),
                 followUp: remark || (isNg ? 'Perlu perbaikan teknis' : 'Pengecekan selesai aman'),
@@ -1097,6 +1104,7 @@ export async function pullDailyLogFromGviz(
               };
               await onSaveLogbookEntry(logDedupKey, logDoc);
               existingReportIds.add(logDedupKey);
+              existingReportIds.add(logCompositeKey);
             }
           }
         }
@@ -1104,8 +1112,9 @@ export async function pullDailyLogFromGviz(
 
       // Buat Finding jika remark mengindikasikan masalah
       if (isFindingRemark(String(remark))) {
+        const remarkNorm = String(remark).trim().toLowerCase().substring(0, 30);
         const findingKey = `gsheet-finding-${currentDate}-${String(remark).trim().substring(0, 30).replace(/\s+/g, '_')}`;
-        if (!existingReportIds.has(findingKey)) {
+        if (!existingReportIds.has(findingKey) && !existingReportIds.has(remarkNorm)) {
           const findingDoc = {
             id: findingKey,
             equipment: activity || (division ? `Unit Divisi ${division}` : 'Unit Operasional'),
@@ -1121,6 +1130,7 @@ export async function pullDailyLogFromGviz(
           };
           await onSaveFinding(findingKey, findingDoc);
           existingReportIds.add(findingKey);
+          existingReportIds.add(remarkNorm);
           newFindings++;
         }
       }
