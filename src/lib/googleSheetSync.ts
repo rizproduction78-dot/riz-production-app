@@ -835,22 +835,38 @@ const STAFF_NAME_MAP: Record<string, string> = {
   'opik': 'Taufik Diana',
   'buluk': 'Suryana',
   'bulux': 'Suryana',
+  'nana': 'Suryana',
   'butong': 'Iwan Kurniawan',
   'butonk': 'Iwan Kurniawan',
   'yudish': 'Yudishtira Purnama A',
+  'yudis': 'Yudishtira Purnama A',
   'dani': 'Ramdani',
   'kharo': 'Mulyana',
+  'karo': 'Mulyana',
   'jay': 'Mulyadi',
   'heri': 'Heri',
   'wigi': 'Dedi Agus Wigiantoro',
   'ayong': 'Ayong Sumarsih',
   'unyim': 'Wahyudin',
+  'unyin': 'Wahyudin',
   'mulyana': 'Mulyana',
   'ramdani': 'Ramdani',
   'taufik': 'Taufik Diana',
   'suryana': 'Suryana',
   'wahyudin': 'Wahyudin',
   'iwan': 'Iwan Kurniawan',
+  'damri': 'Damri',
+  'gatot': 'Gatot Wiliyanto',
+  'abah': 'Abah Sobur',
+  'sobur': 'Abah Sobur',
+  'udin': 'Udin Saepudin',
+  'caca': 'Syalsa Sri Hestariana',
+  'syalsa': 'Syalsa Sri Hestariana',
+  'seno': 'Seno Subroto',
+  'agus': 'Agustino Setiawan',
+  'agustino': 'Agustino Setiawan',
+  'fahrul': 'M. Fahruyana . A',
+  'wahyu': 'Wahyu'
 };
 
 /** Determine division from which column has activity */
@@ -865,9 +881,18 @@ function detectDivision(sound: string, lighting: string, led: string, multimedia
 /** Normalize staff name from sheet (may have prefix "- ") */
 function normalizeStaffName(raw: string): string {
   if (!raw) return '';
-  const cleaned = raw.replace(/^[-–]\s*/, '').trim();
+  const cleaned = raw.replace(/^[-–*•]\s*/, '').trim();
   const lower = cleaned.toLowerCase();
   return STAFF_NAME_MAP[lower] || cleaned;
+}
+
+/** Parse and normalize multiple staff names that may appear in a single cell (e.g. "- unyim\n- buluk") */
+export function parseStaffNames(raw: string): string[] {
+  if (!raw || !raw.trim()) return [];
+  const lines = raw.split(/[\n,;/]+/).map(s => s.replace(/^[-–*•\s]+/, '').trim()).filter(Boolean);
+  if (lines.length === 0) return [];
+  const normalized = lines.map(normalizeStaffName).filter(Boolean);
+  return Array.from(new Set(normalized));
 }
 
 /** Parse "1 September 2026" → "2026-09-01" */
@@ -940,7 +965,8 @@ export async function pullDailyLogFromGviz(
   gid: string = SHEET_GID_SEPTEMBER_2026,
   onSaveDailyReport: (id: string, doc: any) => Promise<void>,
   onSaveFinding: (id: string, doc: any) => Promise<void>,
-  existingReportIds: Set<string> = new Set()
+  existingReportIds: Set<string> = new Set(),
+  onSaveLogbookEntry?: (id: string, doc: any) => Promise<void>
 ): Promise<GvizPullResult> {
   const url = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
 
@@ -978,8 +1004,9 @@ export async function pullDailyLogFromGviz(
     const parsed = JSON.parse(jsonMatch[1]);
     const rows: any[] = parsed?.table?.rows || [];
 
-    // State carry-over: tanggal terakhir yang diketahui (bisa null dalam satu baris)
+    // State carry-over: tanggal & staf terakhir yang diketahui
     let currentDate: string | null = null;
+    let currentStaffNames: string[] = [];
 
     for (const row of rows) {
       const cells = row.c || [];
@@ -994,40 +1021,84 @@ export async function pullDailyLogFromGviz(
       // Pertahankan tanggal dari baris sebelumnya jika baris ini tidak punya tanggal
       if (rawDate) {
         const parsed = parseIndonesianDate(String(rawDate));
-        if (parsed) currentDate = parsed;
+        if (parsed) {
+          if (parsed !== currentDate) {
+            currentStaffNames = []; // Reset nama staf jika berganti tanggal
+          }
+          currentDate = parsed;
+        }
       }
 
       if (!currentDate) continue;
 
-      const staffName = normalizeStaffName(String(rawStaff));
+      const parsedStaff = parseStaffNames(String(rawStaff));
+      if (parsedStaff.length > 0) {
+        currentStaffNames = parsedStaff;
+      }
+
+      const activeStaffList = parsedStaff.length > 0
+        ? parsedStaff
+        : (currentStaffNames.length > 0 ? currentStaffNames : ['Tim Operasional']);
+
       const activity = [sound, lighting, led, multimedia].filter(Boolean).join('; ').trim();
 
-      // Hanya proses baris yang punya aktivitas
+      // Hanya proses baris yang punya aktivitas atau remark
       if (!activity && !remark) continue;
 
       const division = detectDivision(String(sound), String(lighting), String(led), String(multimedia));
 
-      // Buat DailyReport jika ada activity
+      // Buat DailyReport & LogbookEntry jika ada activity untuk setiap staf yang bertugas
       if (activity) {
-        const dedupKey = buildDedupKey(currentDate, staffName, activity);
+        for (const staffName of activeStaffList) {
+          const dedupKey = buildDedupKey(currentDate, staffName, activity);
 
-        if (!existingReportIds.has(dedupKey)) {
-          const reportDoc = {
-            id: dedupKey,
-            date: currentDate,
-            staffName: staffName || 'Tim Operasional',
-            division: division as any,
-            activity,
-            notes: remark || '',
-            status: 'Submitted',
-            _source: 'google_sheet',
-            _syncedAt: new Date().toISOString()
-          };
-          await onSaveDailyReport(dedupKey, reportDoc);
-          existingReportIds.add(dedupKey);
-          newReports++;
-        } else {
-          skipped++;
+          if (!existingReportIds.has(dedupKey)) {
+            const reportDoc = {
+              id: dedupKey,
+              date: currentDate,
+              staffName: staffName || 'Tim Operasional',
+              division: division as any,
+              activity,
+              notes: remark || '',
+              status: 'Submitted',
+              _source: 'google_sheet',
+              _syncedAt: new Date().toISOString()
+            };
+            await onSaveDailyReport(dedupKey, reportDoc);
+            existingReportIds.add(dedupKey);
+            newReports++;
+          } else {
+            skipped++;
+          }
+
+          // Buat LogbookEntry QC Checklist jika callback disediakan
+          if (onSaveLogbookEntry) {
+            const logDedupKey = `log-${dedupKey}`;
+            if (!existingReportIds.has(logDedupKey)) {
+              const isNg = isFindingRemark(String(remark));
+              const logDoc = {
+                id: logDedupKey,
+                date: currentDate,
+                division: division as any,
+                staffName: staffName || 'Tim Operasional',
+                activity,
+                result: isNg ? ('NG' as const) : ('OK' as const),
+                followUp: remark || (isNg ? 'Perlu perbaikan teknis' : 'Pengecekan selesai aman'),
+                status: isNg ? ('Open' as const) : ('Close' as const),
+                verification: 'Supervisor Operasional',
+                checklists: {
+                  [activity.substring(0, 40)]: {
+                    status: isNg ? ('NG' as const) : ('OK' as const),
+                    notes: remark || 'Kondisi operasional normal'
+                  }
+                },
+                _source: 'google_sheet',
+                _syncedAt: new Date().toISOString()
+              };
+              await onSaveLogbookEntry(logDedupKey, logDoc);
+              existingReportIds.add(logDedupKey);
+            }
+          }
         }
       }
 
@@ -1037,10 +1108,10 @@ export async function pullDailyLogFromGviz(
         if (!existingReportIds.has(findingKey)) {
           const findingDoc = {
             id: findingKey,
-            equipment: activity || 'Unit Operasional',
+            equipment: activity || (division ? `Unit Divisi ${division}` : 'Unit Operasional'),
             issue: String(remark).trim(),
             priority: 'Sedang',
-            pic: staffName || 'Tim Operasional',
+            pic: activeStaffList[0] || 'Tim Operasional',
             targetDate: currentDate,
             status: 'Open',
             dateCreated: currentDate,

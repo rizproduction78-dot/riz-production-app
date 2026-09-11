@@ -348,10 +348,21 @@ export function calculateStaffKpi(
   const reportScore = Math.min(100, Math.round((reportsCount / 2) * 100));
 
   // ─────────────────────────────────────────────────────────────
-  // 5. QUALITY / QC CHECKLIST (Murni dari checklist QC yang diinput)
+  // 5. QUALITY / QC CHECKLIST (Murni dari checklist QC & inspeksi teknis lapangan)
   // ─────────────────────────────────────────────────────────────
   const isNonQcDivision = ['Gudang', 'Admin'].includes(staff.division);
-  const realQcCount = logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length;
+  const realQcCount = Math.max(
+    logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length,
+    dailyReports.filter(r => isStaffMatch(staff, r.staffName) && (
+      r.activity?.toLowerCase().includes('cek') ||
+      r.activity?.toLowerCase().includes('qc') ||
+      r.activity?.toLowerCase().includes('cleaning') ||
+      r.activity?.toLowerCase().includes('test') ||
+      r.activity?.toLowerCase().includes('inspeksi') ||
+      r.activity?.toLowerCase().includes('repair') ||
+      r.activity?.toLowerCase().includes('perbaikan')
+    )).length
+  );
   const qcCount = isNonQcDivision ? 0 : realQcCount;
   const qcScore = isNonQcDivision ? 80 : (qcCount === 0 ? 0 : Math.min(100, Math.round((qcCount / 2) * 100)));
 

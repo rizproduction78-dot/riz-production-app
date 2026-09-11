@@ -657,20 +657,22 @@ export default function App() {
     setIsSyncingSheet(true);
     setSheetPullMessage({ text: 'Mengambil data terbaru dari Google Sheet...', type: 'info' });
     try {
-      // Kumpulkan semua ID daily_reports yang sudah ada untuk dedup
-      // Gunakan Set dari state saat ini (mungkin stale tapi cukup untuk prevent obvious dup)
+      // Kumpulkan semua ID daily_reports, findings, dan logbook_entries yang sudah ada untuk dedup
       const existingIds = new Set<string>();
       // Baca dari localStorage sebagai sumber dedup yang selalu fresh
       try {
         const savedReports = JSON.parse(localStorage.getItem('riz_daily_reports') || '[]');
         const savedFindings = JSON.parse(localStorage.getItem('riz_findings') || '[]');
+        const savedLogs = JSON.parse(localStorage.getItem('riz_logbook_entries') || '[]');
         (savedReports as any[]).forEach((r: any) => existingIds.add(r.id));
         (savedFindings as any[]).forEach((f: any) => existingIds.add(f.id));
+        (savedLogs as any[]).forEach((l: any) => existingIds.add(l.id));
       } catch (_e) {}
 
       // Kumpulkan entry baru (sementara) untuk update state lokal langsung
       const newReportDocs: any[] = [];
       const newFindingDocs: any[] = [];
+      const newLogDocs: any[] = [];
 
       const result = await pullDailyLogFromGviz(
         gid,
@@ -686,7 +688,13 @@ export default function App() {
           // Kumpulkan untuk update state lokal
           newFindingDocs.push(doc);
         },
-        existingIds
+        existingIds,
+        async (id, doc) => {
+          // Simpan ke Firestore
+          saveCloudDoc('logbook_entries', id, doc).catch(e => console.error('[Sheet Sync] Firestore logbook save error:', e));
+          // Kumpulkan untuk update state lokal
+          newLogDocs.push(doc);
+        }
       );
 
       // Update state lokal LANGSUNG tanpa menunggu Firestore subscription
@@ -697,6 +705,15 @@ export default function App() {
           // Simpan ke localStorage
           const merged = [...trulyNew, ...prev];
           try { localStorage.setItem('riz_daily_reports', JSON.stringify(merged)); } catch (_e) {}
+          return merged as any;
+        });
+      }
+      if (newLogDocs.length > 0) {
+        setLogbookEntries(prev => {
+          const existingIdsSet = new Set(prev.map(l => l.id));
+          const trulyNew = newLogDocs.filter(d => !existingIdsSet.has(d.id));
+          const merged = [...trulyNew, ...prev];
+          try { localStorage.setItem('riz_logbook_entries', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
         });
       }
@@ -734,20 +751,51 @@ export default function App() {
   const syncHandlerRef = React.useRef(handleSyncDailyLogFromSheet);
   syncHandlerRef.current = handleSyncDailyLogFromSheet;
 
-  // Auto-sync setiap 30 menit — gunakan ref agar tidak stale
+  // Auto-sync berkala & reaktif (selalu up to date dari Google Sheet)
   useEffect(() => {
-    const AUTO_SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 menit
-    // Jalankan sekali saat startup (setelah 8 detik, beri waktu Firestore inisialisasi)
+    const AUTO_SYNC_INTERVAL_MS = 3 * 60 * 1000; // 3 menit (agar data selalu segar)
+    let lastPullTime = Date.now();
+
+    // 1. Jalankan sekali saat startup (setelah 2.5 detik)
     const startupTimer = setTimeout(() => {
       syncHandlerRef.current();
-    }, 8000);
-    // Kemudian ulangi setiap 30 menit
+      lastPullTime = Date.now();
+    }, 2500);
+
+    // 2. Kemudian ulangi setiap 3 menit
     const interval = setInterval(() => {
       syncHandlerRef.current();
+      lastPullTime = Date.now();
     }, AUTO_SYNC_INTERVAL_MS);
+
+    // 3. Reaktif saat tab aplikasi dibuka kembali / user kembali ke browser
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible' || document.hasFocus()) {
+        const elapsed = Date.now() - lastPullTime;
+        // Jika sudah lebih dari 45 detik sejak sinkronisasi terakhir, tarik data baru
+        if (elapsed > 45 * 1000) {
+          syncHandlerRef.current();
+          lastPullTime = Date.now();
+        }
+      }
+    };
+
+    // 4. Reaktif saat koneksi internet pulih (online)
+    const handleOnline = () => {
+      syncHandlerRef.current();
+      lastPullTime = Date.now();
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    window.addEventListener('online', handleOnline);
+
     return () => {
       clearTimeout(startupTimer);
       clearInterval(interval);
+      window.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      window.removeEventListener('online', handleOnline);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
