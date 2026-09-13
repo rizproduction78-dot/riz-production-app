@@ -1173,21 +1173,21 @@ export default function Gudang({
                   <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
                     <thead className="bg-slate-50 text-slate-500 uppercase font-mono font-bold text-[10px]">
                       <tr>
-                        <th scope="col" className="px-6 py-3">Tanggal</th>
-                        <th scope="col" className="px-6 py-3">Tipe</th>
-                        <th scope="col" className="px-6 py-3">Nama Barang</th>
-                        <th scope="col" className="px-6 py-3 text-center">QTY</th>
-                        <th scope="col" className="px-6 py-3">Asset Terkait</th>
-                        <th scope="col" className="px-6 py-3">PIC Gudang</th>
-                        <th scope="col" className="px-6 py-3">Catatan</th>
-                        <th scope="col" className="px-6 py-3 text-center">Aksi</th>
+                        <th scope="col" className="p-3">Tanggal</th>
+                        <th scope="col" className="p-3">Tipe</th>
+                        <th scope="col" className="p-3">Nama Barang</th>
+                        <th scope="col" className="p-3 text-center">QTY</th>
+                        <th scope="col" className="p-3">Asset Terkait</th>
+                        <th scope="col" className="p-3">PIC Gudang</th>
+                        <th scope="col" className="p-3">Catatan</th>
+                        <th scope="col" className="p-3 text-center sticky right-0 bg-slate-50 shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
                       {warehouseLogs.map((log) => (
                         <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-4 font-mono">{log.date}</td>
-                          <td className="px-6 py-4">
+                          <td className="p-3 font-mono">{log.date}</td>
+                          <td className="p-3">
                             <span className={`px-2 py-0.5 rounded font-mono font-bold text-[9px] uppercase ${
                               log.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                               log.type === 'Keluar' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
@@ -1199,21 +1199,23 @@ export default function Gudang({
                               {log.type}
                             </span>
                           </td>
-                          <td className="px-6 py-4 font-semibold text-slate-800">{log.itemName}</td>
-                          <td className="px-6 py-4 text-center font-bold">{log.qty} Unit</td>
-                          <td className="px-6 py-4 font-mono text-slate-500">{log.assetCode || '-'}</td>
-                          <td className="px-6 py-4 font-medium">{log.pic}</td>
-                          <td className="px-6 py-4 text-slate-500 max-w-xs truncate" title={log.notes}>{log.notes}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center space-x-2">
+                          <td className="p-3 font-semibold text-slate-800">{log.itemName}</td>
+                          <td className="p-3 text-center font-bold">{log.qty} Unit</td>
+                          <td className="p-3 font-mono text-slate-500">{log.assetCode || '-'}</td>
+                          <td className="p-3 font-medium">{log.pic}</td>
+                          <td className="p-3 text-slate-500 max-w-[120px] truncate" title={log.notes}>{log.notes}</td>
+                          <td className="p-3 whitespace-nowrap text-center space-x-1 sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10 group-hover:bg-slate-50/50 transition-colors">
                             <button
                               onClick={() => handleEditLogClick(log)}
-                              className="px-2 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors"
+                              className="px-2 py-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors"
+                              title="Edit Aktivitas (Tambah/Kurang QTY)"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => handleDeleteLogClick(log.id)}
-                              className="px-2 py-1 text-xs font-semibold text-rose-600 bg-rose-50 rounded hover:bg-rose-100 transition-colors"
+                              className="px-2 py-1 text-[10px] font-bold text-rose-600 bg-rose-50 rounded hover:bg-rose-100 transition-colors"
+                              title="Hapus Data Ini"
                             >
                               Hapus
                             </button>
