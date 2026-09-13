@@ -621,7 +621,7 @@ export const INITIAL_FLEET_DRIVERS: FleetDriver[] = [
 export const INITIAL_VEHICLES: VehicleMaster[] = [
   {
     id: 'veh-1',
-    name: 'SUZUKI CARRY',
+    name: 'SUZUKI CARRY 012',
     ownership: 'Internal',
     policeNumber: 'F 8446 BF',
     vehicleType: 'SUZUKI CARRY',
@@ -629,13 +629,13 @@ export const INITIAL_VEHICLES: VehicleMaster[] = [
     cbmCapacity: 1.5,
     odometerKM: 10000,
     stnkTaxExpiry: '2027-09-01',
-    kirExpiry: '2026-09-30',
+    kirExpiry: '2027-03-08',
     status: 'Siap Operasi'
   },
 
   {
     id: 'veh-2',
-    name: 'SUZUKI CARRY',
+    name: 'SUZUKI CARRY 011',
     ownership: 'Internal',
     policeNumber: 'F 8433 BF',
     vehicleType: 'SUZUKI CARRY',
@@ -643,12 +643,12 @@ export const INITIAL_VEHICLES: VehicleMaster[] = [
     cbmCapacity: 1.5,
     odometerKM: 10000,
     stnkTaxExpiry: '2027-09-01',
-    kirExpiry: '2026-10-12',
+    kirExpiry: '2027-02-26',
     status: 'Siap Operasi'
   },
   {
     id: 'veh-3',
-    name: 'SUZUKI CARRY',
+    name: 'SUZUKI CARRY 013',
     ownership: 'Internal',
     policeNumber: 'F 8569 BH',
     vehicleType: 'SUZUKI CARRY',
@@ -656,12 +656,12 @@ export const INITIAL_VEHICLES: VehicleMaster[] = [
     cbmCapacity: 1.5,
     odometerKM: 10000,
     stnkTaxExpiry: '2027-06-01',
-    kirExpiry: '2027-01-20',
+    kirExpiry: '2026-12-10',
     status: 'Siap Operasi'
   },
   {
     id: 'veh-4',
-    name: 'SUZUKI CARRY',
+    name: 'SUZUKI CARRY 014',
     ownership: 'Internal',
     policeNumber: 'F 8594 BH',
     vehicleType: 'SUZUKI CARRY',
@@ -669,7 +669,7 @@ export const INITIAL_VEHICLES: VehicleMaster[] = [
     cbmCapacity: 1.5,
     odometerKM: 12000,
     stnkTaxExpiry: '2027-06-01',
-    kirExpiry: '2026-10-28',
+    kirExpiry: '2026-12-15',
     status: 'Siap Operasi'
   },
   {
