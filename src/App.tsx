@@ -1202,7 +1202,7 @@ export default function App() {
         </div>
 
         {/* Main Navigation Links with Synchronized Jalur Penghubung */}
-        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3">
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {Object.entries(groupedNavItems).map(([category, items]) => (
             <div key={category} className="space-y-1">
               <div className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest px-2.5 pt-1">
@@ -1298,7 +1298,7 @@ export default function App() {
 
       {/* Mobile Sidebar Dropdown menu - Hidden on Print */}
       {mobileMenuOpen && (
-        <div className="no-print md:hidden bg-[#0f172a] text-slate-300 fixed inset-0 top-[57px] z-40 flex flex-col p-4 space-y-3 border-t border-[#1e293b] overflow-y-auto">
+        <div className="no-print md:hidden bg-[#0f172a] text-slate-300 fixed inset-0 top-[57px] z-40 flex flex-col p-4 space-y-3 border-t border-[#1e293b] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <div className="flex-1 space-y-3">
             {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
               <button
