@@ -555,30 +555,19 @@ export function subscribeCloudCollection<T = any>(
           const mergeCleanDoc = (existing: any, incoming: any) => {
             if (!existing) return incoming;
             if (!incoming) return existing;
-            // Incoming (from Firestore / live user changes) always takes priority
-            const merged = { ...existing, ...incoming };
-
-            // Compare timestamps to ensure we don't overwrite newer local changes with stale incoming data
+            
             const inMeta = incoming?._syncMeta?.updatedAt;
             const exMeta = existing?._syncMeta?.updatedAt;
             const isExistingNewer = exMeta && inMeta && new Date(exMeta) >= new Date(inMeta);
 
-            if (isExistingNewer) {
-              // If existing (local cache) is newer than incoming (server snapshot), preserve mutable fields
-              if (existing.status !== undefined) merged.status = existing.status;
-              if (existing.approvedBy !== undefined) merged.approvedBy = existing.approvedBy;
-              if (existing.approvedAt !== undefined) merged.approvedAt = existing.approvedAt;
-              if (existing.progress !== undefined) merged.progress = existing.progress;
-              if (existing.dailyRate !== undefined) merged.dailyRate = existing.dailyRate;
-              
-              // CRITICAL: Preserve the newer timestamp so it doesn't get downgraded by older server data
-              if (existing._syncMeta) merged._syncMeta = existing._syncMeta;
-            } else {
-              // Otherwise incoming takes priority
-              if (incoming.status !== undefined) merged.status = incoming.status;
-              if (incoming.approvedBy !== undefined) merged.approvedBy = incoming.approvedBy;
-              if (incoming.approvedAt !== undefined) merged.approvedAt = incoming.approvedAt;
-              if (incoming.progress !== undefined) merged.progress = incoming.progress;
+            // If existing is newer, it means local user changes haven't reached the server or a stale snapshot arrived.
+            // We MUST preserve existing (local) entirely to prevent reverts.
+            let merged = isExistingNewer 
+              ? { ...incoming, ...existing } // Existing overwrites incoming
+              : { ...existing, ...incoming }; // Incoming overwrites existing
+
+            if (!isExistingNewer) {
+              // Ensure numeric types are preserved if incoming is null/undefined
               if (incoming.dailyRate !== undefined && incoming.dailyRate !== null && !isNaN(Number(incoming.dailyRate))) {
                 merged.dailyRate = Number(incoming.dailyRate);
               }
@@ -688,22 +677,31 @@ export function subscribeCloudCollection<T = any>(
             items = Array.from(mergedMap.values()) as T[];
 
             // Deduplikasi temuan (Findings) berdasarkan konten yang sama (equipment + issue + PIC)
-            // Prioritaskan yang manual (fd-*) dibanding yang auto-generated (gsheet-finding-*)
+            // Prioritaskan yang sudah Close/Approved, lalu prioritaskan yang manual (fd-*) dibanding yang auto-generated (gsheet-finding-*)
             if (collectionName === 'findings') {
               const uniqueFindings = new Map<string, any>();
               items.forEach((item: any) => {
                 if (!item) return;
-                const eq = String(item.equipment || '').trim().toLowerCase();
-                const iss = String(item.issue || '').trim().toLowerCase();
-                const pic = String(item.pic || '').trim().toLowerCase();
-                // Gabungkan key untuk deteksi duplikat konten
+                const eq = String(item.equipment || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                const iss = String(item.issue || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                const pic = String(item.pic || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                // Gabungkan key untuk deteksi duplikat konten yang kebal terhadap spasi/karakter khusus
                 const contentKey = `dedup_${eq}_${iss}_${pic}`;
                 
                 if (uniqueFindings.has(contentKey)) {
                   const existing = uniqueFindings.get(contentKey);
-                  // Jika existing adalah gsheet dan item baru adalah fd-, replace existing
-                  if (String(existing.id).startsWith('gsheet-') && String(item.id).startsWith('fd-')) {
+                  const itemIsClosed = item.status === 'Close' || item.approvedBy;
+                  const existingIsClosed = existing.status === 'Close' || existing.approvedBy;
+                  
+                  if (itemIsClosed && !existingIsClosed) {
                     uniqueFindings.set(contentKey, item);
+                  } else if (!itemIsClosed && existingIsClosed) {
+                    // Do nothing, keep the closed one
+                  } else if (String(existing.id).startsWith('gsheet-') && String(item.id).startsWith('fd-')) {
+                    uniqueFindings.set(contentKey, item);
+                  } else if (String(existing.id).startsWith('fd-') && String(item.id).startsWith('fd-')) {
+                     // If both are manual, keep the one with the newer ID or timestamp
+                     if (item.id > existing.id) uniqueFindings.set(contentKey, item);
                   }
                 } else {
                   uniqueFindings.set(contentKey, item);
@@ -963,8 +961,11 @@ export async function saveCloudDoc(
     updateSyncStatus({
       lastSyncedAt: new Date()
     });
-  } catch (error) {
-    console.warn(`[Sync] Network error saving doc ${docId} to ${collectionName}. Queued for offline sync:`, error);
+  } catch (err: any) {
+    console.warn(`[Sync] Network error saving doc ${docId} in ${collectionName}:`, err);
+    if (typeof window !== 'undefined') {
+      alert(`Gagal menyimpan data ke server! Error: ${err.message || err}`);
+    }
     enqueuePendingOperation({
       type: 'SAVE',
       collectionName,

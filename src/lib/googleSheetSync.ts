@@ -1133,8 +1133,15 @@ export async function pullDailyLogFromGviz(
       // Buat Finding jika remark mengindikasikan masalah
       if (isFindingRemark(String(remark))) {
         const remarkNorm = String(remark).trim().toLowerCase().substring(0, 30);
+        // Normalize the exact same way as cloudSync.ts contentKey for rigorous deduplication
+        const eqNorm = String(activity || (division ? `Unit Divisi ${division}` : 'Unit Operasional')).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const issNorm = String(remark).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const picNorm = String(activeStaffList[0] || 'Tim Operasional').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const contentKeyNorm = `dedup_${eqNorm}_${issNorm}_${picNorm}`;
+
         const findingKey = `gsheet-finding-${currentDate}-${String(remark).trim().substring(0, 30).replace(/[^a-zA-Z0-9-]/g, '_')}`;
-        if (!existingReportIds.has(findingKey) && !existingReportIds.has(remarkNorm)) {
+
+        if (!existingReportIds.has(findingKey) && !existingReportIds.has(remarkNorm) && !existingReportIds.has(contentKeyNorm)) {
           const findingDoc = {
             id: findingKey,
             equipment: activity || (division ? `Unit Divisi ${division}` : 'Unit Operasional'),

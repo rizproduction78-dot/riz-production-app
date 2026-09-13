@@ -684,6 +684,12 @@ export default function App() {
       findings.forEach(f => {
         if (f.id) existingIds.add(f.id);
         if (f.issue) existingIds.add(String(f.issue).trim().toLowerCase().substring(0, 30));
+        
+        // rigorous deduplication key
+        const eqNorm = String(f.equipment || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const issNorm = String(f.issue || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const picNorm = String(f.pic || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        existingIds.add(`dedup_${eqNorm}_${issNorm}_${picNorm}`);
       });
       logbookEntries.forEach(l => { if (l.id) existingIds.add(l.id); });
 
@@ -696,6 +702,11 @@ export default function App() {
         (savedFindings as any[]).forEach((f: any) => {
           if (f.id) existingIds.add(f.id);
           if (f.issue) existingIds.add(String(f.issue).trim().toLowerCase().substring(0, 30));
+          
+          const eqNorm = String(f.equipment || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+          const issNorm = String(f.issue || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+          const picNorm = String(f.pic || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+          existingIds.add(`dedup_${eqNorm}_${issNorm}_${picNorm}`);
         });
         (savedLogs as any[]).forEach((l: any) => { if (l.id) existingIds.add(l.id); });
       } catch (_e) {}
