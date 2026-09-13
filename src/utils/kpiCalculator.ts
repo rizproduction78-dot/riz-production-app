@@ -357,9 +357,9 @@ export function calculateStaffKpi(
   const competencyScore = Math.round((competencyCount / competencyTotal) * 100);
 
   // ─────────────────────────────────────────────────────────────
-  // 3. DISIPLIN KERJA (Non-aktif sementara)
+  // 3. DISIPLIN KERJA (Aktif: Berdasarkan Data Kehadiran)
   // ─────────────────────────────────────────────────────────────
-  const disciplineScore = 0;
+  const disciplineScore = attendanceScore > 0 ? attendanceScore : 100; // Base 100 if no roster data yet
 
   // ─────────────────────────────────────────────────────────────
   // 4. PRODUKTIVITAS / DAILY TASK (Murni dari laporan harian yang diinput)
@@ -471,7 +471,7 @@ export function calculateStaffKpi(
     competencyCount,
     competencyTotal,
     competencyScore,
-    disciplineScore: 0,
+    disciplineScore: disciplineScore,
     reports: reportsCount,
     reportsCount,
     reportScore,
@@ -483,7 +483,7 @@ export function calculateStaffKpi(
     woScore,
     taskComplexityScore,
     teamworkScore,
-    hours: 0,
+    hours: attendanceCount * 8, // Menggunakan 8 jam x jumlah kehadiran
     kpi,
     grade
   };
