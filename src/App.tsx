@@ -183,7 +183,6 @@ export default function App() {
         { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard, category: 'Ringkasan' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional & QC' },
-        { id: 'maintenance', label: 'Jadwal Maintenance', icon: Wrench, category: 'Operasional & QC' },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
         { id: 'kinerja_karyawan', label: 'Kinerja & KPI Karyawan', icon: TrendingUp, category: 'SDM & Performa' },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'SDM & Performa' },
@@ -203,7 +202,6 @@ export default function App() {
         { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard, category: 'Ringkasan' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional & QC' },
-        { id: 'maintenance', label: 'Jadwal Maintenance', icon: Wrench, category: 'Operasional & QC' },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
         { id: 'kinerja_karyawan', label: 'Kinerja & KPI Karyawan', icon: TrendingUp, category: 'SDM & Performa' },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'SDM & Performa' },
@@ -223,7 +221,6 @@ export default function App() {
         { id: 'dashboard', label: 'Dashboard Monitoring', icon: LayoutDashboard, category: 'Ringkasan' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional & QC' },
-        { id: 'maintenance', label: 'Jadwal Maintenance', icon: Wrench, category: 'Operasional & QC' },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp, category: 'SDM & Performa' },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'SDM & Performa' },
@@ -243,7 +240,6 @@ export default function App() {
         { id: 'dashboard', label: 'Dashboard Divisi', icon: LayoutDashboard, category: 'Ringkasan' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional & QC' },
-        { id: 'maintenance', label: 'Jadwal Maintenance', icon: Wrench, category: 'Operasional & QC' },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp, category: 'SDM & Performa' },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'SDM & Performa' },
@@ -259,7 +255,6 @@ export default function App() {
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, category: 'Ringkasan' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional & QC' },
-        { id: 'maintenance', label: 'Maintenance', icon: Wrench, category: 'Operasional & QC' },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Performa' },
         { id: 'kinerja_karyawan', label: 'Kinerja Saya', icon: TrendingUp, category: 'SDM & Performa' },
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck, category: 'SDM & Performa' },
@@ -1514,19 +1509,6 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'maintenance' && (
-          <Maintenance
-            schedules={schedules}
-            onAddSchedule={handleAddSchedule}
-            onUpdateScheduleStatus={handleUpdateScheduleStatus}
-            onUpdateSchedule={handleUpdateSchedule}
-            onAddFinding={handleAddFinding}
-            onAddWorkOrder={handleAddWorkOrder}
-            onAddReport={handleAddReport}
-            currentUser={currentUser}
-            onLogActivity={handleLogActivity}
-          />
-        )}
 
         {activeTab === 'reports' && (
           <Reports
