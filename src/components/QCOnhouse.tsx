@@ -512,6 +512,14 @@ export default function QCOnhouse({
                     <span className="text-xs font-semibold text-indigo-600">Klik untuk Upload Beberapa Foto dari Perangkat / Kamera</span>
                     <span className="text-[11px] text-slate-400">Dapat memilih 1 atau sekaligus beberapa foto (JPG, PNG, WEBP, HEIC)</span>
                   </label>
+                  <a
+                    href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors"
+                  >
+                    Buka Folder Penyimpanan Foto Drive (Khusus QC)
+                  </a>
                 </div>
               ) : (
                 <div className="space-y-3">

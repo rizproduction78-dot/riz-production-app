@@ -1138,6 +1138,14 @@ export default function Gudang({
                         rows={2}
                         className="block w-full p-3 border border-slate-200 rounded-lg text-sm bg-slate-50/50"
                       />
+                      <a
+                        href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 hover:text-indigo-700 transition-colors"
+                      >
+                        Lampirkan Bukti Foto/Dokumen ke Folder Drive (Logistik Gudang)
+                      </a>
                     </div>
                   </div>
 

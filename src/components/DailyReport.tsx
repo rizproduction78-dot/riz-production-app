@@ -441,6 +441,14 @@ export default function DailyReport({
                         <Upload className="w-4 h-4" />
                         <span>Pilih Beberapa Foto dari Perangkat / Kamera</span>
                       </label>
+                      <a
+                        href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 hover:text-indigo-700 transition-colors"
+                      >
+                        Atau Upload ke Folder Drive (Daily Task)
+                      </a>
                     </div>
                   ) : (
                     <div className="space-y-2">

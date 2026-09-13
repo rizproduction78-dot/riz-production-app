@@ -62,7 +62,8 @@ import {
   Truck,
   Download,
   Smartphone,
-  Share
+  Share,
+  Folder
 } from 'lucide-react';
 import {
   subscribeCloudCollection,
@@ -1254,6 +1255,15 @@ export default function App() {
               <div className="text-[10px] text-slate-400 truncate">{currentUser.division} • {currentUser.role}</div>
             </div>
           </div>
+          <a
+            href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/50 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+          >
+            <Folder className="w-3.5 h-3.5" />
+            <span>Penyimpanan Foto (Drive)</span>
+          </a>
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-800/60 hover:bg-rose-950/70 hover:text-rose-200 text-slate-300 border border-slate-700/70 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
@@ -1334,13 +1344,24 @@ export default function App() {
               </div>
             ))}
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800/60 hover:bg-red-950/60 hover:text-red-200 rounded-lg text-xs font-semibold transition-colors border border-slate-700 shrink-0"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Keluar Aplikasi</span>
-          </button>
+          <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
+            <a
+              href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/50 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+            >
+              <Folder className="w-4 h-4" />
+              <span>Penyimpanan Foto (Drive)</span>
+            </a>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800/60 hover:bg-red-950/60 hover:text-red-200 rounded-lg text-xs font-semibold transition-colors border border-slate-700 shrink-0"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Keluar Aplikasi</span>
+            </button>
+          </div>
         </div>
       )}
 
