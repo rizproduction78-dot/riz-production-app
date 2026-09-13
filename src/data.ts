@@ -682,7 +682,7 @@ export const INITIAL_VEHICLES: VehicleMaster[] = [
     cbmCapacity: 2.8,
     odometerKM: 52100,
     stnkTaxExpiry: '2026-12-01',
-    kirExpiry: '2027-04-14',
+    kirExpiry: '-',
     status: 'Siap Operasi'
   },
   {
@@ -694,8 +694,8 @@ export const INITIAL_VEHICLES: VehicleMaster[] = [
     tonnageCapacity: 3.0,
     cbmCapacity: 7.0,
     odometerKM: 145000,
-    stnkTaxExpiry: '2027-01-01',
-    kirExpiry: '2027-01-15',
+    stnkTaxExpiry: '2027-05-01',
+    kirExpiry: '2027-09-01',
     status: 'Siap Operasi'
   }
 ];
