@@ -46,6 +46,9 @@ export const STAFF_LIST: Staff[] = [
   // 7. Service
   { id: 'staff-damri', name: 'Damri', fullName: 'Damri', nickname: 'Mang Damri', email: 'damri.service@rizproduction.com', phone: '081288990011', division: 'Service', role: 'Team Leader', level: 5 },
   { id: 'staff-mulyana', name: 'Mulyana', fullName: 'Mulyana', nickname: 'Kharo', email: 'tabitakharo@gmail.com', phone: '089523134060', division: 'Service', secondaryDivision: 'Videotron', divisions: ['Service', 'Videotron'], role: 'Staff', level: 3 }
+,
+  // 8. UMUM
+  { id: 'staff-semua-divisi', name: 'STAFF SEMUA DIVISI', fullName: 'STAFF SEMUA DIVISI', nickname: 'STAFF', division: 'Semua Divisi', role: 'Staff', level: 1 }
 ];
 
 export const MASTER_STAFF: Staff[] = [...STAFF_LIST];
@@ -87,18 +90,7 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
       (s.division === 'Admin' && (s.role === 'Owner' || s.role === 'Direktur' || combinedStr.includes('director')))
     ) {
       canonicalId = 'director-wahyu';
-      canonicalStaff = {
-        ...s,
-        id: 'director-wahyu',
-        name: 'Wahyu',
-        fullName: 'Wahyu',
-        nickname: 'Wahyu',
-        division: 'Admin',
-        role: 'Owner',
-        level: 8,
-        email: s.email || 'zakimau06@gmail.com',
-        phone: s.phone || '083819947193'
-      };
+      canonicalStaff.id = 'director-wahyu';
     }
     // 2. Suryana / Nana / Buluk (Audio Staff)
     else if (
@@ -110,18 +102,7 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
       combinedStr.includes('nia.kurni')
     ) {
       canonicalId = 'staff-suryana';
-      canonicalStaff = {
-        ...s,
-        id: 'staff-suryana',
-        name: 'Suryana',
-        fullName: 'Suryana',
-        nickname: 'Nana / Buluk',
-        division: 'Audio',
-        role: 'Staff',
-        level: 3,
-        email: 'nia.kurni1930@gmail.com',
-        phone: '083847130366'
-      };
+      canonicalStaff.id = 'staff-suryana';
     }
     // 2b. Wahyudin / Unyim (Audio Staff)
     else if (
@@ -133,144 +114,105 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
       (combinedStr.includes('wahyudin') && !combinedStr.includes('director-wahyu'))
     ) {
       canonicalId = 'staff-unyin';
-      canonicalStaff = {
-        ...s,
-        id: 'staff-unyin',
-        name: 'Wahyudin',
-        fullName: 'Wahyudin',
-        nickname: 'Unyim',
-        division: 'Audio',
-        role: 'Staff',
-        level: 3,
-        email: 'wahyudin.unyin@gmail.com',
-        phone: '085812345678'
-      };
+      canonicalStaff.id = 'staff-unyin';
     }
     // 3. Seno Subroto (Admin Staff)
     else if (rawId === 'staff-seno' || combinedStr.includes('seno')) {
       canonicalId = 'staff-seno';
-      canonicalStaff = {
-        ...s,
-        id: 'staff-seno',
-        name: 'Seno Subroto',
-        fullName: 'Seno Subroto',
-        nickname: 'Seno',
-        division: 'Admin',
-        role: 'Staff',
-        level: 4
-      };
+      canonicalStaff.id = 'staff-seno';
     }
     // 4. Damri (Service Leader)
     else if (rawId === 'staff-damri' || combinedStr.includes('damri')) {
       canonicalId = 'staff-damri';
-      canonicalStaff = {
-        ...s,
-        id: 'staff-damri',
-        name: 'Damri',
-        fullName: 'Damri',
-        nickname: 'Mang Damri',
-        division: 'Service',
-        role: 'Team Leader',
-        level: 5
-      };
+      canonicalStaff.id = 'staff-damri';
     }
     // 5. Mulyana (Service Staff)
     else if (rawId === 'staff-mulyana' || combinedStr.includes('mulyana') || combinedStr.includes('kharo')) {
       canonicalId = 'staff-mulyana';
-      canonicalStaff = {
-        ...s,
-        id: 'staff-mulyana',
-        name: 'Mulyana',
-        fullName: 'Mulyana',
-        nickname: 'Kharo',
-        division: 'Service',
-        secondaryDivision: 'Videotron',
-        divisions: ['Service', 'Videotron'],
-        role: 'Staff',
-        level: 3
-      };
+      canonicalStaff.id = 'staff-mulyana';
     }
     // 6. Iwan Kurniawan / Butonk (Audio)
     else if (rawId === 'staff-iwan' || combinedStr.includes('iwan') || combinedStr.includes('butonk') || combinedStr.includes('boetonk')) {
       canonicalId = 'staff-iwan';
-      canonicalStaff = { ...s, id: 'staff-iwan', name: 'Iwan Kurniawan', fullName: 'Iwan Kurniawan', nickname: 'Butonk', division: 'Audio', role: 'Staff', level: 3 };
+      canonicalStaff.id = 'staff-iwan';
     }
     // 7. Muhamad Rahmat / Mboh (Audio Leader)
     else if (rawId === 'staff-rahmat' || combinedStr.includes('rahmat') || combinedStr.includes('mboh')) {
       canonicalId = 'staff-rahmat';
-      canonicalStaff = { ...s, id: 'staff-rahmat', name: 'Muhamad Rahmat', fullName: 'Muhamad Rahmat', nickname: 'Mboh', division: 'Audio', role: 'Team Leader', level: 5 };
+      canonicalStaff.id = 'staff-rahmat';
     }
     // 8. Ramdani / Dani (Audio)
     else if (rawId === 'staff-ramdani' || combinedStr.includes('ramdani') || combinedStr.includes('dani')) {
       canonicalId = 'staff-ramdani';
-      canonicalStaff = { ...s, id: 'staff-ramdani', name: 'Ramdani', fullName: 'Ramdani', nickname: 'Dani', division: 'Audio', role: 'Staff', level: 3 };
+      canonicalStaff.id = 'staff-ramdani';
     }
     // 9. Taufik Diana / Opik (Audio)
     else if (rawId === 'staff-taufik' || combinedStr.includes('taufik') || combinedStr.includes('opik')) {
       canonicalId = 'staff-taufik';
-      canonicalStaff = { ...s, id: 'staff-taufik', name: 'Taufik Diana', fullName: 'Taufik Diana', nickname: 'Opik', division: 'Audio', role: 'Staff', level: 3 };
+      canonicalStaff.id = 'staff-taufik';
     }
     // 10. Yudishtira Purnama A / Yudish (Audio)
     else if (rawId === 'staff-yudish' || combinedStr.includes('yudishtira') || combinedStr.includes('yudish')) {
       canonicalId = 'staff-yudish';
-      canonicalStaff = { ...s, id: 'staff-yudish', name: 'Yudishtira Purnama A', fullName: 'Yudishtira Purnama A', nickname: 'Yudish', division: 'Audio', role: 'Staff', level: 3 };
+      canonicalStaff.id = 'staff-yudish';
     }
     // 11. Heri (Lighting Leader)
     else if (rawId === 'staff-heri' || combinedStr.includes('heri')) {
       canonicalId = 'staff-heri';
-      canonicalStaff = { ...s, id: 'staff-heri', name: 'Heri', fullName: 'Heri', nickname: 'Heri', division: 'Lighting', role: 'Team Leader', level: 5 };
+      canonicalStaff.id = 'staff-heri';
     }
     // 12. Mulyadi / Jay (Multimedia)
     else if (rawId === 'staff-mulyadi' || combinedStr.includes('mulyadi') || combinedStr.includes('jay')) {
       canonicalId = 'staff-mulyadi';
-      canonicalStaff = { ...s, id: 'staff-mulyadi', name: 'Mulyadi', fullName: 'Mulyadi', nickname: 'Jay', division: 'Multimedia', role: 'Staff', level: 3 };
+      canonicalStaff.id = 'staff-mulyadi';
     }
     // 13. Ayong Sumarsih (Videotron Leader)
     else if (rawId === 'staff-ayong' || combinedStr.includes('ayong')) {
       canonicalId = 'staff-ayong';
-      canonicalStaff = { ...s, id: 'staff-ayong', name: 'Ayong Sumarsih', fullName: 'Ayong Sumarsih', nickname: 'Ayong', division: 'Videotron', role: 'Team Leader', level: 5 };
+      canonicalStaff.id = 'staff-ayong';
     }
     // 14. Dedi Agus Wigiantoro / Wigi (Videotron)
     else if (rawId === 'staff-dedi' || combinedStr.includes('dedi') || combinedStr.includes('wigi')) {
       canonicalId = 'staff-dedi';
-      canonicalStaff = { ...s, id: 'staff-dedi', name: 'Dedi Agus Wigiantoro', fullName: 'Dedi Agus Wigiantoro', nickname: 'Wigi', division: 'Videotron', role: 'Staff', level: 3 };
+      canonicalStaff.id = 'staff-dedi';
     }
     // 15. Muhamad Irvan / Irfan (Videotron)
     else if (rawId === 'staff-irvan' || combinedStr.includes('irvan') || combinedStr.includes('irfan')) {
       canonicalId = 'staff-irvan';
-      canonicalStaff = { ...s, id: 'staff-irvan', name: 'Muhamad Irvan', fullName: 'Muhamad Irvan', nickname: 'Irfan', division: 'Videotron', role: 'Staff', level: 3 };
+      canonicalStaff.id = 'staff-irvan';
     }
     // 16. Abah Sobur (Gudang)
     else if (rawId === 'staff-absobur' || combinedStr.includes('sobur')) {
       canonicalId = 'staff-absobur';
-      canonicalStaff = { ...s, id: 'staff-absobur', name: 'Abah Sobur', fullName: 'Abah Sobur', nickname: 'Abah Sobur', division: 'Gudang', role: 'Gudang', level: 3 };
+      canonicalStaff.id = 'staff-absobur';
     }
     // 17. Gatot Wiliyanto (Gudang)
     else if (rawId === 'staff-gatot' || combinedStr.includes('gatot')) {
       canonicalId = 'staff-gatot';
-      canonicalStaff = { ...s, id: 'staff-gatot', name: 'Gatot Wiliyanto', fullName: 'Gatot Wiliyanto', nickname: 'Gatot', division: 'Gudang', role: 'Gudang', level: 3 };
+      canonicalStaff.id = 'staff-gatot';
     }
     // 18. Udin Saepudin / Mang ube (Gudang)
     else if (rawId === 'staff-udin' || combinedStr.includes('saepudin') || combinedStr.includes('mang ube') || combinedStr.includes('udin')) {
       canonicalId = 'staff-udin';
-      canonicalStaff = { ...s, id: 'staff-udin', name: 'Udin Saepudin', fullName: 'Udin Saepudin', nickname: 'Mang ube', division: 'Gudang', role: 'Gudang', level: 3 };
+      canonicalStaff.id = 'staff-udin';
     }
     // 19. Agustino Setiawan (Admin)
     else if (rawId === 'staff-agustino' || combinedStr.includes('agustino')) {
       canonicalId = 'staff-agustino';
-      canonicalStaff = { ...s, id: 'staff-agustino', name: 'Agustino Setiawan', fullName: 'Agustino Setiawan', nickname: 'Agustino', division: 'Admin', role: 'Admin', level: 4 };
+      canonicalStaff.id = 'staff-agustino';
     }
     // 20. M. Fahruyana . A / Fahrul (Manager)
     else if (rawId === 'staff-fahrul' || combinedStr.includes('fahruyana') || combinedStr.includes('fahrul') || combinedStr.includes('rullyana')) {
       canonicalId = 'staff-fahrul';
-      canonicalStaff = { ...s, id: 'staff-fahrul', name: 'M. Fahruyana . A', fullName: 'M. Fahruyana . A', nickname: 'Fahrul', division: 'Admin', role: 'Manager', level: 6 };
+      canonicalStaff.id = 'staff-fahrul';
     }
     // 21. Syalsa Sri Hestariana / Caca (Admin)
     else if (rawId === 'staff-syalsa' || combinedStr.includes('syalsa') || combinedStr.includes('caca')) {
       canonicalId = 'staff-syalsa';
-      canonicalStaff = { ...s, id: 'staff-syalsa', name: 'Syalsa Sri Hestariana', fullName: 'Syalsa Sri Hestariana', nickname: 'Caca', division: 'Admin', role: 'Admin', level: 4 };
+      canonicalStaff.id = 'staff-syalsa';
     }
 
+    // Overwrite or update in staffMap
     // Overwrite or update in staffMap
     staffMap.set(canonicalId, { ...canonicalStaff, id: canonicalId });
   }
@@ -560,6 +502,9 @@ export const INITIAL_DAILY_TASKS: DailyTask[] = [
 
 // 50+ Official Freelance & Operator Partners PT RIZ-PRODUCTION - Sorted by Division
 export const INITIAL_FREELANCE_WORKERS: FreelanceWorker[] = [
+  // ── 0. UMUM ──────────────────────────────────────────
+  { id: 'fl-semua-divisi', name: 'FREE-LANCE SEMUA DIVISI', email: '', phone: '', specialization: 'Umum', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
+
   // ── 1. DIVISI SOUND / AUDIO ───────────────────────────
   { id: 'fl-sound-1', name: 'ADIN ANDRIANSYAH (ADIN)', email: 'adinandriyansyah@gmail.com', phone: '08561206888', specialization: 'Audio', roleTitle: 'OPERATOR', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
   { id: 'fl-sound-2', name: 'ARDI', phone: '085717518337', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
@@ -676,93 +621,80 @@ export const INITIAL_FLEET_DRIVERS: FleetDriver[] = [
 export const INITIAL_VEHICLES: VehicleMaster[] = [
   {
     id: 'veh-1',
-    name: 'Truk Box Mitsubishi Canter CDD (6 Roda)',
+    name: 'SUZUKI CARRY',
     ownership: 'Internal',
-    policeNumber: 'B 9142 SXZ',
-    vehicleType: 'Truk Box CDD (6 Roda)',
-    tonnageCapacity: 5.0,
-    cbmCapacity: 22.5,
-    odometerKM: 64200,
-    stnkTaxExpiry: '2026-11-18',
+    policeNumber: 'F 8446 BF',
+    vehicleType: 'SUZUKI CARRY',
+    tonnageCapacity: 1.0,
+    cbmCapacity: 1.5,
+    odometerKM: 10000,
+    stnkTaxExpiry: '2027-09-01',
     kirExpiry: '2026-09-30',
     status: 'Siap Operasi'
   },
   {
     id: 'veh-2',
-    name: 'Truk Box Hino Dutro CDE Engkel (4 Roda)',
+    name: 'SUZUKI CARRY',
     ownership: 'Internal',
-    policeNumber: 'B 9804 UYA',
-    vehicleType: 'Truk Box CDE Engkel (4 Roda)',
-    tonnageCapacity: 3.0,
-    cbmCapacity: 14.0,
-    odometerKM: 81500,
-    stnkTaxExpiry: '2026-10-05',
+    policeNumber: 'F 8433 BF',
+    vehicleType: 'SUZUKI CARRY',
+    tonnageCapacity: 1.0,
+    cbmCapacity: 1.5,
+    odometerKM: 10000,
+    stnkTaxExpiry: '2027-09-01',
     kirExpiry: '2026-10-12',
     status: 'Siap Operasi'
   },
   {
     id: 'veh-3',
-    name: 'Daihatsu Gran Max Blindvan',
+    name: 'SUZUKI CARRY',
     ownership: 'Internal',
-    policeNumber: 'B 2319 POX',
-    vehicleType: 'Blindvan Logistik',
+    policeNumber: 'F 8569 BH',
+    vehicleType: 'SUZUKI CARRY',
     tonnageCapacity: 1.0,
-    cbmCapacity: 5.5,
-    odometerKM: 43200,
-    stnkTaxExpiry: '2027-01-22',
+    cbmCapacity: 1.5,
+    odometerKM: 10000,
+    stnkTaxExpiry: '2027-06-01',
     kirExpiry: '2027-01-20',
     status: 'Siap Operasi'
   },
   {
     id: 'veh-4',
-    name: 'Mitsubishi L300 Pick-Up Box',
+    name: 'SUZUKI CARRY',
     ownership: 'Internal',
-    policeNumber: 'B 9043 TQB',
-    vehicleType: 'Pick-Up Box',
-    tonnageCapacity: 1.5,
-    cbmCapacity: 7.2,
-    odometerKM: 112000,
-    stnkTaxExpiry: '2026-12-10',
+    policeNumber: 'F 8594 BH',
+    vehicleType: 'SUZUKI CARRY',
+    tonnageCapacity: 1.0,
+    cbmCapacity: 1.5,
+    odometerKM: 12000,
+    stnkTaxExpiry: '2027-06-01',
     kirExpiry: '2026-10-28',
     status: 'Siap Operasi'
   },
   {
     id: 'veh-5',
-    name: 'Toyota Avanza Tim Operasional',
+    name: 'DAIHATSU LUXIO Operasional',
     ownership: 'Internal',
-    policeNumber: 'B 1874 RIZ',
+    policeNumber: 'B 2673 TVI',
     vehicleType: 'Mobil Kru / Operasional',
     tonnageCapacity: 0.6,
     cbmCapacity: 2.8,
     odometerKM: 52100,
-    stnkTaxExpiry: '2027-04-14',
+    stnkTaxExpiry: '2026-12-01',
     kirExpiry: '2027-04-14',
     status: 'Siap Operasi'
   },
   {
     id: 'veh-6',
-    name: 'Truk Wingbox Mitra Logistik 9.5M',
-    ownership: 'Sewa Mitra',
-    policeNumber: 'B 9552 KTN',
-    vehicleType: 'Truk Wingbox Tronton',
-    tonnageCapacity: 15.0,
-    cbmCapacity: 48.0,
+    name: 'Truk CANTER PS 110',
+    ownership: 'Internal',
+    policeNumber: 'F 8942 BG',
+    vehicleType: 'Truk Box CDD (6 Roda)',
+    tonnageCapacity: 3.0,
+    cbmCapacity: 7.0,
     odometerKM: 145000,
-    stnkTaxExpiry: '2027-02-10',
+    stnkTaxExpiry: '2027-01-01',
     kirExpiry: '2027-01-15',
-    status: 'Siap Operasi'
-  },
-  {
-    id: 'veh-7',
-    name: 'Truk CDD Long Mitra Logistik',
-    ownership: 'Sewa Mitra',
-    policeNumber: 'B 9331 JXQ',
-    vehicleType: 'Truk CDD Long Box',
-    tonnageCapacity: 6.0,
-    cbmCapacity: 28.0,
-    odometerKM: 98000,
-    stnkTaxExpiry: '2026-11-30',
-    kirExpiry: '2026-11-15',
     status: 'Siap Operasi'
   }
 ];

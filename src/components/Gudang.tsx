@@ -336,8 +336,8 @@ export default function Gudang({
   const [newFleetData, setNewFleetData] = useState<Partial<FleetAssignment>>({
     eventName: '',
     tripType: 'Dalam Kota (Jabodetabek)',
-    vehicleType: 'Truk Box Mitsubishi Canter CDD (6 Roda)',
-    policeNumber: 'B 9142 SXZ',
+    vehicleType: 'SUZUKI CARRY',
+    policeNumber: 'F 8446 BF',
     driverName: '',
     destination: '',
     departureDate: new Date().toISOString().split('T')[0],
@@ -681,8 +681,8 @@ export default function Gudang({
     setNewFleetData({
       eventName: '',
       tripType: 'Dalam Kota (Jabodetabek)',
-      vehicleType: 'Truk Box Mitsubishi Canter CDD (6 Roda)',
-      policeNumber: 'B 9142 SXZ',
+      vehicleType: 'SUZUKI CARRY',
+      policeNumber: 'F 8446 BF',
       driverName: '',
       destination: '',
       departureDate: new Date().toISOString().split('T')[0],
@@ -2634,7 +2634,7 @@ export default function Gudang({
                   <label className="font-bold text-slate-700 block mb-1">Nomor Polisi (Plat) *</label>
                   <input
                     type="text"
-                    placeholder="Contoh: B 9142 SXZ"
+                    placeholder="Contoh: F 8446 BF"
                     value={vehicleFormData.policeNumber}
                     onChange={(e) => setVehicleFormData({ ...vehicleFormData, policeNumber: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono font-bold"

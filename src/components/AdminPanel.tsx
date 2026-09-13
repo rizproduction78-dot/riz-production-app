@@ -2526,8 +2526,8 @@ export default function AdminPanel({
                       spjNumber: `SPJ/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(1000 + Math.random() * 9000)}`,
                       eventName: '',
                       tripType: 'Dalam Kota (Jabodetabek)',
-                      vehicleType: vehicles[0]?.name || 'Truk Box Mitsubishi Canter CDD (6 Roda)',
-                      policeNumber: vehicles[0]?.policeNumber || 'B 9142 SXZ',
+                      vehicleType: vehicles[0]?.name || 'SUZUKI CARRY',
+                      policeNumber: vehicles[0]?.policeNumber || 'F 8446 BF',
                       driverName: driverList[0]?.name || '',
                       destination: '',
                       departureDate: new Date().toISOString().split('T')[0],
@@ -3560,7 +3560,7 @@ export default function AdminPanel({
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-              <h3 className="font-extrabold text-slate-900 text-base">Ubah / Edit Data Staf</h3>
+              <h3 className="font-extrabold text-slate-900 text-base">Ubah / Edit Data Staf (V2)</h3>
               <button onClick={() => setShowEditStaffModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
@@ -4173,7 +4173,7 @@ export default function AdminPanel({
                   <label className="font-bold text-slate-700 block mb-1">Nomor Polisi (Plat) *</label>
                   <input
                     type="text"
-                    placeholder="Contoh: B 9142 SXZ"
+                    placeholder="Contoh: F 8446 BF"
                     value={vehicleFormData.policeNumber}
                     onChange={(e) => setVehicleFormData({ ...vehicleFormData, policeNumber: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono font-bold"
