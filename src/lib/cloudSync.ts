@@ -377,7 +377,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
   }
 
   if (collectionName === 'master_vehicles') {
-    const FAKE_PLATES = ['F 8446 BF', 'B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
+    const FAKE_PLATES = ['B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
     const cleaned = items.filter((v: any) => v && v.policeNumber && !FAKE_PLATES.includes(v.policeNumber));
     
     // Deduplicate incoming cloud data

@@ -737,7 +737,7 @@ export default function AdminPanel({
         if (Array.isArray(parsed)) {
           const flat = parsed.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
           let valid = flat.filter(v => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
-          const FAKE_PLATES = ['F 8446 BF', 'B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
+          const FAKE_PLATES = ['B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
           valid = valid.filter(v => !FAKE_PLATES.includes(v.policeNumber));
           const seen = new Set();
           valid = valid.filter(v => {
