@@ -139,7 +139,8 @@ export default function Gudang({
           const flat = parsed.flatMap((item: any) => (item && Array.isArray(item.list)) ? item.list : [item]);
           let valid = flat.filter((v: any) => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
           // Remove fake data
-          valid = valid.filter((v: any) => v.policeNumber !== 'F 8446 BF' && v.policeNumber !== 'B 9142 SXZ');
+          const FAKE_PLATES = ['F 8446 BF', 'B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
+          valid = valid.filter((v: any) => !FAKE_PLATES.includes(v.policeNumber));
           // Deduplicate by policeNumber
           const seen = new Set();
           valid = valid.filter((v: any) => {
