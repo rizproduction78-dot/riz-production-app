@@ -317,7 +317,8 @@ export default function Gudang({
   const [picName, setPicName] = useState(currentUser.name);
   const [notes, setNotes] = useState('');
   const [assetCodeInput, setAssetCodeInput] = useState('');
-  const [scannedPhoto, setScannedPhoto] = useState('');
+  const [scannedPhoto, setScannedPhoto] = useState<string | null>(null);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
 
   // Fleet Governance Form & Modal State
   const [showNewFleetModal, setShowNewFleetModal] = useState(false);
@@ -418,7 +419,7 @@ export default function Gudang({
     if (!itemName.trim() || qty <= 0) return;
 
     const newLog: WarehouseLog = {
-      id: 'wl-' + Date.now(),
+      id: editingLogId || ('wl-' + Date.now()),
       type,
       date: new Date().toISOString().split('T')[0],
       itemName,
@@ -433,9 +434,15 @@ export default function Gudang({
       }
     };
 
-    setWarehouseLogs(prev => [newLog, ...prev]);
+    if (editingLogId) {
+      setWarehouseLogs(prev => prev.map(log => log.id === editingLogId ? newLog : log));
+      onLogActivity(currentUser.name, currentUser.role, `Mengedit log gudang: ${type} - ${itemName}`);
+    } else {
+      setWarehouseLogs(prev => [newLog, ...prev]);
+      onLogActivity(currentUser.name, currentUser.role, `Mencatat log gudang: ${type} - ${itemName} sebanyak ${qty} Unit`);
+    }
+    
     saveCloudDoc('warehouse_logs', newLog.id, newLog, currentUser.name);
-    onLogActivity(currentUser.name, currentUser.role, `Mencatat log gudang: ${type} - ${itemName} sebanyak ${qty} Unit`);
     
     // Auto-update asset status & location if matched
     if (assetCodeInput) {
@@ -483,13 +490,36 @@ export default function Gudang({
       }
     }
 
-    // Reset Form
+    // Reset form
+    setType('Masuk');
     setItemName('');
     setQty(1);
     setNotes('');
     setAssetCodeInput('');
-    setScannedPhoto('');
+    setScannedPhoto(null);
+    setEditingLogId(null);
     setShowLogForm(false);
+  };
+
+  const handleEditLogClick = (log: WarehouseLog) => {
+    setEditingLogId(log.id);
+    setType(log.type);
+    setItemName(log.itemName);
+    setQty(log.qty);
+    setPicName(log.pic);
+    setNotes(log.notes || '');
+    setAssetCodeInput(log.assetCode || '');
+    setScannedPhoto(log.photoUrl || null);
+    setShowLogForm(true);
+    // Scroll to form (Optional: window.scrollTo(0,0) or rely on user scroll)
+  };
+
+  const handleDeleteLogClick = (logId: string) => {
+    if (window.confirm('Yakin ingin menghapus catatan logistik gudang ini?')) {
+      setWarehouseLogs(prev => prev.filter(log => log.id !== logId));
+      deleteCloudDoc('warehouse_logs', logId);
+      onLogActivity(currentUser.name, currentUser.role, `Menghapus log gudang (${logId})`);
+    }
   };
 
   // Fleet, Drivers, and Vehicles Subscriptions (only if no props passed from App.tsx)
@@ -987,7 +1017,20 @@ export default function Gudang({
                 <span className="text-xs font-bold text-slate-700">Histori & Pencatatan Logistik Gudang</span>
                 <button
                   type="button"
-                  onClick={() => setShowLogForm(!showLogForm)}
+                  onClick={() => {
+                    if (showLogForm) {
+                      setShowLogForm(false);
+                      setEditingLogId(null);
+                    } else {
+                      setType('Masuk');
+                      setItemName('');
+                      setQty(1);
+                      setNotes('');
+                      setAssetCodeInput('');
+                      setScannedPhoto(null);
+                      setShowLogForm(true);
+                    }
+                  }}
                   className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
@@ -1000,7 +1043,9 @@ export default function Gudang({
                 <form onSubmit={handleAddWarehouseLog} className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4 max-w-xl">
                   <div className="flex items-center gap-2 pb-3 border-b">
                     <FileText className="w-5 h-5 text-indigo-600" />
-                    <h3 className="text-sm font-bold text-slate-800">Formulir Logistik Gudang Baru</h3>
+                    <h3 className="text-sm font-bold text-slate-800">
+                      {editingLogId ? 'Edit Logistik Gudang' : 'Formulir Logistik Gudang Baru'}
+                    </h3>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1127,6 +1172,7 @@ export default function Gudang({
                         <th scope="col" className="px-6 py-3">Asset Terkait</th>
                         <th scope="col" className="px-6 py-3">PIC Gudang</th>
                         <th scope="col" className="px-6 py-3">Catatan</th>
+                        <th scope="col" className="px-6 py-3 text-center">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
@@ -1150,6 +1196,20 @@ export default function Gudang({
                           <td className="px-6 py-4 font-mono text-slate-500">{log.assetCode || '-'}</td>
                           <td className="px-6 py-4 font-medium">{log.pic}</td>
                           <td className="px-6 py-4 text-slate-500 max-w-xs truncate" title={log.notes}>{log.notes}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center space-x-2">
+                            <button
+                              onClick={() => handleEditLogClick(log)}
+                              className="px-2 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteLogClick(log.id)}
+                              className="px-2 py-1 text-xs font-semibold text-rose-600 bg-rose-50 rounded hover:bg-rose-100 transition-colors"
+                            >
+                              Hapus
+                            </button>
+                          </td>
                         </tr>
                       ))}
                       {warehouseLogs.length === 0 && (
