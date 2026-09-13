@@ -137,7 +137,16 @@ export default function Gudang({
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           const flat = parsed.flatMap((item: any) => (item && Array.isArray(item.list)) ? item.list : [item]);
-          const valid = flat.filter((v: any) => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
+          let valid = flat.filter((v: any) => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
+          // Remove fake data
+          valid = valid.filter((v: any) => v.policeNumber !== 'F 8446 BF' && v.policeNumber !== 'B 9142 SXZ');
+          // Deduplicate by policeNumber
+          const seen = new Set();
+          valid = valid.filter((v: any) => {
+            if (seen.has(v.policeNumber)) return false;
+            seen.add(v.policeNumber);
+            return true;
+          });
           if (valid.length > 0) return valid;
         }
       }

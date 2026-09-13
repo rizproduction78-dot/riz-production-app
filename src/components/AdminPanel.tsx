@@ -736,7 +736,14 @@ export default function AdminPanel({
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           const flat = parsed.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
-          const valid = flat.filter(v => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
+          let valid = flat.filter(v => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
+          valid = valid.filter(v => v.policeNumber !== 'F 8446 BF' && v.policeNumber !== 'B 9142 SXZ');
+          const seen = new Set();
+          valid = valid.filter(v => {
+            if (seen.has(v.policeNumber)) return false;
+            seen.add(v.policeNumber);
+            return true;
+          });
           if (valid.length > 0) return valid;
         }
       }
