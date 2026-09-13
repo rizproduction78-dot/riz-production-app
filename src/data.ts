@@ -619,19 +619,7 @@ export const INITIAL_FLEET_DRIVERS: FleetDriver[] = [
 
 // Master Inventaris Armada Kendaraan Resmi PT RIZ-PRODUCTION
 export const INITIAL_VEHICLES: VehicleMaster[] = [
-  {
-    id: 'veh-1',
-    name: 'SUZUKI CARRY',
-    ownership: 'Internal',
-    policeNumber: 'F 8446 BF',
-    vehicleType: 'SUZUKI CARRY',
-    tonnageCapacity: 1.0,
-    cbmCapacity: 1.5,
-    odometerKM: 10000,
-    stnkTaxExpiry: '2027-09-01',
-    kirExpiry: '2026-09-30',
-    status: 'Siap Operasi'
-  },
+
   {
     id: 'veh-2',
     name: 'SUZUKI CARRY',

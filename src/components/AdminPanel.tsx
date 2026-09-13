@@ -2527,7 +2527,7 @@ export default function AdminPanel({
                       eventName: '',
                       tripType: 'Dalam Kota (Jabodetabek)',
                       vehicleType: vehicles[0]?.name || 'SUZUKI CARRY',
-                      policeNumber: vehicles[0]?.policeNumber || 'F 8446 BF',
+                      policeNumber: vehicles[0]?.policeNumber || 'F 8433 BF',
                       driverName: driverList[0]?.name || '',
                       destination: '',
                       departureDate: new Date().toISOString().split('T')[0],
@@ -4173,7 +4173,7 @@ export default function AdminPanel({
                   <label className="font-bold text-slate-700 block mb-1">Nomor Polisi (Plat) *</label>
                   <input
                     type="text"
-                    placeholder="Contoh: F 8446 BF"
+                    placeholder="Contoh: F 8433 BF"
                     value={vehicleFormData.policeNumber}
                     onChange={(e) => setVehicleFormData({ ...vehicleFormData, policeNumber: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono font-bold"
