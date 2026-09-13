@@ -376,6 +376,20 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     return Array.from(map.values()) as T[];
   }
 
+  if (collectionName === 'master_vehicles') {
+    const FAKE_PLATES = ['F 8446 BF', 'B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
+    const cleaned = items.filter((v: any) => v && v.policeNumber && !FAKE_PLATES.includes(v.policeNumber));
+    
+    // Deduplicate incoming cloud data
+    const seen = new Set();
+    const deduped = cleaned.filter((v: any) => {
+      if (seen.has(v.policeNumber)) return false;
+      seen.add(v.policeNumber);
+      return true;
+    });
+    return deduped as T[];
+  }
+
   // Special normalization for daily_reports: deduplicate strictly by (date + staff)
   if (collectionName === 'daily_reports') {
     const map = new Map<string, any>();
