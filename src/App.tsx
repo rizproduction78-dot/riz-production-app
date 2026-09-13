@@ -49,6 +49,8 @@ import {
   User,
   Menu,
   X,
+  ChevronLeft,
+  ChevronRight,
   Shield,
   Activity,
   UserCheck,
@@ -100,6 +102,7 @@ export default function App() {
 
   // Mobile sidebar menu open
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Master Staff List State with Cloud Sync
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
@@ -1185,31 +1188,47 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-800 font-sans">
       
       {/* Sidebar for Desktop - Hidden on Print */}
-      <aside className="no-print hidden md:flex flex-col w-64 bg-[#0f172a] text-[#f8fafc] shrink-0 h-screen sticky top-0 border-r border-[#1e293b] z-30 select-none shadow-xl">
+      <aside className={`no-print hidden md:flex flex-col bg-[#0f172a] text-[#f8fafc] shrink-0 h-screen sticky top-0 border-r border-[#1e293b] z-30 select-none shadow-xl transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-64'}`}>
         {/* Brand Header */}
-        <div className="flex-none px-5 py-4 border-b border-[#1e293b] bg-[#0c1322]">
-          <div className="font-extrabold text-base tracking-tight flex items-center gap-2">
-            <span className="text-white font-black tracking-wider">RIZ-PRO</span>
-            <span className="bg-blue-600 text-white text-[10px] font-mono px-2 py-0.5 rounded font-bold">LOG</span>
-            <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono px-1.5 py-0.2 rounded">
-              {activeWorkspace.code}
-            </span>
-          </div>
-          <div className="text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider flex items-center justify-between">
-            <span>QC & OPS SYSTEM v2.0</span>
-            <span className="text-indigo-400 font-mono text-[9px] lowercase">workspace</span>
-          </div>
+        <div className="flex-none px-4 py-4 border-b border-[#1e293b] bg-[#0c1322] flex items-center justify-between">
+          {!isSidebarCollapsed && (
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-[10px] tracking-widest px-2 py-0.5 rounded shadow-sm">
+                  RIZ-PRO
+                </div>
+                <div className="bg-emerald-500 text-white font-bold text-[8px] tracking-wider px-1.5 py-0.5 rounded">
+                  LOG
+                </div>
+                <div className="border border-emerald-500/30 text-emerald-400 font-bold text-[8px] tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 hidden lg:block">
+                  RIZ-PROD
+                </div>
+              </div>
+              <div className="mt-1.5 flex items-center justify-between">
+                <span className="text-[9px] font-bold text-slate-400 tracking-wider">QC & OPS SYSTEM V2.0</span>
+                <span className="text-[8px] font-mono font-bold text-blue-400/80">workspace</span>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 transition-colors mx-auto"
+            title={isSidebarCollapsed ? "Perluas Sidebar" : "Sembunyikan Sidebar"}
+          >
+            {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
         </div>
 
-        {/* Main Navigation Links with Synchronized Jalur Penghubung */}
-        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {/* Navigation - Scrollable */}
+        <nav className="flex-1 min-h-0 overflow-y-auto px-2 py-3 space-y-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {Object.entries(groupedNavItems).map(([category, items]) => (
             <div key={category} className="space-y-1">
-              <div className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest px-2.5 pt-1">
-                {category}
-              </div>
-              {/* Jalur Penghubung Vertical Connector Track */}
-              <div className="relative pl-2.5 space-y-0.5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-800/80">
+              {!isSidebarCollapsed && (
+                <div className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest px-2.5 pt-1">
+                  {category}
+                </div>
+              )}
+              <div className={`relative space-y-1 ${!isSidebarCollapsed ? 'pl-3 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-[#1e293b]' : ''}`}>
                 {items.map((item) => {
                   const Icon = item.icon;
                   const isActive = isTabActive(item.id);
@@ -1217,15 +1236,18 @@ export default function App() {
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold rounded-lg transition-all text-left relative cursor-pointer ${
+                      className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2.5'} rounded-lg text-xs font-semibold tracking-wide transition-all group ${
                         isActive
-                          ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40 font-bold shadow-xs'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent'
+                          ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-inner'
+                          : 'text-[#94a3b8] hover:text-[#f8fafc] hover:bg-slate-800/80 border border-transparent'
                       }`}
+                      title={isSidebarCollapsed ? item.label : undefined}
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isActive ? 'bg-blue-400 shadow-xs shadow-blue-400' : 'bg-slate-700'}`} />
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-400' : 'text-slate-400'}`} />
-                      <span className="truncate">{item.label}</span>
+                      {!isSidebarCollapsed && (
+                        <span className={`w-1 h-1 rounded-full shrink-0 ${isActive ? 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]' : 'bg-slate-600 group-hover:bg-slate-400 transition-colors'}`} />
+                      )}
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {!isSidebarCollapsed && <span>{item.label}</span>}
                     </button>
                   );
                 })}
@@ -1234,43 +1256,62 @@ export default function App() {
           ))}
         </nav>
 
-        {/* Staff Footer & Logout */}
-        <div className="flex-none px-3.5 pt-3 pb-4 border-t border-[#1e293b] bg-[#0c1322] space-y-2.5">
-          {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
-            <button
-              onClick={handleInstallPWA}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-[11px] font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer animate-pulse"
-              title={isIOSDevice ? "Panduan Install di iPhone/iPad (iOS)" : "Install Aplikasi RIZ-PRO LOG ke perangkat"}
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>{isIOSDevice ? "Install di iPhone/iPad" : "Install Aplikasi (PWA)"}</span>
-            </button>
+        {/* User Profile & Actions Footer */}
+        <div className="flex-none p-3 border-t border-[#1e293b] bg-[#0c1322] space-y-2">
+          {!isSidebarCollapsed ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3 p-3 bg-slate-900 rounded-xl border border-slate-800 shadow-inner">
+                <div className="w-8 h-8 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-400 font-bold border border-blue-500/20 shrink-0">
+                  {currentUser.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
+                  <p className="text-[10px] text-slate-400 flex items-center gap-1.5 truncate mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)] shrink-0"></span>
+                    {currentUser.division} • {currentUser.role}
+                  </p>
+                </div>
+              </div>
+              <a
+                href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/50 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+              >
+                <Folder className="w-3.5 h-3.5" />
+                <span>Penyimpanan Foto (Drive)</span>
+              </a>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 py-2.5 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 rounded-lg text-[11px] font-bold transition-colors border border-transparent hover:border-rose-900/50"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Keluar Aplikasi</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-400 font-bold border border-blue-500/20 shrink-0" title={`${currentUser.name} (${currentUser.division})`}>
+                {currentUser.name.charAt(0).toUpperCase()}
+              </div>
+              <a
+                href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/50 rounded-lg transition-colors cursor-pointer"
+                title="Penyimpanan Foto (Drive)"
+              >
+                <Folder className="w-4 h-4" />
+              </a>
+              <button
+                onClick={handleLogout}
+                className="p-2 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 rounded-lg transition-colors border border-transparent hover:border-rose-900/50"
+                title="Keluar Aplikasi"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           )}
-          <div className="flex items-center gap-2.5 bg-slate-900/80 p-2 rounded-lg border border-slate-800/90">
-            <div className="w-8 h-8 rounded-full bg-blue-600/30 text-blue-400 border border-blue-500/40 flex items-center justify-center font-bold text-xs shrink-0">
-              {currentUser.name.substring(0, 1).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-bold text-xs text-white truncate">{currentUser.name}</div>
-              <div className="text-[10px] text-slate-400 truncate">{currentUser.division} • {currentUser.role}</div>
-            </div>
-          </div>
-          <a
-            href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/50 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-          >
-            <Folder className="w-3.5 h-3.5" />
-            <span>Penyimpanan Foto (Drive)</span>
-          </a>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-800/60 hover:bg-rose-950/70 hover:text-rose-200 text-slate-300 border border-slate-700/70 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Keluar Aplikasi</span>
-          </button>
         </div>
       </aside>
 
