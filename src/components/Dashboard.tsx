@@ -1248,7 +1248,7 @@ export default function Dashboard({
             </div>
           </div>
 
-          {/* SECTION 4: PRODUKTIVITAS STAFF & TOP 5 PERFORMERS */}
+          {/* SECTION 4: PRODUKTIVITAS STAFF & TOP 10 PERFORMERS */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 border-l-4 border-indigo-600 pl-3">
               <span className="text-indigo-600 font-mono font-bold text-sm">04.</span>
