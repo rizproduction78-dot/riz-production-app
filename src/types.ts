@@ -18,6 +18,8 @@ export interface Staff {
   avatar?: string;
   phone?: string;
   email?: string;
+  password?: string;
+  passwordRequest?: string;
 }
 
 export interface AttendanceLog {

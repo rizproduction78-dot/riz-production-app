@@ -6,8 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { STAFF_LIST, getMasterStaffList, normalizeStaffMaster } from '../data';
 import { Staff } from '../types';
-import { LogIn, Shield, User, Key, ClipboardList, Package, Award, LayoutDashboard } from 'lucide-react';
-import { subscribeCloudCollection } from '../lib/cloudSync';
+import { LogIn, Shield, User, Key, ClipboardList, Package, Award, LayoutDashboard, X, Lock } from 'lucide-react';
+import { subscribeCloudCollection, saveCloudDoc } from '../lib/cloudSync';
 
 interface LoginScreenProps {
   onLogin: (staff: Staff) => void;
@@ -19,6 +19,13 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [reqStaffId, setReqStaffId] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [reqError, setReqError] = useState('');
+  const [reqSuccess, setReqSuccess] = useState(false);
 
   const [localStaffList, setLocalStaffList] = useState<Staff[]>(() => getMasterStaffList());
 
@@ -59,10 +66,10 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
       return;
     }
 
-    // Simple default password for quick demo access, or just allow instant login with visual password.
-    // Password is 'riz123' for simplicity but we let them bypass if they just want to select and log in.
-    if (password && password !== 'riz123') {
-      setError('Password salah! Gunakan password default "riz123" atau kosongkan.');
+    // Check against custom password or fallback
+    const expectedPassword = staff.password || 'riz123';
+    if (password !== expectedPassword) {
+      setError('Password salah! Silakan coba lagi.');
       return;
     }
 
@@ -73,6 +80,38 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
   const handleQuickLogin = (staff: Staff) => {
     onLogActivity(staff.name, `${staff.division} - ${staff.role}`, 'Login cepat berhasil');
     onLogin(staff);
+  };
+
+  const handlePasswordRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setReqError('');
+    setReqSuccess(false);
+
+    if (!reqStaffId || !oldPassword || !newPassword) {
+      setReqError('Harap lengkapi semua bidang.');
+      return;
+    }
+
+    const staff = activeStaffList.find((s) => s.id === reqStaffId);
+    if (!staff) {
+      setReqError('Staff tidak ditemukan.');
+      return;
+    }
+
+    const expectedPassword = staff.password || 'riz123';
+    if (oldPassword !== expectedPassword) {
+      setReqError('Password lama salah.');
+      return;
+    }
+
+    try {
+      await saveCloudDoc('master_staff', reqStaffId, { passwordRequest: newPassword });
+      setReqSuccess(true);
+      setOldPassword('');
+      setNewPassword('');
+    } catch (err) {
+      setReqError('Gagal mengirim pengajuan. Coba lagi.');
+    }
   };
 
   return (
@@ -249,6 +288,15 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
                 Masuk ke Sistem
               </button>
             </div>
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(true)}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+              >
+                Ajukan Ganti Password
+              </button>
+            </div>
           </form>
           
           <div className="lg:hidden text-center text-xs text-slate-400 font-mono mt-8">
@@ -256,6 +304,97 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
           </div>
         </div>
       </div>
+
+      {/* Password Change Request Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h3 className="font-display font-bold text-slate-800 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-indigo-500" />
+                Ajukan Ganti Password
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {reqSuccess ? (
+                <div className="text-center py-6 space-y-4">
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                    <Shield className="w-8 h-8" />
+                  </div>
+                  <h4 className="text-lg font-bold text-slate-800">Pengajuan Berhasil</h4>
+                  <p className="text-sm text-slate-600">
+                    Pengajuan ganti password Anda telah dikirim dan menunggu persetujuan Admin.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordModal(false)}
+                    className="w-full mt-4 bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handlePasswordRequest} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Nama Staff</label>
+                    <select
+                      value={reqStaffId}
+                      onChange={(e) => setReqStaffId(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">-- Pilih Nama --</option>
+                      {activeStaffList.map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.division})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Password Lama</label>
+                    <input
+                      type="password"
+                      value={oldPassword}
+                      onChange={(e) => setOldPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Password Baru</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  {reqError && (
+                    <div className="text-red-600 text-xs bg-red-50 p-2 rounded-lg border border-red-100 font-medium">
+                      {reqError}
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                    >
+                      Ajukan Perubahan
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -53,7 +53,9 @@ import {
   Zap,
   FileSpreadsheet,
   Copy,
-  Check
+  Check,
+  Lock,
+  Key
 } from 'lucide-react';
 import {
   forceSyncAllModules,
@@ -130,7 +132,7 @@ export default function AdminPanel({
   sheetPullMessage = null
 }: AdminPanelProps) {
   // Navigation Sub-tabs
-  const [activeTab, setActiveTab] = useState<'staff' | 'findings_wo' | 'maintenance' | 'gudang' | 'kendaraan' | 'qc_checklist' | 'schedule' | 'database'>('staff');
+  const [activeTab, setActiveTab] = useState<'staff' | 'findings_wo' | 'maintenance' | 'gudang' | 'kendaraan' | 'qc_checklist' | 'schedule' | 'database' | 'password_approvals'>('staff');
 
   // ─────────────────────────────────────────────────────────────
   // ACTIVE MONTH STATE (Multi-Bulan)
@@ -1585,6 +1587,15 @@ export default function AdminPanel({
           >
             <Database className="w-3.5 h-3.5" />
             <span>Sync & DB</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('password_approvals')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'password_approvals' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>Persetujuan Password</span>
           </button>
         </div>
       </div>
@@ -3217,6 +3228,89 @@ export default function AdminPanel({
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* TAB PASSWORD APPROVALS                                        */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'password_approvals' && (
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-800">Daftar Pengajuan Ganti Password</h3>
+                <p className="text-[10px] text-slate-500 font-medium">Staf yang mengajukan perubahan password pada login.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse whitespace-nowrap">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
+                    <th className="py-3 px-4">Nama Staf</th>
+                    <th className="py-3 px-4">Divisi / Peran</th>
+                    <th className="py-3 px-4">Password Baru (Pengajuan)</th>
+                    <th className="py-3 px-4">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {staffList.filter(s => s.passwordRequest).length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-xs text-slate-400 font-medium">
+                        Tidak ada pengajuan ganti password saat ini.
+                      </td>
+                    </tr>
+                  ) : (
+                    staffList.filter(s => s.passwordRequest).map(staff => (
+                      <tr key={staff.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-800 text-xs">{staff.name}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-[11px] font-medium text-slate-600">{staff.division} - {staff.role}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-mono text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded inline-block">
+                            {staff.passwordRequest}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await saveCloudDoc('master_staff', staff.id, { password: staff.passwordRequest, passwordRequest: '' });
+                                } catch(e) { console.error(e) }
+                              }}
+                              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              Setujui
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await saveCloudDoc('master_staff', staff.id, { passwordRequest: '' });
+                                } catch(e) { console.error(e) }
+                              }}
+                              className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              Tolak
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
