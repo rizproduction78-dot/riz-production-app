@@ -152,16 +152,7 @@ export default function Reports({
   // 3. WO Selesai
   const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
   
-  const activeStaffKpis = staffKpis
-    .filter(staff => isStaffInGoogleSheet(staff, activeDailyReports, activeLogbookEntries))
-    .sort((a, b) => {
-      const prodA = a.reports + a.qcs + a.wos;
-      const prodB = b.reports + b.qcs + b.wos;
-      if (prodB !== prodA) return prodB - prodA;
-      if (b.kpi !== a.kpi) return b.kpi - a.kpi;
-      if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
-      return b.wos - a.wos;
-    });
+  const activeStaffKpis = staffKpis;
 
   // Dynamic metrics per division (7 Divisi Resmi)
   const reportDivisions = [

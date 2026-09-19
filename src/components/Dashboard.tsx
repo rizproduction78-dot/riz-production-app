@@ -270,15 +270,7 @@ export default function Dashboard({
   // Filter staf yang bertugas sesuai data referensi Google Sheet dan memiliki aktivitas riil
   const activeStaffProductivityData = React.useMemo(() => {
     return activeStaff
-      .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0)
-      .sort((a, b) => {
-        const prodA = a.reports + a.qcs + a.wos;
-        const prodB = b.reports + b.qcs + b.wos;
-        if (prodB !== prodA) return prodB - prodA;
-        if (b.kpi !== a.kpi) return b.kpi - a.kpi;
-        if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
-        return b.wos - a.wos;
-      });
+      .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0);
   }, [activeStaff]);
 
   // Grade distributions dynamically calculated from real active data
@@ -294,15 +286,6 @@ export default function Dashboard({
     );
     return monthlyOfficialStaff
       .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0)
-      .sort((a, b) => {
-        // Sort by productivity first (total reports + qcs + wos)
-        const prodA = a.reports + a.qcs + a.wos;
-        const prodB = b.reports + b.qcs + b.wos;
-        if (prodB !== prodA) return prodB - prodA;
-        if (b.kpi !== a.kpi) return b.kpi - a.kpi;
-        if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
-        return b.wos - a.wos;
-      })
       .slice(0, 10);
   }, [monthlyStaffKpis, dailyReports, logbookEntries]);
 
@@ -517,7 +500,7 @@ export default function Dashboard({
       undefined,            // electricalCompetencies
       undefined,            // septemberSchedule
       activeWorkOrders      // workOrders (posisi ke-8)
-    ).sort((a, b) => b.kpi - a.kpi);
+    );
   }, [staffList, activeDailyReports, activeLogbookEntries, activeFindings, activeWorkOrders]);
 
   const divisionAttendanceStats = divisionsAttendanceList.map(div => {

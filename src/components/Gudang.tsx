@@ -2813,13 +2813,12 @@ export default function Gudang({
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8 space-y-6 text-slate-900 my-8">
             <div className="flex justify-between items-center pb-4 border-b-2 border-slate-900">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-slate-950 text-white rounded-xl flex items-center justify-center font-black text-xl tracking-tighter">
-                  RIZ
-                </div>
+              <div className="flex items-center gap-4">
+                <img src="/logo.png" alt="RIZ-PRODUCTION Logo" className="h-16 w-auto object-contain print:h-14" />
                 <div>
-                  <h1 className="text-lg font-black tracking-tight text-slate-950 uppercase">PT. RIZ PRODUCTION MULTI KREASI</h1>
-                  <p className="text-[10px] text-slate-600 font-medium">Jl. Raya Logistik No. 88, Jakarta • Telp: (021) 8872-9100 • info@rizproduction.com</p>
+                  <h1 className="text-3xl font-display font-black text-slate-900 tracking-tight">RIZ-PRODUCTION</h1>
+                  <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mt-1">Live Event Equipment & Production Solution</p>
+                  <p className="text-[10px] text-slate-500 mt-1 max-w-sm">Jl. Alternatif Jl. Tugu Wates No.78, RT.02/RW.13, Kedungbadak, Tanah Sareal, Kota Bogor, Jawa Barat 16164 (CRR3+82 Kedungbadak, Bogor City, West Java)</p>
                 </div>
               </div>
               <div className="text-right">
@@ -2941,13 +2940,12 @@ export default function Gudang({
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8 space-y-6 text-slate-900 my-8">
             <div className="flex justify-between items-center pb-4 border-b-2 border-slate-900">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-slate-950 text-white rounded-xl flex items-center justify-center font-black text-xl tracking-tighter">
-                  RIZ
-                </div>
+              <div className="flex items-center gap-4">
+                <img src="/logo.png" alt="RIZ-PRODUCTION Logo" className="h-16 w-auto object-contain print:h-14" />
                 <div>
-                  <h1 className="text-lg font-black tracking-tight text-slate-950 uppercase">PT. RIZ PRODUCTION MULTI KREASI</h1>
-                  <p className="text-[10px] text-slate-600 font-medium">Laporan Rekapitulasi Biaya Sewa & Operasional Logistik Transportasi</p>
+                  <h1 className="text-3xl font-display font-black text-slate-900 tracking-tight">RIZ-PRODUCTION</h1>
+                  <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mt-1">Laporan Rekapitulasi Biaya Sewa & Operasional Logistik Transportasi</p>
+                  <p className="text-[10px] text-slate-500 mt-1 max-w-sm">Jl. Alternatif Jl. Tugu Wates No.78, RT.02/RW.13, Kedungbadak, Tanah Sareal, Kota Bogor, Jawa Barat 16164 (CRR3+82 Kedungbadak, Bogor City, West Java)</p>
                 </div>
               </div>
               <div className="text-right font-mono text-xs">

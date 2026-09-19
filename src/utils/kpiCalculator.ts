@@ -555,23 +555,20 @@ export function calculateAllStaffKpis(
       )
     )
     .sort((a, b) => {
-      // 1. Prioritas 1: QC Checked
-      if (b.qcs !== a.qcs) return b.qcs - a.qcs;
+      const totalA = (a.reports || 0) + (a.qcs || 0) + (a.wos || 0);
+      const totalB = (b.reports || 0) + (b.qcs || 0) + (b.wos || 0);
 
-      // 2. Prioritas 2: Daily Report
-      if (b.reports !== a.reports) return b.reports - a.reports;
+      // 1. Total Aktivitas (Reports + QC + WO)
+      if (totalB !== totalA) return totalB - totalA;
 
-      // 3. Prioritas 3: Work Order / Temuan
-      if (b.wos !== a.wos) return b.wos - a.wos;
+      // 2. KPI
+      if (b.kpi !== a.kpi) return b.kpi - a.kpi;
 
-      // 4. Prioritas 4: Uji Kompetensi yang Diikuti
-      if (b.competencyCount !== a.competencyCount) return b.competencyCount - a.competencyCount;
-
-      // 5. Prioritas 5: Jumlah Absensi (Kehadiran)
+      // 3. Kehadiran
       if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
 
-      // 6. Nilai Total KPI (%)
-      return b.kpi - a.kpi;
+      // 4. WO
+      return (b.wos || 0) - (a.wos || 0);
     });
 }
 
