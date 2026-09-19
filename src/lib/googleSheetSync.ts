@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * 
  * GOOGLE SHEETS REAL-TIME SYNC ENGINE
- * Target Spreadsheet: https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit
+ * Target Spreadsheet: https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit
  * Direct Bi-Directional Integration via Google Apps Script Webhook
  */
 
@@ -21,8 +21,8 @@ import {
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../data/september2026Schedule';
 import { isStaffMatch } from '../utils/kpiCalculator';
 
-export const DEFAULT_SPREADSHEET_ID = '1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc';
-export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit?gid=198998470#gid=198998470';
+export const DEFAULT_SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
+export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470';
 export const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxwCU17QZZ_1Z-9Wd2rznC15gIX25xydANyPNWbdyRrrRZzDVAYn9BETiCKAc7f7QUp0w/exec';
 
 export const GOOGLE_SHEET_WEBHOOK_KEY = 'riz_google_sheet_webhook_url';
@@ -441,7 +441,7 @@ export async function pullDataFromGoogleSheet(webhookUrl?: string): Promise<Goog
 export const GOOGLE_APPS_SCRIPT_TEMPLATE = `// =============================================================
 // PT. RIZ PRODUCTION - OPERATIONAL LOGBOOK GOOGLE APPS SCRIPT
 // Deployment: Web App (Execute as: Me, Who has access: Anyone)
-// Spreadsheet ID: 1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc
+// Spreadsheet ID: 1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA
 // =============================================================
 
 function doPost(e) {
@@ -459,7 +459,7 @@ function doPost(e) {
       ss = SpreadsheetApp.getActiveSpreadsheet();
     } catch(e) {}
     if (!ss) {
-      ss = SpreadsheetApp.openById("1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc");
+      ss = SpreadsheetApp.openById("1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA");
     }
 
     if (action === 'PING') {
@@ -814,7 +814,7 @@ function readScheduleShiftsSheet(ss) {
 // Cukup Google Sheet di-set "Share → Anyone with the link → Viewer"
 // ─────────────────────────────────────────────────────────────
 
-export const DAILY_LOG_SHEET_ID = '1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc';
+export const DAILY_LOG_SHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
 
 /** GID untuk setiap tab sheet daily log */
 export const SHEET_GID_SEPTEMBER_2026 = '198998470';
@@ -870,12 +870,16 @@ const STAFF_NAME_MAP: Record<string, string> = {
   'wahyu': 'Wahyu'
 };
 
-/** Determine division from which column has activity */
-function detectDivision(sound: string, lighting: string, led: string, multimedia: string): string {
+/** Determine division from which column has activity or staff role */
+function detectDivision(sound: string, lighting: string, led: string, multimedia: string, staffName?: string): string {
   if (sound && sound.trim()) return 'Audio';
   if (lighting && lighting.trim()) return 'Lighting';
   if (led && led.trim()) return 'Videotron';
   if (multimedia && multimedia.trim()) return 'Multimedia';
+  if (staffName) {
+    const sObj = STAFF_LIST.find(s => isStaffMatch(s, staffName));
+    if (sObj && sObj.division) return sObj.division;
+  }
   return 'Audio'; // default
 }
 
@@ -1133,8 +1137,43 @@ export async function pullDailyLogFromGviz(
       // Buat Finding jika remark mengindikasikan masalah
       if (isFindingRemark(String(remark))) {
         const remarkNorm = String(remark).trim().toLowerCase().substring(0, 30);
+        const remarkLower = String(remark).trim().toLowerCase();
+        
+        // Deteksi divisi temuan yang lebih akurat dari konteks remark atau staf
+        let findingDiv = division;
+        if (remarkLower.includes('led') || remarkLower.includes('pixel') || remarkLower.includes('kabinet') || remarkLower.includes('videotron') || remarkLower.includes('box kerusakan')) {
+          findingDiv = 'Videotron';
+        } else if (remarkLower.includes('parled') || remarkLower.includes('beam') || remarkLower.includes('lighting') || remarkLower.includes('lampu') || remarkLower.includes('smoke')) {
+          findingDiv = 'Lighting';
+        } else if (remarkLower.includes('sdi') || remarkLower.includes('hdmi') || remarkLower.includes('kamera') || remarkLower.includes('multimedia')) {
+          findingDiv = 'Multimedia';
+        } else if (activeStaffList[0]) {
+          const sObj = STAFF_LIST.find(s => isStaffMatch(s, activeStaffList[0]));
+          if (sObj && sObj.division) findingDiv = sObj.division;
+        }
+
+        // Tentukan nama equipment yang deskriptif dan akurat (TIDAK BOLEH fallback generik seperti "Unit Divisi Audio")
+        let equipName = activity;
+        if (!equipName || equipName.toLowerCase().startsWith('unit divisi')) {
+          if (remarkLower.includes('box') && (remarkLower.includes('kerusakan') || remarkLower.includes('rusak') || findingDiv === 'Videotron')) {
+            equipName = 'Modul Kabinet LED Videotron';
+          } else if (remarkLower.includes('parled') || remarkLower.includes('par led')) {
+            equipName = 'PAR LED Warm White (Lighting)';
+          } else if (remarkLower.includes('sdi')) {
+            equipName = 'Kabel SDI (Multimedia)';
+          } else if (remarkLower.includes('smoke')) {
+            equipName = 'Smoke Machine (Lighting)';
+          } else if (remarkLower.includes('takel')) {
+            equipName = 'Takel Rigging (Audio)';
+          } else if (remarkLower.includes('ampeg') || remarkLower.includes('amplifier')) {
+            equipName = 'Amplifier Unit (Audio)';
+          } else {
+            equipName = `Peralatan ${findingDiv}`;
+          }
+        }
+
         // Normalize the exact same way as cloudSync.ts contentKey for rigorous deduplication
-        const eqNorm = String(activity || (division ? `Unit Divisi ${division}` : 'Unit Operasional')).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const eqNorm = equipName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const issNorm = String(remark).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const picNorm = String(activeStaffList[0] || 'Tim Operasional').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const contentKeyNorm = `dedup_${eqNorm}_${issNorm}_${picNorm}`;
@@ -1144,14 +1183,14 @@ export async function pullDailyLogFromGviz(
         if (!existingReportIds.has(findingKey) && !existingReportIds.has(remarkNorm) && !existingReportIds.has(contentKeyNorm)) {
           const findingDoc = {
             id: findingKey,
-            equipment: activity || (division ? `Unit Divisi ${division}` : 'Unit Operasional'),
+            equipment: equipName,
             issue: String(remark).trim(),
             priority: 'Sedang',
             pic: activeStaffList[0] || 'Tim Operasional',
             targetDate: currentDate,
             status: 'Open',
             dateCreated: currentDate,
-            division: division as any,
+            division: findingDiv as any,
             _source: 'google_sheet',
             _syncedAt: new Date().toISOString()
           };

@@ -1245,6 +1245,126 @@ export default function AdminPanel({
     saveQcChecklists(updated);
   };
 
+  const handlePrintChecklist = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    let html = `
+      <html>
+      <head>
+        <title>Checklist Divisi ${selectedQcDivision}</title>
+        <style>
+          body { font-family: 'Inter', sans-serif; padding: 20px; color: #1e293b; }
+          h1 { text-align: center; margin-bottom: 20px; font-size: 20px; text-transform: uppercase; color: #0f172a; }
+          .division { margin-bottom: 30px; }
+          .division-title { font-size: 16px; font-weight: bold; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 12px; color: #334155; }
+          .checklist-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+          .checkbox { width: 14px; height: 14px; border: 1.5px solid #64748b; border-radius: 3px; display: inline-block; flex-shrink: 0; margin-top: 3px; }
+          .item-text { font-size: 13px; line-height: 1.5; color: #475569; }
+          @media print {
+            body { padding: 0; }
+            .division { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Master Checklist QC - PT. Riz Production Multi Kreasi</h1>
+    `;
+
+    const items = qcChecklists[selectedQcDivision] || [];
+    if (items.length > 0) {
+      html += `<div class="division">`;
+      html += `<div class="division-title">Divisi ${selectedQcDivision}</div>`;
+      items.forEach((item, idx) => {
+        html += `
+          <div class="checklist-item">
+            <div class="checkbox"></div>
+            <div class="item-text">${idx + 1}. ${item}</div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div style="text-align: center; margin-top: 50px; color: #64748b;">Belum ada butir checklist standar untuk divisi ${selectedQcDivision}.</div>`;
+    }
+
+    html += `
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+    
+    onLogActivity(currentUser.name, currentUser.role, `Mencetak checklist divisi ${selectedQcDivision} (PDF)`);
+  };
+
+  const handlePrintAllChecklists = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    let html = `
+      <html>
+      <head>
+        <title>Checklist Semua Divisi</title>
+        <style>
+          body { font-family: 'Inter', sans-serif; padding: 20px; color: #1e293b; }
+          h1 { text-align: center; margin-bottom: 20px; font-size: 20px; text-transform: uppercase; color: #0f172a; }
+          .division { margin-bottom: 30px; }
+          .division-title { font-size: 16px; font-weight: bold; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 12px; color: #334155; }
+          .checklist-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+          .checkbox { width: 14px; height: 14px; border: 1.5px solid #64748b; border-radius: 3px; display: inline-block; flex-shrink: 0; margin-top: 3px; }
+          .item-text { font-size: 13px; line-height: 1.5; color: #475569; }
+          @media print {
+            body { padding: 0; }
+            .division { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Master Checklist QC - PT. Riz Production Multi Kreasi</h1>
+    `;
+
+    const divisions = ['Audio', 'Lighting', 'Videotron', 'Multimedia', 'Gudang', 'Service', 'Admin'] as Division[];
+
+    divisions.forEach(div => {
+      const items = qcChecklists[div] || [];
+      if (items.length > 0) {
+        html += `<div class="division">`;
+        html += `<div class="division-title">Divisi ${div}</div>`;
+        items.forEach((item, idx) => {
+          html += `
+            <div class="checklist-item">
+              <div class="checkbox"></div>
+              <div class="item-text">${idx + 1}. ${item}</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }
+    });
+
+    html += `
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+    
+    onLogActivity(currentUser.name, currentUser.role, `Mencetak checklist semua divisi (PDF)`);
+  };
+
   // ─────────────────────────────────────────────────────────────
   // 6. SCHEDULE ROSTER STATE
   // ─────────────────────────────────────────────────────────────
@@ -2931,8 +3051,26 @@ export default function AdminPanel({
               </div>
             </div>
 
-            <div className="text-right text-xs text-slate-500 font-mono">
-              Total Item: <strong>{(qcChecklists[selectedQcDivision] || []).length} Butir Standar</strong>
+            <div className="flex flex-col md:items-end gap-2 text-xs text-slate-500 font-mono">
+              <div>
+                Total Item: <strong>{(qcChecklists[selectedQcDivision] || []).length} Butir Standar</strong>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={handlePrintChecklist}
+                  className="flex items-center gap-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer font-sans font-bold shadow-sm"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Cetak {selectedQcDivision}
+                </button>
+                <button
+                  onClick={handlePrintAllChecklists}
+                  className="flex items-center gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer font-sans font-bold shadow-sm"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Cetak Semua Divisi
+                </button>
+              </div>
             </div>
           </div>
 
@@ -3233,7 +3371,7 @@ export default function AdminPanel({
                 </div>
               </div>
               <a
-                href="https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit?gid=198998470#gid=198998470"
+                href="https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 rounded-xl text-xs font-bold text-blue-200 transition-all cursor-pointer shrink-0"
@@ -3247,7 +3385,7 @@ export default function AdminPanel({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-mono uppercase block">Sheet Target</span>
-                <span className="font-bold text-blue-300 font-mono block text-[11px] truncate">1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc</span>
+                <span className="font-bold text-blue-300 font-mono block text-[11px] truncate">1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA</span>
               </div>
               <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-mono uppercase block">Tab Aktif</span>

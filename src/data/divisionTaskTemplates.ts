@@ -435,5 +435,23 @@ export const DIVISION_DAILY_TASK_REFERENCES: Record<Division, DivisionTaskTempla
       priority: 'Sedang',
       category: 'Operasional & Show'
     }
+  ],
+
+  // ─────────────────────────────────────────────────────────────
+  // SEMUA DIVISI (Template umum lintas divisi)
+  // ─────────────────────────────────────────────────────────────
+  'Semua Divisi': [
+    {
+      title: 'Pengecekan & Perawatan Rutin Peralatan Umum',
+      description: 'Pengecekan kondisi fisik dan fungsional peralatan umum yang digunakan lintas divisi.',
+      priority: 'Sedang',
+      category: 'Pemeriksaan Rutin QC'
+    },
+    {
+      title: 'Pencatatan Laporan Harian Operasional',
+      description: 'Pengisian laporan harian sesuai aktivitas operasional yang dilaksanakan pada hari bersangkutan.',
+      priority: 'Tinggi',
+      category: 'Operasional & Show'
+    }
   ]
 };

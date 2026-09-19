@@ -1,6 +1,7 @@
 // Service Worker for RIZ-PROLOG Progressive Web App (PWA)
 // Cache Name with versioning
-const CACHE_NAME = 'riz-prolog-v1.0.1';
+const CACHE_NAME = 'riz-prolog-v1.0.2';
+
 
 // Essential assets to cache immediately on install
 const PRECACHE_ASSETS = [

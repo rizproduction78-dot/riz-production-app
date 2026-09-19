@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { STAFF_LIST, getMasterStaffList, normalizeStaffMaster } from '../data';
 import { Staff } from '../types';
-import { LogIn, Shield, Users, User, Key } from 'lucide-react';
+import { LogIn, Shield, User, Key, ClipboardList, Package, Award, LayoutDashboard } from 'lucide-react';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface LoginScreenProps {
@@ -76,106 +76,184 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8 font-sans">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 mb-4">
-            <Shield className="w-8 h-8" />
+    <div className="min-h-screen flex bg-slate-50 font-sans">
+      
+      {/* Left Column: Hero & Feature Hierarchy */}
+      <div className="hidden lg:flex flex-col justify-between w-1/2 p-12 xl:p-16 bg-slate-900 text-white relative overflow-hidden">
+        {/* Decorative subtle gradient */}
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-900/40 via-slate-900 to-slate-900 pointer-events-none" />
+        
+        <div className="relative z-10">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/20 text-indigo-400 mb-8 border border-indigo-500/30">
+            <Shield className="w-6 h-6" />
           </div>
-          <h2 className="text-3xl font-display font-bold text-slate-900 tracking-tight">
+          <h1 className="text-4xl xl:text-5xl font-display font-extrabold tracking-tight mb-4 leading-tight">
             RIZ-PRODUCTION
-          </h2>
-          <p className="mt-2 text-sm text-slate-500 font-sans">
-            LOGBOOK QC & DAILY REPORT STAFF INHOUSE
+          </h1>
+          <p className="text-lg text-slate-400 max-w-md">
+            Sistem Logbook QC & Laporan Harian Terpusat.
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          <div className="rounded-md space-y-4">
-            <div>
-              <label htmlFor="staff-select" className="block text-sm font-medium text-slate-700 mb-1">
-                Pilih Nama Staff ({activeStaffList.length} Personel Terdaftar)
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                  <User className="w-5 h-5" />
-                </div>
-                <select
-                  id="staff-select"
-                  value={selectedStaffId}
-                  onChange={(e) => {
-                    setSelectedStaffId(e.target.value);
-                    setError('');
-                  }}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-700 text-sm bg-slate-50/50"
-                >
-                  <option value="">-- Pilih Anggota Staff --</option>
-                  
-                  {['Admin', 'Gudang', 'Audio', 'Lighting', 'Multimedia', 'Videotron', 'Service'].map(divName => {
-                    const staffInDiv = activeStaffList.filter(s => s && s.division === divName);
-                    if (staffInDiv.length === 0) return null;
-                    const groupLabel = divName === 'Admin' ? 'ADMIN / MANAGEMENT'
-                      : divName === 'Gudang' ? 'STAFF GUDANG'
-                      : divName === 'Audio' ? 'SOUND (AUDIO) DIVISION'
-                      : `${divName.toUpperCase()} DIVISION`;
-                    return (
-                      <optgroup key={divName} label={groupLabel}>
-                        {staffInDiv.map(s => {
-                          let displayRole: string = s?.role || 'Staff';
-                          if (s?.id === 'director-wahyu' || s?.role === 'Owner') displayRole = 'Owner / Director';
-                          const nick = s?.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? ` (${s.nickname})` : '';
-                          return (
-                            <option key={s.id} value={s.id}>{s.name}{nick} ({displayRole} - {s.division})</option>
-                          );
-                        })}
-                      </optgroup>
-                    );
-                  })}
-                </select>
+        <div className="relative z-10 mt-12 space-y-8 flex-1 flex flex-col justify-center">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Arsitektur Sistem</h3>
+          
+          <div className="grid grid-cols-1 gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                <ClipboardList className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-200">Operasional & QC</h4>
+                <p className="text-sm text-slate-400 mt-1">Pencatatan Daily Task, Checklist QC, dan Work Order.</p>
               </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
-                Password <span className="text-xs text-slate-400 font-normal">(Default: riz123 atau kosongkan)</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                  <Key className="w-5 h-5" />
-                </div>
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-700 text-sm bg-slate-50/50"
-                />
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20">
+                <Package className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-200">Manajemen Aset & Gudang</h4>
+                <p className="text-sm text-slate-400 mt-1">Asset Tracking, Pemeliharaan Fasilitas, dan Armada.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                <Award className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-200">SDM & Performa KPI</h4>
+                <p className="text-sm text-slate-400 mt-1">Paspor Kompetensi, Absensi, dan Kalkulasi KPI Otomatis.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/20">
+                <LayoutDashboard className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-200">Analitik & Laporan</h4>
+                <p className="text-sm text-slate-400 mt-1">Dashboard Eksekutif dan Cetak Laporan PDF.</p>
               </div>
             </div>
           </div>
+        </div>
 
-          {error && (
-            <div className="text-red-500 text-sm bg-red-50 p-2.5 rounded-lg border border-red-100 font-medium">
-              {error}
-            </div>
-          )}
+        <div className="relative z-10 text-xs text-slate-500 font-mono mt-12">
+          Versi 1.1.0 • Enterprise System
+        </div>
+      </div>
 
-          <div>
-            <button
-              type="submit"
-              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-            >
-              <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                <LogIn className="h-5 w-5 text-indigo-500 group-hover:text-indigo-400" />
-              </span>
-              Masuk ke Aplikasi
-            </button>
+      {/* Right Column: Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 relative">
+        {/* Mobile-only header since left column is hidden */}
+        <div className="lg:hidden absolute top-8 left-8 right-8 text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 text-white mb-3">
+            <Shield className="w-6 h-6" />
           </div>
-        </form>
+          <h2 className="text-2xl font-display font-bold text-slate-900 tracking-tight">RIZ-PRODUCTION</h2>
+          <p className="text-xs text-slate-500 mt-1">Sistem Logbook QC & Laporan Harian Terpusat.</p>
+        </div>
 
-        <div className="text-center text-xs text-slate-400 font-mono mt-6">
-          Status: Sistem Siap • Versi 1.1.0
+        <div className="max-w-sm w-full space-y-8 bg-white p-8 sm:p-10 rounded-2xl border border-slate-200 shadow-sm mt-24 lg:mt-0">
+          <div className="text-center lg:text-left">
+            <h2 className="text-3xl font-display font-bold text-slate-900 tracking-tight">
+              Masuk
+            </h2>
+            <p className="mt-2 text-sm text-slate-500 font-sans">
+              Silakan pilih profil staf Anda untuk melanjutkan.
+            </p>
+          </div>
+
+          <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+            <div className="rounded-md space-y-4">
+              <div>
+                <label htmlFor="staff-select" className="block text-sm font-bold text-slate-700 mb-1">
+                  Pilih Nama Staff ({activeStaffList.length} Terdaftar)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <select
+                    id="staff-select"
+                    value={selectedStaffId}
+                    onChange={(e) => {
+                      setSelectedStaffId(e.target.value);
+                      setError('');
+                    }}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-700 text-sm bg-slate-50/50"
+                  >
+                    <option value="">-- Pilih Anggota Staff --</option>
+                    
+                    {['Admin', 'Gudang', 'Audio', 'Lighting', 'Multimedia', 'Videotron', 'Service'].map(divName => {
+                      const staffInDiv = activeStaffList.filter(s => s && s.division === divName);
+                      if (staffInDiv.length === 0) return null;
+                      const groupLabel = divName === 'Admin' ? 'ADMIN / MANAGEMENT'
+                        : divName === 'Gudang' ? 'STAFF GUDANG'
+                        : divName === 'Audio' ? 'SOUND (AUDIO) DIVISION'
+                        : `${divName.toUpperCase()} DIVISION`;
+                      return (
+                        <optgroup key={divName} label={groupLabel}>
+                          {staffInDiv.map(s => {
+                            let displayRole: string = s?.role || 'Staff';
+                            if (s?.id === 'director-wahyu' || s?.role === 'Owner') displayRole = 'Owner / Director';
+                            const nick = s?.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? ` (${s.nickname})` : '';
+                            return (
+                              <option key={s.id} value={s.id}>{s.name}{nick} ({displayRole} - {s.division})</option>
+                            );
+                          })}
+                        </optgroup>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-bold text-slate-700 mb-1">
+                  Password <span className="text-[10px] text-slate-400 font-normal uppercase tracking-wider ml-1">(Default: riz123)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Key className="w-5 h-5" />
+                  </div>
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-700 text-sm bg-slate-50/50"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="text-red-600 text-xs bg-red-50 p-3 rounded-lg border border-red-100 font-medium flex items-center">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
+              >
+                <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                  <LogIn className="h-4 w-4 text-indigo-400 group-hover:text-indigo-300" />
+                </span>
+                Masuk ke Sistem
+              </button>
+            </div>
+          </form>
+          
+          <div className="lg:hidden text-center text-xs text-slate-400 font-mono mt-8">
+            Status: Sistem Siap • Versi 1.1.0
+          </div>
         </div>
       </div>
     </div>

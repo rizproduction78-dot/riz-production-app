@@ -6,7 +6,7 @@
  * PT. RIZ PRODUCTION MULTI KREASI
  * 
  * SUMBER ACUAN RESMI PRIORITAS PENILAIAN UTAMA KPI:
- * Spreadsheet: https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit?gid=198998470#gid=198998470
+ * Spreadsheet: https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470
  * 
  * PRINSIP INTEGRITAS DATA:
  * - 100% Data Riil dari input operasional & spreadsheet resmi (tanpa halusinasi/data fiktif)
@@ -20,16 +20,18 @@
  * 6. Disiplin & Teamwork - Bobot 15%
  */
 
-export const KPI_SPREADSHEET_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1N8MkJtDpD9VmrtSkTuygxiyNRmEVCAWDITZisiVd_Dc/edit?gid=198998470#gid=198998470';
+export const KPI_SPREADSHEET_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470';
 export const KPI_SPREADSHEET_GID = '198998470';
 
-import { Staff, Division, DailyReport, LogbookEntry, Finding, AttendanceLog, WorkOrder } from '../types';
+import { Staff, Division, DailyReport, LogbookEntry, Finding, AttendanceLog, WorkOrder, DailyTask } from '../types';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
 
 export interface StaffKpiResult {
   id: string;
   staffId: string;
   name: string;
+  nickname?: string;
+  avatar?: string;
   division: string;
   role: string;
   
@@ -185,6 +187,14 @@ export function isStaffMatch(staff: Staff, inputName?: string): boolean {
   const rawInput = inputName.toLowerCase().trim();
   if (!rawInput) return false;
 
+  // STRICT GUARD: Prevent Agustino Setiawan from hijacking Dedi Agus Wigiantoro's reports
+  // because they share the name "agus".
+  if (staff.id === 'staff-agustino') {
+    if (rawInput.includes('dedi') || rawInput.includes('wigi') || rawInput.includes('dedy')) {
+      return false;
+    }
+  }
+
   const aliases = getAllStaffAliases(staff);
   
   // 1. Direct exact match check
@@ -291,7 +301,8 @@ export function calculateStaffKpi(
   attendanceLogsOverride?: AttendanceLog[],
   electricalCompetenciesOverride?: Record<string, Record<string, { verified: boolean }>>,
   septemberScheduleOverride?: StaffScheduleRow[],
-  workOrdersOverride?: WorkOrder[]
+  workOrdersOverride?: WorkOrder[],
+  dailyTasksOverride?: DailyTask[]
 ): StaffKpiResult {
   // ─────────────────────────────────────────────────────────────
   // 1. MENGHITUNG JUMLAH ABSEN (KEHADIRAN) - DATA RESMI
@@ -325,10 +336,20 @@ export function calculateStaffKpi(
     }
   }
 
-  // Kehadiran riil: jika ada log presensi gunakan log, jika tidak gunakan total jadwal dinas resmi
-  const attendanceCount = staffLogsCount > 0 ? staffLogsCount : scheduledWorkingDays;
-  const attendanceTarget = scheduledWorkingDays > 0 ? scheduledWorkingDays : 24;
-  const attendanceScore = attendanceTarget > 0 ? Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100)) : 0;
+  // Sesuai aturan: "Daily Report:> QC Checked:> SAMA DENGAN ABSENSI"
+  // Kehadiran riil dihitung dari jumlah hari mereka benar-benar setor laporan/QC (bukan sekadar jadwal roster)
+  const staffDates = new Set<string>();
+  dailyReports.filter(r => isStaffMatch(staff, r.staffName) && r.date).forEach(r => staffDates.add(r.date));
+  logbookEntries.filter(e => isStaffMatch(staff, e.staffName) && e.date).forEach(e => staffDates.add(e.date));
+  const actualPresenceDays = staffDates.size;
+
+  const attendanceCount = actualPresenceDays > 0 ? actualPresenceDays : 0;
+  // Target absensi diambil dari jadwal kerja yang sebenarnya (roster) atau default 24 hari
+  const attendanceTarget = scheduledWorkingDays > 0 ? scheduledWorkingDays : 24; 
+  const attendanceScore = Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100));
+  
+  // Target untuk report dan QC SAMA DENGAN target absensi (Sesuai dengan jadwal roster)
+  const taskTarget = attendanceTarget;
 
   // ─────────────────────────────────────────────────────────────
   // 2. MENGHITUNG UJI KOMPETENSI YANG DIIKUTI - DITAMBAHKAN
@@ -362,30 +383,37 @@ export function calculateStaffKpi(
   const disciplineScore = attendanceScore > 0 ? attendanceScore : 100; // Base 100 if no roster data yet
 
   // ─────────────────────────────────────────────────────────────
-  // 4. PRODUKTIVITAS / DAILY TASK (Murni dari laporan harian yang diinput)
+  // 4. PRODUKTIVITAS / DAILY TASK (Murni dari laporan harian yang BERHASIL DI SELESAIKAN / AMAN)
   // ─────────────────────────────────────────────────────────────
-  const realReportsCount = dailyReports.filter(r => isStaffMatch(staff, r.staffName)).length;
-  const reportsCount = realReportsCount;
-  const reportScore = Math.min(100, Math.round((reportsCount / 2) * 100));
+  // Kuantitas riil dari referensi data resmi (Laporan yang valid disubmit + Tugas yang Diselesaikan)
+  const reportsCount = dailyReports.filter(r => isStaffMatch(staff, r.staffName)).length;
+  
+  let realTasks: DailyTask[] = dailyTasksOverride || [];
+  if (!dailyTasksOverride && typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('riz_daily_tasks');
+      if (saved) realTasks = JSON.parse(saved);
+    } catch (e) {}
+  }
+  const completedTaskCount = realTasks.filter(t => (isStaffMatch(staff, t.assignedName) || (t.assignedTo === staff.id)) && t.status === 'Done').length;
+  
+  const combinedProductivityCount = reportsCount + completedTaskCount;
+
+  // SAMA DENGAN ABSENSI (Target divisor disamakan dengan target absensi)
+  // SKORS diambil dari total task yang dikerjakan
+  const reportScore = Math.min(100, Math.round((combinedProductivityCount / taskTarget) * 100));
 
   // ─────────────────────────────────────────────────────────────
   // 5. QUALITY / QC CHECKLIST (Murni dari checklist QC & inspeksi teknis lapangan)
   // ─────────────────────────────────────────────────────────────
   const isNonQcDivision = ['Gudang', 'Admin'].includes(staff.division);
-  const realQcCount = Math.max(
+  // Kuantitas riil dari referensi data resmi
+  const qcCount = isNonQcDivision ? 0 : Math.max(
     logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length,
-    dailyReports.filter(r => isStaffMatch(staff, r.staffName) && (
-      r.activity?.toLowerCase().includes('cek') ||
-      r.activity?.toLowerCase().includes('qc') ||
-      r.activity?.toLowerCase().includes('cleaning') ||
-      r.activity?.toLowerCase().includes('test') ||
-      r.activity?.toLowerCase().includes('inspeksi') ||
-      r.activity?.toLowerCase().includes('repair') ||
-      r.activity?.toLowerCase().includes('perbaikan')
-    )).length
+    dailyReports.filter(r => isStaffMatch(staff, r.staffName) && (r.activity?.toLowerCase().includes('qc') || r.activity?.toLowerCase().includes('cek'))).length
   );
-  const qcCount = isNonQcDivision ? 0 : realQcCount;
-  const qcScore = isNonQcDivision ? 80 : (qcCount === 0 ? 0 : Math.min(100, Math.round((qcCount / 2) * 100)));
+  // Target divisor disamakan dengan kehadiran riil
+  const qcScore = isNonQcDivision ? 80 : Math.min(100, Math.round((qcCount / taskTarget) * 100));
 
   // ─────────────────────────────────────────────────────────────
   // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Murni dari WO yang diselesaikan & Temuan Closed)
@@ -463,6 +491,8 @@ export function calculateStaffKpi(
     id: staff.id,
     staffId: staff.id,
     name: staff.name,
+    nickname: staff.nickname,
+    avatar: staff.avatar,
     division: staff.division,
     role: staff.role,
     attendanceCount: attendanceCount,
@@ -472,8 +502,8 @@ export function calculateStaffKpi(
     competencyTotal,
     competencyScore,
     disciplineScore: disciplineScore,
-    reports: reportsCount,
-    reportsCount,
+    reports: combinedProductivityCount,
+    reportsCount: combinedProductivityCount,
     reportScore,
     qcs: qcCount,
     qcCount,
@@ -506,9 +536,11 @@ export function calculateAllStaffKpis(
   attendanceLogs?: AttendanceLog[],
   electricalCompetencies?: Record<string, Record<string, { verified: boolean }>>,
   septemberSchedule?: StaffScheduleRow[],
-  workOrders?: WorkOrder[]
+  workOrders?: WorkOrder[],
+  dailyTasks?: DailyTask[]
 ): StaffKpiResult[] {
   return staffList
+    .filter(staff => isStaffInGoogleSheet(staff, dailyReports, logbookEntries))
     .map(staff =>
       calculateStaffKpi(
         staff,
@@ -518,7 +550,8 @@ export function calculateAllStaffKpis(
         attendanceLogs,
         electricalCompetencies,
         septemberSchedule,
-        workOrders
+        workOrders,
+        dailyTasks
       )
     )
     .sort((a, b) => {
@@ -558,7 +591,8 @@ export const OFFICIAL_GSHEET_STAFF_NAMES = [
   'yudishtira purnama a',
   'ayong sumarsih',
   'dedi agus wigiantoro',
-  'wahyudin'
+  'wahyudin',
+  'muhamad irvan'
 ];
 
 /**
@@ -570,25 +604,48 @@ export function isStaffInGoogleSheet(
   activeLogbookEntries?: LogbookEntry[]
 ): boolean {
   if (!staff) return false;
-  if (staff.id === 'director-wahyu' || staff.name === 'Wahyu') return false;
+  if (staff.id === 'director-wahyu' || staff.id === 'staff-wahyu' || (staff.name?.toLowerCase().trim() === 'wahyu' || staff.name?.toLowerCase().trim() === 'wahyu (owner)')) return false;
   if (staff.id === 'staff-damri' || staff.name === 'Damri') return false;
-  if (staff.id === 'staff-agustino' || staff.name === 'Agustino Setiawan') return false;
+  if (staff.id === 'staff-agustino' || staff.name?.includes('Agustino')) return false;
   if (staff.id === 'staff-fahrul' || staff.name === 'M. Fahruyana . A') return false;
   if (staff.id === 'staff-syalsa' || staff.name === 'Syalsa Sri Hestariana') return false;
   if (staff.id === 'staff-seno' || staff.name === 'Seno Subroto') return false;
   if (staff.id === 'staff-absobur' || staff.name === 'Abah Sobur') return false;
   if (staff.id === 'staff-gatot' || staff.name === 'Gatot Wiliyanto') return false;
   if (staff.id === 'staff-udin' || staff.name === 'Udin Saepudin') return false;
-  if (staff.id === 'staff-irvan' || staff.name === 'Muhamad Irvan') return false;
+  // Staff semua divisi adalah placeholder, bukan staf riil
+  if (staff.id === 'staff-semua-divisi') return false;
 
   const normName = (staff.name || '').toLowerCase().trim();
 
-  // 1. Cek dari daftar 12 staf resmi yang bertugas di sheet acuan September 2026
+  // 1. Cek dari daftar staf resmi yang bertugas di sheet acuan September 2026
   if (OFFICIAL_GSHEET_STAFF_NAMES.some(n => normName === n || normName.includes(n) || n.includes(normName))) {
     return true;
   }
 
-  // 2. Cek dinamis jika ada nama staf baru yang ditarik dari Google Sheet
+  // 2. Cek via KNOWN_STAFF_ALIASES berdasarkan ID staf
+  // Kasus: staff-dedi memiliki name='Agus Wigi (Videotron)' tapi canonical='dedi agus wigiantoro'
+  if (staff.id && KNOWN_STAFF_ALIASES[staff.id]) {
+    const staffAliases = KNOWN_STAFF_ALIASES[staff.id];
+    const foundInOfficial = OFFICIAL_GSHEET_STAFF_NAMES.some(officialName =>
+      staffAliases.some(alias =>
+        alias === officialName ||
+        officialName.includes(alias) ||
+        alias.includes(officialName)
+      )
+    );
+    if (foundInOfficial) return true;
+  }
+
+  // 3. Whitelist langsung berdasarkan ID staf aktif September 2026
+  const ACTIVE_SEPT2026_IDS = new Set([
+    'staff-taufik', 'staff-suryana', 'staff-rahmat', 'staff-ramdani',
+    'staff-iwan', 'staff-heri', 'staff-mulyana', 'staff-mulyadi',
+    'staff-yudish', 'staff-ayong', 'staff-dedi', 'staff-unyin', 'staff-irvan'
+  ]);
+  if (staff.id && ACTIVE_SEPT2026_IDS.has(staff.id)) return true;
+
+  // 4. Cek dinamis jika ada nama staf baru yang ditarik dari Google Sheet
   if (activeDailyReports || activeLogbookEntries) {
     const isPresent = (activeDailyReports || []).some(
       r => (r._source === 'google_sheet' || r.id.startsWith('gsheet')) && isStaffMatch(staff as any, r.staffName)

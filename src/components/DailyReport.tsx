@@ -165,7 +165,7 @@ export default function DailyReport({
       ? (filterDivision === 'All' || r.division === filterDivision || (isDualStaffName(r.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
       : (userDivisions.includes(r.division) || isDualStaffName(r.staffName));
     return matchSearch && matchDivision;
-  });
+  }).sort((a, b) => b.id.localeCompare(a.id, undefined, { numeric: true }));
 
   return (
     <div className="space-y-8 font-sans">

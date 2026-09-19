@@ -160,11 +160,29 @@ export default function Findings({
   const handleConvertToWorkOrder = (finding: Finding) => {
     if (!onAddWorkOrder) return;
 
+    // Cek jika WO untuk temuan ini sudah ada sebelumnya
+    const existingWO = workOrders.find(w => {
+      const desc = String(w?.description || (w as any)?.notes || '');
+      const fid = String(finding?.id || '');
+      const eq = String(finding?.equipment || '').toLowerCase();
+      const title = String(w?.title || '').toLowerCase();
+      return (fid && desc.includes(fid)) || (eq && title.includes(eq));
+    });
+
+    if (existingWO) {
+      setActiveSubTab('work_orders');
+      alert(`Work Order untuk unit "${finding.equipment}" sudah aktif terdaftar (Status: ${existingWO.status}, Progress: ${existingWO.progress}%). Anda langsung diarahkan ke tiket WO tersebut.`);
+      return;
+    }
+
     // Cari staf service default atau PIC finding
     const serviceStaff = staffList.find(s => s.division === 'Service') || staffList.find(s => s.name === finding.pic) || staffList[0];
     const defaultPic = serviceStaff ? serviceStaff.name : finding.pic;
 
     onAddWorkOrder({
+      findingId: finding.id,
+      equipment: finding.equipment,
+      priority: finding.priority,
       title: `Perbaikan: ${finding.equipment}`,
       description: `[Temuan QC ID: ${finding.id}] ${finding.issue} (Prioritas: ${finding.priority})`,
       pic: defaultPic,
@@ -230,14 +248,22 @@ export default function Findings({
     if (!onUpdateWorkOrderStatus) return;
     onUpdateWorkOrderStatus(wo.id, 'Completed');
     
-    // Auto-close finding jika WO berasal dari temuan QC
-    const desc = String(wo?.description || (wo as any)?.notes || '');
-    const match = desc.match(/\[Temuan QC ID: ([^\]]+)\]/);
-    if (match && match[1]) {
-      const findingId = match[1];
-      const relatedFinding = findings.find(f => f?.id === findingId);
+    // Auto-close finding jika WO berasal dari temuan QC (via findingId langsung atau via parsing catatan)
+    const fid = wo.findingId || (String(wo?.description || (wo as any)?.notes || '').match(/\[Temuan QC ID: ([^\]]+)\]/)?.[1]);
+    if (fid) {
+      const relatedFinding = findings.find(f => f?.id === fid);
       if (relatedFinding && relatedFinding.status === 'Open') {
-        onUpdateFindingStatus(findingId, 'Close');
+        onUpdateFindingStatus(fid, 'Close');
+        if (onUpdateAssetCondition && assets && assets.length > 0 && relatedFinding.equipment) {
+          const equipName = String(relatedFinding.equipment).replace(/\s*\(.*\)$/, '').trim().toLowerCase();
+          const matched = assets.find(a => {
+            const aname = String(a?.name || '').toLowerCase();
+            return (aname && equipName && (aname.includes(equipName) || equipName.includes(aname)));
+          });
+          if (matched) {
+            onUpdateAssetCondition(matched.id, 'Baik');
+          }
+        }
       }
     }
 
@@ -264,13 +290,21 @@ export default function Findings({
     onUpdateWorkOrderStatus(wo.id, 'Completed', currentUser.name, today);
 
     // Auto-close finding jika WO berasal dari temuan QC
-    const desc = String(wo?.description || (wo as any)?.notes || '');
-    const match = desc.match(/\[Temuan QC ID: ([^\]]+)\]/);
-    if (match && match[1]) {
-      const findingId = match[1];
-      const relatedFinding = findings.find(f => f?.id === findingId);
+    const fid = wo.findingId || (String(wo?.description || (wo as any)?.notes || '').match(/\[Temuan QC ID: ([^\]]+)\]/)?.[1]);
+    if (fid) {
+      const relatedFinding = findings.find(f => f?.id === fid);
       if (relatedFinding && relatedFinding.status === 'Open') {
-        onUpdateFindingStatus(findingId, 'Close', currentUser.name, today);
+        onUpdateFindingStatus(fid, 'Close', currentUser.name, today);
+        if (onUpdateAssetCondition && assets && assets.length > 0 && relatedFinding.equipment) {
+          const equipName = String(relatedFinding.equipment).replace(/\s*\(.*\)$/, '').trim().toLowerCase();
+          const matched = assets.find(a => {
+            const aname = String(a?.name || '').toLowerCase();
+            return (aname && equipName && (aname.includes(equipName) || equipName.includes(aname)));
+          });
+          if (matched) {
+            onUpdateAssetCondition(matched.id, 'Baik');
+          }
+        }
       }
     }
 
@@ -309,7 +343,7 @@ export default function Findings({
     const matchesStatus = filterStatus === 'All' || f?.status === filterStatus;
     const matchesDivision = filterDivision === 'All' || findingDiv === filterDivision;
     return matchesSearch && matchesPriority && matchesStatus && matchesDivision;
-  });
+  }).sort((a, b) => b.id.localeCompare(a.id, undefined, { numeric: true }));
 
   // Filter Work Orders list
   const filteredWorkOrders = workOrders.filter(w => {
@@ -322,7 +356,7 @@ export default function Findings({
     const matchesDivision = filterDivision === 'All' || w?.division === filterDivision;
     const matchesStatus = filterStatus === 'All' || w?.status === filterStatus;
     return matchesSearch && matchesDivision && matchesStatus;
-  });
+  }).sort((a, b) => b.id.localeCompare(a.id, undefined, { numeric: true }));
 
   return (
     <div className="space-y-6 font-sans">
@@ -694,13 +728,25 @@ export default function Findings({
                     <div className="flex flex-col gap-2 pt-1">
                       {/* Convert to Work Order Button for Open Findings */}
                       {isOpen && onAddWorkOrder && (
-                        <button
-                          onClick={() => handleConvertToWorkOrder(finding)}
-                          className="w-full py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer"
-                        >
-                          <Wrench className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>⚡ Terbitkan Work Order (WO) Service</span>
-                        </button>
+                        hasLinkedWO ? (
+                          <button
+                            onClick={() => {
+                              setActiveSubTab('work_orders');
+                            }}
+                            className="w-full py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 cursor-pointer"
+                          >
+                            <Wrench className="w-3.5 h-3.5 text-blue-600" />
+                            <span>⚡ Lihat Work Order Aktif ({workOrders.find(w => (w?.description && String(w.description).includes(finding.id)) || (finding.equipment && String(w.title).toLowerCase().includes(String(finding.equipment).toLowerCase())))?.status || 'In Progress'})</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleConvertToWorkOrder(finding)}
+                            className="w-full py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer"
+                          >
+                            <Wrench className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>⚡ Terbitkan Work Order (WO) Service</span>
+                          </button>
+                        )
                       )}
 
                       <div className="flex items-center gap-2">

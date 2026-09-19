@@ -309,18 +309,20 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const eq = String(f.equipment || '').toLowerCase();
       const pic = String(f.pic || '').toLowerCase();
       const id = String(f.id || '');
+      const issLower = String(f.issue || '').toLowerCase();
 
-      // Normalize Speaker dBTech T15 No. 18 (Sedang, Team Service / Mboh, 2026-09-08)
-      if (eq.includes('t15') || eq.includes('dbtech') || eq.includes('dbtechnologies') || id === '1' || id === 'find-20260903-dbtech18') {
-        const currentStatus = f.status === 'Close' || f.approvedBy ? 'Close' : (f.status || 'Open');
+      // Normalisasi: DB Tech No. 18 speaker amplifier — SELARAS dengan canonicalFirestoreData
+      if (id === 'find-20260903-dbtech18' || id === '1') {
+        const currentStatus = f.status === 'Close' || f.approvedBy ? 'Close' : (f.status || 'Close');
         return {
           ...f,
           id: 'find-20260903-dbtech18',
-          equipment: 'Speaker dBTech DVA T15 No. 18',
-          issue: 'DB Tech No.18 Ada Kendala dibagian Modul Amplifiernya, saat terkena beban input besar, hasuil suara yang di keluarkan menjadi serak, tapi masih aman dan bisa digunakan untuk Event. Rekomendasi untuk di cek oleh team service terutama pada modul Amplifier.',
+          equipment: 'DB Tech No. 18 (Active Speaker 15 Inch)',
+          issue: 'Ada Kendala dibagian Modul Amplifiernya, saat terkena beban input besar, hasil suara yang dikeluarkan menjadi serak, tapi masih aman dan bisa digunakan untuk Event. Rekomendasi untuk dicek oleh team service terutama pada modul Amplifier.',
           priority: 'Sedang',
-          pic: 'Team Service / Mboh',
-          targetDate: '2026-09-08',
+          pic: 'Mulyana',
+          division: 'Service',
+          targetDate: f.targetDate || '2026-09-05',
           status: currentStatus,
           approvedBy: f.approvedBy,
           approvedAt: f.approvedAt,
@@ -328,15 +330,16 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
         };
       }
 
-      // Normalize Panel Distribusi Listrik Audio 3 Phase (Sedang, Opik / Buluk, 2026-09-05, Close)
-      if (eq.includes('panel') || eq.includes('distribusi') || eq.includes('legrand') || id === '2' || id === 'find-20260904-panel-audio') {
+      // Normalisasi: Panel Listrik Audio 3 Phase — SELARAS dengan canonicalFirestoreData
+      if (id === 'find-20260904-panel-audio' || id === '2') {
         return {
           ...f,
           id: 'find-20260904-panel-audio',
-          equipment: 'Panel Distribusi Listrik Audio 3 Phase',
-          issue: 'Pengecekan Panel 3 Unit: 2 panel Sudah OK. 1 Ganti Stop Kontak, 1 Ganti Legran Cewe (Perbaikan selesai dilakukan Opik & Mboh pada 5 Sept, panel aman & siap pakai).',
-          priority: 'Sedang',
-          pic: 'Opik / Buluk',
+          equipment: 'Panel Listrik Audio 3 Phase',
+          issue: '1 Ganti Stop Kontak, 1 Ganti Legrand Cewek (2 panel lainnya sudah OK).',
+          priority: 'Tinggi',
+          pic: 'Taufik Diana / Suryana',
+          division: 'Audio',
           targetDate: '2026-09-05',
           status: f.status || 'Close',
           approvedBy: f.approvedBy,
@@ -345,21 +348,72 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
         };
       }
 
-      // Normalize PAR LED Warm White (Lighting, Sedang, Heri, 2026-09-07)
-      if (eq.includes('parled') || eq.includes('par led') || id === 'find-20260907-parled') {
+      // Normalisasi: PAR LED Warm White Lighting (7 Sept) — id find-20260907-parled
+      if (id === 'find-20260907-parled') {
         return {
           ...f,
           id: 'find-20260907-parled',
           equipment: 'PAR LED Warm White (Lighting)',
-          issue: 'Parled Warm mati No. 12, 25, 29 & Warm separo No. 3, 32',
+          issue: 'Harus service warm mati no 12, 25, 29 | Warm separo no 3, 32.',
           priority: 'Sedang',
           pic: 'Heri',
           division: 'Lighting',
-          targetDate: '2026-09-09',
+          targetDate: '2026-09-10',
           status: f.status || 'Open',
           approvedBy: f.approvedBy,
           approvedAt: f.approvedAt,
           dateCreated: f.dateCreated || '2026-09-07'
+        };
+      }
+
+      // Normalisasi: PAR LED Warm White Lighting (10 Sept) — id find-20260910-parled
+      if (id === 'find-20260910-parled') {
+        return {
+          ...f,
+          id: 'find-20260910-parled',
+          equipment: 'PAR LED Warm White (Lighting)',
+          issue: 'Harus service warm separo no. 19, 20, 27.',
+          priority: 'Sedang',
+          pic: 'Heri',
+          division: 'Lighting',
+          targetDate: '2026-09-12',
+          status: f.status || 'Open',
+          approvedBy: f.approvedBy,
+          approvedAt: f.approvedAt,
+          dateCreated: f.dateCreated || '2026-09-10'
+        };
+      }
+
+      // Normalisasi: Modul Kabinet LED Videotron (Box Rusak Berat 17 Sept 2026)
+      if (
+        id === 'find-20260917-led-box' ||
+        issLower.includes('kerusakan berat') ||
+        (eq.includes('unit divisi') && issLower.includes('box')) ||
+        (f.dateCreated === '2026-09-17' && issLower.includes('box') && (pic.includes('mulyana') || pic.includes('kharo')))
+      ) {
+        const currentStatus = f.status === 'Close' || f.approvedBy ? 'Close' : (f.status || 'Open');
+        return {
+          ...f,
+          id: 'find-20260917-led-box',
+          equipment: 'Modul Kabinet LED Videotron',
+          issue: '1 Box Kabinet Kerusakan Berat (Perlu perbaikan modul & power supply oleh team teknis)',
+          priority: 'Tinggi',
+          pic: 'Mulyana',
+          division: 'Videotron',
+          targetDate: '2026-09-19',
+          status: currentStatus,
+          approvedBy: f.approvedBy,
+          approvedAt: f.approvedAt,
+          dateCreated: f.dateCreated || '2026-09-17'
+        };
+      }
+
+      // Bersihkan entri sampah dengan equipment placeholder generik
+      if (eq.includes('unit divisi audio') && (pic.includes('mulyana') || pic.includes('kharo'))) {
+        return {
+          ...f,
+          equipment: 'Modul Kabinet LED Videotron',
+          division: 'Videotron'
         };
       }
 
@@ -657,6 +711,10 @@ export function subscribeCloudCollection<T = any>(
               }
             } catch (e) {}
 
+            // Only use normName matching for master staff, workers, drivers, or assets where full name / asset name is primary identity.
+            // Do NOT use normName for findings or work_orders, because tasks often have similar titles ("Perbaikan: ...")
+            const useNameMatching = collectionName !== 'findings' && collectionName !== 'work_orders' && collectionName !== 'daily_tasks' && collectionName !== 'daily_reports';
+
             (initialFallback || []).forEach((fb: any) => {
               const fbId = String(fb?.id || fb?.no || fb?.name || '');
               const normName = String(fb?.name || fb?.fullName || fb?.title || '').toLowerCase().trim();
@@ -664,7 +722,7 @@ export function subscribeCloudCollection<T = any>(
                 const cachedDoc = cachedMap.get(fbId);
                 const baseDoc = cachedDoc ? mergeCleanDoc(fb, cachedDoc) : fb;
                 mergedMap.set(fbId, baseDoc);
-                if (normName) nameToId.set(normName, fbId);
+                if (useNameMatching && normName) nameToId.set(normName, fbId);
               }
             });
 
@@ -675,7 +733,7 @@ export function subscribeCloudCollection<T = any>(
                 if (mergedMap.has(itId)) {
                   const existing = mergedMap.get(itId);
                   mergedMap.set(itId, mergeCleanDoc(existing, it));
-                } else if (normName && nameToId.has(normName)) {
+                } else if (useNameMatching && normName && nameToId.has(normName)) {
                   const oldFbId = nameToId.get(normName)!;
                   const existing = mergedMap.get(oldFbId);
                   mergedMap.delete(oldFbId);
@@ -683,7 +741,7 @@ export function subscribeCloudCollection<T = any>(
                   nameToId.set(normName, itId);
                 } else {
                   mergedMap.set(itId, it);
-                  if (normName) nameToId.set(normName, itId);
+                  if (useNameMatching && normName) nameToId.set(normName, itId);
                 }
               }
             });
@@ -696,8 +754,20 @@ export function subscribeCloudCollection<T = any>(
               const uniqueFindings = new Map<string, any>();
               items.forEach((item: any) => {
                 if (!item) return;
+
+                // Jangan izinkan temuan sampah tanpa equipment valid atau dengan placeholder generik
+                const rawEq = String(item.equipment || '').trim();
+                const rawIss = String(item.issue || '').trim();
+                if (!rawEq || (rawEq.toLowerCase().startsWith('unit divisi') && !rawIss.toLowerCase().includes('box') && !rawIss.toLowerCase().includes('kerusakan'))) {
+                  return;
+                }
+
                 const eq = String(item.equipment || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                const iss = String(item.issue || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                let iss = String(item.issue || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                // Normalisasikan variasi substring kerusakan berat (contoh: "1boxkerusakanberat" vs "boxkerusakanberat")
+                if (iss.includes('kerusakanberat')) {
+                  iss = 'kerusakanberat';
+                }
                 const pic = String(item.pic || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
                 // Gabungkan key untuk deteksi duplikat konten yang kebal terhadap spasi/karakter khusus
                 const contentKey = `dedup_${eq}_${iss}_${pic}`;
@@ -722,6 +792,38 @@ export function subscribeCloudCollection<T = any>(
                 }
               });
               items = Array.from(uniqueFindings.values()) as T[];
+            }
+
+            // Deduplikasi Work Orders berdasarkan findingId atau kesamaan title + division
+            if (collectionName === 'work_orders') {
+              const uniqueWOs = new Map<string, any>();
+              items.forEach((item: any) => {
+                if (!item) return;
+                const fid = String(item.findingId || '').trim().toLowerCase();
+                const titleKey = String(item.title || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                const divKey = String(item.division || '').toLowerCase();
+                const woKey = fid ? `wo_fid_${fid}` : `wo_title_${titleKey}_${divKey}`;
+
+                if (uniqueWOs.has(woKey)) {
+                  const existing = uniqueWOs.get(woKey);
+                  const itemIsDone = item.status === 'Completed' || (item.progress || 0) >= 100;
+                  const existingIsDone = existing.status === 'Completed' || (existing.progress || 0) >= 100;
+
+                  if (itemIsDone && !existingIsDone) {
+                    uniqueWOs.set(woKey, item);
+                  } else if (!itemIsDone && existingIsDone) {
+                    // Do nothing, keep completed one
+                  } else {
+                    // If both same state, keep the one with higher progress or newer ID
+                    if ((item.progress || 0) > (existing.progress || 0) || item.id > existing.id) {
+                      uniqueWOs.set(woKey, item);
+                    }
+                  }
+                } else {
+                  uniqueWOs.set(woKey, item);
+                }
+              });
+              items = Array.from(uniqueWOs.values()) as T[];
             }
           }
 
@@ -774,6 +876,62 @@ export function subscribeCloudCollection<T = any>(
             } catch (e) {
               console.warn('[Sync] Failed to apply findings status lock:', e);
             }
+          }
+
+          if (collectionName === 'work_orders') {
+            try {
+              const woLockKey = 'riz_work_orders_status_lock';
+              const rawWoLocks = localStorage.getItem(woLockKey);
+              if (rawWoLocks) {
+                const woLocks: Record<string, { status: string; progress?: number; approvedBy: string | null; approvedAt: string | null; lockedAt: string }> = JSON.parse(rawWoLocks);
+                let woLocksModified = false;
+
+                items = (items as any[]).map((item: any) => {
+                  if (!item?.id) return item;
+                  const lock = woLocks[item.id];
+                  if (!lock) return item;
+
+                  // If Firestore already has the correct status, clear the lock
+                  if (item.status === lock.status) {
+                    delete woLocks[item.id];
+                    woLocksModified = true;
+                    return item;
+                  }
+
+                  // Firestore still has wrong status — apply the lock override
+                  return {
+                    ...item,
+                    status: lock.status,
+                    progress: lock.progress !== undefined ? lock.progress : (lock.status === 'Completed' ? 100 : item.progress),
+                    ...(lock.approvedBy ? { approvedBy: lock.approvedBy } : {}),
+                    ...(lock.approvedAt ? { approvedAt: lock.approvedAt } : {})
+                  };
+                }) as T[];
+
+                if (woLocksModified) {
+                  localStorage.setItem(woLockKey, JSON.stringify(woLocks));
+                }
+
+                // Also update localStorage cache with lock-applied data
+                try {
+                  localStorage.setItem(localCacheKey, JSON.stringify(items));
+                } catch (e) {}
+              }
+            } catch (e) {
+              console.warn('[Sync] Failed to apply work_orders status lock:', e);
+            }
+          }
+
+          // Save to in-memory cache for delta-sync comparisons
+          if (typeof window !== 'undefined') {
+            const cacheObj = (window as any).__FIREBASE_CACHE__ || {};
+            const mapObj = new Map();
+            items.forEach((item: any) => {
+              const itId = String(item?.id || item?.no || item?.key || '');
+              if (itId) mapObj.set(itId, item);
+            });
+            cacheObj[collectionName] = mapObj;
+            (window as any).__FIREBASE_CACHE__ = cacheObj;
           }
 
           // Update local cache safely
@@ -977,9 +1135,6 @@ export async function saveCloudDoc(
     });
   } catch (err: any) {
     console.warn(`[Sync] Network error saving doc ${docId} in ${collectionName}:`, err);
-    if (typeof window !== 'undefined') {
-      alert(`Gagal menyimpan data ke server! Error: ${err.message || err}`);
-    }
     enqueuePendingOperation({
       type: 'SAVE',
       collectionName,
@@ -1089,9 +1244,39 @@ export async function pushCollectionToCloud<T = any>(
   const deviceInfo = getDeviceOSInfo();
   try {
     if (!skipStatusUpdate) updateSyncStatus({ isSyncing: true });
+
+    // Retrieve in-memory firebase cache for Delta-Sync
+    let firebaseCacheMap = new Map();
+    if (typeof window !== 'undefined' && (window as any).__FIREBASE_CACHE__) {
+      firebaseCacheMap = (window as any).__FIREBASE_CACHE__[collectionName] || new Map();
+    }
+
+    // Helper to deeply compare items ignoring _syncMeta
+    const isDifferent = (local: any, cloud: any) => {
+      if (!cloud) return true; // Cloud doesn't have it, definitely different
+      const l = { ...local };
+      const c = { ...cloud };
+      delete l._syncMeta;
+      delete c._syncMeta;
+      return JSON.stringify(l) !== JSON.stringify(c);
+    };
+
+    // Filter only items that actually changed
+    const changedItems = items.filter((item: any) => {
+      const docId = String(item?.id || item?.no || item?.key || '');
+      if (!docId) return false;
+      const cloudItem = firebaseCacheMap.get(docId);
+      return isDifferent(item, cloudItem);
+    });
+
+    if (changedItems.length === 0) {
+      if (!skipStatusUpdate) updateSyncStatus({ isSyncing: false });
+      return; // Nothing changed, skip writing to Firebase
+    }
+
     const CHUNK_SIZE = 300;
-    for (let i = 0; i < items.length; i += CHUNK_SIZE) {
-      const chunk = items.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < changedItems.length; i += CHUNK_SIZE) {
+      const chunk = changedItems.slice(i, i + CHUNK_SIZE);
       const batch = writeBatch(db);
 
       chunk.forEach((item: any, idx: number) => {

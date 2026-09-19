@@ -230,14 +230,47 @@ export default function Dashboard({
   const totalWorkOrdersCount = totalRepair + totalPM;
 
   // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
-  const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
-  
-  const activeStaff = staffKpis.filter(s => 
-    isStaffInGoogleSheet(s, activeDailyReports, activeLogbookEntries)
-  );
+  // 1. Monthly Staff KPIs calculated from the entire monthly dataset (canonical Google Sheet)
+  const monthlyStaffKpis = React.useMemo(() => {
+    return calculateAllStaffKpis(
+      staffList,
+      dailyReports,
+      logbookEntries,
+      findings,
+      undefined,
+      undefined,
+      undefined,
+      workOrders
+    );
+  }, [staffList, dailyReports, logbookEntries, findings, workOrders]);
 
-  // Filter hanya staf yang bertugas sesuai data referensi Google Sheet (yang tidak tertulis nama staf tidak disertakan/ditampilkan)
-  const activeStaffProductivityData = activeStaff;
+  // 2. Active Period Staff KPIs (if filtered by day/week or for period-specific view)
+  const staffKpis = React.useMemo(() => {
+    if (activeTab === 'monthly_report' || activeTab === 'harian' || activeTab === 'graphic_view') {
+      return monthlyStaffKpis;
+    }
+    return calculateAllStaffKpis(
+      staffList,
+      activeDailyReports,
+      activeLogbookEntries,
+      activeFindings,
+      undefined,
+      undefined,
+      undefined,
+      activeWorkOrders
+    );
+  }, [activeTab, monthlyStaffKpis, staffList, activeDailyReports, activeLogbookEntries, activeFindings, activeWorkOrders]);
+  
+  const activeStaff = React.useMemo(() => {
+    return staffKpis.filter(s => 
+      isStaffInGoogleSheet(s, dailyReports, logbookEntries)
+    );
+  }, [staffKpis, dailyReports, logbookEntries]);
+
+  // Filter staf yang bertugas sesuai data referensi Google Sheet dan memiliki aktivitas riil
+  const activeStaffProductivityData = React.useMemo(() => {
+    return activeStaff.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0);
+  }, [activeStaff]);
 
   // Grade distributions dynamically calculated from real active data
   const countGradeA = activeStaffProductivityData.filter(s => s.grade === 'A').length;
@@ -245,12 +278,22 @@ export default function Dashboard({
   const countGradeC = activeStaffProductivityData.filter(s => s.grade === 'C').length;
   const countGradeD = activeStaffProductivityData.filter(s => s.grade === 'D').length;
 
-  const topPerformers = [...activeStaffProductivityData].sort((a, b) => {
-    if (b.kpi !== a.kpi) return b.kpi - a.kpi;
-    if (b.qcs !== a.qcs) return b.qcs - a.qcs;
-    if (b.reports !== a.reports) return b.reports - a.reports;
-    return b.wos - a.wos;
-  });
+  // Top Performer Bulan Ini: Selalu dihitung dari akumulasi bulanan resmi Google Sheet (1-10 Top Performer)
+  const topPerformers = React.useMemo(() => {
+    const monthlyOfficialStaff = monthlyStaffKpis.filter(s =>
+      isStaffInGoogleSheet(s, dailyReports, logbookEntries)
+    );
+    return monthlyOfficialStaff
+      .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0)
+      .sort((a, b) => {
+        if (b.kpi !== a.kpi) return b.kpi - a.kpi;
+        if (b.qcs !== a.qcs) return b.qcs - a.qcs;
+        if (b.reports !== a.reports) return b.reports - a.reports;
+        if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
+        return b.wos - a.wos;
+      })
+      .slice(0, 10);
+  }, [monthlyStaffKpis, dailyReports, logbookEntries]);
 
   // 100% Dynamic Division Metrics
   const divisionListConfig = [
@@ -456,12 +499,15 @@ export default function Dashboard({
   const staffKpiList = React.useMemo(() => {
     return calculateAllStaffKpis(
       staffList, 
-      activeLogbookEntries, 
-      activeDailyReports, 
-      activeWorkOrders,
-      monthlyScheduleData
+      activeDailyReports,   // dailyReports (posisi ke-2)
+      activeLogbookEntries, // logbookEntries (posisi ke-3)
+      activeFindings,       // findings (posisi ke-4)
+      undefined,            // attendanceLogs
+      undefined,            // electricalCompetencies
+      undefined,            // septemberSchedule
+      activeWorkOrders      // workOrders (posisi ke-8)
     ).sort((a, b) => b.kpi - a.kpi);
-  }, [staffList, activeLogbookEntries, activeDailyReports, activeWorkOrders, monthlyScheduleData]);
+  }, [staffList, activeDailyReports, activeLogbookEntries, activeFindings, activeWorkOrders]);
 
   const divisionAttendanceStats = divisionsAttendanceList.map(div => {
     const staffInDiv = monthlyScheduleData.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
@@ -528,7 +574,7 @@ export default function Dashboard({
           <button
             onClick={() => setActiveTab('harian')}
             className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              activeTab === 'harian' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+              activeTab === 'harian' ? 'bg-white text-slate-900' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Ringkasan Harian
@@ -536,7 +582,7 @@ export default function Dashboard({
           <button
             onClick={() => setActiveTab('graphic_view')}
             className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'graphic_view' ? 'bg-indigo-600 text-white shadow-sm font-extrabold' : 'text-slate-500 hover:text-slate-900'
+              activeTab === 'graphic_view' ? 'bg-indigo-600 text-white font-extrabold' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <PieChart className="w-3.5 h-3.5" />
@@ -545,7 +591,7 @@ export default function Dashboard({
           <button
             onClick={() => setActiveTab('daily_report')}
             className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              activeTab === 'daily_report' ? 'bg-white text-indigo-700 shadow-sm font-extrabold' : 'text-slate-500 hover:text-slate-900'
+              activeTab === 'daily_report' ? 'bg-white text-indigo-700 font-extrabold' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Daily Operation Report
@@ -553,7 +599,7 @@ export default function Dashboard({
           <button
             onClick={() => setActiveTab('weekly_report')}
             className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              activeTab === 'weekly_report' ? 'bg-white text-indigo-700 shadow-sm font-extrabold' : 'text-slate-500 hover:text-slate-900'
+              activeTab === 'weekly_report' ? 'bg-white text-indigo-700 font-extrabold' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Weekly Operation Report
@@ -561,7 +607,7 @@ export default function Dashboard({
           <button
             onClick={() => setActiveTab('monthly_report')}
             className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              activeTab === 'monthly_report' ? 'bg-white text-indigo-700 shadow-sm font-extrabold' : 'text-slate-500 hover:text-slate-900'
+              activeTab === 'monthly_report' ? 'bg-white text-indigo-700 font-extrabold' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Monthly Operation Report
@@ -597,11 +643,11 @@ export default function Dashboard({
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div
               onClick={() => onNavigate('qc')}
-              className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
+              className="bg-white p-5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
               title="Buka QC Checklist"
             >
               <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2 group-hover:text-blue-600 transition-colors">Checked Today</div>
-              <div className="text-2xl font-bold text-slate-900 flex items-baseline">
+              <div className="text-3xl font-display font-extrabold tracking-tight text-slate-900 flex items-baseline">
                 {totalQCOk + totalQCNg}
                 <span className="text-xs font-normal text-slate-500 ml-1.5">Units &rarr;</span>
               </div>
@@ -609,35 +655,35 @@ export default function Dashboard({
 
             <div
               onClick={() => onNavigate('qc')}
-              className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all group"
+              className="bg-white p-5 rounded-xl border border-slate-200 cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all group"
               title="Buka QC Checklist"
             >
               <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2 group-hover:text-emerald-600 transition-colors">Condition OK</div>
-              <div className="text-2xl font-bold text-[#10b981]">{totalQCOk} <span className="text-xs font-normal text-slate-400">&rarr;</span></div>
+              <div className="text-3xl font-display font-extrabold tracking-tight text-[#10b981]">{totalQCOk} <span className="text-xs font-normal text-slate-400">&rarr;</span></div>
             </div>
 
             <div
               onClick={() => onNavigate('findings')}
-              className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer hover:border-rose-300 hover:shadow-md transition-all group"
+              className="bg-white p-5 rounded-xl border border-slate-200 cursor-pointer hover:border-rose-300 hover:shadow-md transition-all group"
               title="Buka Temuan QC & WO"
             >
               <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2 group-hover:text-rose-600 transition-colors">Requires Action (NG)</div>
-              <div className="text-2xl font-bold text-[#ef4444]">{totalQCNg} <span className="text-xs font-normal text-slate-400">&rarr;</span></div>
+              <div className="text-3xl font-display font-extrabold tracking-tight text-[#ef4444]">{totalQCNg} <span className="text-xs font-normal text-slate-400">&rarr;</span></div>
             </div>
 
             <div
               onClick={() => onNavigate('work_orders')}
-              className="bg-white p-5 rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer hover:border-amber-300 hover:shadow-md transition-all group"
+              className="bg-white p-5 rounded-xl border border-slate-200 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all group"
               title="Buka Work Order Perbaikan"
             >
               <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2 group-hover:text-amber-600 transition-colors">Pending Repairs</div>
-              <div className="text-2xl font-bold text-[#f59e0b]">{openIssues} <span className="text-xs font-normal text-slate-400">&rarr;</span></div>
+              <div className="text-3xl font-display font-extrabold tracking-tight text-[#f59e0b]">{openIssues} <span className="text-xs font-normal text-slate-400">&rarr;</span></div>
             </div>
           </div>
 
           {/* Main Body Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden">
+            <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                 <h2 className="font-semibold text-sm text-slate-900">Recent QC Activity</h2>
                 <button onClick={() => onNavigate('qc')} className="text-xs text-[#3b82f6] hover:underline font-semibold">
@@ -693,7 +739,7 @@ export default function Dashboard({
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)] flex flex-col p-5 space-y-5">
+            <div className="bg-white rounded-xl border border-slate-200 flex flex-col p-5 space-y-5">
               <div>
                 <h2 className="font-semibold text-sm text-slate-900">Division Asset Health</h2>
               </div>
@@ -754,7 +800,7 @@ export default function Dashboard({
         /* DEDICATED GRAPHIC VIEW / VISUAL CHART ANALYTICS */
         <div className="space-y-6">
           {/* Header Graphic View */}
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <span className="bg-indigo-500/30 text-indigo-300 border border-indigo-400/30 text-[10px] font-mono px-3 py-1 rounded-full font-bold uppercase tracking-wider">
                 Visual Analytics & Charts
@@ -776,7 +822,7 @@ export default function Dashboard({
           {/* Graphic Grid 1: Produktivitas Divisi Bar Chart & QC Pass/Fail Ratio */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Chart 1: Bar Chart Produktivitas Divisi */}
-            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <BarChart2 className="w-5 h-5 text-blue-600" />
@@ -823,7 +869,7 @@ export default function Dashboard({
             </div>
 
             {/* Chart 2: QC Kelulusan OK vs NG Donut / Ratio Bar */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col justify-between space-y-4">
               <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Activity className="w-5 h-5 text-emerald-600" />
@@ -836,7 +882,7 @@ export default function Dashboard({
 
               {/* Graphical Visual Ring / Meter */}
               <div className="flex flex-col items-center justify-center py-4">
-                <div className="relative w-36 h-36 rounded-full border-8 border-slate-100 flex items-center justify-center shadow-inner">
+                <div className="relative w-36 h-36 rounded-full border-8 border-slate-100 flex items-center justify-center">
                   <div
                     className="absolute inset-0 rounded-full border-8 border-emerald-500 border-t-transparent transition-all duration-1000"
                     style={{ transform: `rotate(${Math.round((percentOK / 100) * 360)}deg)` }}
@@ -870,7 +916,7 @@ export default function Dashboard({
           {/* Graphic Grid 2: Leaderboard KPI Staff & Tingkat Kerusakan */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chart 3: Leaderboard Visual Bar KPI Karyawan */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <Award className="w-5 h-5 text-amber-500" />
@@ -911,7 +957,7 @@ export default function Dashboard({
             </div>
 
             {/* Chart 4: Grafik Tingkat Kerusakan & Top Problematic Assets */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-rose-500" />
@@ -971,7 +1017,7 @@ export default function Dashboard({
         </div>
       ) : (
         /* 15 SECTIONS OPERATION REPORT (HARIAN, MINGGUAN, BULANAN) */
-        <div id="monthly-operation-report-view" className="space-y-8 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
+        <div id="monthly-operation-report-view" className="space-y-8 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200">
           {/* Title Header */}
           <div className="border-b-2 border-slate-100 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -1219,16 +1265,22 @@ export default function Dashboard({
                     {activeStaffProductivityData.length > 0 ? (
                       activeStaffProductivityData.map((staff, idx) => {
                         const originalStaff = staffList.find(st => st.id === staff.id || st.name === staff.name) || (staff as any);
-                        const staffDates = new Set<string>();
-                        activeDailyReports.filter(r => (isStaffMatch(originalStaff, r.staffName) || r.staffName === staff.name) && r.date).forEach(r => staffDates.add(r.date));
-                        activeLogbookEntries.filter(e => (isStaffMatch(originalStaff, e.staffName) || e.staffName === staff.name) && e.date).forEach(e => staffDates.add(e.date));
-                        const attendanceDays = staffDates.size;
-                        const workHours = attendanceDays * 8;
+                        const attendanceDays = staff.attendanceCount;
+                        const workHours = staff.hours || (attendanceDays * 8);
 
                         return (
                           <tr key={idx} className="hover:bg-slate-50/50">
                             <td className="p-3 text-center font-bold text-slate-500 font-mono">{idx + 1}</td>
-                            <td className="p-3 font-sans font-bold text-slate-800">{staff.name}</td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={originalStaff?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(staff.name)}&background=0f172a&color=fff&rounded=true&bold=true`}
+                                  alt={staff.name}
+                                  className="w-7 h-7 rounded-full border border-slate-200"
+                                />
+                                <span className="font-sans font-bold text-slate-800">{staff.nickname || staff.name}</span>
+                              </div>
+                            </td>
                             <td className="p-3 font-sans text-slate-600">{staff.division}</td>
                             <td className="p-3 text-center text-slate-700">{staff.reports}</td>
                             <td className="p-3 text-center text-slate-700">{staff.qcs}</td>
@@ -1266,16 +1318,21 @@ export default function Dashboard({
                     {topPerformers.length > 0 ? (
                       topPerformers.map((p, index) => (
                         <div key={index} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200">
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-3">
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-[10px] font-bold ${
                               index === 0 ? 'bg-amber-100 text-amber-800' :
-                              index === 1 ? 'bg-slate-100 text-slate-800' :
-                              index === 2 ? 'bg-orange-100 text-orange-800' : 'bg-slate-50 text-slate-500'
+                              index === 1 ? 'bg-slate-200 text-slate-800' :
+                              index === 2 ? 'bg-orange-100 text-orange-800' : 'bg-slate-100 text-slate-500'
                             }`}>
                               {index + 1}
                             </span>
+                            <img
+                              src={p.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=0f172a&color=fff&rounded=true&bold=true`}
+                              alt={p.name}
+                              className="w-8 h-8 rounded-full border border-slate-200"
+                            />
                             <div>
-                              <span className="font-bold text-slate-900 text-xs block">{p.name}</span>
+                              <span className="font-bold text-slate-900 text-xs block">{p.nickname || p.name}</span>
                               <span className="text-[10px] text-slate-500 block">{p.division}</span>
                             </div>
                           </div>
@@ -1305,19 +1362,19 @@ export default function Dashboard({
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total QC Checklist</span>
-                <strong className="text-2xl font-bold text-slate-950 block mt-1">{totalQC}</strong>
+                <strong className="text-3xl font-display font-extrabold tracking-tight text-slate-950 block mt-1">{totalQC}</strong>
               </div>
               <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Kondisi OK</span>
-                <strong className="text-2xl font-bold text-emerald-600 block mt-1">{totalOK}</strong>
+                <strong className="text-3xl font-display font-extrabold tracking-tight text-emerald-600 block mt-1">{totalOK}</strong>
               </div>
               <div className="bg-rose-50/50 border border-rose-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider block">Kondisi NG (Perbaikan)</span>
-                <strong className="text-2xl font-bold text-rose-600 block mt-1">{totalNG}</strong>
+                <strong className="text-3xl font-display font-extrabold tracking-tight text-rose-600 block mt-1">{totalNG}</strong>
               </div>
               <div className="bg-indigo-50/50 border border-indigo-100 p-4 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">Persentase Kelulusan</span>
-                <strong className="text-2xl font-bold text-indigo-600 block mt-1">{percentOK}%</strong>
+                <strong className="text-3xl font-display font-extrabold tracking-tight text-indigo-600 block mt-1">{percentOK}%</strong>
               </div>
             </div>
 

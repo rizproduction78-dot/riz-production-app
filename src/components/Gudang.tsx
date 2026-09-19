@@ -389,7 +389,7 @@ export default function Gudang({
     ratchetLashingStrap: true,
     legalitasSurat: true,
     notes: '',
-    inspector: currentUser.name === 'Agus' ? 'Agus' : currentUser.name
+    inspector: currentUser.name === 'Agus' || currentUser.name?.includes('Agustino') ? 'Agustino (Admin)' : currentUser.name || ''
   });
 
   // Scanner Simulator State

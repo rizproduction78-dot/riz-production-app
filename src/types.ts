@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type Division = 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Gudang' | 'Admin' | 'Service';
+export type Division = 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Gudang' | 'Admin' | 'Service' | 'Semua Divisi';
 
 export interface Staff {
   id: string;
@@ -159,6 +159,7 @@ export interface LogbookEntry {
   checklists: { [key: string]: { status: 'OK' | 'NG'; notes: string } };
   photoUrl?: string; // Foto bukti inspeksi / QC (single/thumbnail)
   photos?: string[]; // Mendukung beberapa foto bukti sekaligus
+  _source?: string;
 }
 
 export interface DailyReport {
@@ -171,6 +172,14 @@ export interface DailyReport {
   photoUrl?: string;
   photos?: string[]; // Mendukung beberapa foto dokumentasi
   status: 'Draft' | 'Submitted';
+  _source?: string;
+  _syncMeta?: {
+    updatedAt: string;
+    updatedBy: string;
+    deviceOS?: string;
+    deviceType?: string;
+    browser?: string;
+  };
 }
 
 export interface Finding {
@@ -185,6 +194,14 @@ export interface Finding {
   division?: Division;
   approvedBy?: string;
   approvedAt?: string;
+  _source?: string;
+  _syncMeta?: {
+    updatedAt: string;
+    updatedBy: string;
+    deviceOS?: string;
+    deviceType?: string;
+    browser?: string;
+  };
 }
 
 export interface Asset {
@@ -222,6 +239,13 @@ export interface WorkOrder {
   equipment?: string;
   priority?: string;
   notes?: string;
+  _syncMeta?: {
+    updatedAt: string;
+    updatedBy: string;
+    deviceOS?: string;
+    deviceType?: string;
+    browser?: string;
+  };
 }
 
 export interface MaintenanceSchedule {

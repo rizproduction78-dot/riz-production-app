@@ -1,10 +1,7 @@
 {
   "mcpServers": {
     "google-cloud": {
-      "url": "https://cloud.google.com",
-      "headers": {
-        "Authorization": "Bearer your-api-key-here"
-      }
+      "serverUrl": "https://cloud.google.com"
     }
   }
 }

@@ -175,7 +175,7 @@ export default function App() {
   const NAVIGATION_ITEMS: NavigationItem[] = (() => {
     if (!currentUser) return [];
     const role = currentUser?.role;
-    const isOwnerOrAdmin = currentUser?.division === 'Admin' || role === 'Owner' || role === 'Direktur' || role === 'Admin' || currentUser?.id === 'director-wahyu' || String(currentUser?.name || '').toLowerCase() === 'wahyu';
+    const isOwnerOrAdmin = currentUser?.division === 'Admin' || role === 'Owner' || role === 'Direktur' || role === 'Admin' || currentUser?.id === 'director-wahyu' || String(currentUser?.name || '').toLowerCase().includes('wahyu (owner)');
 
     // 1. Owner & Admin / Management (14 Fitur Lengkap & Terintegrasi)
     if (isOwnerOrAdmin) {
@@ -311,8 +311,8 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Forced one-time re-sync for all official data from Google Sheet reference (24 official reports & 12 staff)
-  const REF_SYNC_KEY = 'riz_ref_synced_v32_gsheet_clean_24_canonical';
+  // Forced one-time re-sync for all official data from Google Sheet reference (1-17 September 2026 full tabulation)
+  const REF_SYNC_KEY = 'riz_ref_synced_v34_canonical_fix_sept18';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
@@ -534,7 +534,33 @@ export default function App() {
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
     const saved = localStorage.getItem('riz_work_orders');
-    return saved ? JSON.parse(saved) : INITIAL_WORK_ORDERS;
+    let baseWO: WorkOrder[] = INITIAL_WORK_ORDERS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) baseWO = parsed;
+      } catch (e) {}
+    }
+    // Apply work order status lock so initial render always shows correct status
+    try {
+      const woLockKey = 'riz_work_orders_status_lock';
+      const rawWoLocks = localStorage.getItem(woLockKey);
+      if (rawWoLocks) {
+        const woLocks: Record<string, any> = JSON.parse(rawWoLocks);
+        return baseWO.map(w => {
+          const lock = woLocks[w.id];
+          if (!lock) return w;
+          return {
+            ...w,
+            status: lock.status,
+            progress: lock.progress !== undefined ? lock.progress : (lock.status === 'Completed' ? 100 : w.progress),
+            ...(lock.approvedBy ? { approvedBy: lock.approvedBy } : {}),
+            ...(lock.approvedAt ? { approvedAt: lock.approvedAt } : {})
+          };
+        });
+      }
+    } catch (e) {}
+    return baseWO;
   });
 
   const [schedules, setSchedules] = useState<MaintenanceSchedule[]>(() => {
@@ -809,7 +835,7 @@ export default function App() {
 
   // Auto-sync berkala & reaktif (selalu up to date dari Google Sheet)
   useEffect(() => {
-    const AUTO_SYNC_INTERVAL_MS = 3 * 60 * 1000; // 3 menit (agar data selalu segar)
+    const AUTO_SYNC_INTERVAL_MS = 30 * 1000; // 30 detik (agar data selalu segar dan cepat)
     let lastPullTime = Date.now();
 
     // 1. Jalankan sekali saat startup (setelah 2.5 detik)
@@ -828,8 +854,8 @@ export default function App() {
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible' || document.hasFocus()) {
         const elapsed = Date.now() - lastPullTime;
-        // Jika sudah lebih dari 45 detik sejak sinkronisasi terakhir, tarik data baru
-        if (elapsed > 45 * 1000) {
+        // Jika sudah lebih dari 15 detik sejak sinkronisasi terakhir, tarik data baru
+        if (elapsed > 15 * 1000) {
           syncHandlerRef.current();
           lastPullTime = Date.now();
         }
@@ -891,10 +917,20 @@ export default function App() {
     const newFinding: Finding = {
       ...finding,
       id: 'fd-' + Date.now(),
-      dateCreated: new Date().toISOString().split('T')[0]
+      dateCreated: new Date().toISOString().split('T')[0],
+      _syncMeta: {
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser?.name || 'User'
+      }
     };
-    setFindings(prev => [newFinding, ...prev]);
-    saveCloudDoc('findings', newFinding.id, newFinding);
+    setFindings(prev => {
+      const next = [newFinding, ...prev];
+      try {
+        localStorage.setItem('riz_findings', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    saveCloudDoc('findings', newFinding.id, newFinding, currentUser?.name);
   };
 
   const handleUpdateFindingStatus = (id: string, status: 'Open' | 'Close', approvedBy?: string, approvedAt?: string) => {
@@ -912,19 +948,29 @@ export default function App() {
       localStorage.setItem(lockKey, JSON.stringify(existingLocks));
     } catch (e) {}
 
-    setFindings(prev => prev.map(f => {
-      if (f.id === id) {
-        const updated = {
-          ...f,
-          status,
-          ...(approvedBy ? { approvedBy } : {}),
-          ...(approvedAt ? { approvedAt } : {})
-        };
-        saveCloudDoc('findings', id, updated);
-        return updated;
-      }
-      return f;
-    }));
+    setFindings(prev => {
+      const next = prev.map(f => {
+        if (f.id === id) {
+          const updated: Finding = {
+            ...f,
+            status,
+            ...(approvedBy ? { approvedBy } : {}),
+            ...(approvedAt ? { approvedAt } : {}),
+            _syncMeta: {
+              updatedAt: new Date().toISOString(),
+              updatedBy: currentUser?.name || 'User'
+            }
+          };
+          saveCloudDoc('findings', id, updated, currentUser?.name);
+          return updated;
+        }
+        return f;
+      });
+      try {
+        localStorage.setItem('riz_findings', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
   };
 
   const handleDeleteFinding = (id: string) => {
@@ -1063,47 +1109,109 @@ export default function App() {
 
   // Findings functions
   const handleUpdateFinding = (id: string, updatedFields: Partial<Finding>) => {
-    setFindings(prev => prev.map(f => {
-      if (f.id === id) {
-        const updated = { ...f, ...updatedFields };
-        saveCloudDoc('findings', id, updated);
-        return updated;
-      }
-      return f;
-    }));
+    setFindings(prev => {
+      const next = prev.map(f => {
+        if (f.id === id) {
+          const updated: Finding = {
+            ...f,
+            ...updatedFields,
+            _syncMeta: {
+              updatedAt: new Date().toISOString(),
+              updatedBy: currentUser?.name || 'User'
+            }
+          };
+          saveCloudDoc('findings', id, updated, currentUser?.name);
+          return updated;
+        }
+        return f;
+      });
+      try {
+        localStorage.setItem('riz_findings', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
   };
 
   // Work Orders functions
   const handleAddWorkOrder = (wo: Omit<WorkOrder, 'id' | 'dateCreated'>) => {
+    // Cek duplikasi WO yang sudah ada untuk findingId atau title yang sama
+    const existing = workOrders.find(w => {
+      if (wo.findingId && w.findingId === wo.findingId) return true;
+      const t1 = String(w.title || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      const t2 = String(wo.title || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      return t1 && t2 && t1 === t2 && w.division === wo.division;
+    });
+
+    if (existing) {
+      console.info('[WorkOrders] Tiket WO sudah ada, mengabaikan duplikasi:', existing.id);
+      return;
+    }
+
     const newWO: WorkOrder = {
       ...wo,
       id: 'wo-' + Date.now(),
-      dateCreated: new Date().toISOString().split('T')[0]
+      dateCreated: new Date().toISOString().split('T')[0],
+      _syncMeta: {
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser?.name || 'User'
+      }
     };
-    setWorkOrders(prev => [newWO, ...prev]);
-    saveCloudDoc('work_orders', newWO.id, newWO);
+    setWorkOrders(prev => {
+      const next = [newWO, ...prev];
+      try {
+        localStorage.setItem('riz_work_orders', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    saveCloudDoc('work_orders', newWO.id, newWO, currentUser?.name);
   };
 
   const handleUpdateWorkOrder = (id: string, updatedFields: Partial<WorkOrder>) => {
-    setWorkOrders(prev => prev.map(w => {
-      if (w.id === id) {
-        const updated = { ...w, ...updatedFields };
-        saveCloudDoc('work_orders', id, updated);
-        return updated;
-      }
-      return w;
-    }));
+    setWorkOrders(prev => {
+      const next = prev.map(w => {
+        if (w.id === id) {
+          const updated: WorkOrder = {
+            ...w,
+            ...updatedFields,
+            _syncMeta: {
+              updatedAt: new Date().toISOString(),
+              updatedBy: currentUser?.name || 'User'
+            }
+          };
+          saveCloudDoc('work_orders', id, updated, currentUser?.name);
+          return updated;
+        }
+        return w;
+      });
+      try {
+        localStorage.setItem('riz_work_orders', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
   };
 
   const handleUpdateWorkOrderProgress = (id: string, progress: number) => {
-    setWorkOrders(prev => prev.map(w => {
-      if (w.id === id) {
-        const updated = { ...w, progress };
-        saveCloudDoc('work_orders', id, updated);
-        return updated;
-      }
-      return w;
-    }));
+    setWorkOrders(prev => {
+      const next = prev.map(w => {
+        if (w.id === id) {
+          const updated: WorkOrder = {
+            ...w,
+            progress,
+            _syncMeta: {
+              updatedAt: new Date().toISOString(),
+              updatedBy: currentUser?.name || 'User'
+            }
+          };
+          saveCloudDoc('work_orders', id, updated, currentUser?.name);
+          return updated;
+        }
+        return w;
+      });
+      try {
+        localStorage.setItem('riz_work_orders', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
   };
 
   const handleUpdateWorkOrderStatus = (
@@ -1112,36 +1220,64 @@ export default function App() {
     approvedBy?: string,
     approvedAt?: string
   ) => {
-    setWorkOrders(prev => prev.map(w => {
-      if (w.id === id) {
-        const updated = {
-          ...w,
-          status,
-          progress: status === 'Completed' ? 100 : w.progress,
-          ...(approvedBy ? { approvedBy } : {}),
-          ...(approvedAt ? { approvedAt } : {})
-        };
-        saveCloudDoc('work_orders', id, updated);
-        // P3.2: Auto-create Daily Report saat WO di-Completed
-        if (status === 'Completed') {
-          const newRep = {
-            id: 'dr-' + Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            staffName: w.pic,
-            division: w.division,
-            activity: approvedBy ? `[Admin Approved WO] ${w.title}` : `[Penyelesaian Work Order] ${w.title}`,
-            notes: approvedBy
-              ? `Work Order telah disetujui (Approved) & diselesaikan oleh Admin (${approvedBy}). Unit siap operasional 100%. Instruksi: ${w.description}`
-              : `Work Order berhasil diselesaikan 100%. ${w.description}`,
-            status: 'Submitted' as const
+    // Write work order status lock to prevent cloud sync from reverting on refresh/slow snapshot
+    try {
+      const woLockKey = 'riz_work_orders_status_lock';
+      const existingLocks = JSON.parse(localStorage.getItem(woLockKey) || '{}');
+      existingLocks[id] = {
+        status,
+        progress: status === 'Completed' ? 100 : undefined,
+        approvedBy: approvedBy || null,
+        approvedAt: approvedAt || null,
+        lockedAt: new Date().toISOString()
+      };
+      localStorage.setItem(woLockKey, JSON.stringify(existingLocks));
+    } catch (e) {}
+
+    setWorkOrders(prev => {
+      const next = prev.map(w => {
+        if (w.id === id) {
+          const updated: WorkOrder = {
+            ...w,
+            status,
+            progress: status === 'Completed' ? 100 : w.progress,
+            ...(approvedBy ? { approvedBy } : {}),
+            ...(approvedAt ? { approvedAt } : {}),
+            _syncMeta: {
+              updatedAt: new Date().toISOString(),
+              updatedBy: currentUser?.name || 'User'
+            }
           };
-          setDailyReports(drs => [newRep, ...drs]);
-          saveCloudDoc('daily_reports', newRep.id, newRep);
+          saveCloudDoc('work_orders', id, updated, currentUser?.name);
+          // P3.2: Auto-create Daily Report saat WO di-Completed
+          if (status === 'Completed') {
+            const newRep = {
+              id: 'dr-' + Date.now(),
+              date: new Date().toISOString().split('T')[0],
+              staffName: w.pic,
+              division: w.division,
+              activity: approvedBy ? `[Admin Approved WO] ${w.title}` : `[Penyelesaian Work Order] ${w.title}`,
+              notes: approvedBy
+                ? `Work Order telah disetujui (Approved) & diselesaikan oleh Admin (${approvedBy}). Unit siap operasional 100%. Instruksi: ${w.description}`
+                : `Work Order berhasil diselesaikan 100%. ${w.description}`,
+              status: 'Submitted' as const,
+              _syncMeta: {
+                updatedAt: new Date().toISOString(),
+                updatedBy: currentUser?.name || 'User'
+              }
+            };
+            setDailyReports(drs => [newRep, ...drs]);
+            saveCloudDoc('daily_reports', newRep.id, newRep, currentUser?.name);
+          }
+          return updated;
         }
-        return updated;
-      }
-      return w;
-    }));
+        return w;
+      });
+      try {
+        localStorage.setItem('riz_work_orders', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
   };
 
   const handleDeleteWorkOrder = (id: string) => {

@@ -826,17 +826,13 @@ export default function Reports({
                 <tbody className="divide-y divide-slate-300 font-mono">
                   {activeStaffKpis.length > 0 ? (
                     activeStaffKpis.map((staff, idx) => {
-                      const originalStaff = staffList.find(st => st.id === staff.id || st.name === staff.name) || (staff as any);
-                      const staffDates = new Set<string>();
-                      dailyReports.filter(r => (isStaffMatch(originalStaff, r.staffName) || r.staffName === staff.name) && r.date).forEach(r => staffDates.add(r.date));
-                      logbookEntries.filter(e => (isStaffMatch(originalStaff, e.staffName) || e.staffName === staff.name) && e.date).forEach(e => staffDates.add(e.date));
-                      const attendanceDays = staffDates.size;
-                      const workHours = attendanceDays * 8;
+                      const attendanceDays = staff.attendanceCount;
+                      const workHours = staff.hours || (attendanceDays * 8);
 
                       return (
                         <tr key={staff.id} className="hover:bg-slate-50">
                           <td className="p-2 border-r border-slate-300 text-center font-bold text-slate-600 font-mono">{idx + 1}</td>
-                          <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
+                          <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.nickname || staff.name}</td>
                           <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
                           <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.reports}</td>
                           <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.qcs}</td>
@@ -864,7 +860,15 @@ export default function Reports({
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
                 <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider block mb-2">TOP PERFORMER (BERDASARKAN AKTIFITAS RIIL)</span>
                 <ol className="list-decimal pl-5 space-y-1 text-xs text-slate-700 font-sans">
-                  {activeStaffKpis.map((staff) => (
+                  {staffKpis
+                    .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0)
+                    .sort((a, b) => {
+                      if (b.kpi !== a.kpi) return b.kpi - a.kpi;
+                      if (b.qcs !== a.qcs) return b.qcs - a.qcs;
+                      if (b.reports !== a.reports) return b.reports - a.reports;
+                      return b.wos - a.wos;
+                    })
+                    .map((staff) => (
                     <li key={staff.id}>
                        <strong className="text-indigo-600">{staff.name}</strong> (Divisi {staff.division}) — Nilai KPI: <strong className="text-emerald-600">{staff.kpi}%</strong> ({staff.reports} Daily Report, {staff.qcs} QC)
                     </li>

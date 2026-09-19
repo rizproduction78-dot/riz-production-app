@@ -47,7 +47,7 @@ export const WAJIB_ABSEN_NAMES = [
 
 export const isWajibAbsen = (name: string) => {
   const normalized = name.toLowerCase().trim();
-  if (normalized === 'wahyu') return false;
+  if (normalized.includes('wahyu (owner)') || normalized === 'wahyu') return false;
   return true; // Semua staff, admin, team leader, dan staff gudang wajib absen kecuali Wahyu
 };
 

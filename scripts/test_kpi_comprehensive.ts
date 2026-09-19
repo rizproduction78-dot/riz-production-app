@@ -44,7 +44,7 @@ const allResults = calculateAllStaffKpis(
   INITIAL_FINDINGS
 );
 
-expect(allResults.length === STAFF_LIST.length, `Calculated KPI for all ${STAFF_LIST.length} staff members`);
+expect(allResults.length > 0, `Calculated KPI for active staff members (${allResults.length} staff)`);
 
 allResults.forEach((res) => {
   const validRange = res.kpi >= 0 && res.kpi <= 100;
@@ -85,10 +85,10 @@ for (let i = 1; i < allResults.length; i++) {
 }
 expect(isSortedCorrectly, 'Leaderboard ranks staff strictly by QC Checked, Daily Report, Work Order / Temuan, Uji Komp, Jumlah Absensi');
 
-// 4. Testing Attendance & Schedule Roster Status (Deactivated)
-console.log('\n--- 4. Testing Attendance & Schedule Roster Status (Deactivated) ---');
+// 4. Testing Attendance & Schedule Roster Status (Presence Calculated)
+console.log('\n--- 4. Testing Attendance & Schedule Roster Status ---');
 const sampleKpi = allResults[0];
-expect(sampleKpi.attendanceCount === 0 && sampleKpi.hours === 0, `Attendance count & hours are deactivated: ${sampleKpi.attendanceCount} days, ${sampleKpi.hours} hours (Score: ${sampleKpi.attendanceScore}%)`);
+expect(sampleKpi.attendanceCount > 0 && sampleKpi.hours > 0, `Attendance count & hours verified: ${sampleKpi.attendanceCount} days, ${sampleKpi.hours} hours (Score: ${sampleKpi.attendanceScore}%)`);
 
 // 5. Test Zero-Activity Staff Filtering (Komitmen KPI)
 console.log('\n--- 5. Testing Zero-Activity Staff Filtering (Komitmen KPI) ---');

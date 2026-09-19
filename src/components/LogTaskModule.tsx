@@ -74,6 +74,7 @@ const DIVISION_CONFIG: Record<Division, { color: string; bg: string; icon: strin
   Gudang:     { color: 'text-emerald-600',bg: 'bg-emerald-50 border-emerald-200',icon: '📦' },
   Admin:      { color: 'text-blue-600',   bg: 'bg-blue-50 border-blue-200',     icon: '🗄️' },
   Service:    { color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200', icon: '🔧' },
+  'Semua Divisi': { color: 'text-slate-600', bg: 'bg-slate-50 border-slate-200', icon: '🌐' },
 };
 
 const DEFAULT_PHOTOS = [
@@ -529,14 +530,14 @@ export default function LogTaskModule({
       if (diffDiv !== 0) return diffDiv;
       const diffPrio = (prioOrder[a.priority] || 99) - (prioOrder[b.priority] || 99);
       if (diffPrio !== 0) return diffPrio;
-      return (b.dueDate || '').localeCompare(a.dueDate || '');
+      return b.id.localeCompare(a.id, undefined, { numeric: true });
     } else if (taskSortBy === 'division') {
       return a.division.localeCompare(b.division);
     } else if (taskSortBy === 'priority') {
       const prioOrder: Record<string, number> = { 'Tinggi': 1, 'Sedang': 2, 'Rendah': 3 };
       return (prioOrder[a.priority] || 99) - (prioOrder[b.priority] || 99);
     } else {
-      return (b.dueDate || '').localeCompare(a.dueDate || '');
+      return b.id.localeCompare(a.id, undefined, { numeric: true });
     }
   });
 
@@ -553,7 +554,7 @@ export default function LogTaskModule({
       ? (filterDivision === 'All' || r.division === filterDivision || (isDualStaffName(r.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
       : (userDivs.includes(r.division) || isDualStaffName(r.staffName));
     return matchSearch && matchDiv;
-  });
+  }).sort((a, b) => b.id.localeCompare(a.id, undefined, { numeric: true }));
 
   return (
     <div className="space-y-6 font-sans">
