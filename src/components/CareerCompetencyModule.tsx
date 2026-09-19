@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { PrintHeader } from './PrintHeader';
 import { Staff, Division } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { OFFICIAL_COMPETENCY_MATRICES, DivisionMatrix, CompetencyLevel } from '../data/competencyMatrixData';

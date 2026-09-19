@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { PrintHeader } from './PrintHeader';
 import { Staff, Division, DailyReport as DailyReportType, DailyTask, Finding, LogbookEntry, WorkOrder } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, getMasterStaffList } from '../data';
 import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';

@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { PrintHeader } from './PrintHeader';
 import { Staff, DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import {
@@ -197,6 +198,7 @@ export default function EmployeePerformanceModule({
 
   return (
     <div className="space-y-6 pb-12 print:p-0">
+      <PrintHeader title="Profil & Kinerja Karyawan" />
       {/* Top Breadcrumb & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

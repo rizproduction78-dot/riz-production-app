@@ -606,9 +606,12 @@ export default function Reports({
         <div className="bg-white p-8 md:p-12 rounded-2xl border border-slate-100 shadow-sm space-y-8 max-w-4xl mx-auto printable-document text-slate-900">
           {/* Document Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-slate-800 pb-6 gap-4">
-            <div>
-              <h1 className="text-3xl font-display font-black text-slate-900 tracking-tight">RIZ-PRODUCTION</h1>
-              <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mt-1">Live Event Equipment & Production Solution</p>
+            <div className="flex items-center gap-4">
+              <img src="/logo.png" alt="RIZ-PRODUCTION Logo" className="h-16 w-auto object-contain print:h-14" />
+              <div>
+                <h1 className="text-3xl font-display font-black text-slate-900 tracking-tight">RIZ-PRODUCTION</h1>
+                <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mt-1">Live Event Equipment & Production Solution</p>
+              </div>
             </div>
             <div className="text-right sm:text-right text-xs space-y-1">
               <h2 className="text-md font-bold text-slate-800 uppercase font-display">Monthly Operation Report</h2>
@@ -1164,9 +1167,12 @@ export default function Reports({
           
           {/* Document Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-slate-800 pb-6 gap-4">
-            <div>
-              <h1 className="text-3xl font-display font-black text-slate-900 tracking-tight">RIZ-PRODUCTION</h1>
-              <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mt-1">Live Event Equipment & Production Solution</p>
+            <div className="flex items-center gap-4">
+              <img src="/logo.png" alt="RIZ-PRODUCTION Logo" className="h-16 w-auto object-contain print:h-14" />
+              <div>
+                <h1 className="text-3xl font-display font-black text-slate-900 tracking-tight">RIZ-PRODUCTION</h1>
+                <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mt-1">Live Event Equipment & Production Solution</p>
+              </div>
             </div>
             <div className="text-right sm:text-right text-xs space-y-1">
               <h2 className="text-md font-bold text-slate-800 uppercase font-display">Logbook QC Harian Staff Inhouse</h2>
