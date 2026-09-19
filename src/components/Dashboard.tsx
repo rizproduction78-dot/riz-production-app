@@ -286,9 +286,11 @@ export default function Dashboard({
     return monthlyOfficialStaff
       .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0)
       .sort((a, b) => {
+        // Sort by productivity first (total reports + qcs + wos)
+        const prodA = a.reports + a.qcs + a.wos;
+        const prodB = b.reports + b.qcs + b.wos;
+        if (prodB !== prodA) return prodB - prodA;
         if (b.kpi !== a.kpi) return b.kpi - a.kpi;
-        if (b.qcs !== a.qcs) return b.qcs - a.qcs;
-        if (b.reports !== a.reports) return b.reports - a.reports;
         if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
         return b.wos - a.wos;
       })
