@@ -118,14 +118,15 @@ export default function EmployeePerformanceModule({
     label: `${selectedStaff.division.toUpperCase()} DIVISION`
   };
 
-  // Dynamic 12-Month Trend Data
+  // Dynamic 12-Month Trend Data (Real Data Strict)
   const monthsLabels = ['Okt', 'Nov', 'Des', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep'];
   const trendData = monthsLabels.map((m, idx) => {
     if (idx === 11) {
+      // Hanya bulan September (indeks 11) yang memiliki data riil saat ini
       return { month: m, score: staffKpi.kpi };
     }
-    const scoreVal = Math.max(0, Math.min(100, Math.round(staffKpi.kpi * (0.85 + (idx % 4) * 0.05))));
-    return { month: m, score: scoreVal };
+    // Bulan lain belum ada data riil, berikan nilai 0 (tanpa halusinasi/gimmick)
+    return { month: m, score: 0 };
   });
 
   // SVG dimensions for Line Chart

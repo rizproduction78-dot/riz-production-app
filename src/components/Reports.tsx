@@ -150,7 +150,8 @@ export default function Reports({
   // 1. Daily Report
   // 2. QC Checklist
   // 3. WO Selesai
-  const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
+  // NOTE: Selalu gunakan data master (dailyReports, logbookEntries) bukan data filter active, agar KPI tetap berbobot bulanan meskipun sedang melihat report harian/mingguan.
+  const staffKpis = calculateAllStaffKpis(staffList, dailyReports, logbookEntries, findings, undefined, undefined, undefined, workOrders);
   
   const activeStaffKpis = staffKpis;
 
@@ -861,16 +862,8 @@ export default function Reports({
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-lg">
                 <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider block mb-2">TOP PERFORMER (BERDASARKAN AKTIFITAS RIIL)</span>
                 <ol className="list-decimal pl-5 space-y-1 text-xs text-slate-700 font-sans">
-                  {staffKpis
+                  {activeStaffKpis
                     .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0)
-                    .sort((a, b) => {
-                      const prodA = a.reports + a.qcs + a.wos;
-                      const prodB = b.reports + b.qcs + b.wos;
-                      if (prodB !== prodA) return prodB - prodA;
-                      if (b.kpi !== a.kpi) return b.kpi - a.kpi;
-                      if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
-                      return b.wos - a.wos;
-                    })
                     .map((staff) => (
                     <li key={staff.id}>
                        <strong className="text-indigo-600">{staff.name}</strong> (Divisi {staff.division}) — Nilai KPI: <strong className="text-emerald-600">{staff.kpi}%</strong> ({staff.reports} Daily Report, {staff.qcs} QC, {staff.wos} WO)

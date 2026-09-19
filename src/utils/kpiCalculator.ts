@@ -344,12 +344,13 @@ export function calculateStaffKpi(
   const actualPresenceDays = staffDates.size;
 
   const attendanceCount = actualPresenceDays > 0 ? actualPresenceDays : 0;
-  // Target absensi diambil dari jadwal kerja yang sebenarnya (roster) atau default 24 hari
-  const attendanceTarget = scheduledWorkingDays > 0 ? scheduledWorkingDays : 24; 
+  // Target absensi distandarisasi ke 24 hari untuk memastikan persentase seragam bagi semua staf
+  const attendanceTarget = 24; 
   const attendanceScore = Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100));
   
-  // Target untuk report dan QC SAMA DENGAN target absensi (Sesuai dengan jadwal roster)
-  const taskTarget = attendanceTarget;
+  // Target untuk report dan QC distandarisasi ke 24 hari kerja aktif per bulan untuk semua staf
+  // Hal ini memastikan staf dengan shift sedikit tidak mendapat skor lebih tinggi secara tidak logis dari staf dengan shift banyak
+  const taskTarget = 24;
 
   // ─────────────────────────────────────────────────────────────
   // 2. MENGHITUNG UJI KOMPETENSI YANG DIIKUTI - DITAMBAHKAN
@@ -442,42 +443,23 @@ export function calculateStaffKpi(
   const baseHours = 0;
 
   // ─────────────────────────────────────────────────────────────
-  // 8. TOTAL NILAI KPI (KEHADIRAN DIAKTIFKAN KEMBALI)
+  // 8. TOTAL NILAI KPI (Sesuai Komit Terbaru)
   // ─────────────────────────────────────────────────────────────
-  // Komposisi:
-  // Divisi Non-QC (Gudang, Admin):
-  // - Kehadiran: 15%
-  // - Daily Report: 35%
-  // - Work Order Selesai: 20%
-  // - Uji Kompetensi: 15%
-  // - Teamwork & Pengembangan Diri: 15%
-  //
-  // Divisi Teknis QC (Audio, Lighting, Videotron, Multimedia, Service):
-  // - Kehadiran: 15%
+  // Komposisi (Semua Divisi):
   // - Daily Report: 25%
-  // - QC Checklist: 25%
-  // - Work Order Selesai: 15%
+  // - QC Checklist: 20%
+  // - Work Order Selesai: 10%
   // - Uji Kompetensi: 15%
-  // - Teamwork & Pengembangan Diri: 5%
-  let totalKpi: number;
-  if (isNonQcDivision) {
-    totalKpi = Math.round(
-      (attendanceScore * 0.15) +
-      (reportScore * 0.35) +
-      (woScore * 0.20) +
-      (competencyScore * 0.15) +
-      (teamworkScore * 0.15)
-    );
-  } else {
-    totalKpi = Math.round(
-      (attendanceScore * 0.15) +
-      (reportScore * 0.25) +
-      (qcScore * 0.25) +
-      (woScore * 0.15) +
-      (competencyScore * 0.15) +
-      (teamworkScore * 0.05)
-    );
-  }
+  // - Kehadiran: 15%
+  // - Teamwork & Pengembangan Diri: 15%
+  let totalKpi = Math.round(
+    (reportScore * 0.25) +
+    (qcScore * 0.20) +
+    (woScore * 0.10) +
+    (competencyScore * 0.15) +
+    (attendanceScore * 0.15) +
+    (teamworkScore * 0.15)
+  );
 
   const kpi = Math.min(100, Math.max(0, totalKpi));
 
@@ -520,13 +502,17 @@ export function calculateStaffKpi(
 }
 
 /**
- * Menghitung KPI untuk seluruh daftar staff dengan perangkingan resmi berdasarkan urutan prioritas:
- * 1. QC Checked (Checklist & Inspeksi QC)
- * 2. Daily Report (Laporan Aktivitas Harian)
- * 3. Work Order / Temuan (Penyelesaian Perbaikan & Temuan)
- * 4. Uji Kompetensi yang Diikuti
- * 5. Jumlah Absensi (Kehadiran Resmi)
- * 6. Nilai Total KPI (%)
+ * URUTAN PENILAIAN & PERANGKINGAN RESMI:
+ * 1. Daily Report (Laporan Harian Operasional Lapangan & Event) - Bobot 25%
+ * 2. QC Checklist Onhouse (Inspeksi & Kesiapan Alat Gudang) - Bobot 20%
+ * 3. Work Order (WO) Selesai & Temuan Kerusakan Ditangani - Bobot 10%
+ * 4. Uji Kompetensi yang Diikuti (6 Modul Standar Kelistrikan & Teknis) - Bobot 15%
+ * 5. Kehadiran & Shift Roster Riil (Jadwal Dinas 1-31) - Bobot 15%
+ * 6. Disiplin & Teamwork - Bobot 15%
+ * 
+ * PRINSIP INTEGRITAS DATA:
+ * - 100% Data Riil dari input operasional & spreadsheet resmi (tanpa halusinasi/data fiktif)
+ * - MENGHITUNG DENGAN BENAR, MENYUSUN DENGAN BENAR, MENGHASILKAN DENGAN BENAR DATA BERDASARKAN SUMBER REFERENSI RESMI
  */
 export function calculateAllStaffKpis(
   staffList: Staff[],
@@ -555,20 +541,26 @@ export function calculateAllStaffKpis(
       )
     )
     .sort((a, b) => {
-      const totalA = (a.reports || 0) + (a.qcs || 0) + (a.wos || 0);
-      const totalB = (b.reports || 0) + (b.qcs || 0) + (b.wos || 0);
+      // Perintah Terbaru: Urutan Perangkingan HARUS berdasarkan jumlah aktivitas riil sebagai syarat utama
+      // 1. Daily Report (Laporan Aktivitas Harian)
+      if (b.reports !== a.reports) return (b.reports || 0) - (a.reports || 0);
+      
+      // 2. QC Checked (Checklist & Inspeksi QC)
+      if (b.qcs !== a.qcs) return (b.qcs || 0) - (a.qcs || 0);
 
-      // 1. Total Aktivitas (Reports + QC + WO)
-      if (totalB !== totalA) return totalB - totalA;
+      // 3. Work Order / Temuan (Penyelesaian Perbaikan & Temuan)
+      if (b.wos !== a.wos) return (b.wos || 0) - (a.wos || 0);
+      
+      // 4. Uji Kompetensi yang Diikuti
+      if (b.competencyCount !== a.competencyCount) return (b.competencyCount || 0) - (a.competencyCount || 0);
 
-      // 2. KPI
+      // 5. Jumlah Absensi (Kehadiran Resmi)
+      if (b.attendanceCount !== a.attendanceCount) return (b.attendanceCount || 0) - (a.attendanceCount || 0);
+
+      // 6. Nilai Total KPI (%)
       if (b.kpi !== a.kpi) return b.kpi - a.kpi;
 
-      // 3. Kehadiran
-      if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
-
-      // 4. WO
-      return (b.wos || 0) - (a.wos || 0);
+      return 0;
     });
 }
 

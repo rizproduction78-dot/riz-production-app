@@ -244,25 +244,15 @@ export default function Dashboard({
     );
   }, [staffList, dailyReports, logbookEntries, findings, workOrders]);
 
-  // 2. Active Period Staff KPIs (if filtered by day/week or for period-specific view)
+  // 2. Active Period Staff KPIs (Always use monthly for consistent grading, regardless of active tab view)
   const staffKpis = React.useMemo(() => {
-    if (activeTab === 'monthly_report' || activeTab === 'harian' || activeTab === 'graphic_view') {
-      return monthlyStaffKpis;
-    }
-    return calculateAllStaffKpis(
-      staffList,
-      activeDailyReports,
-      activeLogbookEntries,
-      activeFindings,
-      undefined,
-      undefined,
-      undefined,
-      activeWorkOrders
-    );
-  }, [activeTab, monthlyStaffKpis, staffList, activeDailyReports, activeLogbookEntries, activeFindings, activeWorkOrders]);
+    return monthlyStaffKpis;
+  }, [monthlyStaffKpis]);
   
   const activeStaff = React.useMemo(() => {
-    return staffKpis.filter(s => 
+    let filtered = staffKpis;
+    // Mengembalikan filter resmi berdasarkan sumber data Google Sheet yang sudah LINTAS DIVISI
+    return filtered.filter(s => 
       isStaffInGoogleSheet(s, dailyReports, logbookEntries)
     );
   }, [staffKpis, dailyReports, logbookEntries]);
