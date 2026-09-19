@@ -152,10 +152,16 @@ export default function Reports({
   // 3. WO Selesai
   const staffKpis = calculateAllStaffKpis(staffList, activeDailyReports, activeLogbookEntries, activeFindings, undefined, undefined, undefined, activeWorkOrders);
   
-  // Filter hanya staf yang bertugas sesuai data referensi Google Sheet (selalu tampilkan meskipun hari ini belum ada aktivitas)
-  const activeStaffKpis = staffKpis.filter(staff => 
-    isStaffInGoogleSheet(staff, activeDailyReports, activeLogbookEntries)
-  );
+  const activeStaffKpis = staffKpis
+    .filter(staff => isStaffInGoogleSheet(staff, activeDailyReports, activeLogbookEntries))
+    .sort((a, b) => {
+      const prodA = a.reports + a.qcs + a.wos;
+      const prodB = b.reports + b.qcs + b.wos;
+      if (prodB !== prodA) return prodB - prodA;
+      if (b.kpi !== a.kpi) return b.kpi - a.kpi;
+      if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
+      return b.wos - a.wos;
+    });
 
   // Dynamic metrics per division (7 Divisi Resmi)
   const reportDivisions = [
@@ -867,14 +873,16 @@ export default function Reports({
                   {staffKpis
                     .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0)
                     .sort((a, b) => {
+                      const prodA = a.reports + a.qcs + a.wos;
+                      const prodB = b.reports + b.qcs + b.wos;
+                      if (prodB !== prodA) return prodB - prodA;
                       if (b.kpi !== a.kpi) return b.kpi - a.kpi;
-                      if (b.qcs !== a.qcs) return b.qcs - a.qcs;
-                      if (b.reports !== a.reports) return b.reports - a.reports;
+                      if (b.attendanceCount !== a.attendanceCount) return b.attendanceCount - a.attendanceCount;
                       return b.wos - a.wos;
                     })
                     .map((staff) => (
                     <li key={staff.id}>
-                       <strong className="text-indigo-600">{staff.name}</strong> (Divisi {staff.division}) — Nilai KPI: <strong className="text-emerald-600">{staff.kpi}%</strong> ({staff.reports} Daily Report, {staff.qcs} QC)
+                       <strong className="text-indigo-600">{staff.name}</strong> (Divisi {staff.division}) — Nilai KPI: <strong className="text-emerald-600">{staff.kpi}%</strong> ({staff.reports} Daily Report, {staff.qcs} QC, {staff.wos} WO)
                     </li>
                   ))}
                 </ol>
