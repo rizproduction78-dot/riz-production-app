@@ -515,8 +515,146 @@ export default function Findings({
             </div>
           </div>
 
+          {/* ── SKALA PRIORITAS PERBAIKAN (dari data Google Sheet) ── */}
+          {filteredFindings.filter(f => f.status === 'Open').length > 0 && (() => {
+            const today = new Date();
+            const openFindings = filteredFindings.filter(f => f.status === 'Open');
+
+            // Kelompok prioritas sesuai skala: Safety > Produksi > Inventaris > Minor
+            const safety = openFindings.filter(f =>
+              f.priority === 'Tinggi' && (
+                f.equipment?.toLowerCase().includes('takel') ||
+                f.equipment?.toLowerCase().includes('chain') ||
+                f.equipment?.toLowerCase().includes('hoist')
+              )
+            );
+            const high = openFindings.filter(f =>
+              f.priority === 'Tinggi' && !safety.find(s => s.id === f.id)
+            );
+            const medium = openFindings.filter(f => f.priority === 'Sedang');
+            const low = openFindings.filter(f => f.priority === 'Rendah');
+
+            const isOverdue = (targetDate: string) => {
+              if (!targetDate) return false;
+              return new Date(targetDate) < today;
+            };
+
+            const PriorityRow = ({ finding, badge }: { finding: typeof openFindings[0], badge: string }) => (
+              <div key={finding.id} className={`flex items-start gap-3 p-3 rounded-xl border ${
+                finding.priority === 'Tinggi' ? 'bg-red-50/60 border-red-200' :
+                finding.priority === 'Sedang' ? 'bg-amber-50/60 border-amber-200' :
+                'bg-slate-50/60 border-slate-200'
+              }`}>
+                <span className="text-base mt-0.5 shrink-0">{badge}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-slate-800 truncate">{finding.equipment}</span>
+                    {isOverdue(finding.targetDate) && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-600 text-white shrink-0 animate-pulse">
+                        ⚠ OVERDUE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{finding.issue}</p>
+                  <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-400">
+                    <span>PIC: <span className="font-semibold text-slate-600">{finding.pic}</span></span>
+                    <span>Target: <span className={`font-semibold ${isOverdue(finding.targetDate) ? 'text-red-600' : 'text-slate-600'}`}>{finding.targetDate || '—'}</span></span>
+                    <span>Laporan: <span className="font-semibold text-slate-600">{finding.dateCreated}</span></span>
+                  </div>
+                </div>
+              </div>
+            );
+
+            return (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-gradient-to-r from-slate-900 to-indigo-950">
+                  <span className="text-base">📊</span>
+                  <h3 className="text-sm font-black text-white tracking-tight">SKALA PRIORITAS PERBAIKAN</h3>
+                  <span className="ml-auto text-[10px] font-bold text-indigo-300 bg-indigo-900/50 px-2 py-0.5 rounded-full border border-indigo-700/40">
+                    Sumber: Google Sheet Official
+                  </span>
+                </div>
+
+                <div className="p-4 space-y-4">
+                  {/* P1 — SAFETY CRITICAL */}
+                  {safety.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shrink-0" />
+                        <span className="text-[11px] font-black text-red-700 uppercase tracking-wider">
+                          PRIORITAS 1 — SAFETY CRITICAL ({safety.length} item) · Wajib Sebelum Event
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {safety.map(f => <PriorityRow key={f.id} finding={f} badge="🔴" />)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* P2 — PRODUKSI TERGANGGU */}
+                  {high.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0" />
+                        <span className="text-[11px] font-black text-orange-700 uppercase tracking-wider">
+                          PRIORITAS 2 — KERUSAKAN PRODUKSI ({high.length} item) · Pengaruhi Kualitas Output
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {high.map(f => <PriorityRow key={f.id} finding={f} badge="🟠" />)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* P3 — INVENTARIS / SEDANG */}
+                  {medium.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                        <span className="text-[11px] font-black text-amber-700 uppercase tracking-wider">
+                          PRIORITAS 3 — ASET & INVENTARIS ({medium.length} item) · Perlu Tindak Lanjut
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {medium.map(f => <PriorityRow key={f.id} finding={f} badge="🟡" />)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* P4 — MONITORING */}
+                  {low.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="text-[11px] font-black text-emerald-700 uppercase tracking-wider">
+                          PRIORITAS 4 — MONITORING ({low.length} item) · Pantau Berkala
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {low.map(f => <PriorityRow key={f.id} finding={f} badge="🟢" />)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Summary Footer */}
+                  <div className="flex items-center gap-3 pt-3 border-t border-slate-100 flex-wrap">
+                    <span className="text-[10px] text-slate-400 font-medium">Total Open:</span>
+                    {safety.length > 0 && <span className="text-[10px] font-bold text-red-600">🔴 Safety: {safety.length}</span>}
+                    {high.length > 0 && <span className="text-[10px] font-bold text-orange-600">🟠 Produksi: {high.length}</span>}
+                    {medium.length > 0 && <span className="text-[10px] font-bold text-amber-600">🟡 Inventaris: {medium.length}</span>}
+                    {low.length > 0 && <span className="text-[10px] font-bold text-emerald-600">🟢 Minor: {low.length}</span>}
+                    <span className="ml-auto text-[10px] text-slate-400">
+                      {openFindings.filter(f => isOverdue(f.targetDate)).length} item melewati deadline
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Form Add Finding */}
           {showAddForm && (
+
             <form onSubmit={handleSubmitFinding} className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-md space-y-4 max-w-xl">
               <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                 <ShieldAlert className="w-5 h-5 text-indigo-600" />
