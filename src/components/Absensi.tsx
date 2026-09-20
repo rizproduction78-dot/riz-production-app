@@ -31,7 +31,8 @@ import {
   Wrench,
   Plus,
   Trash2,
-  Printer
+  Printer,
+  X
 } from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc, pushCollectionToCloud } from '../lib/cloudSync';
 
@@ -376,35 +377,33 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
     }
   }, [electricalCompetencies]);
 
-  // Handle GPS detection
+  // Handle Real GPS detection
   const handleDetectGPS = () => {
-    const locations = [
-      'Office - HQ (Lat: -6.2088, Lng: 106.8456)',
-      'Gudang Utama A (Lat: -6.2115, Lng: 106.8423)',
-      'Gudang Utama B (Lat: -6.2120, Lng: 106.8431)',
-      'Gudang Utama C (Lat: -6.2102, Lng: 106.8440)',
-      'Event Stage Hall (Lat: -6.1804, Lng: 106.8276)'
-    ];
-    const randomLoc = locations[Math.floor(Math.random() * locations.length)];
-    setGpsSimulated(randomLoc);
+    if (!navigator.geolocation) {
+      alert('Geolocation tidak didukung oleh browser Anda.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setGpsSimulated(`Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`);
+      },
+      (error) => {
+        alert('Gagal mendapatkan lokasi GPS. Pastikan izin lokasi diberikan.');
+      }
+    );
   };
 
-  // Handle Simulated Camera Capture
-  const handleSimulateCamera = () => {
-    setCameraActive(true);
-    setIsCapturing(true);
-    setTimeout(() => {
-      // Simulate snapshot
-      const mockPhotos = [
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-        'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=200',
-        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200'
-      ];
-      setPhotoSimulated(mockPhotos[Math.floor(Math.random() * mockPhotos.length)]);
-      setIsCapturing(false);
-      setCameraActive(false);
-    }, 1200);
+  // Handle Real File Input for Camera
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoSimulated(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Generate Month Schedule (1-31)
@@ -711,38 +710,33 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                             )}
                           </div>
 
-                          {photoSimulated ? (
-                            <div className="relative aspect-video max-h-36 rounded-lg overflow-hidden border border-slate-300">
-                              <img src={photoSimulated} alt="Selfie" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                              <button
-                                type="button"
-                                onClick={() => setPhotoSimulated('')}
-                                className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded hover:bg-red-700 text-[10px] font-bold"
-                              >
-                                Hapus
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="aspect-video max-h-36 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center p-4 text-center bg-white">
-                              {isCapturing ? (
-                                <div className="space-y-2">
-                                  <RefreshCw className="w-6 h-6 text-indigo-600 animate-spin mx-auto" />
-                                  <span className="text-[11px] text-slate-500 font-mono">Mengambil Foto Selfie...</span>
-                                </div>
-                              ) : (
-                                <div className="space-y-2">
-                                  <span className="text-xs text-slate-400 block">Kamera belum aktif</span>
-                                  <button
-                                    type="button"
-                                    onClick={handleSimulateCamera}
-                                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded cursor-pointer transition-colors"
-                                  >
-                                    Ambil Foto Selfie
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                         {photoSimulated ? (
+                          <div className="relative group">
+                            <img src={photoSimulated} alt="Selfie Absen" className="w-full h-32 object-cover rounded-lg shadow-sm border border-slate-200" />
+                            <button
+                              type="button"
+                              onClick={() => setPhotoSimulated('')}
+                              className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="h-32 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-500 bg-slate-50 relative overflow-hidden">
+                              <Camera className="w-8 h-8 mb-2 text-slate-300" />
+                              <span className="text-xs font-medium">Foto Selfie Area/Wajah</span>
+                              <label className="mt-2 text-[11px] text-indigo-600 font-bold hover:underline cursor-pointer">
+                                Buka Kamera
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  capture="environment" 
+                                  className="hidden" 
+                                  onChange={handlePhotoUpload} 
+                                />
+                              </label>
+                          </div>
+                        )}
                         </div>
 
                         {/* GPS LOCATION SIMULATOR */}

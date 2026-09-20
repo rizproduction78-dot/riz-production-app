@@ -75,7 +75,7 @@ export default function AssetManagement({
     e.preventDefault();
     if (!name.trim()) return;
 
-    const assetCode = code.trim() || 'AST-' + division.substring(0, 3).toUpperCase() + '-' + Math.floor(100 + Math.random() * 900);
+    const assetCode = code.trim() || 'AST-' + division.substring(0, 3).toUpperCase() + '-' + String(Math.floor(Date.now() % 1000)).padStart(3, '0');
 
     onAddAsset({
       code: assetCode,
@@ -124,12 +124,12 @@ export default function AssetManagement({
 
   // Register item from official catalog
   const handleRegisterFromCatalog = (item: OfficialEquipmentItem) => {
-    const assetCode = 'AST-' + item.division.substring(0, 3).toUpperCase() + '-' + Math.floor(100 + Math.random() * 900);
+    const assetCode = 'AST-' + item.division.substring(0, 3).toUpperCase() + '-' + String(Math.floor(Date.now() % 1000)).padStart(3, '0');
     onAddAsset({
       code: assetCode,
       name: item.name,
       brand: item.brand,
-      serialNumber: 'SN-' + item.id + '-' + Math.floor(1000 + Math.random() * 9000),
+      serialNumber: 'SN-' + item.id + '-' + String(Math.floor(Date.now() % 10000)).padStart(4, '0'),
       division: item.division as Division,
       location: 'Gudang Utama RIZ',
       condition: 'Baik',

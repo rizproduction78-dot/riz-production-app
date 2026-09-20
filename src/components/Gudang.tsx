@@ -681,7 +681,7 @@ export default function Gudang({
 
     const newAssignment: FleetAssignment = {
       id: 'fleet-' + Date.now(),
-      spjNumber: `SPJ/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(1000 + Math.random() * 9000)}`,
+      spjNumber: `SPJ/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(Math.floor(Date.now() % 10000)).padStart(4, '0')}`,
       eventName: newFleetData.eventName || 'Event Produksi',
       tripType: newFleetData.tripType || 'Dalam Kota (Jabodetabek)',
       vehicleType: newFleetData.vehicleType || 'Truk Box Mitsubishi Canter CDD (6 Roda)',

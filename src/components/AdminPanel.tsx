@@ -1147,7 +1147,7 @@ export default function AdminPanel({
 
     const newF: FleetAssignment = {
       id: 'fleet-' + Date.now(),
-      spjNumber: fleetFormData.spjNumber || `SPJ/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(1000 + Math.random() * 9000)}`,
+      spjNumber: fleetFormData.spjNumber || `SPJ/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(Math.floor(Date.now() % 10000)).padStart(4, '0')}`,
       eventName: fleetFormData.eventName || 'Event Produksi',
       tripType: fleetFormData.tripType || 'Dalam Kota (Jabodetabek)',
       vehicleType: fleetFormData.vehicleType || 'Truk Box Mitsubishi Canter CDD (6 Roda)',
@@ -2662,7 +2662,7 @@ export default function AdminPanel({
                   onClick={() => {
                     setActiveFleetForEdit(null);
                     setFleetFormData({
-                      spjNumber: `SPJ/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(1000 + Math.random() * 9000)}`,
+                      spjNumber: `SPJ/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(Math.floor(Date.now() % 10000)).padStart(4, '0')}`,
                       eventName: '',
                       tripType: 'Dalam Kota (Jabodetabek)',
                       vehicleType: vehicles[0]?.name || 'SUZUKI CARRY',

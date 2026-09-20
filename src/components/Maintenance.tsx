@@ -68,7 +68,7 @@ export default function Maintenance({
 
     onAddSchedule({
       assetName,
-      assetCode: assetCode || 'AST-GEN-' + Math.floor(100 + Math.random() * 900),
+      assetCode: assetCode || 'AST-GEN-' + String(Math.floor(Date.now() % 1000)).padStart(3, '0'),
       type,
       frequency,
       lastDate: new Date().toISOString().split('T')[0],
@@ -400,24 +400,23 @@ export default function Maintenance({
                   </button>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCapturingPhoto(true);
-                    setTimeout(() => {
-                      const mockUrls = [
-                        'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&q=80&w=200',
-                        'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=200',
-                        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=200'
-                      ];
-                      setPhotoUrl(mockUrls[Math.floor(Math.random() * mockUrls.length)]);
-                      setIsCapturingPhoto(false);
-                    }, 800);
-                  }}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-all"
-                >
-                  {isCapturingPhoto ? 'Memotret...' : 'Ambil Foto Bukti'}
-                </button>
+                <label className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-all">
+                  Ambil Foto Bukti
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setPhotoUrl(reader.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
               )}
             </div>
             <a
