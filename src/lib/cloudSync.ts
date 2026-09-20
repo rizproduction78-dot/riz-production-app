@@ -247,7 +247,10 @@ export const ALL_SYNC_COLLECTIONS = [
   { name: 'master_vehicles', key: 'riz_master_vehicles', label: 'Master Armada Kendaraan' },
   { name: 'fleet_assignments', key: 'riz_fleet_assignments', label: 'Penugasan Armada' },
   { name: 'custom_qc_checklists', key: 'riz_custom_qc_checklists', label: 'Template QC Checklist' },
-  { name: 'september_2026_schedule', key: 'riz_september_2026_schedule', label: 'Jadwal Shift September 2026' },
+  { name: 'schedule_2026-09', key: 'riz_schedule_2026-09', label: 'Jadwal Shift September 2026' },
+  { name: 'schedule_2026-10', key: 'riz_schedule_2026-10', label: 'Jadwal Shift Oktober 2026' },
+  { name: 'schedule_2026-11', key: 'riz_schedule_2026-11', label: 'Jadwal Shift November 2026' },
+  { name: 'schedule_2026-12', key: 'riz_schedule_2026-12', label: 'Jadwal Shift Desember 2026' },
   { name: 'work_schedule', key: 'riz_work_schedule', label: 'Jadwal Kerja Tim' },
   { name: 'attendance_logs', key: 'riz_attendance_logs', label: 'Log Absensi Mandiri' },
   { name: 'staff_competencies', key: 'riz_staff_electrical_competencies', label: 'Kompetensi Kelistrikan' },
@@ -562,7 +565,7 @@ export function subscribeCloudCollection<T = any>(
             collectionName === 'freelance_workers' ||
             collectionName === 'fleet_drivers' ||
             collectionName === 'assets' ||
-            collectionName === 'september_2026_schedule' ||
+            collectionName.startsWith('schedule_') ||
             collectionName === 'logbook_entries' ||
             collectionName === 'daily_reports' ||
             collectionName === 'daily_tasks' ||

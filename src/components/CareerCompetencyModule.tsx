@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PrintHeader } from './PrintHeader';
-import { Staff, Division } from '../types';
+import { Staff, Division, DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { OFFICIAL_COMPETENCY_MATRICES, DivisionMatrix, CompetencyLevel } from '../data/competencyMatrixData';
 import {
@@ -50,6 +50,10 @@ import { saveCloudDoc, subscribeCloudCollection } from '../lib/cloudSync';
 interface CareerCompetencyModuleProps {
   currentUser: Staff;
   onLogActivity: (username: string, role: string, action: string) => void;
+  dailyReports?: DailyReport[];
+  logbookEntries?: LogbookEntry[];
+  findings?: Finding[];
+  workOrders?: WorkOrder[];
 }
 
 // 10 Tahap Pipeline Karir & Kompetensi Resmi RIZ-PRODUCTION
@@ -90,7 +94,11 @@ export interface StaffCareerRecord {
 
 export default function CareerCompetencyModule({
   currentUser,
-  onLogActivity
+  onLogActivity,
+  dailyReports = [],
+  logbookEntries = [],
+  findings = [],
+  workOrders = []
 }: CareerCompetencyModuleProps) {
   // Check user role privileges
   const isManagement = Boolean(
@@ -279,7 +287,16 @@ export default function CareerCompetencyModule({
 
   // Selected staff object for passport view
   const activeStaff = staffList.find(s => s.id === selectedStaffId) || currentUser;
-  const activeStaffKpi = calculateStaffKpi(activeStaff);
+  const activeStaffKpi = calculateStaffKpi(
+    activeStaff,
+    dailyReports,
+    logbookEntries,
+    findings,
+    undefined,
+    undefined,
+    undefined,
+    workOrders
+  );
   const activeRecord = careerRecords[activeStaff.id] || {
     staffId: activeStaff.id,
     currentStageId: 1,

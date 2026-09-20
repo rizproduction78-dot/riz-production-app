@@ -18,7 +18,7 @@ import {
   INITIAL_FREELANCE_WORKERS
 } from './data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from './data/september2026Schedule';
-import { getActiveMonthKey } from './data/staffSchedules';
+import { getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from './data/staffSchedules';
 import { isStaffMatch } from './utils/kpiCalculator';
 
 import LoginScreen from './components/LoginScreen';
@@ -315,14 +315,16 @@ export default function App() {
   const REF_SYNC_KEY = 'riz_ref_synced_v34_canonical_fix_sept18';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
-    localStorage.setItem('riz_findings', JSON.stringify(INITIAL_FINDINGS));
-    localStorage.setItem('riz_daily_tasks', JSON.stringify(INITIAL_DAILY_TASKS));
-    localStorage.setItem('riz_logbook_entries', JSON.stringify(INITIAL_LOGBOOK_ENTRIES));
-    localStorage.setItem('riz_daily_reports', JSON.stringify(INITIAL_DAILY_REPORTS));
-    localStorage.setItem('riz_work_orders', JSON.stringify(INITIAL_WORK_ORDERS));
+    localStorage.setItem('riz_findings_v2', JSON.stringify(INITIAL_FINDINGS));
+    localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(INITIAL_DAILY_TASKS));
+    localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(INITIAL_LOGBOOK_ENTRIES));
+    localStorage.setItem('riz_daily_reports_v2', JSON.stringify(INITIAL_DAILY_REPORTS));
+    localStorage.setItem('riz_work_orders_v2', JSON.stringify(INITIAL_WORK_ORDERS));
     localStorage.setItem('riz_master_staff_list', JSON.stringify(STAFF_LIST));
     localStorage.setItem('riz_freelance_workers', JSON.stringify(INITIAL_FREELANCE_WORKERS));
-    localStorage.setItem('riz_september_2026_schedule', JSON.stringify(OFFICIAL_SEPTEMBER_2026_SCHEDULE));
+    ALL_MONTHLY_SCHEDULES.forEach(sch => {
+      localStorage.setItem(`riz_schedule_${sch.key}`, JSON.stringify(sch.rows));
+    });
     
     // Clear any obsolete deleted ID records
     localStorage.removeItem('riz_deleted_ids_findings');
@@ -457,15 +459,17 @@ export default function App() {
       saveCloudDoc('work_orders', w.id, w, 'System Canonical Sync').catch(() => {});
     });
 
-    // Sinkronisasi Jadwal Kerja September 2026 ke Cloud Firestore
-    OFFICIAL_SEPTEMBER_2026_SCHEDULE.forEach((row, idx) => {
-      saveCloudDoc('september_2026_schedule', `row-${row.no || idx + 1}`, row, 'System Auto-Sync').catch(() => {});
+    // Sinkronisasi Semua Jadwal Bulanan ke Cloud Firestore
+    ALL_MONTHLY_SCHEDULES.forEach(sch => {
+      sch.rows.forEach((row, idx) => {
+        saveCloudDoc(`schedule_${sch.key}`, `row-${row.no || idx + 1}`, row, 'System Auto-Sync').catch(() => {});
+      });
     });
   }
 
   // Core States - Bersih murni dari data dummy & tersinkronisasi data riil resmi
   const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>(() => {
-    const saved = localStorage.getItem('riz_logbook_entries');
+    const saved = localStorage.getItem('riz_logbook_entries_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -476,7 +480,7 @@ export default function App() {
   });
 
   const [dailyReports, setDailyReports] = useState<DailyReportType[]>(() => {
-    const saved = localStorage.getItem('riz_daily_reports');
+    const saved = localStorage.getItem('riz_daily_reports_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -487,7 +491,7 @@ export default function App() {
   });
 
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>(() => {
-    const saved = localStorage.getItem('riz_daily_tasks');
+    const saved = localStorage.getItem('riz_daily_tasks_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -498,7 +502,7 @@ export default function App() {
   });
 
   const [findings, setFindings] = useState<Finding[]>(() => {
-    const saved = localStorage.getItem('riz_findings');
+    const saved = localStorage.getItem('riz_findings_v2');
     let baseFindings: Finding[] = INITIAL_FINDINGS;
     if (saved) {
       try {
@@ -533,7 +537,7 @@ export default function App() {
   });
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
-    const saved = localStorage.getItem('riz_work_orders');
+    const saved = localStorage.getItem('riz_work_orders_v2');
     let baseWO: WorkOrder[] = INITIAL_WORK_ORDERS;
     if (saved) {
       try {
@@ -600,28 +604,28 @@ export default function App() {
 
     const unsubLogbook = subscribeCloudCollection<LogbookEntry>(
       'logbook_entries',
-      'riz_logbook_entries',
+      'riz_logbook_entries_v2',
       setLogbookEntries,
       INITIAL_LOGBOOK_ENTRIES
     );
 
     const unsubReports = subscribeCloudCollection<DailyReportType>(
       'daily_reports',
-      'riz_daily_reports',
+      'riz_daily_reports_v2',
       setDailyReports,
       INITIAL_DAILY_REPORTS
     );
 
     const unsubTasks = subscribeCloudCollection<DailyTask>(
       'daily_tasks',
-      'riz_daily_tasks',
+      'riz_daily_tasks_v2',
       setDailyTasks,
       INITIAL_DAILY_TASKS
     );
 
     const unsubFindings = subscribeCloudCollection<Finding>(
       'findings',
-      'riz_findings',
+      'riz_findings_v2',
       setFindings,
       INITIAL_FINDINGS
     );
@@ -635,7 +639,7 @@ export default function App() {
 
     const unsubWO = subscribeCloudCollection<WorkOrder>(
       'work_orders',
-      'riz_work_orders',
+      'riz_work_orders_v2',
       setWorkOrders,
       INITIAL_WORK_ORDERS
     );
@@ -720,9 +724,9 @@ export default function App() {
 
       // Baca dari localStorage sebagai backup
       try {
-        const savedReports = JSON.parse(localStorage.getItem('riz_daily_reports') || '[]');
-        const savedFindings = JSON.parse(localStorage.getItem('riz_findings') || '[]');
-        const savedLogs = JSON.parse(localStorage.getItem('riz_logbook_entries') || '[]');
+        const savedReports = JSON.parse(localStorage.getItem('riz_daily_reports_v2') || '[]');
+        const savedFindings = JSON.parse(localStorage.getItem('riz_findings_v2') || '[]');
+        const savedLogs = JSON.parse(localStorage.getItem('riz_logbook_entries_v2') || '[]');
         (savedReports as any[]).forEach((r: any) => { if (r.id) existingIds.add(r.id); });
         (savedFindings as any[]).forEach((f: any) => {
           if (f.id) existingIds.add(f.id);
@@ -795,7 +799,7 @@ export default function App() {
           const trulyNew = newReportDocs.filter(d => !existingIdsSet.has(d.id));
           // Simpan ke localStorage
           const merged = [...trulyNew, ...prev];
-          try { localStorage.setItem('riz_daily_reports', JSON.stringify(merged)); } catch (_e) {}
+          try { localStorage.setItem('riz_daily_reports_v2', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
         });
       }
@@ -804,7 +808,7 @@ export default function App() {
           const existingIdsSet = new Set(prev.map(l => l.id));
           const trulyNew = newLogDocs.filter(d => !existingIdsSet.has(d.id));
           const merged = [...trulyNew, ...prev];
-          try { localStorage.setItem('riz_logbook_entries', JSON.stringify(merged)); } catch (_e) {}
+          try { localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
         });
       }
@@ -813,7 +817,7 @@ export default function App() {
           const existingIdsSet = new Set(prev.map(f => f.id));
           const trulyNew = newFindingDocs.filter(d => !existingIdsSet.has(d.id));
           const merged = [...trulyNew, ...prev];
-          try { localStorage.setItem('riz_findings', JSON.stringify(merged)); } catch (_e) {}
+          try { localStorage.setItem('riz_findings_v2', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
         });
       }
@@ -900,20 +904,48 @@ export default function App() {
   const handleAddLogbookEntry = (entry: Omit<LogbookEntry, 'id'>) => {
     const newEntry: LogbookEntry = {
       ...entry,
-      id: 'lg-' + Date.now()
+      id: 'lg-' + Date.now() + Math.floor(Math.random() * 1000)
     };
-    setLogbookEntries(prev => [newEntry, ...prev]);
-    saveCloudDoc('logbook_entries', newEntry.id, newEntry);
+    
+    let isDuplicate = false;
+    setLogbookEntries(prev => {
+      const existing = prev.find(e => e.activity === entry.activity && e.time === entry.time && e.staff === entry.staff && e.date === entry.date);
+      if (existing) {
+        isDuplicate = true;
+        return prev;
+      }
+      return [newEntry, ...prev];
+    });
+    
+    setTimeout(() => {
+      if (!isDuplicate) {
+        saveCloudDoc('logbook_entries', newEntry.id, newEntry);
+      }
+    }, 0);
   };
 
   // Daily Report functions
   const handleAddReport = (report: Omit<DailyReportType, 'id'>) => {
     const newRep: DailyReportType = {
       ...report,
-      id: 'dr-' + Date.now()
+      id: 'dr-' + Date.now() + Math.floor(Math.random() * 1000)
     };
-    setDailyReports(prev => [newRep, ...prev]);
-    saveCloudDoc('daily_reports', newRep.id, newRep);
+
+    let isDuplicate = false;
+    setDailyReports(prev => {
+      const existing = prev.find(r => r.date === report.date && r.shift === report.shift && r.description === report.description);
+      if (existing) {
+        isDuplicate = true;
+        return prev;
+      }
+      return [newRep, ...prev];
+    });
+
+    setTimeout(() => {
+      if (!isDuplicate) {
+        saveCloudDoc('daily_reports', newRep.id, newRep);
+      }
+    }, 0);
   };
 
   const handleDeleteReport = (id: string) => {
@@ -925,21 +957,34 @@ export default function App() {
   const handleAddFinding = (finding: Omit<Finding, 'id' | 'dateCreated'>) => {
     const newFinding: Finding = {
       ...finding,
-      id: 'fd-' + Date.now(),
+      id: 'fd-' + Date.now() + Math.floor(Math.random() * 1000),
       dateCreated: new Date().toISOString().split('T')[0],
       _syncMeta: {
         updatedAt: new Date().toISOString(),
         updatedBy: currentUser?.name || 'User'
       }
     };
+    
+    let isDuplicate = false;
     setFindings(prev => {
+      const existing = prev.find(f => f.issue === finding.issue && f.equipment === finding.equipment && f.status === 'Open');
+      if (existing) {
+        isDuplicate = true;
+        return prev;
+      }
+      
       const next = [newFinding, ...prev];
       try {
-        localStorage.setItem('riz_findings', JSON.stringify(next));
+        localStorage.setItem('riz_findings_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
-    saveCloudDoc('findings', newFinding.id, newFinding, currentUser?.name);
+
+    setTimeout(() => {
+      if (!isDuplicate) {
+        saveCloudDoc('findings', newFinding.id, newFinding, currentUser?.name);
+      }
+    }, 0);
   };
 
   const handleUpdateFindingStatus = (id: string, status: 'Open' | 'Close', approvedBy?: string, approvedAt?: string) => {
@@ -976,7 +1021,7 @@ export default function App() {
         return f;
       });
       try {
-        localStorage.setItem('riz_findings', JSON.stringify(next));
+        localStorage.setItem('riz_findings_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -991,10 +1036,24 @@ export default function App() {
   const handleAddSchedule = (schedule: Omit<MaintenanceSchedule, 'id'>) => {
     const newSch: MaintenanceSchedule = {
       ...schedule,
-      id: 'ms-' + Date.now()
+      id: 'ms-' + Date.now() + Math.floor(Math.random() * 1000)
     };
-    setSchedules(prev => [newSch, ...prev]);
-    saveCloudDoc('maintenance_schedules', newSch.id, newSch);
+    
+    let isDuplicate = false;
+    setSchedules(prev => {
+      const existing = prev.find(s => s.task === schedule.task && s.date === schedule.date);
+      if (existing) {
+        isDuplicate = true;
+        return prev;
+      }
+      return [newSch, ...prev];
+    });
+
+    setTimeout(() => {
+      if (!isDuplicate) {
+        saveCloudDoc('maintenance_schedules', newSch.id, newSch);
+      }
+    }, 0);
   };
 
   const handleUpdateSchedule = (id: string, updatedFields: Partial<MaintenanceSchedule>) => {
@@ -1046,15 +1105,29 @@ export default function App() {
   const handleAddAsset = (asset: Omit<Asset, 'id' | 'repairHistory'>) => {
     const newAsset: Asset = {
       ...asset,
-      id: 'ast-' + Date.now(),
+      id: 'ast-' + Date.now() + Math.floor(Math.random() * 1000),
       repairHistory: [],
       _syncMeta: {
         updatedAt: new Date().toISOString(),
         updatedBy: currentUser?.name || 'User'
       }
     };
-    setAssets(prev => [newAsset, ...prev]);
-    saveCloudDoc('assets', newAsset.id, newAsset, currentUser?.name);
+    
+    let isDuplicate = false;
+    setAssets(prev => {
+      const existing = prev.find(a => a.name === asset.name && a.location === asset.location);
+      if (existing) {
+        isDuplicate = true;
+        return prev;
+      }
+      return [newAsset, ...prev];
+    });
+
+    setTimeout(() => {
+      if (!isDuplicate) {
+        saveCloudDoc('assets', newAsset.id, newAsset, currentUser?.name);
+      }
+    }, 0);
   };
 
   const handleUpdateAsset = (id: string, updatedFields: Partial<Asset>) => {
@@ -1135,7 +1208,7 @@ export default function App() {
         return f;
       });
       try {
-        localStorage.setItem('riz_findings', JSON.stringify(next));
+        localStorage.setItem('riz_findings_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1143,36 +1216,46 @@ export default function App() {
 
   // Work Orders functions
   const handleAddWorkOrder = (wo: Omit<WorkOrder, 'id' | 'dateCreated'>) => {
-    // Cek duplikasi WO yang sudah ada untuk findingId atau title yang sama
-    const existing = workOrders.find(w => {
-      if (wo.findingId && w.findingId === wo.findingId) return true;
-      const t1 = String(w.title || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-      const t2 = String(wo.title || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-      return t1 && t2 && t1 === t2 && w.division === wo.division;
-    });
-
-    if (existing) {
-      console.info('[WorkOrders] Tiket WO sudah ada, mengabaikan duplikasi:', existing.id);
-      return;
-    }
-
     const newWO: WorkOrder = {
       ...wo,
-      id: 'wo-' + Date.now(),
+      id: 'wo-' + Date.now() + Math.floor(Math.random() * 1000),
       dateCreated: new Date().toISOString().split('T')[0],
       _syncMeta: {
         updatedAt: new Date().toISOString(),
         updatedBy: currentUser?.name || 'User'
       }
     };
+
+    let isDuplicate = false;
+
     setWorkOrders(prev => {
+      // Cek duplikasi WO secara atomic di dalam state update
+      const existing = prev.find(w => {
+        if (wo.findingId && w.findingId === wo.findingId) return true;
+        const t1 = String(w.title || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const t2 = String(wo.title || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        return t1 && t2 && t1 === t2 && w.division === wo.division;
+      });
+
+      if (existing) {
+        console.info('[WorkOrders] Tiket WO sudah ada, mengabaikan duplikasi:', existing.id);
+        isDuplicate = true;
+        return prev;
+      }
+
       const next = [newWO, ...prev];
       try {
-        localStorage.setItem('riz_work_orders', JSON.stringify(next));
+        localStorage.setItem('riz_work_orders_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
-    saveCloudDoc('work_orders', newWO.id, newWO, currentUser?.name);
+
+    // Panggil cloud sync HANYA jika bukan duplikat
+    setTimeout(() => {
+      if (!isDuplicate) {
+        saveCloudDoc('work_orders', newWO.id, newWO, currentUser?.name);
+      }
+    }, 0);
   };
 
   const handleUpdateWorkOrder = (id: string, updatedFields: Partial<WorkOrder>) => {
@@ -1193,7 +1276,7 @@ export default function App() {
         return w;
       });
       try {
-        localStorage.setItem('riz_work_orders', JSON.stringify(next));
+        localStorage.setItem('riz_work_orders_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1217,7 +1300,7 @@ export default function App() {
         return w;
       });
       try {
-        localStorage.setItem('riz_work_orders', JSON.stringify(next));
+        localStorage.setItem('riz_work_orders_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1283,7 +1366,7 @@ export default function App() {
         return w;
       });
       try {
-        localStorage.setItem('riz_work_orders', JSON.stringify(next));
+        localStorage.setItem('riz_work_orders_v2', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1775,6 +1858,10 @@ export default function App() {
           <CareerCompetencyModule
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
+            dailyReports={dailyReports}
+            logbookEntries={logbookEntries}
+            findings={findings}
+            workOrders={workOrders}
           />
         )}
 

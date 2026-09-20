@@ -18,7 +18,7 @@ import {
   INITIAL_FLEET_DRIVERS,
   INITIAL_DAILY_TASKS
 } from '../data';
-import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../data/september2026Schedule';
+import { getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
 import { isStaffMatch } from '../utils/kpiCalculator';
 
 export const DEFAULT_SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
@@ -167,7 +167,10 @@ export function getExportPayloadForGoogleSheet() {
   const fleetAssignments = parseStorage('riz_fleet_assignments', []);
   const findings = parseStorage('riz_findings', INITIAL_FINDINGS);
   const workOrders = parseStorage('riz_work_orders', INITIAL_WORK_ORDERS);
-  const schedules = parseStorage('riz_september_2026_schedule', OFFICIAL_SEPTEMBER_2026_SCHEDULE);
+  const activeMonthKey = getActiveMonthKey();
+  const currentMonthSch = ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonthKey);
+  const defaultSchRows = currentMonthSch ? currentMonthSch.rows : [];
+  const schedules = parseStorage(`riz_schedule_${activeMonthKey}`, defaultSchRows);
   const dailyTasks = parseStorage('riz_daily_tasks', INITIAL_DAILY_TASKS);
 
   const activeLogs = Array.isArray(logs) && logs.length > 0 ? logs : INITIAL_LOGBOOK_ENTRIES;
@@ -178,7 +181,7 @@ export function getExportPayloadForGoogleSheet() {
   const activeDrivers = Array.isArray(drivers) ? drivers : INITIAL_FLEET_DRIVERS;
   const activeFindings = Array.isArray(findings) && findings.length > 0 ? findings : INITIAL_FINDINGS;
   const activeWorkOrders = Array.isArray(workOrders) && workOrders.length > 0 ? workOrders : INITIAL_WORK_ORDERS;
-  const activeSchedules = Array.isArray(schedules) && schedules.length > 0 ? schedules : OFFICIAL_SEPTEMBER_2026_SCHEDULE;
+  const activeSchedules = Array.isArray(schedules) && schedules.length > 0 ? schedules : defaultSchRows;
   const activeTasks = Array.isArray(dailyTasks) && dailyTasks.length > 0 ? dailyTasks : INITIAL_DAILY_TASKS;
 
   // Format combined daily logs, reports & daily tasks for Google Sheet
@@ -1072,7 +1075,7 @@ export async function pullDailyLogFromGviz(
       // Hanya proses baris yang punya aktivitas atau remark
       if (!activity && !remark) continue;
 
-      const division = detectDivision(String(sound), String(lighting), String(led), String(multimedia));
+      const division = detectDivision(String(sound), String(lighting), String(led), String(multimedia), activeStaffList[0]);
 
       // Buat DailyReport & LogbookEntry jika ada activity untuk setiap staf yang bertugas
       if (activity) {
@@ -1082,14 +1085,14 @@ export async function pullDailyLogFromGviz(
           const staffCompositeKey = `${currentDate}|${sId}`;
           const logCompositeKey = `log|${currentDate}|${sId}`;
 
-          const dedupKey = buildDedupKey(currentDate, sObj ? sObj.name : staffName, activity);
+          const dedupKey = buildDedupKey(currentDate, sObj ? sObj.fullName : staffName, activity);
 
           if (!existingReportIds.has(dedupKey)) {
             const reportDoc = {
               id: dedupKey,
               date: currentDate,
-              staffName: sObj ? sObj.name : (staffName || 'Tim Operasional'),
-              division: (sObj ? sObj.division : division) as any,
+              staffName: sObj ? sObj.fullName : (staffName || 'Tim Operasional'),
+              division: division as any,
               activity,
               notes: remark || '',
               status: 'Submitted',
@@ -1111,8 +1114,8 @@ export async function pullDailyLogFromGviz(
               const logDoc = {
                 id: logDedupKey,
                 date: currentDate,
-                division: (sObj ? sObj.division : division) as any,
-                staffName: sObj ? sObj.name : (staffName || 'Tim Operasional'),
+                division: division as any,
+                staffName: sObj ? sObj.fullName : (staffName || 'Tim Operasional'),
                 activity,
                 result: isNg ? ('NG' as const) : ('OK' as const),
                 followUp: remark || (isNg ? 'Perlu perbaikan teknis' : 'Pengecekan selesai aman'),
@@ -1152,23 +1155,35 @@ export async function pullDailyLogFromGviz(
           if (sObj && sObj.division) findingDiv = sObj.division;
         }
 
-        // Tentukan nama equipment yang deskriptif dan akurat (TIDAK BOLEH fallback generik seperti "Unit Divisi Audio")
+        // Tentukan nama equipment yang deskriptif dan akurat
         let equipName = activity;
-        if (!equipName || equipName.toLowerCase().startsWith('unit divisi')) {
-          if (remarkLower.includes('box') && (remarkLower.includes('kerusakan') || remarkLower.includes('rusak') || findingDiv === 'Videotron')) {
+        const isActivityLikeTask = equipName.length > 30 || /cek|pengecekan|service|perbaikan|ganti|cleaning|bongkar|pasang|install/i.test(equipName);
+        
+        if (!equipName || equipName.toLowerCase().startsWith('unit divisi') || isActivityLikeTask) {
+          const combinedContext = (remarkLower + ' ' + activity.toLowerCase());
+          if (combinedContext.includes('box') && (combinedContext.includes('kerusakan') || combinedContext.includes('rusak') || findingDiv === 'Videotron')) {
             equipName = 'Modul Kabinet LED Videotron';
-          } else if (remarkLower.includes('parled') || remarkLower.includes('par led')) {
-            equipName = 'PAR LED Warm White (Lighting)';
-          } else if (remarkLower.includes('sdi')) {
+          } else if (combinedContext.includes('parled') || combinedContext.includes('par led')) {
+            equipName = 'PAR LED (Lighting)';
+          } else if (combinedContext.includes('sdi') || combinedContext.includes('kabel sdi')) {
             equipName = 'Kabel SDI (Multimedia)';
-          } else if (remarkLower.includes('smoke')) {
+          } else if (combinedContext.includes('smoke') || combinedContext.includes('smok')) {
             equipName = 'Smoke Machine (Lighting)';
-          } else if (remarkLower.includes('takel')) {
+          } else if (combinedContext.includes('takel') || combinedContext.includes('hoist')) {
             equipName = 'Takel Rigging (Audio)';
-          } else if (remarkLower.includes('ampeg') || remarkLower.includes('amplifier')) {
+          } else if (combinedContext.includes('ampeg') || combinedContext.includes('amplifier')) {
             equipName = 'Amplifier Unit (Audio)';
+          } else if (combinedContext.includes('speker') || combinedContext.includes('speaker') || combinedContext.includes('dbtech')) {
+            equipName = 'Speaker Unit (Audio)';
+          } else if (combinedContext.includes('kabel') && combinedContext.includes('audio')) {
+            equipName = 'Kabel Audio';
+          } else if (combinedContext.includes('mixer')) {
+            equipName = 'Audio Mixer';
+          } else if (combinedContext.includes('kamera') || combinedContext.includes('camera')) {
+            equipName = 'Kamera (Multimedia)';
           } else {
-            equipName = `Peralatan ${findingDiv}`;
+            // Jika tidak ada pattern yang match dan masih berupa task description
+            equipName = isActivityLikeTask ? `Peralatan ${findingDiv}` : activity;
           }
         }
 

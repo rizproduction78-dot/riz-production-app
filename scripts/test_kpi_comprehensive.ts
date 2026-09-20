@@ -68,22 +68,22 @@ let isSortedCorrectly = true;
 for (let i = 1; i < allResults.length; i++) {
   const prev = allResults[i - 1];
   const curr = allResults[i];
-  if (curr.qcs > prev.qcs) {
+  if (curr.kpi > prev.kpi) {
     isSortedCorrectly = false;
     break;
-  } else if (curr.qcs === prev.qcs) {
-    if (curr.reports > prev.reports) {
+  } else if (curr.kpi === prev.kpi) {
+    if ((curr.attendanceCount || 0) > (prev.attendanceCount || 0)) {
       isSortedCorrectly = false;
       break;
-    } else if (curr.reports === prev.reports) {
-      if (curr.wos > prev.wos) {
+    } else if ((curr.attendanceCount || 0) === (prev.attendanceCount || 0)) {
+      if (curr.reports > prev.reports) {
         isSortedCorrectly = false;
         break;
       }
     }
   }
 }
-expect(isSortedCorrectly, 'Leaderboard ranks staff strictly by QC Checked, Daily Report, Work Order / Temuan, Uji Komp, Jumlah Absensi');
+expect(isSortedCorrectly, 'Leaderboard ranks staff strictly by Total KPI, Kehadiran, Daily Report, Work Order, Uji Komp');
 
 // 4. Testing Attendance & Schedule Roster Status (Presence Calculated)
 console.log('\n--- 4. Testing Attendance & Schedule Roster Status ---');

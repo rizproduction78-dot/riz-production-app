@@ -834,7 +834,7 @@ export default function Reports({
                       return (
                         <tr key={staff.id} className="hover:bg-slate-50">
                           <td className="p-2 border-r border-slate-300 text-center font-bold text-slate-600 font-mono">{idx + 1}</td>
-                          <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.nickname || staff.name}</td>
+                          <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
                           <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
                           <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.reports}</td>
                           <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{staff.qcs}</td>

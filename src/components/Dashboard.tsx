@@ -140,20 +140,20 @@ export default function Dashboard({
   const activeDailyReports = React.useMemo(() => {
     if (activeTab === 'daily_report') return dailyReports.filter(r => r.date === targetDate);
     if (activeTab === 'weekly_report') return dailyReports.filter(r => r.date >= targetStartDate && r.date <= targetEndDate);
-    return dailyReports; // monthly_report
-  }, [dailyReports, activeTab, targetDate, targetStartDate, targetEndDate]);
+    return dailyReports.filter(r => r.date.startsWith(activeMonth)); // monthly_report
+  }, [dailyReports, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth]);
 
   const activeLogbookEntries = React.useMemo(() => {
     if (activeTab === 'daily_report') return logbookEntries.filter(e => e.date === targetDate);
     if (activeTab === 'weekly_report') return logbookEntries.filter(e => e.date >= targetStartDate && e.date <= targetEndDate);
-    return logbookEntries; // monthly_report
-  }, [logbookEntries, activeTab, targetDate, targetStartDate, targetEndDate]);
+    return logbookEntries.filter(e => e.date.startsWith(activeMonth)); // monthly_report
+  }, [logbookEntries, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth]);
 
   const activeFindings = React.useMemo(() => {
     if (activeTab === 'daily_report') return findings.filter(f => f.dateCreated === targetDate || f.targetDate === targetDate);
     if (activeTab === 'weekly_report') return findings.filter(f => (f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate >= targetStartDate && f.targetDate <= targetEndDate));
-    return findings; // monthly_report
-  }, [findings, activeTab, targetDate, targetStartDate, targetEndDate]);
+    return findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth))); // monthly_report
+  }, [findings, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth]);
 
   const activeWorkOrders = React.useMemo(() => {
     if (activeTab === 'daily_report') {
@@ -165,8 +165,8 @@ export default function Dashboard({
         (w.deadline >= targetStartDate && w.deadline <= targetEndDate)
       );
     }
-    return workOrders; // monthly_report
-  }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate]);
+    return workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth)); // monthly_report
+  }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth]);
 
   const activeSchedules = React.useMemo(() => {
     if (activeTab === 'daily_report') {
@@ -234,15 +234,15 @@ export default function Dashboard({
   const monthlyStaffKpis = React.useMemo(() => {
     return calculateAllStaffKpis(
       staffList,
-      dailyReports,
-      logbookEntries,
-      findings,
+      dailyReports.filter(r => r.date.startsWith(activeMonth)),
+      logbookEntries.filter(e => e.date.startsWith(activeMonth)),
+      findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth))),
       undefined,
       undefined,
       undefined,
-      workOrders
+      workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth))
     );
-  }, [staffList, dailyReports, logbookEntries, findings, workOrders]);
+  }, [staffList, dailyReports, logbookEntries, findings, workOrders, activeMonth]);
 
   // 2. Active Period Staff KPIs (Always use monthly for consistent grading, regardless of active tab view)
   const staffKpis = React.useMemo(() => {
@@ -1262,7 +1262,7 @@ export default function Dashboard({
                                   alt={staff.name}
                                   className="w-7 h-7 rounded-full border border-slate-200"
                                 />
-                                <span className="font-sans font-bold text-slate-800">{staff.nickname || staff.name}</span>
+                                <span className="font-sans font-bold text-slate-800">{staff.name}</span>
                               </div>
                             </td>
                             <td className="p-3 font-sans text-slate-600">{staff.division}</td>
@@ -1316,7 +1316,7 @@ export default function Dashboard({
                               className="w-8 h-8 rounded-full border border-slate-200"
                             />
                             <div>
-                              <span className="font-bold text-slate-900 text-xs block">{p.nickname || p.name}</span>
+                              <span className="font-bold text-slate-900 text-xs block">{p.name}</span>
                               <span className="text-[10px] text-slate-500 block">{p.division}</span>
                             </div>
                           </div>

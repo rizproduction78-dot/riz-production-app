@@ -408,11 +408,8 @@ export function calculateStaffKpi(
   // 5. QUALITY / QC CHECKLIST (Murni dari checklist QC & inspeksi teknis lapangan)
   // ─────────────────────────────────────────────────────────────
   const isNonQcDivision = ['Gudang', 'Admin'].includes(staff.division);
-  // Kuantitas riil dari referensi data resmi
-  const qcCount = isNonQcDivision ? 0 : Math.max(
-    logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length,
-    dailyReports.filter(r => isStaffMatch(staff, r.staffName) && (r.activity?.toLowerCase().includes('qc') || r.activity?.toLowerCase().includes('cek'))).length
-  );
+  // Kuantitas riil (penjumlahan) dari referensi data resmi
+  const qcCount = isNonQcDivision ? 0 : logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length;
   // Target divisor disamakan dengan kehadiran riil
   const qcScore = isNonQcDivision ? 80 : Math.min(100, Math.round((qcCount / taskTarget) * 100));
 
@@ -430,8 +427,10 @@ export function calculateStaffKpi(
   }
   const realCompletedWOCount = realWOs.filter(w => isStaffMatch(staff, w.pic) && (w.status === 'Completed' || w.progress === 100)).length;
 
-  const woCount = Math.max(realClosedFindingsCount, realCompletedWOCount, (realClosedFindingsCount + realCompletedWOCount > 0) ? Math.max(realClosedFindingsCount, realCompletedWOCount) : 0);
-  const woScore = Math.min(100, Math.round((woCount / 1) * 100));
+  // Penjumlahan total temuan & WO
+  const woCount = realClosedFindingsCount + realCompletedWOCount;
+  const woTarget = 5; // Standar target 5 WO sebulan
+  const woScore = Math.min(100, Math.round((woCount / woTarget) * 100));
   const taskComplexityScore = woScore;
 
   // ─────────────────────────────────────────────────────────────
@@ -443,24 +442,19 @@ export function calculateStaffKpi(
   const baseHours = 0;
 
   // ─────────────────────────────────────────────────────────────
-  // 8. TOTAL NILAI KPI (Sesuai Komit Terbaru)
+  // 8. TOTAL NILAI KPI (Berdasarkan 5 Bobot Utama: Kehadiran, QC, Report, WO, Uji Komp)
   // ─────────────────────────────────────────────────────────────
-  // Komposisi (Semua Divisi):
-  // - Daily Report: 25%
-  // - QC Checklist: 20%
-  // - Work Order Selesai: 10%
-  // - Uji Kompetensi: 15%
-  // - Kehadiran: 15%
-  // - Teamwork & Pengembangan Diri: 15%
+  // Sesuai dengan instruksi terbaru: "bobot penilaian : kehadiran, QC, Report, WO, uji kompetensi"
+  // Kelimanya dibagi rata masing-masing bobot 20% agar total 100%
   let totalKpi = Math.round(
-    (reportScore * 0.25) +
+    (attendanceScore * 0.20) +
+    (reportScore * 0.20) +
     (qcScore * 0.20) +
-    (woScore * 0.10) +
-    (competencyScore * 0.15) +
-    (attendanceScore * 0.15) +
-    (teamworkScore * 0.15)
+    (woScore * 0.20) +
+    (competencyScore * 0.20)
   );
 
+  // Nilai kpi (persentase)
   const kpi = Math.min(100, Math.max(0, totalKpi));
 
   let grade: 'A' | 'B' | 'C' | 'D' = 'D';
@@ -472,7 +466,7 @@ export function calculateStaffKpi(
   return {
     id: staff.id,
     staffId: staff.id,
-    name: staff.name,
+    name: staff.fullName || staff.name,
     nickname: staff.nickname,
     avatar: staff.avatar,
     division: staff.division,
@@ -541,24 +535,23 @@ export function calculateAllStaffKpis(
       )
     )
     .sort((a, b) => {
-      // Perintah Terbaru: Urutan Perangkingan HARUS berdasarkan jumlah aktivitas riil sebagai syarat utama
-      // 1. Daily Report (Laporan Aktivitas Harian)
-      if (b.reports !== a.reports) return (b.reports || 0) - (a.reports || 0);
-      
-      // 2. QC Checked (Checklist & Inspeksi QC)
-      if (b.qcs !== a.qcs) return (b.qcs || 0) - (a.qcs || 0);
+      // Prioritas 1: Nilai Total KPI (%)
+      if (b.kpi !== a.kpi) return b.kpi - a.kpi;
 
-      // 3. Work Order / Temuan (Penyelesaian Perbaikan & Temuan)
-      if (b.wos !== a.wos) return (b.wos || 0) - (a.wos || 0);
-      
-      // 4. Uji Kompetensi yang Diikuti
-      if (b.competencyCount !== a.competencyCount) return (b.competencyCount || 0) - (a.competencyCount || 0);
-
-      // 5. Jumlah Absensi (Kehadiran Resmi)
+      // Prioritas 2: Kehadiran
       if (b.attendanceCount !== a.attendanceCount) return (b.attendanceCount || 0) - (a.attendanceCount || 0);
 
-      // 6. Nilai Total KPI (%)
-      if (b.kpi !== a.kpi) return b.kpi - a.kpi;
+      // Prioritas 3: Daily Report
+      if (b.reports !== a.reports) return (b.reports || 0) - (a.reports || 0);
+      
+      // Prioritas 4: QC Checklist
+      if (b.qcs !== a.qcs) return (b.qcs || 0) - (a.qcs || 0);
+
+      // Prioritas 5: WO Selesai
+      if (b.wos !== a.wos) return (b.wos || 0) - (a.wos || 0);
+      
+      // Prioritas 6: Uji Komp
+      if (b.competencyCount !== a.competencyCount) return (b.competencyCount || 0) - (a.competencyCount || 0);
 
       return 0;
     });
