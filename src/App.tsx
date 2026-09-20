@@ -1477,28 +1477,54 @@ export default function App() {
         </div>
       </header>
 
-      {/* Mobile Sidebar Dropdown menu - Hidden on Print */}
+      {/* Mobile Sidebar Drawer & Backdrop - Hidden on Print */}
+      {/* Backdrop */}
       {mobileMenuOpen && (
-        <div className="no-print md:hidden bg-[#0f172a] text-slate-300 fixed inset-0 top-[57px] z-40 flex flex-col p-4 space-y-3 border-t border-[#1e293b] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <div className="flex-1 space-y-3">
-            {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
-              <button
-                onClick={() => {
-                  handleInstallPWA();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer"
-              >
-                <Smartphone className="w-4 h-4" />
-                <span>{isIOSDevice ? "Install di iPhone/iPad (iOS)" : "Install Aplikasi (PWA)"}</span>
-              </button>
-            )}
+        <div 
+          className="no-print md:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+      
+      {/* Slide-out Drawer */}
+      <div className={`no-print md:hidden fixed inset-y-0 left-0 w-[280px] bg-[#0f172a] text-slate-300 z-50 flex flex-col shadow-2xl transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        
+        {/* Drawer Header */}
+        <div className="flex-none p-4 border-b border-[#1e293b] bg-[#0c1322] flex items-center justify-between">
+          <div className="font-extrabold text-sm tracking-tight flex items-center gap-1.5">
+            <span className="text-white">RIZ-PRO</span>
+            <span className="bg-blue-600 text-white text-[9px] font-mono px-1.5 py-0.5 rounded font-bold">LOG</span>
+          </div>
+          <button 
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-1.5 rounded bg-[#1e293b] text-slate-400 hover:text-white border border-slate-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Drawer Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
+            <button
+              onClick={() => {
+                handleInstallPWA();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>{isIOSDevice ? "Install di iPhone/iPad (iOS)" : "Install Aplikasi (PWA)"}</span>
+            </button>
+          )}
+
+          <div className="space-y-4">
             {Object.entries(groupedNavItems).map(([category, items]) => (
-              <div key={category} className="space-y-1">
-                <div className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest px-2 pt-1">
+              <div key={category} className="space-y-1.5">
+                <div className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest px-2">
                   {category}
                 </div>
-                <div className="relative pl-2 space-y-1 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-800">
+                <div className="relative pl-2 space-y-1 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-[2px] before:bg-[#1e293b]">
                   {items.map((item) => {
                     const Icon = item.icon;
                     const isActive = isTabActive(item.id);
@@ -1509,13 +1535,13 @@ export default function App() {
                           setActiveTab(item.id);
                           setMobileMenuOpen(false);
                         }}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
                           isActive
-                            ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40 font-bold'
-                            : 'text-[#94a3b8] hover:text-white hover:bg-slate-800/60 border border-transparent'
+                            ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-inner font-bold'
+                            : 'text-[#94a3b8] hover:text-white hover:bg-slate-800/80 border border-transparent'
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-blue-400' : 'bg-slate-700'}`} />
+                        <span className={`w-1 h-1 rounded-full shrink-0 ${isActive ? 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]' : 'bg-slate-600'}`} />
                         <Icon className="w-4 h-4 shrink-0" />
                         <span>{item.label}</span>
                       </button>
@@ -1525,26 +1551,41 @@ export default function App() {
               </div>
             ))}
           </div>
-          <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
-            <a
-              href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/50 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-            >
-              <Folder className="w-4 h-4" />
-              <span>Penyimpanan Foto (Drive)</span>
-            </a>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800/60 hover:bg-red-950/60 hover:text-red-200 rounded-lg text-xs font-semibold transition-colors border border-slate-700 shrink-0"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Keluar Aplikasi</span>
-            </button>
-          </div>
         </div>
-      )}
+
+        {/* Drawer Footer */}
+        <div className="flex-none p-4 border-t border-[#1e293b] bg-[#0c1322] space-y-2">
+          <div className="flex items-center gap-3 p-3 bg-slate-900 rounded-xl border border-slate-800 shadow-inner mb-3">
+            <div className="w-8 h-8 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-400 font-bold border border-blue-500/20 shrink-0">
+              {currentUser.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
+              <p className="text-[10px] text-slate-400 flex items-center gap-1.5 truncate mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)] shrink-0"></span>
+                {currentUser.division}
+              </p>
+            </div>
+          </div>
+          
+          <a
+            href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/50 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+          >
+            <Folder className="w-3.5 h-3.5" />
+            <span>Penyimpanan Foto (Drive)</span>
+          </a>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 py-2.5 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 rounded-lg text-[11px] font-bold transition-colors border border-transparent hover:border-rose-900/50"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Keluar Aplikasi</span>
+          </button>
+        </div>
+      </div>
 
       {/* Main Content Area */}
       <main className="flex-1 p-4 md:p-8 overflow-y-auto max-w-full font-sans">
