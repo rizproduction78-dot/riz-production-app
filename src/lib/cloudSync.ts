@@ -306,117 +306,6 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
   if (collectionName === 'findings') {
     const cleaned = items.map((f: any) => {
       if (!f) return f;
-      const eq = String(f.equipment || '').toLowerCase();
-      const pic = String(f.pic || '').toLowerCase();
-      const id = String(f.id || '');
-      const issLower = String(f.issue || '').toLowerCase();
-
-      // Normalisasi: DB Tech No. 18 speaker amplifier — SELARAS dengan canonicalFirestoreData
-      if (id === 'find-20260903-dbtech18' || id === '1') {
-        const currentStatus = f.status === 'Close' || f.approvedBy ? 'Close' : (f.status || 'Close');
-        return {
-          ...f,
-          id: 'find-20260903-dbtech18',
-          equipment: 'DB Tech No. 18 (Active Speaker 15 Inch)',
-          issue: 'Ada Kendala dibagian Modul Amplifiernya, saat terkena beban input besar, hasil suara yang dikeluarkan menjadi serak, tapi masih aman dan bisa digunakan untuk Event. Rekomendasi untuk dicek oleh team service terutama pada modul Amplifier.',
-          priority: 'Sedang',
-          pic: 'Mulyana',
-          division: 'Service',
-          targetDate: f.targetDate || '2026-09-05',
-          status: currentStatus,
-          approvedBy: f.approvedBy,
-          approvedAt: f.approvedAt,
-          dateCreated: f.dateCreated || '2026-09-03'
-        };
-      }
-
-      // Normalisasi: Panel Listrik Audio 3 Phase — SELARAS dengan canonicalFirestoreData
-      if (id === 'find-20260904-panel-audio' || id === '2') {
-        return {
-          ...f,
-          id: 'find-20260904-panel-audio',
-          equipment: 'Panel Listrik Audio 3 Phase',
-          issue: '1 Ganti Stop Kontak, 1 Ganti Legrand Cewek (2 panel lainnya sudah OK).',
-          priority: 'Tinggi',
-          pic: 'Taufik Diana / Suryana',
-          division: 'Audio',
-          targetDate: '2026-09-05',
-          status: f.status || 'Close',
-          approvedBy: f.approvedBy,
-          approvedAt: f.approvedAt,
-          dateCreated: f.dateCreated || '2026-09-04'
-        };
-      }
-
-      // Normalisasi: PAR LED Warm White Lighting (7 Sept) — id find-20260907-parled
-      if (id === 'find-20260907-parled') {
-        return {
-          ...f,
-          id: 'find-20260907-parled',
-          equipment: 'PAR LED Warm White (Lighting)',
-          issue: 'Harus service warm mati no 12, 25, 29 | Warm separo no 3, 32.',
-          priority: 'Sedang',
-          pic: 'Heri',
-          division: 'Lighting',
-          targetDate: '2026-09-10',
-          status: f.status || 'Open',
-          approvedBy: f.approvedBy,
-          approvedAt: f.approvedAt,
-          dateCreated: f.dateCreated || '2026-09-07'
-        };
-      }
-
-      // Normalisasi: PAR LED Warm White Lighting (10 Sept) — id find-20260910-parled
-      if (id === 'find-20260910-parled') {
-        return {
-          ...f,
-          id: 'find-20260910-parled',
-          equipment: 'PAR LED Warm White (Lighting)',
-          issue: 'Harus service warm separo no. 19, 20, 27.',
-          priority: 'Sedang',
-          pic: 'Heri',
-          division: 'Lighting',
-          targetDate: '2026-09-12',
-          status: f.status || 'Open',
-          approvedBy: f.approvedBy,
-          approvedAt: f.approvedAt,
-          dateCreated: f.dateCreated || '2026-09-10'
-        };
-      }
-
-      // Normalisasi: Modul Kabinet LED Videotron (Box Rusak Berat 17 Sept 2026)
-      if (
-        id === 'find-20260917-led-box' ||
-        issLower.includes('kerusakan berat') ||
-        (eq.includes('unit divisi') && issLower.includes('box')) ||
-        (f.dateCreated === '2026-09-17' && issLower.includes('box') && (pic.includes('mulyana') || pic.includes('kharo')))
-      ) {
-        const currentStatus = f.status === 'Close' || f.approvedBy ? 'Close' : (f.status || 'Open');
-        return {
-          ...f,
-          id: 'find-20260917-led-box',
-          equipment: 'Modul Kabinet LED Videotron',
-          issue: '1 Box Kabinet Kerusakan Berat (Perlu perbaikan modul & power supply oleh team teknis)',
-          priority: 'Tinggi',
-          pic: 'Mulyana',
-          division: 'Videotron',
-          targetDate: '2026-09-19',
-          status: currentStatus,
-          approvedBy: f.approvedBy,
-          approvedAt: f.approvedAt,
-          dateCreated: f.dateCreated || '2026-09-17'
-        };
-      }
-
-      // Bersihkan entri sampah dengan equipment placeholder generik
-      if (eq.includes('unit divisi audio') && (pic.includes('mulyana') || pic.includes('kharo'))) {
-        return {
-          ...f,
-          equipment: 'Modul Kabinet LED Videotron',
-          division: 'Videotron'
-        };
-      }
-
       return f;
     });
 
@@ -444,55 +333,42 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     return deduped as T[];
   }
 
-  // Special normalization for daily_reports: deduplicate strictly by (date + staff)
+  // Special normalization for daily_reports: no strict note concatenation
   if (collectionName === 'daily_reports') {
     const map = new Map<string, any>();
     items.forEach((item: any) => {
       if (!item || !item.date) return;
       const staffObj = STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
-      const staffKey = staffObj ? staffObj.id : String(item.staffName || '').toLowerCase().trim();
-      const dedupKey = `${item.date}|${staffKey}`;
       
       const normalizedItem = {
         ...item,
         staffName: staffObj ? staffObj.name : item.staffName,
         division: staffObj ? staffObj.division : item.division
       };
-
-      if (!map.has(dedupKey)) {
-        map.set(dedupKey, normalizedItem);
-      } else {
-        const existing = map.get(dedupKey);
-        const existingNotes = String(existing.notes || '').trim();
-        const incomingNotes = String(normalizedItem.notes || '').trim();
-        if (!existingNotes && incomingNotes) {
-          existing.notes = incomingNotes;
-        } else if (incomingNotes && !existingNotes.includes(incomingNotes)) {
-          existing.notes = `${existingNotes}\n${incomingNotes}`;
-        }
-        map.set(dedupKey, existing);
+      
+      // Keep by ID so updates can happen correctly
+      if (item.id) {
+        map.set(item.id, normalizedItem);
       }
     });
     return Array.from(map.values()) as T[];
   }
 
-  // Special normalization for logbook_entries: deduplicate strictly by (date + staff)
+  // Special normalization for logbook_entries: no strict note concatenation
   if (collectionName === 'logbook_entries') {
     const map = new Map<string, any>();
     items.forEach((item: any) => {
       if (!item || !item.date) return;
       const staffObj = STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
-      const staffKey = staffObj ? staffObj.id : String(item.staffName || '').toLowerCase().trim();
-      const dedupKey = `${item.date}|${staffKey}`;
       
       const normalizedItem = {
         ...item,
         staffName: staffObj ? staffObj.name : item.staffName,
         division: staffObj ? staffObj.division : item.division
       };
-
-      if (!map.has(dedupKey)) {
-        map.set(dedupKey, normalizedItem);
+      
+      if (item.id) {
+        map.set(item.id, normalizedItem);
       }
     });
     return Array.from(map.values()) as T[];
@@ -748,83 +624,13 @@ export function subscribeCloudCollection<T = any>(
 
             items = Array.from(mergedMap.values()) as T[];
 
-            // Deduplikasi temuan (Findings) berdasarkan konten yang sama (equipment + issue + PIC)
-            // Prioritaskan yang sudah Close/Approved, lalu prioritaskan yang manual (fd-*) dibanding yang auto-generated (gsheet-finding-*)
-            if (collectionName === 'findings') {
-              const uniqueFindings = new Map<string, any>();
-              items.forEach((item: any) => {
-                if (!item) return;
+            // Normal Deduplication by ID for all collections
+            const uniqueItems = new Map<string, any>();
+            items.forEach((item: any) => {
+              if (item && item.id) uniqueItems.set(item.id, item);
+            });
+            items = Array.from(uniqueItems.values()) as T[];
 
-                // Jangan izinkan temuan sampah tanpa equipment valid atau dengan placeholder generik
-                const rawEq = String(item.equipment || '').trim();
-                const rawIss = String(item.issue || '').trim();
-                if (!rawEq || (rawEq.toLowerCase().startsWith('unit divisi') && !rawIss.toLowerCase().includes('box') && !rawIss.toLowerCase().includes('kerusakan'))) {
-                  return;
-                }
-
-                const eq = String(item.equipment || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                let iss = String(item.issue || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                // Normalisasikan variasi substring kerusakan berat (contoh: "1boxkerusakanberat" vs "boxkerusakanberat")
-                if (iss.includes('kerusakanberat')) {
-                  iss = 'kerusakanberat';
-                }
-                const pic = String(item.pic || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                // Gabungkan key untuk deteksi duplikat konten yang kebal terhadap spasi/karakter khusus
-                const contentKey = `dedup_${eq}_${iss}_${pic}`;
-                
-                if (uniqueFindings.has(contentKey)) {
-                  const existing = uniqueFindings.get(contentKey);
-                  const itemIsClosed = item.status === 'Close' || item.approvedBy;
-                  const existingIsClosed = existing.status === 'Close' || existing.approvedBy;
-                  
-                  if (itemIsClosed && !existingIsClosed) {
-                    uniqueFindings.set(contentKey, item);
-                  } else if (!itemIsClosed && existingIsClosed) {
-                    // Do nothing, keep the closed one
-                  } else if (String(existing.id).startsWith('gsheet-') && String(item.id).startsWith('fd-')) {
-                    uniqueFindings.set(contentKey, item);
-                  } else if (String(existing.id).startsWith('fd-') && String(item.id).startsWith('fd-')) {
-                     // If both are manual, keep the one with the newer ID or timestamp
-                     if (item.id > existing.id) uniqueFindings.set(contentKey, item);
-                  }
-                } else {
-                  uniqueFindings.set(contentKey, item);
-                }
-              });
-              items = Array.from(uniqueFindings.values()) as T[];
-            }
-
-            // Deduplikasi Work Orders berdasarkan findingId atau kesamaan title + division
-            if (collectionName === 'work_orders') {
-              const uniqueWOs = new Map<string, any>();
-              items.forEach((item: any) => {
-                if (!item) return;
-                const fid = String(item.findingId || '').trim().toLowerCase();
-                const titleKey = String(item.title || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                const divKey = String(item.division || '').toLowerCase();
-                const woKey = fid ? `wo_fid_${fid}` : `wo_title_${titleKey}_${divKey}`;
-
-                if (uniqueWOs.has(woKey)) {
-                  const existing = uniqueWOs.get(woKey);
-                  const itemIsDone = item.status === 'Completed' || (item.progress || 0) >= 100;
-                  const existingIsDone = existing.status === 'Completed' || (existing.progress || 0) >= 100;
-
-                  if (itemIsDone && !existingIsDone) {
-                    uniqueWOs.set(woKey, item);
-                  } else if (!itemIsDone && existingIsDone) {
-                    // Do nothing, keep completed one
-                  } else {
-                    // If both same state, keep the one with higher progress or newer ID
-                    if ((item.progress || 0) > (existing.progress || 0) || item.id > existing.id) {
-                      uniqueWOs.set(woKey, item);
-                    }
-                  }
-                } else {
-                  uniqueWOs.set(woKey, item);
-                }
-              });
-              items = Array.from(uniqueWOs.values()) as T[];
-            }
           }
 
           // Apply normalization to guarantee data integrity across all devices

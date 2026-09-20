@@ -744,6 +744,9 @@ export default function App() {
       const result = await pullDailyLogFromGviz(
         gid,
         async (id, docData) => {
+          const { getDeletedIds } = await import('./lib/cloudSync');
+          if (getDeletedIds('daily_reports').has(id)) return;
+
           const { getDoc, doc: firestoreDoc } = await import('firebase/firestore');
           const { db } = await import('./lib/firebase');
           const snap = await getDoc(firestoreDoc(db, 'daily_reports', id));
@@ -753,6 +756,9 @@ export default function App() {
           }
         },
         async (id, docData) => {
+          const { getDeletedIds } = await import('./lib/cloudSync');
+          if (getDeletedIds('findings').has(id)) return;
+
           const { getDoc, getDocs, query, where, collection: fsCol, doc: firestoreDoc } = await import('firebase/firestore');
           const { db } = await import('./lib/firebase');
           // 1. Cek dari ID yang persis sama
@@ -769,6 +775,9 @@ export default function App() {
         },
         existingIds,
         async (id, docData) => {
+          const { getDeletedIds } = await import('./lib/cloudSync');
+          if (getDeletedIds('logbook_entries').has(id)) return;
+
           const { getDoc, doc: firestoreDoc } = await import('firebase/firestore');
           const { db } = await import('./lib/firebase');
           const snap = await getDoc(firestoreDoc(db, 'logbook_entries', id));
