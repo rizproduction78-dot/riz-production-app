@@ -32,7 +32,7 @@ assert(typeof deviceInfo.os === 'string', 'Device OS detection works', `Detected
 assert(typeof deviceInfo.deviceType === 'string', 'Device type detection works', `Type: ${deviceInfo.deviceType}`);
 
 // 2. Test All Sync Collections Registry
-assert(ALL_SYNC_COLLECTIONS.length === 20, 'Sync Collections Registry contains all 20 modules', `Count: ${ALL_SYNC_COLLECTIONS.length}`);
+assert(ALL_SYNC_COLLECTIONS.length === 23, 'Sync Collections Registry contains all 23 modules', `Count: ${ALL_SYNC_COLLECTIONS.length}`);
 ALL_SYNC_COLLECTIONS.forEach(col => {
   assert(Boolean(col.name && col.key && col.label), `Registry Item '${col.name}' is well-formed`);
 });
