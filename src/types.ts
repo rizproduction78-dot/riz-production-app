@@ -241,6 +241,7 @@ export interface WorkOrder {
   equipment?: string;
   priority?: string;
   notes?: string;
+  _source?: string;
   _syncMeta?: {
     updatedAt: string;
     updatedBy: string;

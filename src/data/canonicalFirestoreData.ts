@@ -321,9 +321,109 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "id": "rep-20260918-kharo-58-0",
     "date": "2026-09-18",
     "staffName": "Kharo",
+    "division": "Service",
+    "activity": "- Ganti Dead Pixel LED Kabinet",
+    "notes": "- 3 Box Belum Beres\n- 2 Box Clear\n- 1 Box Beres 3 Kabinet\n- 1 Box Kerusakan Berat",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20260903-yudis-hadir",
+    "date": "2026-09-03",
+    "staffName": "Yudis",
+    "division": "Audio",
+    "activity": "- Hadir & Standby pengecekan unit Audio bersama tim",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20260904-buluk-hadir",
+    "date": "2026-09-04",
+    "staffName": "Buluk",
+    "division": "Audio",
+    "activity": "- 1 Ganti Stop Kontak, 1 Ganti Legran Cewe (panel)",
+    "notes": "Selesai diperbaiki",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20260905-mboh-hadir",
+    "date": "2026-09-05",
+    "staffName": "Mboh",
+    "division": "Audio",
+    "activity": "- Hadir & Support kegiatan audio bersama tim Opik",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20260909-wigi-hadir",
+    "date": "2026-09-09",
+    "staffName": "Wigi",
     "division": "Videotron",
-    "activity": "- Ganti Dead Pixel",
-    "notes": "- 3 Box Belum Beres",
+    "activity": "- Repair dead pixel kabinet LED — selesai 1 box",
+    "notes": "selesai 1 box",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20260909-ayong-hadir",
+    "date": "2026-09-09",
+    "staffName": "Ayong",
+    "division": "Videotron",
+    "activity": "- Repair LED, copot masking — selesai 1 box",
+    "notes": "selesai 1 box",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20260909-opik-hadir",
+    "date": "2026-09-09",
+    "staffName": "Opik",
+    "division": "Audio",
+    "activity": "- Hadir & standby support perbaikan audio bersama tim",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20260909-butong-hadir",
+    "date": "2026-09-09",
+    "staffName": "Butong",
+    "division": "Audio",
+    "activity": "- Hadir & standby support perbaikan audio bersama tim",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20260909-dani-hadir",
+    "date": "2026-09-09",
+    "staffName": "Dani",
+    "division": "Audio",
+    "activity": "- Hadir & standby support bersama tim",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20260917-buluk-hadir",
+    "date": "2026-09-17",
+    "staffName": "Buluk",
+    "division": "Audio",
+    "activity": "- Hadir & standby support audio bersama tim",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20260917-butonk-hadir",
+    "date": "2026-09-17",
+    "staffName": "Butonk",
+    "division": "Audio",
+    "activity": "- Hadir & standby support bersama tim",
+    "notes": "",
     "status": "Submitted",
     "_source": "google_sheet"
   }
@@ -800,6 +900,233 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
   }
 ];
 
-export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [];
+export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
+  {
+    "id": "fd-20260903-mboh-amplifier",
+    "equipment": "DBTech Speaker No.18 — Modul Amplifier",
+    "issue": "Modul Amplifier bermasalah. Saat terkena beban input besar, suara yang dikeluarkan menjadi serak. Perlu pengecekan modul amplifier dan spare-part tweeter.",
+    "priority": "Sedang",
+    "pic": "Mulyana",
+    "targetDate": "2026-09-17",
+    "status": "Open",
+    "dateCreated": "2026-09-03",
+    "division": "Service",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "fd-20260907-heri-parled-warm-01",
+    "equipment": "Parled Warm — Unit No.12, 25, 29 (Mati) & No.3, 32 (Separo)",
+    "issue": "Warm mati total: no.12, 25, 29. Warm hanya separo: no.3, 32. Harus service segera.",
+    "priority": "Tinggi",
+    "pic": "Mulyana",
+    "targetDate": "2026-09-14",
+    "status": "Open",
+    "dateCreated": "2026-09-07",
+    "division": "Service",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "fd-20260910-heri-parled-warm-02",
+    "equipment": "Parled Warm — Unit No.19, 20, 27 (Separo)",
+    "issue": "Warm separo pada unit no.19, 20, 27. Harus service.",
+    "priority": "Tinggi",
+    "pic": "Mulyana",
+    "targetDate": "2026-09-17",
+    "status": "Open",
+    "dateCreated": "2026-09-10",
+    "division": "Service",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "fd-20260912-heri-parled-13",
+    "equipment": "Parled No.13 — LED Merah Mati",
+    "issue": "Parled No.13: LED merah mati total. Harus service segera.",
+    "priority": "Tinggi",
+    "pic": "Mulyana",
+    "targetDate": "2026-09-19",
+    "status": "Open",
+    "dateCreated": "2026-09-12",
+    "division": "Service",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "fd-20260916-heri-smoke-03",
+    "equipment": "Smoke Machine No.3",
+    "issue": "Smoke No.3 ERROR — tidak berfungsi normal saat pengecekan.",
+    "priority": "Sedang",
+    "pic": "Mulyana",
+    "targetDate": "2026-09-21",
+    "status": "Open",
+    "dateCreated": "2026-09-16",
+    "division": "Service",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "fd-20260916-dani-sm57",
+    "equipment": "Mic SM57 — Rusak & Hilang",
+    "issue": "Hasil inventaris: SM57 Rusak 4 unit, Hilang 9 unit. Perlu tindak lanjut dan pemenuhan unit pengganti.",
+    "priority": "Tinggi",
+    "pic": "Ramdani",
+    "targetDate": "2026-09-23",
+    "status": "Open",
+    "dateCreated": "2026-09-16",
+    "division": "Audio",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "fd-20260917-unyim-takel",
+    "equipment": "Takel 1 Ton — Unit LOS",
+    "issue": "Takel 1 Ton: 1 unit LOS (Line of Sight failure). Wajib diperbaiki sebelum digunakan untuk event berikutnya.",
+    "priority": "Tinggi",
+    "pic": "Mulyana",
+    "targetDate": "2026-09-22",
+    "status": "Open",
+    "dateCreated": "2026-09-17",
+    "division": "Service",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "fd-20260917-yudis-ampeg",
+    "equipment": "Ampeg SVT-4 — Amplifier Bass",
+    "issue": "Ampeg SVT-4 harus service dan ganti komponen PTC. Tidak layak pakai sebelum diperbaiki.",
+    "priority": "Tinggi",
+    "pic": "Mulyana",
+    "targetDate": "2026-09-22",
+    "status": "Open",
+    "dateCreated": "2026-09-17",
+    "division": "Service",
+    "_source": "google_sheet_remark"
+  }
+];
 
-export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder[] = [];
+export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder[] = [
+  {
+    "id": "wo-20260903-amplifier-dbtech",
+    "findingId": "fd-20260903-mboh-amplifier",
+    "title": "Service Modul Amplifier DBTech No.18",
+    "description": "Pengecekan dan perbaikan modul amplifier pada speaker DBTech No.18. Suara serak saat beban input besar. Cek modul amplifier dan spare-part tweeter.",
+    "pic": "Mulyana",
+    "division": "Service",
+    "deadline": "2026-09-17",
+    "progress": 0,
+    "status": "Pending",
+    "dateCreated": "2026-09-03",
+    "equipment": "DBTech Speaker No.18",
+    "priority": "Sedang",
+    "notes": "Rekomendasi dari: Muhamad Rahmat (Mboh) — Audio",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "wo-20260907-parled-warm-01",
+    "findingId": "fd-20260907-heri-parled-warm-01",
+    "title": "Service Parled Warm — Mati No.12,25,29 & Separo No.3,32",
+    "description": "Perbaikan Parled Warm: Unit no.12, 25, 29 mati total. Unit no.3, 32 hanya nyala separo. Perlu service menyeluruh.",
+    "pic": "Mulyana",
+    "division": "Service",
+    "deadline": "2026-09-14",
+    "progress": 0,
+    "status": "In Progress",
+    "dateCreated": "2026-09-07",
+    "equipment": "Parled Warm Lighting",
+    "priority": "Tinggi",
+    "notes": "Ditemukan oleh: Heri — Divisi Lighting",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "wo-20260910-parled-warm-02",
+    "findingId": "fd-20260910-heri-parled-warm-02",
+    "title": "Service Parled Warm — Separo No.19,20,27",
+    "description": "Perbaikan Parled Warm: Unit no.19, 20, 27 hanya nyala separo. Harus service.",
+    "pic": "Mulyana",
+    "division": "Service",
+    "deadline": "2026-09-17",
+    "progress": 0,
+    "status": "In Progress",
+    "dateCreated": "2026-09-10",
+    "equipment": "Parled Warm Lighting",
+    "priority": "Tinggi",
+    "notes": "Ditemukan oleh: Heri — Divisi Lighting",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "wo-20260912-parled-13",
+    "findingId": "fd-20260912-heri-parled-13",
+    "title": "Service Parled No.13 — LED Merah Mati",
+    "description": "Parled No.13 LED merah mati total. Butuh pengecekan dan penggantian modul LED merah.",
+    "pic": "Mulyana",
+    "division": "Service",
+    "deadline": "2026-09-19",
+    "progress": 0,
+    "status": "Pending",
+    "dateCreated": "2026-09-12",
+    "equipment": "Parled Lighting No.13",
+    "priority": "Tinggi",
+    "notes": "Ditemukan oleh: Heri — Divisi Lighting",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "wo-20260916-smoke-03",
+    "findingId": "fd-20260916-heri-smoke-03",
+    "title": "Perbaikan Smoke Machine No.3 — ERROR",
+    "description": "Smoke Machine No.3 mengalami error saat pengecekan tanggal 16 Sep 2026. Perlu diagnosa dan perbaikan.",
+    "pic": "Mulyana",
+    "division": "Service",
+    "deadline": "2026-09-21",
+    "progress": 0,
+    "status": "Pending",
+    "dateCreated": "2026-09-16",
+    "equipment": "Smoke Machine No.3",
+    "priority": "Sedang",
+    "notes": "Ditemukan oleh: Heri — Divisi Lighting",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "wo-20260916-sm57-inventaris",
+    "findingId": "fd-20260916-dani-sm57",
+    "title": "Tindak Lanjut SM57 Rusak 4 Unit & Hilang 9 Unit",
+    "description": "Dari hasil inventaris oleh Ramdani: SM57 rusak 4 unit, hilang 9 unit. Perlu laporan ke manajemen, pengajuan penggantian unit, dan investigasi penyebab kehilangan.",
+    "pic": "Ramdani",
+    "division": "Audio",
+    "deadline": "2026-09-23",
+    "progress": 0,
+    "status": "Pending",
+    "dateCreated": "2026-09-16",
+    "equipment": "Mic Shure SM57",
+    "priority": "Tinggi",
+    "notes": "Ditemukan oleh: Ramdani (Dani) — Divisi Audio. SM58: Bagus 17, Rusak 1. VXT: Bagus 8, Rusak 2.",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "wo-20260917-takel-1ton",
+    "findingId": "fd-20260917-unyim-takel",
+    "title": "Perbaikan Takel 1 Ton — LOS",
+    "description": "Takel kapasitas 1 Ton mengalami LOS (Line of Sight failure / rantai putus). Wajib diperbaiki atau diganti sebelum digunakan pada event.",
+    "pic": "Mulyana",
+    "division": "Service",
+    "deadline": "2026-09-22",
+    "progress": 0,
+    "status": "In Progress",
+    "dateCreated": "2026-09-17",
+    "equipment": "Takel Chain Hoist 1 Ton",
+    "priority": "Tinggi",
+    "notes": "Ditemukan oleh: Wahyudin (Unyim) — Divisi Audio. Safety critical — jangan digunakan sebelum diperbaiki.",
+    "_source": "google_sheet_remark"
+  },
+  {
+    "id": "wo-20260917-ampeg-svt4",
+    "findingId": "fd-20260917-yudis-ampeg",
+    "title": "Service Ampeg SVT-4 — Ganti Komponen PTC",
+    "description": "Ampeg SVT-4 amplifier bass tidak berfungsi normal. Harus service dan ganti komponen PTC. Tidak layak digunakan sebelum diperbaiki.",
+    "pic": "Mulyana",
+    "division": "Service",
+    "deadline": "2026-09-22",
+    "progress": 0,
+    "status": "Pending",
+    "dateCreated": "2026-09-17",
+    "equipment": "Ampeg SVT-4 Bass Amplifier",
+    "priority": "Tinggi",
+    "notes": "Ditemukan oleh: Yudishtira Purnama A (Yudis) — Divisi Audio.",
+    "_source": "google_sheet_remark"
+  }
+];
+
