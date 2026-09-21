@@ -1187,15 +1187,56 @@ export async function pullDailyLogFromGviz(
           }
         }
 
+        // Helper untuk mencocokkan isu dengan temuan kanonikal resmi
+        const getSemanticKey = (eq: string, iss: string): string => {
+          const combined = `${eq} ${iss}`.toLowerCase();
+          if (combined.includes('ampeg') || combined.includes('svt-4') || (combined.includes('ptc') && combined.includes('amplifier'))) {
+            return 'sem_ampeg_ptc';
+          }
+          if (combined.includes('takel') || (combined.includes('rigging') && combined.includes('los'))) {
+            return 'sem_takel_los';
+          }
+          if (combined.includes('sm57') || (combined.includes('sm58') && combined.includes('rusak 4'))) {
+            return 'sem_sm57_inventory';
+          }
+          if (combined.includes('parled') || combined.includes('par led')) {
+            if (combined.includes('13') || combined.includes('merah mati')) {
+              return 'sem_parled_13_merah';
+            }
+            if (combined.includes('19') || combined.includes('20') || combined.includes('27')) {
+              return 'sem_parled_warm_19_20_27';
+            }
+            if (combined.includes('12') || combined.includes('25') || combined.includes('29') || combined.includes('32')) {
+              return 'sem_parled_warm_12_25_29_3_32';
+            }
+          }
+          if (combined.includes('smoke') || combined.includes('smok')) {
+            return 'sem_smoke_machine_03';
+          }
+          if (combined.includes('dbtech') || (combined.includes('modul amplifier') && combined.includes('serak'))) {
+            return 'sem_dbtech_no18';
+          }
+          if (combined.includes('kabinet') || combined.includes('videotron') || combined.includes('box kerusakan') || combined.includes('dead pixel')) {
+            return 'sem_videotron_kabinet_box';
+          }
+          return `dedup_${eq.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}_${iss.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+        };
+
         // Normalize the exact same way as cloudSync.ts contentKey for rigorous deduplication
         const eqNorm = equipName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const issNorm = String(remark).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const picNorm = String(activeStaffList[0] || 'Tim Operasional').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const contentKeyNorm = `dedup_${eqNorm}_${issNorm}_${picNorm}`;
+        const semKeyNorm = getSemanticKey(equipName, String(remark));
 
         const findingKey = `gsheet-finding-${currentDate}-${String(remark).trim().substring(0, 30).replace(/[^a-zA-Z0-9-]/g, '_')}`;
 
-        if (!existingReportIds.has(findingKey) && !existingReportIds.has(remarkNorm) && !existingReportIds.has(contentKeyNorm)) {
+        if (
+          !existingReportIds.has(findingKey) &&
+          !existingReportIds.has(remarkNorm) &&
+          !existingReportIds.has(contentKeyNorm) &&
+          !existingReportIds.has(semKeyNorm)
+        ) {
           const findingDoc = {
             id: findingKey,
             equipment: equipName,
@@ -1212,6 +1253,7 @@ export async function pullDailyLogFromGviz(
           await onSaveFinding(findingKey, findingDoc);
           existingReportIds.add(findingKey);
           existingReportIds.add(remarkNorm);
+          existingReportIds.add(semKeyNorm);
           newFindings++;
         }
       }

@@ -250,12 +250,8 @@ export default function Dashboard({
   }, [monthlyStaffKpis]);
   
   const activeStaff = React.useMemo(() => {
-    let filtered = staffKpis;
-    // Mengembalikan filter resmi berdasarkan sumber data Google Sheet yang sudah LINTAS DIVISI
-    return filtered.filter(s => 
-      isStaffInGoogleSheet(s, dailyReports, logbookEntries)
-    );
-  }, [staffKpis, dailyReports, logbookEntries]);
+    return staffKpis;
+  }, [staffKpis]);
 
   // Filter staf yang bertugas sesuai data referensi Google Sheet dan memiliki aktivitas riil
   const activeStaffProductivityData = React.useMemo(() => {
@@ -271,10 +267,7 @@ export default function Dashboard({
 
   // Top Performer Bulan Ini: Selalu dihitung dari akumulasi bulanan resmi Google Sheet (1-10 Top Performer)
   const topPerformers = React.useMemo(() => {
-    const monthlyOfficialStaff = monthlyStaffKpis.filter(s =>
-      isStaffInGoogleSheet(s, dailyReports, logbookEntries)
-    );
-    return monthlyOfficialStaff
+    return monthlyStaffKpis
       .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0)
       .slice(0, 10);
   }, [monthlyStaffKpis, dailyReports, logbookEntries]);

@@ -78,37 +78,37 @@ export interface StaffKpiResult {
 // Comprehensive Staff Aliases & Nickname Dictionaries (Mapping all variations used in the field)
 export const KNOWN_STAFF_ALIASES: Record<string, string[]> = {
   // Gudang
-  'staff-absobur': ['abah sobur', 'abah', 'sobur', 'abik'],
-  'staff-gatot': ['gatot wiliyanto', 'gatot', 'wiliyanto', 'mas gatot'],
-  'staff-udin': ['udin saepudin', 'udin', 'saepudin', 'mang ube', 'mang ubed', 'ube', 'ubed', 'mangudin', 'mang udin'],
+  'staff-absobur': ['aep saepudin', 'aep', 'subur', 'abah sobur', 'aep/subur'],
+  'staff-gatot': ['gatot wiliyanto', 'gatot'],
+  'staff-udin': ['udin saepudin', 'mang ube', 'udin', 'mang ubed', 'ube'],
   
   // Admin / Manajemen
-  'director-wahyu': ['wahyu', 'pak wahyu', 'owner wahyu', 'direktur wahyu', 'direktur', 'owner'],
-  'staff-agustino': ['agustino setiawan', 'agustino', 'agus', 'setiawan', 'agustinus'],
-  'staff-fahrul': ['m. fahruyana . a', 'm. fahruyana', 'm fahruyana', 'fahruyana', 'fahrul', 'rullyana', 'rully', 'm fahrul', 'pak fahrul'],
-  'staff-syalsa': ['syalsa sri hestariana', 'syalsa', 'caca', 'hestariana', 'teh caca'],
-  'staff-seno': ['seno subroto', 'seno', 'subroto', 'om seno', 'pak seno'],
+  'director-wahyu': ['wahyu', 'director', 'direktur', 'owner', 'pak wahyu'],
+  'staff-agustino': ['agustino setiawan', 'agus', 'supervisor'],
+  'staff-fahrul': ['m. fahrulyana . a', 'm. fahruyana . a', 'fahrul', 'manager', 'm. fahrulyana', 'm. fahruyana', 'rullyana', 'rully'],
+  'staff-syalsa': ['syalsa sri hestariana', 'caca', 'staff admin', 'syalsa'],
+  'staff-seno': ['seno subroto', 'seno', 'staff admin'],
   
   // Videotron / LED
-  'staff-ayong': ['ayong sumarsih', 'ayong', 'sumarsih', 'prabu', 'prabuam', 'kang ayong'],
-  'staff-dedi': ['dedi agus wigiantoro', 'dedi agus', 'dedy', 'dedi', 'wigi', 'wigiantoro', 'mas wigi'],
-  'staff-irvan': ['muhamad irvan', 'muhammad irvan', 'muhamad irfan', 'muhammad irfan', 'irvan', 'irfan', 'irfanthepul'],
+  'staff-ayong': ['ayong sumarsih', 'ayong', 'prabu'],
+  'staff-dedi': ['dedi agus wigiantoro', 'wigi', 'dedi agus', 'dedy'],
+  'staff-irvan': ['muhamad irvan', 'irfan', 'muhammad irvan', 'irfanthepul'],
   
   // Multimedia
-  'staff-mulyadi': ['mulyadi', 'jay', 'jaymulyadi', 'jay mulyadi', 'bang jay'],
+  'staff-mulyadi': ['mulyadi', 'jay', 'jaymulyadi', 'jay mulyadi'],
   
   // Lighting
   'staff-heri': ['heri', 'heriansyah', 'saputra', 'kang heri'],
-  
-  // Sound / Audio
+
+  // Audio (Sound)
   'staff-iwan': ['iwan kurniawan', 'iwan', 'kurniawan', 'butonk', 'butong', 'boetonk', 'boetonk2785', 'kang butonk', 'kang butong'],
   'staff-rahmat': ['muhamad rahmat', 'muhammad rahmat', 'rahmat', 'mboh', 'outsideprojectmboh', 'kang mboh', 'mas mboh'],
   'staff-ramdani': ['ramdani', 'dani', 'ismail ramdani', 'ismail', 'ismailramdani'],
-  'staff-suryana': ['suryana', 'nana', 'buluk', 'bulux', 'kang nana', 'kang buluk', 'nana buluk'],
-  'staff-unyin': ['wahyudin', 'unyin', 'unyim', 'kang unyim', 'kang unyin'],
+  'staff-suryana': ['suryana', 'nana', 'buluk', 'bulux', 'nana/buluk', 'nana / buluk', 'kang nana', 'kang buluk', 'nana buluk'],
   'staff-taufik': ['taufik diana', 'taufik', 'diana', 'opik', 'topik', 'taufikdya', 'kang opik', 'opik diana'],
+  'staff-unyin': ['wahyudin', 'unyin', 'unyim', 'kang unyim', 'kang unyin'],
   'staff-yudish': ['yudishtira purnama a', 'yudishtira', 'yudis', 'yudhis', 'purnama', 'yudhisintan'],
-  
+
   // Service
   'staff-damri': ['damri', 'mang damri', 'mangdamri', 'pak damri'],
   'staff-mulyana': ['mulyana', 'kharo', 'karo', 'kharro', 'tabita', 'tabitakharo', 'mulyana kharo', 'mulyana karo', 'kharo mulyana', 'karo mulyana', 'kang kharo', 'kang karo', 'kang kharro']
@@ -407,11 +407,10 @@ export function calculateStaffKpi(
   // ─────────────────────────────────────────────────────────────
   // 5. QUALITY / QC CHECKLIST (Murni dari checklist QC & inspeksi teknis lapangan)
   // ─────────────────────────────────────────────────────────────
-  const isNonQcDivision = ['Gudang', 'Admin'].includes(staff.division);
   // Kuantitas riil (penjumlahan) dari referensi data resmi
-  const qcCount = isNonQcDivision ? 0 : logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length;
+  const qcCount = logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length;
   // Target divisor disamakan dengan kehadiran riil
-  const qcScore = isNonQcDivision ? 80 : Math.min(100, Math.round((qcCount / taskTarget) * 100));
+  const qcScore = Math.min(100, Math.round((qcCount / taskTarget) * 100));
 
   // ─────────────────────────────────────────────────────────────
   // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Murni dari WO yang diselesaikan & Temuan Closed)

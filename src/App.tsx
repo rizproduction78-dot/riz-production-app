@@ -73,6 +73,7 @@ import {
   deleteCloudDoc,
   forceSyncAllModules,
   subscribeSyncStatus,
+  normalizeCollectionItems,
   SyncStatus
 } from './lib/cloudSync';
 import { workspaceManager } from './lib/workspaceConfig';
@@ -312,7 +313,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference (1-17 September 2026 full tabulation)
-  const REF_SYNC_KEY = 'riz_ref_synced_v34_canonical_fix_sept18';
+  const REF_SYNC_KEY = 'riz_ref_synced_v35_canonical_clean_dedup';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings_v2', JSON.stringify(INITIAL_FINDINGS));
@@ -510,6 +511,9 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) baseFindings = parsed;
       } catch (e) {}
     }
+    // Normalisasi dan deduplikasi semantik kanonikal lokal
+    baseFindings = normalizeCollectionItems('findings', baseFindings);
+
     // Apply status lock so initial render always shows correct status
     try {
       const lockKey = 'riz_findings_status_lock';
@@ -816,7 +820,7 @@ export default function App() {
         setFindings(prev => {
           const existingIdsSet = new Set(prev.map(f => f.id));
           const trulyNew = newFindingDocs.filter(d => !existingIdsSet.has(d.id));
-          const merged = [...trulyNew, ...prev];
+          const merged = normalizeCollectionItems('findings', [...trulyNew, ...prev]);
           try { localStorage.setItem('riz_findings_v2', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
         });
@@ -909,7 +913,7 @@ export default function App() {
     
     let isDuplicate = false;
     setLogbookEntries(prev => {
-      const existing = prev.find(e => e.activity === entry.activity && e.time === entry.time && e.staff === entry.staff && e.date === entry.date);
+      const existing = prev.find(e => e.activity === entry.activity && e.staffName === entry.staffName && e.date === entry.date);
       if (existing) {
         isDuplicate = true;
         return prev;
@@ -933,7 +937,7 @@ export default function App() {
 
     let isDuplicate = false;
     setDailyReports(prev => {
-      const existing = prev.find(r => r.date === report.date && r.shift === report.shift && r.description === report.description);
+      const existing = prev.find(r => r.date === report.date && r.activity === report.activity && r.notes === report.notes);
       if (existing) {
         isDuplicate = true;
         return prev;
@@ -1041,7 +1045,7 @@ export default function App() {
     
     let isDuplicate = false;
     setSchedules(prev => {
-      const existing = prev.find(s => s.task === schedule.task && s.date === schedule.date);
+      const existing = prev.find(s => s.assetName === schedule.assetName && s.nextDate === schedule.nextDate);
       if (existing) {
         isDuplicate = true;
         return prev;

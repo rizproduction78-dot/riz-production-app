@@ -305,20 +305,79 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     return normalizeStaffMaster(items) as unknown as T[];
   }
 
-  // Special normalization for findings so official reference data is preserved and not corrupted by stale mock strings
+  // Special normalization for findings: deduplicate by ID and content (equipment + issue)
+  // Memastikan entri canonical (fd-*) diprioritaskan dan entri duplikat generik (gsheet-finding-*) dilebur
   if (collectionName === 'findings') {
-    const cleaned = items.map((f: any) => {
-      if (!f) return f;
-      return f;
+    const getSemanticKey = (item: any): string => {
+      const eq = String(item.equipment || '').toLowerCase();
+      const iss = String(item.issue || '').toLowerCase();
+      const combined = `${eq} ${iss}`;
+
+      if (combined.includes('ampeg') || combined.includes('svt-4') || (combined.includes('ptc') && combined.includes('amplifier'))) {
+        return 'sem_ampeg_ptc';
+      }
+      if (combined.includes('takel') || combined.includes('rigging') && combined.includes('los')) {
+        return 'sem_takel_los';
+      }
+      if (combined.includes('sm57') || (combined.includes('sm58') && combined.includes('rusak 4'))) {
+        return 'sem_sm57_inventory';
+      }
+      if (combined.includes('parled') || combined.includes('par led')) {
+        if (combined.includes('13') || combined.includes('merah mati')) {
+          return 'sem_parled_13_merah';
+        }
+        if (combined.includes('19') || combined.includes('20') || combined.includes('27')) {
+          return 'sem_parled_warm_19_20_27';
+        }
+        if (combined.includes('12') || combined.includes('25') || combined.includes('29') || combined.includes('32')) {
+          return 'sem_parled_warm_12_25_29_3_32';
+        }
+      }
+      if (combined.includes('smoke') || combined.includes('smok')) {
+        return 'sem_smoke_machine_03';
+      }
+      if (combined.includes('dbtech') || (combined.includes('modul amplifier') && combined.includes('serak'))) {
+        return 'sem_dbtech_no18';
+      }
+      if (combined.includes('kabinet') || combined.includes('videotron') || combined.includes('box kerusakan') || combined.includes('dead pixel')) {
+        return 'sem_videotron_kabinet_box';
+      }
+
+      // Fallback: exact alphanumeric signature
+      const eqNorm = eq.replace(/[^a-z0-9]/g, '');
+      const issNorm = iss.replace(/[^a-z0-9]/g, '').substring(0, 40);
+      return `generic_${eqNorm}_${issNorm}`;
+    };
+
+    const map = new Map<string, any>();
+    // Urutkan item agar canonical (berawalan 'fd-') diproses belakangan (menimpa generic) atau terlebih dahulu
+    // Kita tempatkan item berawalan 'fd-' sebagai prioritas utama
+    const sortedItems = [...items].sort((a: any, b: any) => {
+      const aIsFd = String(a?.id || '').startsWith('fd-') ? 1 : 0;
+      const bIsFd = String(b?.id || '').startsWith('fd-') ? 1 : 0;
+      return aIsFd - bIsFd; // Generic dulu, lalu canonical menimpa generic
     });
 
-    // Deduplicate by ID
-    const map = new Map<string, any>();
-    cleaned.forEach((item: any) => {
-      if (item && item.id) {
-        map.set(item.id, item);
+    sortedItems.forEach((item: any) => {
+      if (!item) return;
+      const semKey = getSemanticKey(item);
+      const existing = map.get(semKey);
+      if (!existing) {
+        map.set(semKey, item);
+      } else {
+        // Jika existing bukan 'fd-' tapi item baru adalah 'fd-', ganti dengan yang canonical!
+        if (String(item.id || '').startsWith('fd-')) {
+          map.set(semKey, {
+            ...item,
+            // Pertahankan status lock atau approval jika sebelumnya sudah diubah user
+            status: existing.status === 'Close' ? 'Close' : item.status,
+            approvedBy: existing.approvedBy || item.approvedBy,
+            approvedAt: existing.approvedAt || item.approvedAt
+          });
+        }
       }
     });
+
     return Array.from(map.values()) as T[];
   }
 

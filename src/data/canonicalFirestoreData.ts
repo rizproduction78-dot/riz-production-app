@@ -906,11 +906,11 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "equipment": "DBTech Speaker No.18 — Modul Amplifier",
     "issue": "Modul Amplifier bermasalah. Saat terkena beban input besar, suara yang dikeluarkan menjadi serak. Perlu pengecekan modul amplifier dan spare-part tweeter.",
     "priority": "Sedang",
-    "pic": "Mulyana",
+    "pic": "Muhamad Rahmat",
     "targetDate": "2026-09-17",
     "status": "Open",
     "dateCreated": "2026-09-03",
-    "division": "Service",
+    "division": "Audio",
     "_source": "google_sheet_remark"
   },
   {
@@ -918,11 +918,11 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "equipment": "Parled Warm — Unit No.12, 25, 29 (Mati) & No.3, 32 (Separo)",
     "issue": "Warm mati total: no.12, 25, 29. Warm hanya separo: no.3, 32. Harus service segera.",
     "priority": "Tinggi",
-    "pic": "Mulyana",
+    "pic": "Heri",
     "targetDate": "2026-09-14",
     "status": "Open",
     "dateCreated": "2026-09-07",
-    "division": "Service",
+    "division": "Lighting",
     "_source": "google_sheet_remark"
   },
   {
@@ -930,11 +930,11 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "equipment": "Parled Warm — Unit No.19, 20, 27 (Separo)",
     "issue": "Warm separo pada unit no.19, 20, 27. Harus service.",
     "priority": "Tinggi",
-    "pic": "Mulyana",
+    "pic": "Heri",
     "targetDate": "2026-09-17",
     "status": "Open",
     "dateCreated": "2026-09-10",
-    "division": "Service",
+    "division": "Lighting",
     "_source": "google_sheet_remark"
   },
   {
@@ -942,11 +942,11 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "equipment": "Parled No.13 — LED Merah Mati",
     "issue": "Parled No.13: LED merah mati total. Harus service segera.",
     "priority": "Tinggi",
-    "pic": "Mulyana",
+    "pic": "Heri",
     "targetDate": "2026-09-19",
     "status": "Open",
     "dateCreated": "2026-09-12",
-    "division": "Service",
+    "division": "Lighting",
     "_source": "google_sheet_remark"
   },
   {
@@ -954,11 +954,11 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "equipment": "Smoke Machine No.3",
     "issue": "Smoke No.3 ERROR — tidak berfungsi normal saat pengecekan.",
     "priority": "Sedang",
-    "pic": "Mulyana",
+    "pic": "Heri",
     "targetDate": "2026-09-21",
     "status": "Open",
     "dateCreated": "2026-09-16",
-    "division": "Service",
+    "division": "Lighting",
     "_source": "google_sheet_remark"
   },
   {
@@ -978,11 +978,11 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "equipment": "Takel 1 Ton — Unit LOS",
     "issue": "Takel 1 Ton: 1 unit LOS (Line of Sight failure). Wajib diperbaiki sebelum digunakan untuk event berikutnya.",
     "priority": "Tinggi",
-    "pic": "Mulyana",
+    "pic": "Wahyudin",
     "targetDate": "2026-09-22",
     "status": "Open",
     "dateCreated": "2026-09-17",
-    "division": "Service",
+    "division": "Audio",
     "_source": "google_sheet_remark"
   },
   {
@@ -990,11 +990,11 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "equipment": "Ampeg SVT-4 — Amplifier Bass",
     "issue": "Ampeg SVT-4 harus service dan ganti komponen PTC. Tidak layak pakai sebelum diperbaiki.",
     "priority": "Tinggi",
-    "pic": "Mulyana",
+    "pic": "Yudishtira Purnama A",
     "targetDate": "2026-09-22",
     "status": "Open",
     "dateCreated": "2026-09-17",
-    "division": "Service",
+    "division": "Audio",
     "_source": "google_sheet_remark"
   }
 ];

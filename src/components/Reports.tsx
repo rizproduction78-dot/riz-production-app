@@ -1061,13 +1061,12 @@ export default function Reports({
             <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">12. KPI STAFF</div>
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
               <div className="text-xs font-semibold text-slate-700">Kategori Evaluasi Kinerja Staff:</div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-center text-[10px] font-mono">
-                <div className="bg-white p-2 border rounded font-semibold">1. Disiplin & Tim (15%)</div>
-                <div className="bg-white p-2 border rounded font-semibold">2. Daily Report (25%)</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-center text-[10px] font-mono">
+                <div className="bg-indigo-50 border border-indigo-200 p-2 rounded font-semibold text-indigo-800">1. Kehadiran (20%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">2. Daily Report (20%)</div>
                 <div className="bg-white p-2 border rounded font-semibold">3. QC Checklist (20%)</div>
-                <div className="bg-white p-2 border rounded font-semibold">4. Work Order (10%)</div>
-                <div className="bg-indigo-50 border border-indigo-200 p-2 rounded font-semibold text-indigo-800">+ 5. Absensi (15%)</div>
-                <div className="bg-amber-50 border border-amber-200 p-2 rounded font-semibold text-amber-800">+ 6. Uji Komp (15%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">4. Work Order (20%)</div>
+                <div className="bg-amber-50 border border-amber-200 p-2 rounded font-semibold text-amber-800">5. Uji Komp (20%)</div>
               </div>
               <div className="pt-2">
                 <div className="text-xs font-semibold text-slate-700 mb-2">Nilai Akhir Staff Aktif Periode Ini ({activeStaffKpis.length} Staff):</div>
@@ -1371,10 +1370,10 @@ export default function Reports({
                     <th className="p-2 border-r border-slate-300 w-8 text-center">No</th>
                     <th className="p-2 border-r border-slate-300">Nama Staff</th>
                     <th className="p-2 border-r border-slate-300">Divisi</th>
+                    <th className="p-2 border-r border-slate-300 text-center text-slate-400">Kehadiran</th>
                     <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">Daily Report</th>
                     <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">QC Checklist</th>
-                    <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">WO Selesai</th>
-                    <th className="p-2 border-r border-slate-300 text-center text-slate-400">Kehadiran</th>
+                    <th className="p-2 border-r border-slate-300 text-center font-bold text-emerald-700 bg-emerald-50/50">WO Selesai</th>
                     <th className="p-2 border-r border-slate-300 text-center">Uji Komp.</th>
                     <th className="p-2 border-r border-slate-300 text-center text-slate-400">Jam Kerja</th>
                     <th className="p-2 text-center font-bold">Nilai KPI (%)</th>
@@ -1387,6 +1386,9 @@ export default function Reports({
                         <td className="p-2 border-r border-slate-300 text-center">{idx + 1}</td>
                         <td className="p-2 border-r border-slate-300 font-sans font-semibold">{staff.name}</td>
                         <td className="p-2 border-r border-slate-300 font-sans">{staff.division}</td>
+                        <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.attendanceCount > 0 ? 'text-indigo-700 bg-indigo-50/30' : 'text-slate-400'}`}>
+                          {staff.attendanceCount}/{staff.attendanceTarget}
+                        </td>
                         <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.reports > 0 ? 'text-indigo-700 bg-indigo-50/30' : 'text-slate-400'}`}>
                           {staff.reports}
                         </td>
@@ -1395,9 +1397,6 @@ export default function Reports({
                         </td>
                         <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.wos > 0 ? 'text-emerald-700 bg-emerald-50/30' : 'text-slate-400'}`}>
                           {staff.wos}
-                        </td>
-                        <td className={`p-2 border-r border-slate-300 text-center font-bold ${staff.attendanceCount > 0 ? 'text-indigo-700 bg-indigo-50/30' : 'text-slate-400'}`}>
-                          {staff.attendanceCount}/{staff.attendanceTarget}
                         </td>
                         <td className="p-2 border-r border-slate-300 text-center">{staff.competencyCount}/6</td>
                         <td className="p-2 border-r border-slate-300 text-center text-slate-400">
