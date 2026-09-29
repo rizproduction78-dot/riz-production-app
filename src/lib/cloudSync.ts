@@ -402,10 +402,12 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (!item || !item.date) return;
       const staffObj = STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
+      if (!staffObj) return; // STRICT RULE: Drop hallucinated staff
+      
       const normalizedItem = {
         ...item,
-        staffName: staffObj ? staffObj.name : item.staffName,
-        division: staffObj ? staffObj.division : item.division
+        staffName: staffObj.name,
+        division: staffObj.division
       };
       
       // Keep by ID so updates can happen correctly
@@ -423,10 +425,12 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (!item || !item.date) return;
       const staffObj = STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
+      if (!staffObj) return; // STRICT RULE: Drop hallucinated staff
+      
       const normalizedItem = {
         ...item,
-        staffName: staffObj ? staffObj.name : item.staffName,
-        division: staffObj ? staffObj.division : item.division
+        staffName: staffObj.name,
+        division: staffObj.division
       };
       
       if (item.id) {
