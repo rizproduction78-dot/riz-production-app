@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, MaintenanceSchedule } from '../types';
+import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, MaintenanceSchedule, DailyTask } from '../types';
 import { FileText, Printer, FileDown, Download, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis, isStaffMatch, isStaffInGoogleSheet } from '../utils/kpiCalculator';
@@ -17,6 +17,7 @@ interface ReportsProps {
   dailyReports: DailyReport[];
   findings: Finding[];
   workOrders?: WorkOrder[];
+  dailyTasks?: DailyTask[];
   schedules?: MaintenanceSchedule[];
   currentUser: any;
   onLogActivity: (username: string, role: string, action: string) => void;
@@ -31,6 +32,7 @@ export default function Reports({
   dailyReports,
   findings,
   workOrders = [],
+  dailyTasks = [],
   schedules = [],
   currentUser,
   onLogActivity,
@@ -158,7 +160,14 @@ export default function Reports({
   // 2. QC Checklist
   // 3. WO Selesai
   // NOTE: Selalu gunakan data master (dailyReports, logbookEntries) bukan data filter active, agar KPI tetap berbobot bulanan meskipun sedang melihat report harian/mingguan.
-  const staffKpis = calculateAllStaffKpis(staffList, dailyReports, logbookEntries, findings, undefined, undefined, undefined, workOrders);
+  // Namun, WAJIB memfilter berdasarkan bulan berjalan (activeMonth) agar data bulan sebelumnya tidak masuk!
+  const monthlyDailyReports = dailyReports.filter(r => r.date.startsWith(activeMonth));
+  const monthlyLogbookEntries = logbookEntries.filter(e => e.date.startsWith(activeMonth));
+  const monthlyFindings = findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth)));
+  const monthlyWorkOrders = workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth));
+  const monthlyDailyTasks = dailyTasks.filter(t => t.createdAt.startsWith(activeMonth) || t.dueDate.startsWith(activeMonth));
+
+  const staffKpis = calculateAllStaffKpis(staffList, monthlyDailyReports, monthlyLogbookEntries, monthlyFindings, undefined, undefined, undefined, monthlyWorkOrders, monthlyDailyTasks);
   
   const activeStaffKpis = staffKpis;
 

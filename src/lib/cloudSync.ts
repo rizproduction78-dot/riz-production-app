@@ -398,12 +398,29 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
   // Special normalization for daily_reports: no strict note concatenation
   if (collectionName === 'daily_reports') {
     const map = new Map<string, any>();
-    items.forEach((item: any) => {
+    const semanticSet = new Set<string>();
+
+    // Sort so that 'rep-' IDs are processed before 'gsheet-' IDs
+    const sortedItems = [...items].sort((a: any, b: any) => {
+      const aIsGsheet = a.id?.startsWith('gsheet-');
+      const bIsGsheet = b.id?.startsWith('gsheet-');
+      if (aIsGsheet && !bIsGsheet) return 1;
+      if (!aIsGsheet && bIsGsheet) return -1;
+      return 0;
+    });
+
+    sortedItems.forEach((item: any) => {
       if (!item || !item.date) return;
       const staffObj = STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
       if (!staffObj) return; // STRICT RULE: Drop hallucinated staff
       
+      const normActivity = String(item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
+      const semanticKey = `${item.date}_${staffObj.name}_${normActivity}`;
+
+      if (semanticSet.has(semanticKey)) return; // Semantic dedup
+      semanticSet.add(semanticKey);
+
       const normalizedItem = {
         ...item,
         staffName: staffObj.name,
@@ -421,12 +438,29 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
   // Special normalization for logbook_entries: no strict note concatenation
   if (collectionName === 'logbook_entries') {
     const map = new Map<string, any>();
-    items.forEach((item: any) => {
+    const semanticSet = new Set<string>();
+
+    // Sort so that 'log-' IDs are processed before 'gsheet-' IDs
+    const sortedItems = [...items].sort((a: any, b: any) => {
+      const aIsGsheet = a.id?.startsWith('gsheet-');
+      const bIsGsheet = b.id?.startsWith('gsheet-');
+      if (aIsGsheet && !bIsGsheet) return 1;
+      if (!aIsGsheet && bIsGsheet) return -1;
+      return 0;
+    });
+
+    sortedItems.forEach((item: any) => {
       if (!item || !item.date) return;
       const staffObj = STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
       if (!staffObj) return; // STRICT RULE: Drop hallucinated staff
       
+      const normActivity = String(item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
+      const semanticKey = `${item.date}_${staffObj.name}_${normActivity}`;
+
+      if (semanticSet.has(semanticKey)) return; // Semantic dedup
+      semanticSet.add(semanticKey);
+
       const normalizedItem = {
         ...item,
         staffName: staffObj.name,

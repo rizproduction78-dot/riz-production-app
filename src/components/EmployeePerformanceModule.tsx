@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PrintHeader } from './PrintHeader';
-import { Staff, DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
+import { Staff, DailyReport, LogbookEntry, Finding, WorkOrder, DailyTask } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import {
   User,
@@ -39,12 +39,15 @@ import {
 import { calculateStaffKpi, calculateAllStaffKpis, isStaffMatch, KPI_SPREADSHEET_SOURCE_URL } from '../utils/kpiCalculator';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 
+
 interface EmployeePerformanceModuleProps {
   currentUser: Staff;
   dailyReports?: DailyReport[];
   logbookEntries?: LogbookEntry[];
   findings?: Finding[];
   workOrders?: WorkOrder[];
+  dailyTasks?: DailyTask[];
+  activeMonth?: string;
 }
 
 export default function EmployeePerformanceModule({
@@ -52,7 +55,9 @@ export default function EmployeePerformanceModule({
   dailyReports = [],
   logbookEntries = [],
   findings = [],
-  workOrders = []
+  workOrders = [],
+  dailyTasks = [],
+  activeMonth = '2026-10'
 }: EmployeePerformanceModuleProps) {
   const isManagement = Boolean(
     currentUser && (
@@ -87,9 +92,15 @@ export default function EmployeePerformanceModule({
 
   const selectedStaff = masterStaffList.find(s => s.name === selectedStaffName) || currentUser;
   
-  // Real dynamic KPI scores
-  const allStaffKpis = calculateAllStaffKpis(masterStaffList, dailyReports, logbookEntries, findings, undefined, undefined, undefined, workOrders);
-  const staffKpi = calculateStaffKpi(selectedStaff, dailyReports, logbookEntries, findings, undefined, undefined, undefined, workOrders);
+  // Real dynamic KPI scores, filtered by activeMonth
+  const monthlyDailyReports = dailyReports.filter(r => r.date.startsWith(activeMonth));
+  const monthlyLogbookEntries = logbookEntries.filter(e => e.date.startsWith(activeMonth));
+  const monthlyFindings = findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth)));
+  const monthlyWorkOrders = workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth));
+  const monthlyDailyTasks = dailyTasks.filter(t => t.createdAt.startsWith(activeMonth) || t.dueDate.startsWith(activeMonth));
+
+  const allStaffKpis = calculateAllStaffKpis(masterStaffList, monthlyDailyReports, monthlyLogbookEntries, monthlyFindings, undefined, undefined, undefined, monthlyWorkOrders, monthlyDailyTasks);
+  const staffKpi = calculateStaffKpi(selectedStaff, monthlyDailyReports, monthlyLogbookEntries, monthlyFindings, undefined, undefined, undefined, monthlyWorkOrders, monthlyDailyTasks);
 
   // Filter hanya staf yang memiliki aktifitas riil
   const activeStaffKpis = allStaffKpis.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);

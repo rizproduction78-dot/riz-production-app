@@ -40,6 +40,7 @@ interface DashboardProps {
   dailyReports: DailyReport[];
   findings: Finding[];
   workOrders: WorkOrder[];
+  dailyTasks: DailyTask[];
   schedules?: MaintenanceSchedule[];
   currentUser: any;
   onNavigate: (tab: string) => void;
@@ -54,6 +55,7 @@ export default function Dashboard({
   dailyReports,
   findings,
   workOrders,
+  dailyTasks,
   schedules = [],
   currentUser,
   onNavigate,
@@ -263,9 +265,10 @@ export default function Dashboard({
       undefined,
       undefined,
       undefined,
-      workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth))
+      workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth)),
+      dailyTasks.filter(t => t.createdAt.startsWith(activeMonth) || t.dueDate.startsWith(activeMonth))
     );
-  }, [staffList, dailyReports, logbookEntries, findings, workOrders, activeMonth]);
+  }, [staffList, dailyReports, logbookEntries, findings, workOrders, dailyTasks, activeMonth]);
 
   // 2. Active Period Staff KPIs (Always use monthly for consistent grading, regardless of active tab view)
   const staffKpis = React.useMemo(() => {
@@ -702,7 +705,7 @@ export default function Dashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {logbookEntries.slice(0, 6).map((e) => (
+                    {activeLogbookEntries.slice(0, 6).map((e) => (
                       <tr key={e.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="px-4 py-3 font-medium text-slate-900">{e.staffName}</td>
                         <td className="px-4 py-3">
