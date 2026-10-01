@@ -13,7 +13,7 @@ export interface DivisionTaskTemplate {
   title: string;
   description: string;
   priority: 'Tinggi' | 'Sedang' | 'Rendah';
-  category: 'Standar 5R & Kebersihan' | 'Pemeriksaan Rutin QC' | 'Operasional & Show' | 'Preventive Maintenance';
+  category: 'Standar 5R & Kebersihan' | 'Pemeriksaan Rutin QC' | 'Operasional & Show' | 'Preventive Maintenance' | 'Koordinasi Lintas Divisi' | 'Tugas Umum';
 }
 
 export const DIVISION_DAILY_TASK_REFERENCES: Record<Division, DivisionTaskTemplate[]> = {
@@ -452,6 +452,14 @@ export const DIVISION_DAILY_TASK_REFERENCES: Record<Division, DivisionTaskTempla
       description: 'Pengisian laporan harian sesuai aktivitas operasional yang dilaksanakan pada hari bersangkutan.',
       priority: 'Tinggi',
       category: 'Operasional & Show'
+    }
+  ],
+  'Umum': [
+    {
+      title: 'Tugas Umum & Bantuan Operasional',
+      description: 'Mengerjakan tugas umum atau membantu divisi lain sesuai instruksi harian.',
+      priority: 'Sedang',
+      category: 'Tugas Umum'
     }
   ]
 };

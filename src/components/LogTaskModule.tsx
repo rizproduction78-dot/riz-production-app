@@ -76,6 +76,7 @@ const DIVISION_CONFIG: Record<Division, { color: string; bg: string; icon: strin
   Admin:      { color: 'text-blue-600',   bg: 'bg-blue-50 border-blue-200',     icon: '🗄️' },
   Service:    { color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200', icon: '🔧' },
   'Semua Divisi': { color: 'text-slate-600', bg: 'bg-slate-50 border-slate-200', icon: '🌐' },
+  Umum:       { color: 'text-gray-600',   bg: 'bg-gray-50 border-gray-200',     icon: '📌' },
 };
 
 const DEFAULT_PHOTOS = [
