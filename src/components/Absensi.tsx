@@ -6,7 +6,8 @@ import {
   SCHEDULE_NOTE,
   StaffScheduleRow,
   getScheduleByKey,
-  generateMonthDays
+  generateMonthDays,
+  getActiveMonthKey
 } from '../data/staffSchedules';
 import {
   Calendar,
@@ -176,7 +177,7 @@ interface AbsensiProps {
   scheduleData?: StaffScheduleRow[];
 }
 
-export default function Absensi({ currentUser, onLogActivity, forceSubTab, activeMonth = '2026-09', onActiveMonthChange, scheduleData = [] }: AbsensiProps) {
+export default function Absensi({ currentUser, onLogActivity, forceSubTab, activeMonth = getActiveMonthKey(), onActiveMonthChange, scheduleData = [] }: AbsensiProps) {
   // Tabs: 'self' (Check In/Out), 'schedule' (1-31 Scheduling Grid), 'progress' (Kenaikan Status & Kelistrikan), or 'maintenance_dashboard'
   const [activeSubTab, setActiveSubTab] = useState<'self' | 'schedule' | 'progress' | 'maintenance_dashboard'>(
     forceSubTab || 'self'

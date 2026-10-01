@@ -70,24 +70,34 @@ export default function Reports({
   useEffect(() => {
     setTargetMonth(activeMonth);
   }, [activeMonth]);
-  const latestDateAvailable = React.useMemo(() => {
-    const dates = [
-      ...dailyReports.map(r => r.date),
-      ...logbookEntries.map(e => e.date)
-    ].filter(Boolean).sort();
-    return dates.length > 0 ? dates[dates.length - 1] : '2026-09-11';
-  }, [dailyReports, logbookEntries]);
 
-  const [targetDate, setTargetDate] = useState(() => latestDateAvailable);
-  const [targetStartDate, setTargetStartDate] = useState(() => {
-    const d = new Date();
-    d.setDate(1);
-    return d.toISOString().split('T')[0];
-  });
+  // Latest date ONLY within activeMonth — prevents cross-month date leakage
+  // MUST be declared before useState and useEffect that reference it
+  const latestDateInActiveMonth = React.useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const dates = [
+      ...dailyReports.filter(r => r.date && r.date.startsWith(activeMonth)).map(r => r.date),
+      ...logbookEntries.filter(e => e.date && e.date.startsWith(activeMonth)).map(e => e.date)
+    ].filter(Boolean).sort();
+    if (dates.length > 0) return dates[dates.length - 1];
+    if (today.startsWith(activeMonth)) return today;
+    return `${activeMonth}-01`;
+  }, [dailyReports, logbookEntries, activeMonth]);
+
+  const [targetDate, setTargetDate] = useState(() => latestDateInActiveMonth);
+  const [targetStartDate, setTargetStartDate] = useState(() => `${activeMonth}-01`);
   const [targetEndDate, setTargetEndDate] = useState(() => {
-    const d = new Date();
-    return d.toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    return today.startsWith(activeMonth) ? today : `${activeMonth}-01`;
   });
+
+  // Sync date pickers when activeMonth changes — prevents data locking to previous month
+  useEffect(() => {
+    setTargetDate(latestDateInActiveMonth);
+    setTargetStartDate(`${activeMonth}-01`);
+    const today = new Date().toISOString().split('T')[0];
+    setTargetEndDate(today.startsWith(activeMonth) ? today : `${activeMonth}-01`);
+  }, [activeMonth, latestDateInActiveMonth]);
 
   // Dynamic filter for active daily reports based on Harian / Mingguan / Bulanan
   const activeDailyReports = dailyReports.filter(r => {
@@ -169,7 +179,11 @@ export default function Reports({
 
   const staffKpis = calculateAllStaffKpis(staffList, monthlyDailyReports, monthlyLogbookEntries, monthlyFindings, undefined, undefined, undefined, monthlyWorkOrders, monthlyDailyTasks);
   
-  const activeStaffKpis = staffKpis;
+  // Hanya tampilkan staf yang punya aktivitas nyata di bulan/periode aktif
+  // Mencegah staf dengan 0/0/0 masuk tabel KPI & Top 3 (data palsu)
+  const activeStaffKpis = staffKpis.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0);
+  // Top 3 wajib dari staf yang punya data nyata (kpi > 0)
+  const top3StaffKpis = activeStaffKpis.filter(s => s.kpi > 0).slice(0, 3);
 
   // Dynamic metrics per division (7 Divisi Resmi)
   const reportDivisions = [
@@ -1442,8 +1456,8 @@ export default function Reports({
                 <span className="text-[9px] font-mono text-slate-400">Peringkat Berdasarkan: Kehadiran, Daily Report, QC Checklist, WO Selesai, Uji Komp.</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {activeStaffKpis.length > 0 ? (
-                  activeStaffKpis.slice(0, 3).map((staff, idx) => (
+                {top3StaffKpis.length > 0 ? (
+                  top3StaffKpis.map((staff, idx) => (
                     <div key={staff.id} className="bg-white p-2.5 border border-slate-200 rounded-lg shadow-2xs flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono mb-0.5">

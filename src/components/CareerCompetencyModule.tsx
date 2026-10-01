@@ -54,6 +54,7 @@ interface CareerCompetencyModuleProps {
   logbookEntries?: LogbookEntry[];
   findings?: Finding[];
   workOrders?: WorkOrder[];
+  dailyTasks?: DailyTask[];
 }
 
 // 10 Tahap Pipeline Karir & Kompetensi Resmi RIZ-PRODUCTION
@@ -98,7 +99,8 @@ export default function CareerCompetencyModule({
   dailyReports = [],
   logbookEntries = [],
   findings = [],
-  workOrders = []
+  workOrders = [],
+  dailyTasks = []
 }: CareerCompetencyModuleProps) {
   // Check user role privileges
   const isManagement = Boolean(
@@ -295,7 +297,8 @@ export default function CareerCompetencyModule({
     undefined,
     undefined,
     undefined,
-    workOrders
+    workOrders,
+    dailyTasks
   );
   const activeRecord = careerRecords[activeStaff.id] || {
     staffId: activeStaff.id,

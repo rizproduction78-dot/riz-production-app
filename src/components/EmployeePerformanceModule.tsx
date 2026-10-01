@@ -38,6 +38,7 @@ import {
 
 import { calculateStaffKpi, calculateAllStaffKpis, isStaffMatch, KPI_SPREADSHEET_SOURCE_URL } from '../utils/kpiCalculator';
 import { subscribeCloudCollection } from '../lib/cloudSync';
+import { getActiveMonthKey } from '../data/staffSchedules';
 
 
 interface EmployeePerformanceModuleProps {
@@ -57,7 +58,7 @@ export default function EmployeePerformanceModule({
   findings = [],
   workOrders = [],
   dailyTasks = [],
-  activeMonth = '2026-10'
+  activeMonth = getActiveMonthKey()
 }: EmployeePerformanceModuleProps) {
   const isManagement = Boolean(
     currentUser && (

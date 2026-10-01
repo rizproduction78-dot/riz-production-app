@@ -116,23 +116,58 @@ export default function Dashboard({
   const [notesSolusi, setNotesSolusi] = React.useState('');
   const [notesTarget, setNotesTarget] = React.useState('');
 
-  // Analisis Manajemen Dinamis bersumber resmi dari rekap temuan & WO Google Sheet
+  // Analisis Manajemen — WAJIB filter activeMonth, DILARANG hardcode teks generik
   React.useEffect(() => {
-    if (!notesKendala && findings.length > 0) {
-      const issuesList = findings.slice(0, 3).map(f => `${f.equipment}: ${f.issue.substring(0, 75)}`).join('. ');
-      setNotesKendala(`Ditemukan ${findings.length} catatan kendala teknis pada periode ${targetMonth}: ${issuesList}.`);
+    // Reset saat bulan berubah agar teks lama tidak tersisa
+    setNotesKendala('');
+    setNotesAkar('');
+    setNotesSolusi('');
+    setNotesTarget('');
+  }, [activeMonth]);
+
+  React.useEffect(() => {
+    // Filter ketat: hanya findings bulan aktif
+    const monthFindings = findings.filter(f =>
+      f.dateCreated?.startsWith(activeMonth) || f.targetDate?.startsWith(activeMonth)
+    );
+    // Filter ketat: hanya WO bulan aktif
+    const monthWOs = workOrders.filter(w =>
+      w.dateCreated?.startsWith(activeMonth) ||
+      (w as any).date?.startsWith(activeMonth) ||
+      w.deadline?.startsWith(activeMonth)
+    );
+
+    if (!notesKendala) {
+      if (monthFindings.length > 0) {
+        const issuesList = monthFindings.slice(0, 3)
+          .map(f => `${f.equipment}: ${f.issue.substring(0, 75)}`)
+          .join('. ');
+        setNotesKendala(`Ditemukan ${monthFindings.length} catatan kendala teknis pada periode ${targetMonth}: ${issuesList}.`);
+      }
+      // Jika tidak ada data bulan ini, biarkan kosong — jangan tampilkan data palsu
     }
-    if (!notesAkar && findings.length > 0) {
-      setNotesAkar('Beban operasional intensif unit di lapangan, keausan modul elektronik/LED, dan degradasi fisik kabel konektor.');
+
+    if (!notesAkar) {
+      if (monthFindings.length > 0) {
+        // Derive akar masalah dari tipe kerusakan yang ditemukan
+        const equipTypes = [...new Set(monthFindings.map(f => f.equipment.split(' ')[0]))].slice(0, 3).join(', ');
+        setNotesAkar(`Berdasarkan ${monthFindings.length} temuan bulan ini: kerusakan teridentifikasi pada unit ${equipTypes}. Analisis akar masalah perlu diisi oleh Supervisor.`);
+      }
+      // Jika tidak ada temuan, biarkan kosong
     }
-    if (!notesSolusi && workOrders.length > 0) {
-      const woSummary = workOrders.map(w => w.title).join('; ');
-      setNotesSolusi(`Telah dieksekusi tindakan perbaikan: ${woSummary}. Penggantian komponen rusak dan pengujian kelayakan operasional.`);
+
+    if (!notesSolusi) {
+      if (monthWOs.length > 0) {
+        const woSummary = monthWOs.slice(0, 5).map(w => w.title).join('; ');
+        setNotesSolusi(`Work Order bulan ini (${monthWOs.length} WO): ${woSummary}.`);
+      }
+      // Jika tidak ada WO, biarkan kosong
     }
-    if (!notesTarget) {
-      setNotesTarget('100% kepatuhan jadwal Preventive Maintenance, zero-failure peralatan pada event operasional, dan penyelesaian seluruh temuan QC.');
-    }
-  }, [findings, workOrders, targetMonth]);
+
+    // Target: hanya isi jika ada data nyata, biarkan user mengisi sendiri
+    // Jangan hardcode target generik
+
+  }, [findings, workOrders, activeMonth, targetMonth]);
 
   // States for interactive approvals
   const [approvedSupervisor, setApprovedSupervisor] = React.useState(false);
@@ -184,6 +219,22 @@ export default function Dashboard({
     }
     return workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth)); // monthly_report
   }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
+
+  const activeDailyTasks = React.useMemo(() => {
+    if (activeTab === 'harian') {
+      return dailyTasks.filter(t => t.createdAt === today || t.dueDate === today);
+    }
+    if (activeTab === 'daily_report') {
+      return dailyTasks.filter(t => t.createdAt === targetDate || t.dueDate === targetDate);
+    }
+    if (activeTab === 'weekly_report') {
+      return dailyTasks.filter(t => 
+        (t.createdAt >= targetStartDate && t.createdAt <= targetEndDate) ||
+        (t.dueDate >= targetStartDate && t.dueDate <= targetEndDate)
+      );
+    }
+    return dailyTasks.filter(t => t.createdAt.startsWith(activeMonth) || t.dueDate.startsWith(activeMonth)); // monthly_report
+  }, [dailyTasks, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
 
   const activeSchedules = React.useMemo(() => {
     if (activeTab === 'harian') {
@@ -508,9 +559,10 @@ export default function Dashboard({
       undefined,            // attendanceLogs
       undefined,            // electricalCompetencies
       undefined,            // septemberSchedule
-      activeWorkOrders      // workOrders (posisi ke-8)
+      activeWorkOrders,     // workOrders (posisi ke-8)
+      activeDailyTasks      // dailyTasks (posisi ke-9)
     );
-  }, [staffList, activeDailyReports, activeLogbookEntries, activeFindings, activeWorkOrders]);
+  }, [staffList, activeDailyReports, activeLogbookEntries, activeFindings, activeWorkOrders, activeDailyTasks]);
 
   const divisionAttendanceStats = divisionsAttendanceList.map(div => {
     const staffInDiv = monthlyScheduleData.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
@@ -1698,7 +1750,7 @@ export default function Dashboard({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-              {/* Supervisor Sign */}
+              {/* Supervisor Sign - Agustino Setiawan */}
               <div className="bg-slate-50/50 p-5 rounded-xl border border-slate-150 flex flex-col justify-between text-center min-h-[180px]">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Dipersiapkan Oleh,</span>
@@ -1708,7 +1760,7 @@ export default function Dashboard({
                   {approvedSupervisor ? (
                     <div className="text-center">
                       <span className="text-emerald-600 font-serif font-extrabold italic text-sm tracking-widest block border border-dashed border-emerald-300 px-3 py-1 bg-emerald-50/80 rounded-md rotate-[-2deg]">
-                        ✔ APPROVED BY AGUS
+                        ✔ APPROVED
                       </span>
                       <span className="text-[9px] text-emerald-500 block mt-1 font-mono font-bold">Time: {new Date().toLocaleDateString('id-ID')}</span>
                     </div>
@@ -1721,10 +1773,10 @@ export default function Dashboard({
                     </button>
                   )}
                 </div>
-                <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">Agus</span>
+                <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">Agustino Setiawan</span>
               </div>
 
-              {/* Manager Sign */}
+              {/* Manager Sign - M. Fahrulyana A */}
               <div className="bg-slate-50/50 p-5 rounded-xl border border-slate-150 flex flex-col justify-between text-center min-h-[180px]">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Diperiksa Oleh,</span>
@@ -1734,7 +1786,7 @@ export default function Dashboard({
                   {approvedManager ? (
                     <div className="text-center">
                       <span className="text-emerald-600 font-serif font-extrabold italic text-sm tracking-widest block border border-dashed border-emerald-300 px-3 py-1 bg-emerald-50/80 rounded-md rotate-[-2deg]">
-                        ✔ APPROVED BY FAHRUL
+                        ✔ APPROVED
                       </span>
                       <span className="text-[9px] text-emerald-500 block mt-1 font-mono font-bold">Time: {new Date().toLocaleDateString('id-ID')}</span>
                     </div>
@@ -1747,10 +1799,10 @@ export default function Dashboard({
                     </button>
                   )}
                 </div>
-                <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">Fahrul</span>
+                <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">M. Fahrulyana A / Fahrul</span>
               </div>
 
-              {/* Director Sign */}
+              {/* Director Sign - Wahyu */}
               <div className="bg-slate-50/50 p-5 rounded-xl border border-slate-150 flex flex-col justify-between text-center min-h-[180px]">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Disetujui Oleh,</span>
@@ -1760,7 +1812,7 @@ export default function Dashboard({
                   {approvedDirektur ? (
                     <div className="text-center">
                       <span className="text-emerald-600 font-serif font-extrabold italic text-sm tracking-widest block border border-dashed border-emerald-300 px-3 py-1 bg-emerald-50/80 rounded-md rotate-[-2deg]">
-                        ✔ APPROVED BY WAHYU
+                        ✔ APPROVED
                       </span>
                       <span className="text-[9px] text-emerald-500 block mt-1 font-mono font-bold">Time: {new Date().toLocaleDateString('id-ID')}</span>
                     </div>
@@ -1773,7 +1825,7 @@ export default function Dashboard({
                     </button>
                   )}
                 </div>
-                <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">Wahyu</span>
+                <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">Wahyu (Owner / Direktur)</span>
               </div>
             </div>
           </div>

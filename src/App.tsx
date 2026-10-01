@@ -1873,6 +1873,8 @@ export default function App() {
             logbookEntries={logbookEntries}
             findings={findings}
             workOrders={workOrders}
+            dailyTasks={dailyTasks}
+            activeMonth={activeMonth}
           />
         )}
 
