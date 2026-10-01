@@ -657,11 +657,23 @@ export function subscribeCloudCollection<T = any>(
             // Do NOT use normName for findings or work_orders, because tasks often have similar titles ("Perbaikan: ...")
             const useNameMatching = collectionName !== 'findings' && collectionName !== 'work_orders' && collectionName !== 'daily_tasks' && collectionName !== 'daily_reports';
 
+            // 1. Seed from cachedMap (localStorage backup)
+            cachedMap.forEach((cachedDoc, id) => {
+              if (!deletedIds.has(id)) {
+                mergedMap.set(id, cachedDoc);
+                if (useNameMatching) {
+                  const normName = String(cachedDoc?.name || cachedDoc?.fullName || cachedDoc?.title || '').toLowerCase().trim();
+                  if (normName) nameToId.set(normName, id);
+                }
+              }
+            });
+
+            // 2. Merge initialFallback
             (initialFallback || []).forEach((fb: any) => {
               const fbId = String(fb?.id || fb?.no || fb?.name || '');
               const normName = String(fb?.name || fb?.fullName || fb?.title || '').toLowerCase().trim();
               if (fbId && !deletedIds.has(fbId)) {
-                const cachedDoc = cachedMap.get(fbId);
+                const cachedDoc = mergedMap.get(fbId);
                 const baseDoc = cachedDoc ? mergeCleanDoc(fb, cachedDoc) : fb;
                 mergedMap.set(fbId, baseDoc);
                 if (useNameMatching && normName) nameToId.set(normName, fbId);
