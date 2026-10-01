@@ -79,7 +79,7 @@ import {
 import { workspaceManager } from './lib/workspaceConfig';
 import {
   pullDailyLogFromGviz,
-  SHEET_GID_SEPTEMBER_2026,
+  getGidForMonth,
   getDailyLogLastPull
 } from './lib/googleSheetSync';
 
@@ -706,7 +706,8 @@ export default function App() {
   };
 
   // Google Sheet Daily Log Pull — Auto-Sync setiap 30 menit
-  const handleSyncDailyLogFromSheet = async (gid: string = SHEET_GID_SEPTEMBER_2026) => {
+  const handleSyncDailyLogFromSheet = async (gid?: string) => {
+    const targetGid = gid || getGidForMonth(activeMonth);
     setIsSyncingSheet(true);
     setSheetPullMessage({ text: 'Mengambil data terbaru dari Google Sheet...', type: 'info' });
     try {
@@ -750,7 +751,7 @@ export default function App() {
       const newLogDocs: any[] = [];
 
       const result = await pullDailyLogFromGviz(
-        gid,
+        targetGid,
         async (id, docData) => {
           const { getDeletedIds } = await import('./lib/cloudSync');
           if (getDeletedIds('daily_reports').has(id)) return;
@@ -831,7 +832,7 @@ export default function App() {
         const ts = new Date().toISOString();
         setLastSheetPull(ts);
         try { localStorage.setItem('riz_daily_log_last_pull', ts); } catch (_e) {}
-        handleLogActivity('System Auto-Sync', 'Server', `Sinkronisasi Google Sheet: ${result.newReportsCount} laporan + ${result.newFindingsCount} temuan baru dari sheet September 2026`);
+        handleLogActivity('System Auto-Sync', 'Server', `Sinkronisasi Google Sheet: ${result.newReportsCount} laporan + ${result.newFindingsCount} temuan baru dari sheet ${activeMonth}`);
       } else if (result.success) {
         setLastSheetPull(new Date().toISOString());
         try { localStorage.setItem('riz_daily_log_last_pull', new Date().toISOString()); } catch (_e) {}
@@ -849,6 +850,10 @@ export default function App() {
   // Ref untuk selalu memanggil versi terbaru handleSyncDailyLogFromSheet (fix stale closure)
   const syncHandlerRef = React.useRef(handleSyncDailyLogFromSheet);
   syncHandlerRef.current = handleSyncDailyLogFromSheet;
+
+  useEffect(() => {
+    syncHandlerRef.current();
+  }, [activeMonth]);
 
   // Auto-sync berkala & reaktif (selalu up to date dari Google Sheet)
   useEffect(() => {

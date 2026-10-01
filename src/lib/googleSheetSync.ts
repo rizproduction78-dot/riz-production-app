@@ -22,7 +22,7 @@ import { getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules
 import { isStaffMatch } from '../utils/kpiCalculator';
 
 export const DEFAULT_SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
-export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470';
+export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=938476420#gid=938476420';
 export const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxwCU17QZZ_1Z-9Wd2rznC15gIX25xydANyPNWbdyRrrRZzDVAYn9BETiCKAc7f7QUp0w/exec';
 
 export const GOOGLE_SHEET_WEBHOOK_KEY = 'riz_google_sheet_webhook_url';
@@ -821,7 +821,16 @@ export const DAILY_LOG_SHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
 
 /** GID untuk setiap tab sheet daily log */
 export const SHEET_GID_SEPTEMBER_2026 = '198998470';
+export const SHEET_GID_OKTOBER_2026 = '938476420';
 export const SHEET_GID_HISTORICAL     = '0'; // Mei 2026 (historis)
+
+export function getGidForMonth(monthKey: string): string {
+  switch (monthKey) {
+    case '2026-09': return SHEET_GID_SEPTEMBER_2026;
+    case '2026-10': return SHEET_GID_OKTOBER_2026;
+    default: return SHEET_GID_OKTOBER_2026;
+  }
+}
 
 /** Key localStorage untuk timestamp terakhir pull daily log */
 export const DAILY_LOG_LAST_PULL_KEY = 'riz_daily_log_last_pull';
@@ -992,7 +1001,7 @@ export interface GvizPullResult {
  * @param existingReportIds - Set ID report yang sudah ada (untuk dedup)
  */
 export async function pullDailyLogFromGviz(
-  gid: string = SHEET_GID_SEPTEMBER_2026,
+  gid: string = SHEET_GID_OKTOBER_2026,
   onSaveDailyReport: (id: string, doc: any) => Promise<void>,
   onSaveFinding: (id: string, doc: any) => Promise<void>,
   existingReportIds: Set<string> = new Set(),

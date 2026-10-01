@@ -34,7 +34,7 @@ export default function Reports({
   schedules = [],
   currentUser,
   onLogActivity,
-  activeMonth = '2026-09',
+  activeMonth = '2026-10',
   onActiveMonthChange,
   onSyncDailyLogFromSheet,
   isSyncingSheet = false,
@@ -77,8 +77,15 @@ export default function Reports({
   }, [dailyReports, logbookEntries]);
 
   const [targetDate, setTargetDate] = useState(() => latestDateAvailable);
-  const [targetStartDate, setTargetStartDate] = useState('2026-09-01');
-  const [targetEndDate, setTargetEndDate] = useState('2026-09-07');
+  const [targetStartDate, setTargetStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split('T')[0];
+  });
+  const [targetEndDate, setTargetEndDate] = useState(() => {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+  });
 
   // Dynamic filter for active daily reports based on Harian / Mingguan / Bulanan
   const activeDailyReports = dailyReports.filter(r => {

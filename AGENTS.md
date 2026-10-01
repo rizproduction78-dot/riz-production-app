@@ -107,3 +107,30 @@ Setiap kali melakukan pekerjaan:
    - Bagian 05 (Statistik QC): Angka harus faktual tanpa penggandaan fiktif.
    - Bagian III Reports (Temuan QC): Wajib menampilkan daftar unit yang mengalami kendala.
    - Bagian V Reports (Work Orders): Wajib menampilkan tindak lanjut pekerjaan perbaikan.
+
+---
+
+## 4. PENANGANAN DATA EKSEPSIONAL & PERGANTIAN PERIODE BULANAN
+
+1. **Aturan Penambahan Tipe Divisi "Umum":**
+   - Dalam data *raw* dari Google Sheet (Daily Report), terdapat kalanya staf menginput kolom divisi dengan nilai `"Umum"` (contohnya untuk penugasan umum atau bantuan lintas divisi).
+   - Tipe data `Division` pada `src/types.ts` **wajib** mencakup nilai `'Umum'`. Hal ini untuk mencegah *TypeScript error* di IDE saat memproses `canonicalFirestoreData.ts` dan demi mempertahankan keaslian data historis yang diinput oleh staf.
+
+2. **Aturan Update Referensi & Jadwal Bulan Baru:**
+   - **Data Daily Report:** Data harian di bulan baru wajib di-append ke *array* di `canonicalFirestoreData.ts` mengikuti pola ID resmi (contoh: `rep-YYYYMMDD-[nama]-[no]-0`).
+   - **Format Jadwal Shift:** Format jadwal bulan baru wajib dibuat pada file tersendiri (misal: `oktober2026Schedule.ts`) dengan mengacu pada pola shift bulan sebelumnya (misal September), lalu disesuaikan dengan kalender aktual bulan tersebut. Jadwal ini harus diregistrasi sebagai *Official Schedule* di dalam `src/data/staffSchedules.ts`.
+   - **Pola Sinkronisasi URL:** Saat beralih ke bulan baru, `DEFAULT_SPREADSHEET_URL` di dalam `src/lib/googleSheetSync.ts` wajib diperbarui dengan parameter `gid` spesifik dari tab Google Sheet bulan yang bersangkutan untuk memastikan integrasi Cloud Sync tidak salah menarik data bulan lalu.
+
+3. **Penyaringan Staf (Staff Whitelisting) Wajib Dinamis:**
+   - Dilarang keras melakukan *hardcode* pada daftar nama staf yang dievaluasi (misalnya menggunakan array statis `OFFICIAL_GSHEET_STAFF_NAMES` di `kpiCalculator.ts`).
+   - Logika verifikasi staf (seperti fungsi `isStaffInGoogleSheet`) wajib selalu merujuk secara dinamis ke fungsi `getCurrentMonthSchedule()` dan memeriksa kehadiran riil di jadwal aktif atau entri logbook bulan berjalan. Hal ini memastikan seluruh staf yang bertugas (termasuk Gatot, Mang Ube, Abah, Damri, dll.) otomatis masuk ke tabel KPI tanpa perlu perbaikan manual setiap pergantian bulan.
+
+---
+
+## 5. METODOLOGI KERJA: MULTI-AGENTIC AI & POLA R.A.G (RETRIEVAL-AUGMENTED GENERATION)
+
+Semua agen yang beroperasi wajib mengadopsi standar kinerja berikut:
+
+1. **Pola R.A.G Wajib:** Sebelum memodifikasi logika kalkulasi, UI, atau integrasi data, agen wajib melakukan *Retrieval* (pengambilan data silang) dari base data resmi (Spreadsheet, `staffSchedules.ts`, rules). Tidak boleh ada injeksi instruksi tanpa memvalidasi struktur sumber data yang sesungguhnya (*Augmented Generation*).
+2. **Keterhubungan Menyeluruh (Connected End-to-End):** Agen harus memastikan perubahan di satu titik secara otomatis terefleksi dan terkoneksi dengan titik lain (Hulu ke Hilir). *State*, properti komponen, antarmuka TypeScript, hingga database Firestore harus sinkron.
+3. **Harmonisasi Multi-Agentic:** Agen mengingat pekerjaan yang telah dieksekusi sebelumnya melalui dokumen `AGENTS.md` (Permanent System Memory) ini agar tidak terjadi tumpang tindih perintah, *error looping*, ataupun degradasi kinerja oleh agen yang bekerja secara paralel atau di *session* berikutnya.

@@ -24,7 +24,7 @@ export const KPI_SPREADSHEET_SOURCE_URL = 'https://docs.google.com/spreadsheets/
 export const KPI_SPREADSHEET_GID = '198998470';
 
 import { Staff, Division, DailyReport, LogbookEntry, Finding, AttendanceLog, WorkOrder, DailyTask } from '../types';
-import { OFFICIAL_SEPTEMBER_2026_SCHEDULE, StaffScheduleRow } from '../data/september2026Schedule';
+import { StaffScheduleRow, getCurrentMonthSchedule } from '../data/staffSchedules';
 
 export interface StaffKpiResult {
   id: string;
@@ -300,7 +300,7 @@ export function calculateStaffKpi(
   findings: Finding[] = [],
   attendanceLogsOverride?: AttendanceLog[],
   electricalCompetenciesOverride?: Record<string, Record<string, { verified: boolean }>>,
-  septemberScheduleOverride?: StaffScheduleRow[],
+  scheduleOverride?: StaffScheduleRow[],
   workOrdersOverride?: WorkOrder[],
   dailyTasksOverride?: DailyTask[]
 ): StaffKpiResult {
@@ -321,7 +321,7 @@ export function calculateStaffKpi(
          (l.status === 'Hadir' || l.checkInTime)
   ).length;
 
-  const scheduleRows = septemberScheduleOverride || OFFICIAL_SEPTEMBER_2026_SCHEDULE;
+  const scheduleRows = scheduleOverride || getCurrentMonthSchedule().rows;
   const staffScheduleRow = scheduleRows.find(
     r => isStaffMatch(staff, r.name)
   );
@@ -514,7 +514,7 @@ export function calculateAllStaffKpis(
   findings: Finding[] = [],
   attendanceLogs?: AttendanceLog[],
   electricalCompetencies?: Record<string, Record<string, { verified: boolean }>>,
-  septemberSchedule?: StaffScheduleRow[],
+  scheduleOverride?: StaffScheduleRow[],
   workOrders?: WorkOrder[],
   dailyTasks?: DailyTask[]
 ): StaffKpiResult[] {
@@ -528,7 +528,7 @@ export function calculateAllStaffKpis(
         findings,
         attendanceLogs,
         electricalCompetencies,
-        septemberSchedule,
+        scheduleOverride,
         workOrders,
         dailyTasks
       )
@@ -557,27 +557,7 @@ export function calculateAllStaffKpis(
 }
 
 /**
- * Daftar resmi nama staf yang bertugas sesuai referensi Google Sheet (September 2026).
- * Seluruh staf yang tidak tertulis nama stafnya dalam data referensi Google Sheet tidak disertakan/ditampilkan.
- */
-export const OFFICIAL_GSHEET_STAFF_NAMES = [
-  'taufik diana',
-  'suryana',
-  'muhamad rahmat',
-  'ramdani',
-  'iwan kurniawan',
-  'heri',
-  'mulyana',
-  'mulyadi',
-  'yudishtira purnama a',
-  'ayong sumarsih',
-  'dedi agus wigiantoro',
-  'wahyudin',
-  'muhamad irvan'
-];
-
-/**
- * Memeriksa apakah seorang staf termasuk dalam daftar nama staf yang bertugas sesuai data referensi Google Sheet.
+ * Memeriksa apakah seorang staf termasuk dalam daftar nama staf yang bertugas sesuai jadwal bulan aktif atau data referensi Google Sheet.
  */
 export function isStaffInGoogleSheet(
   staff: Staff | { id?: string; name: string },
@@ -585,53 +565,31 @@ export function isStaffInGoogleSheet(
   activeLogbookEntries?: LogbookEntry[]
 ): boolean {
   if (!staff) return false;
+  
+  // Abaikan level direksi/manajerial
   if (staff.id === 'director-wahyu' || staff.id === 'staff-wahyu' || (staff.name?.toLowerCase().trim() === 'wahyu' || staff.name?.toLowerCase().trim() === 'wahyu (owner)')) return false;
-  if (staff.id === 'staff-damri' || staff.name === 'Damri') return false;
   if (staff.id === 'staff-agustino' || staff.name?.includes('Agustino')) return false;
   if (staff.id === 'staff-fahrul' || staff.name === 'M. Fahruyana . A') return false;
   if (staff.id === 'staff-syalsa' || staff.name === 'Syalsa Sri Hestariana') return false;
   if (staff.id === 'staff-seno' || staff.name === 'Seno Subroto') return false;
-  if (staff.id === 'staff-absobur' || staff.name === 'Abah Sobur') return false;
-  if (staff.id === 'staff-gatot' || staff.name === 'Gatot Wiliyanto') return false;
-  if (staff.id === 'staff-udin' || staff.name === 'Udin Saepudin') return false;
+  
   // Staff semua divisi adalah placeholder, bukan staf riil
   if (staff.id === 'staff-semua-divisi') return false;
 
-  const normName = (staff.name || '').toLowerCase().trim();
-
-  // 1. Cek dari daftar staf resmi yang bertugas di sheet acuan September 2026
-  if (OFFICIAL_GSHEET_STAFF_NAMES.some(n => normName === n || normName.includes(n) || n.includes(normName))) {
+  // 1. Cek dari jadwal aktif bulan ini
+  const currentSchedule = getCurrentMonthSchedule().rows;
+  const isInSchedule = currentSchedule.some(r => isStaffMatch(staff as Staff, r.name));
+  
+  if (isInSchedule) {
     return true;
   }
 
-  // 2. Cek via KNOWN_STAFF_ALIASES berdasarkan ID staf
-  // Kasus: staff-dedi memiliki name='Agus Wigi (Videotron)' tapi canonical='dedi agus wigiantoro'
-  if (staff.id && KNOWN_STAFF_ALIASES[staff.id]) {
-    const staffAliases = KNOWN_STAFF_ALIASES[staff.id];
-    const foundInOfficial = OFFICIAL_GSHEET_STAFF_NAMES.some(officialName =>
-      staffAliases.some(alias =>
-        alias === officialName ||
-        officialName.includes(alias) ||
-        alias.includes(officialName)
-      )
-    );
-    if (foundInOfficial) return true;
-  }
-
-  // 3. Whitelist langsung berdasarkan ID staf aktif September 2026
-  const ACTIVE_SEPT2026_IDS = new Set([
-    'staff-taufik', 'staff-suryana', 'staff-rahmat', 'staff-ramdani',
-    'staff-iwan', 'staff-heri', 'staff-mulyana', 'staff-mulyadi',
-    'staff-yudish', 'staff-ayong', 'staff-dedi', 'staff-unyin', 'staff-irvan'
-  ]);
-  if (staff.id && ACTIVE_SEPT2026_IDS.has(staff.id)) return true;
-
-  // 4. Cek dinamis jika ada nama staf baru yang ditarik dari Google Sheet
+  // 2. Cek dinamis jika ada nama staf baru yang ditarik dari Google Sheet
   if (activeDailyReports || activeLogbookEntries) {
     const isPresent = (activeDailyReports || []).some(
-      r => (r._source === 'google_sheet' || r.id.startsWith('gsheet')) && isStaffMatch(staff as any, r.staffName)
+      r => isStaffMatch(staff as any, r.staffName)
     ) || (activeLogbookEntries || []).some(
-      l => (l._source === 'google_sheet' || l.id.startsWith('gsheet') || l.id.startsWith('log-gsheet')) && isStaffMatch(staff as any, l.staffName)
+      l => isStaffMatch(staff as any, l.staffName)
     );
     if (isPresent) return true;
   }

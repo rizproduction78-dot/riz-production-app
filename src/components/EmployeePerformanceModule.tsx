@@ -83,7 +83,7 @@ export default function EmployeePerformanceModule({
   // Selected Employee (Default to Opik if available, or currentUser)
   const defaultStaff = masterStaffList.find(s => s.name === 'Opik') || currentUser;
   const [selectedStaffName, setSelectedStaffName] = useState<string>(isManagement ? defaultStaff.name : currentUser.name);
-  const [selectedMonth, setSelectedMonth] = useState<string>('September 2026');
+  const [selectedMonth, setSelectedMonth] = useState<string>('Oktober 2026');
 
   const selectedStaff = masterStaffList.find(s => s.name === selectedStaffName) || currentUser;
   
@@ -240,6 +240,7 @@ export default function EmployeePerformanceModule({
               onChange={(e) => setSelectedMonth(e.target.value)}
               className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer"
             >
+              <option value="Oktober 2026">Oktober 2026</option>
               <option value="September 2026">September 2026</option>
               <option value="Agustus 2026">Agustus 2026</option>
               <option value="Juli 2026">Juli 2026</option>

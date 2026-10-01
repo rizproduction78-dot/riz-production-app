@@ -71,9 +71,9 @@ export default function AgenticOrchestratorModal({
   
   // Reporting State
   const [reportType, setReportType] = useState<'Harian' | 'Mingguan' | 'Bulanan'>('Bulanan');
-  const [periodInput, setPeriodInput] = useState('September 2026');
+  const [periodInput, setPeriodInput] = useState('Oktober 2026');
   const [orchestratedResult, setOrchestratedResult] = useState<OrchestratedReportResult | null>(() => {
-    return generateOrchestratedReport('Bulanan', 'September 2026', {
+    return generateOrchestratedReport('Bulanan', 'Oktober 2026', {
       dailyReports,
       logbookEntries,
       findings,
@@ -293,9 +293,9 @@ export default function AgenticOrchestratorModal({
                           key={type}
                           onClick={() => {
                             setReportType(type);
-                            if (type === 'Harian') setPeriodInput('2026-09-05');
-                            else if (type === 'Mingguan') setPeriodInput('1 - 7 September 2026');
-                            else setPeriodInput('September 2026');
+                            if (type === 'Harian') setPeriodInput('2026-10-01');
+                            else if (type === 'Mingguan') setPeriodInput('1 - 7 Oktober 2026');
+                            else setPeriodInput('Oktober 2026');
                           }}
                           className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
                             reportType === type ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'

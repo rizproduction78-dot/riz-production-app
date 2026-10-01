@@ -133,8 +133,22 @@ export default function QCNotificationCenter({
           cleanNotes = '';
         }
 
-        const dateObj = new Date(`${rep.date}T17:00:00+07:00`);
-        const itemTimestamp = isNaN(dateObj.getTime()) ? Date.now() : dateObj.getTime();
+        let itemTimestamp = 0;
+        if (rep._syncMeta?.updatedAt) {
+          const t = new Date(rep._syncMeta.updatedAt).getTime();
+          if (!isNaN(t)) itemTimestamp = t;
+        }
+        if (!itemTimestamp && rep.id && rep.id.includes('-')) {
+          const parts = rep.id.split('-');
+          const ts = parseInt(parts[parts.length - 1], 10);
+          if (!isNaN(ts) && ts > 1000000000000) {
+            itemTimestamp = ts;
+          }
+        }
+        if (!itemTimestamp) {
+          const dateObj = new Date(`${rep.date}T17:00:00+07:00`);
+          itemTimestamp = isNaN(dateObj.getTime()) ? Date.now() : dateObj.getTime();
+        }
 
         return {
           id: rep.id,

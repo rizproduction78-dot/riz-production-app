@@ -15,6 +15,11 @@ import {
   SEPTEMBER_2026_DAYS
 } from './september2026Schedule';
 
+import {
+  OFFICIAL_OKTOBER_2026_SCHEDULE,
+  OKTOBER_2026_DAYS
+} from './oktober2026Schedule';
+
 export type { StaffScheduleRow };
 export { SHIFT_LEGEND, SCHEDULE_NOTE };
 
@@ -140,8 +145,7 @@ export const SCHEDULE_SEP_2026: MonthlySchedule = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// OKTOBER 2026 — Template (diisi Admin via aplikasi)
-// Oktober 2026: 1 Okt = Kamis
+// OKTOBER 2026 — Official
 // ─────────────────────────────────────────────────────────────
 export const SCHEDULE_OCT_2026: MonthlySchedule = {
   key: '2026-10',
@@ -150,8 +154,8 @@ export const SCHEDULE_OCT_2026: MonthlySchedule = {
   label: 'Oktober 2026',
   labelShort: 'Okt 2026',
   totalDays: 31,
-  days: generateMonthDays(2026, 10),
-  rows: buildTemplateRows(2026, 10)
+  days: OKTOBER_2026_DAYS,
+  rows: OFFICIAL_OKTOBER_2026_SCHEDULE
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -203,12 +207,12 @@ export function getScheduleByMonthYear(month: number, year: number): MonthlySche
 export function getCurrentMonthSchedule(): MonthlySchedule {
   const now = new Date();
   const found = getScheduleByMonthYear(now.getMonth() + 1, now.getFullYear());
-  return found || SCHEDULE_SEP_2026;
+  return found || SCHEDULE_OCT_2026;
 }
 
 export function getActiveMonthKey(): string {
   const now = new Date();
   const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const found = ALL_MONTHLY_SCHEDULES.find(s => s.key === key);
-  return found ? key : '2026-09';
+  return found ? key : '2026-10';
 }

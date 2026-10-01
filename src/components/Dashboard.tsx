@@ -57,7 +57,7 @@ export default function Dashboard({
   schedules = [],
   currentUser,
   onNavigate,
-  activeMonth = '2026-09',
+  activeMonth = '2026-10',
   onActiveMonthChange,
   onSyncDailyLogFromSheet,
   isSyncingSheet,
@@ -79,12 +79,21 @@ export default function Dashboard({
   const [activeTab, setActiveTab] = React.useState<'harian' | 'graphic_view' | 'daily_report' | 'weekly_report' | 'monthly_report'>('monthly_report');
   
   // Custom states for the report period & editable notes
-  const [targetDate, setTargetDate] = React.useState('2026-09-05');
-  const [targetStartDate, setTargetStartDate] = React.useState('2026-09-01');
-  const [targetEndDate, setTargetEndDate] = React.useState('2026-09-07');
+  const [targetDate, setTargetDate] = React.useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+  const [targetStartDate, setTargetStartDate] = React.useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split('T')[0];
+  });
+  const [targetEndDate, setTargetEndDate] = React.useState(() => {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+  });
   const [targetMonth, setTargetMonth] = React.useState(() => {
     const defaultSch = getScheduleByKey(activeMonth);
-    return defaultSch ? defaultSch.label : 'September 2026';
+    return defaultSch ? defaultSch.label : 'Oktober 2026';
   });
 
   // Update targetMonth when activeMonth changes
@@ -138,24 +147,30 @@ export default function Dashboard({
 
   // Filtered operational datasets based on chosen report type
   const activeDailyReports = React.useMemo(() => {
+    if (activeTab === 'harian') return dailyReports.filter(r => r.date === today);
     if (activeTab === 'daily_report') return dailyReports.filter(r => r.date === targetDate);
     if (activeTab === 'weekly_report') return dailyReports.filter(r => r.date >= targetStartDate && r.date <= targetEndDate);
-    return dailyReports.filter(r => r.date.startsWith(activeMonth)); // monthly_report
-  }, [dailyReports, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth]);
+    return dailyReports.filter(r => r.date.startsWith(activeMonth)); // monthly_report & graphic_view
+  }, [dailyReports, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
 
   const activeLogbookEntries = React.useMemo(() => {
+    if (activeTab === 'harian') return logbookEntries.filter(e => e.date === today);
     if (activeTab === 'daily_report') return logbookEntries.filter(e => e.date === targetDate);
     if (activeTab === 'weekly_report') return logbookEntries.filter(e => e.date >= targetStartDate && e.date <= targetEndDate);
-    return logbookEntries.filter(e => e.date.startsWith(activeMonth)); // monthly_report
-  }, [logbookEntries, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth]);
+    return logbookEntries.filter(e => e.date.startsWith(activeMonth)); // monthly_report & graphic_view
+  }, [logbookEntries, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
 
   const activeFindings = React.useMemo(() => {
+    if (activeTab === 'harian') return findings.filter(f => f.dateCreated === today || f.targetDate === today);
     if (activeTab === 'daily_report') return findings.filter(f => f.dateCreated === targetDate || f.targetDate === targetDate);
     if (activeTab === 'weekly_report') return findings.filter(f => (f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate >= targetStartDate && f.targetDate <= targetEndDate));
-    return findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth))); // monthly_report
-  }, [findings, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth]);
+    return findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth))); // monthly_report & graphic_view
+  }, [findings, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
 
   const activeWorkOrders = React.useMemo(() => {
+    if (activeTab === 'harian') {
+      return workOrders.filter(w => w.dateCreated === today || (w as any).date === today || w.deadline === today);
+    }
     if (activeTab === 'daily_report') {
       return workOrders.filter(w => w.dateCreated === targetDate || (w as any).date === targetDate || w.deadline === targetDate);
     }
@@ -166,9 +181,12 @@ export default function Dashboard({
       );
     }
     return workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth)); // monthly_report
-  }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth]);
+  }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
 
   const activeSchedules = React.useMemo(() => {
+    if (activeTab === 'harian') {
+      return schedules.filter(s => s.lastDate === today || s.nextDate === today);
+    }
     if (activeTab === 'daily_report') {
       return schedules.filter(s => s.lastDate === targetDate || s.nextDate === targetDate);
     }
@@ -179,17 +197,22 @@ export default function Dashboard({
       );
     }
     return schedules; // monthly_report
-  }, [schedules, activeTab, targetDate, targetStartDate, targetEndDate]);
+  }, [schedules, activeTab, targetDate, targetStartDate, targetEndDate, today]);
 
   // QC Stats from all logbooks
   let totalQCOk = 0;
   let totalQCNg = 0;
 
   activeLogbookEntries.forEach(entry => {
-    Object.values(entry.checklists || {}).forEach((ch: any) => {
-      if (ch.status === 'OK') totalQCOk++;
-      if (ch.status === 'NG') totalQCNg++;
-    });
+    if (entry.checklists && Object.keys(entry.checklists).length > 0) {
+      Object.values(entry.checklists).forEach((ch: any) => {
+        if (ch.status === 'OK') totalQCOk++;
+        if (ch.status === 'NG') totalQCNg++;
+      });
+    } else {
+      if (entry.result === 'OK') totalQCOk++;
+      if (entry.result === 'NG') totalQCNg++;
+    }
   });
 
   // Findings/Issues Stats

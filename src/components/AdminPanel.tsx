@@ -74,7 +74,7 @@ import {
   pullDataFromGoogleSheet,
   getGoogleSheetLastSync,
   GOOGLE_APPS_SCRIPT_TEMPLATE,
-  SHEET_GID_SEPTEMBER_2026
+  SHEET_GID_OKTOBER_2026
 } from '../lib/googleSheetSync';
 import { workspaceManager, AppWorkspace } from '../lib/workspaceConfig';
 
@@ -3162,7 +3162,7 @@ export default function AdminPanel({
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap justify-between items-center gap-3">
             <div>
               <h2 className="text-sm font-extrabold text-slate-900 uppercase">
-                Jadwal Shift Operasional — {ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonth)?.label || 'September 2026'}
+                Jadwal Shift Operasional — {ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonth)?.label || 'Oktober 2026'}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">Edit shift kerja harian per staf secara langsung</p>
             </div>
@@ -3471,7 +3471,7 @@ export default function AdminPanel({
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 rounded-xl text-xs font-bold text-blue-200 transition-all cursor-pointer shrink-0"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span>Buka Sheet September 2026</span>
+                <span>Buka Sheet Oktober 2026</span>
               </a>
             </div>
 
@@ -3483,7 +3483,7 @@ export default function AdminPanel({
               </div>
               <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-mono uppercase block">Tab Aktif</span>
-                <span className="font-bold text-white block">September 2026 (gid=198998470)</span>
+                <span className="font-bold text-white block">Oktober 2026 (gid=938476420)</span>
               </div>
               <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-mono uppercase block">Terakhir Pull</span>
@@ -3498,7 +3498,7 @@ export default function AdminPanel({
             {/* Pull action buttons */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
-                onClick={() => onSyncDailyLogFromSheet?.(SHEET_GID_SEPTEMBER_2026)}
+                onClick={() => onSyncDailyLogFromSheet?.(SHEET_GID_OKTOBER_2026)}
                 disabled={isSyncingSheet}
                 className="p-3.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 rounded-xl text-left transition-all cursor-pointer disabled:opacity-40 flex items-center gap-3"
               >
@@ -3507,9 +3507,9 @@ export default function AdminPanel({
                 </div>
                 <div>
                   <div className="font-extrabold text-xs text-white">
-                    {isSyncingSheet ? 'Sedang Mengambil Data...' : '🔄 Sync Daily Log September 2026'}
+                    {isSyncingSheet ? 'Sedang Mengambil Data...' : '🔄 Sync Daily Log Oktober 2026'}
                   </div>
-                  <div className="text-[10px] text-blue-200/70">Baca sheet aktif Sep 2026 → impor ke Daily Reports & Temuan QC</div>
+                  <div className="text-[10px] text-blue-200/70">Baca sheet aktif Okt 2026 → impor ke Daily Reports & Temuan QC</div>
                 </div>
               </button>
 
