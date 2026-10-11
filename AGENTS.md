@@ -241,7 +241,11 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
     - **Tautan Google Maps:** `https://www.google.com/maps/search/?api=1&query=-6.55919,106.80256`
     - **Penerapan Sistem:** Menjadi basis acuan tunggal titik lokasi kantor/workshop (HQ) untuk validasi absensi (Check In / Check Out), informasi geolokasi logbook, serta kop dokumen resmi cetak (print headers) di seluruh modul aplikasi.
 
-
-
-
-
+16. **Komit Mutlak: Cakupan Notifikasi HANYA 4 Sumber Operasional Resmi:**
+    - Notifikasi Pusat Notifikasi (`QCNotificationCenter`) HANYA bersumber dari:
+      1. **Daily Task** (Penugasan pekerjaan dari modul Daily Task Kanban).
+      2. **Daily Log** (Catatan harian kerja dari Google Sheet Daily Report & checklist QC harian).
+      3. **Temuan Unit Bermasalah Oleh Semua Divisi** (Temuan kendala/kerusakan unit peralatan dari seluruh divisi: Sound, Lighting, Multimedia, Videotron, Service, Gudang).
+      4. **Unit Yang Dikeluarkan dan Diterima Oleh Divisi Gudang / Warehouse** (Log mutasi serah terima barang gudang: Masuk, Keluar, Loading, Unloading).
+    - Seluruh log di luar 4 sumber ini (seperti log absensi mandiri, audit log aktivitas user umum, dan proses sinkronisasi server background) DILARANG dimunculkan pada Pusat Notifikasi.
+    - Tab filter di dalam panel notifikasi wajib strictly berisikan: `Semua`, `Daily Task`, `Daily Log`, `Temuan Unit Bermasalah`, dan `Mutasi Unit Gudang`.

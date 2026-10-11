@@ -36,6 +36,7 @@ import {
   WorkOrder,
   AttendanceLog,
   UserActivity,
+  WarehouseLog,
   OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL,
   OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL
 } from '../types';
@@ -45,6 +46,7 @@ export interface QCNotificationCenterProps {
   logbookEntries?: LogbookEntry[];
   findings?: Finding[];
   dailyTasks?: DailyTask[];
+  warehouseLogs?: WarehouseLog[];
   workOrders?: WorkOrder[];
   attendanceLogs?: AttendanceLog[];
   activities?: UserActivity[];
@@ -58,14 +60,11 @@ export interface QCNotificationCenterProps {
 const READ_STORAGE_KEY = 'riz_notification_center_last_read_v2';
 
 export type NotificationCategory =
-  | 'Semua Kategori'
-  | 'Laporan Harian'
-  | 'QC Checklist'
+  | 'Semua'
   | 'Daily Task'
-  | 'Temuan Kendala'
-  | 'Work Order'
-  | 'Absensi'
-  | 'Aktivitas';
+  | 'Daily Log'
+  | 'Temuan Unit Bermasalah'
+  | 'Mutasi Unit Gudang';
 
 export interface NotificationItem {
   id: string;
@@ -73,7 +72,7 @@ export interface NotificationItem {
   time?: string;
   staffName: string;
   division: string;
-  category: 'Laporan Harian' | 'QC Checklist' | 'Daily Task' | 'Temuan Kendala' | 'Work Order' | 'Absensi' | 'Aktivitas';
+  category: 'Daily Task' | 'Daily Log' | 'Temuan Unit Bermasalah' | 'Mutasi Unit Gudang';
   title: string;
   activity: string;
   notes?: string;
@@ -115,6 +114,7 @@ export default function QCNotificationCenter({
   logbookEntries = [],
   findings = [],
   dailyTasks = [],
+  warehouseLogs = [],
   workOrders = [],
   attendanceLogs = [],
   activities = [],
@@ -126,7 +126,7 @@ export default function QCNotificationCenter({
 }: QCNotificationCenterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDivision, setSelectedDivision] = useState<string>('Semua');
-  const [selectedCategory, setSelectedCategory] = useState<NotificationCategory>('Semua Kategori');
+  const [selectedCategory, setSelectedCategory] = useState<NotificationCategory>('Semua');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'NG' | 'OK'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [liveToast, setLiveToast] = useState<NotificationItem | null>(null);
@@ -185,14 +185,42 @@ export default function QCNotificationCenter({
     return isNaN(timeVal) ? Date.now() : timeVal;
   };
 
-  // Menggabungkan SELURUH rekaman input data user (Laporan Harian, QC, Daily Task, Temuan, WO, Absensi)
+  // Menggabungkan HANYA 4 SUMBER INPUT OPERASIONAL RESMI:
+  // 1. Daily Task
+  // 2. Daily Log (Daily Report & Logbook QC)
+  // 3. Temuan Unit Bermasalah Oleh Semua Divisi
+  // 4. Unit Yang Dikeluarkan dan Diterima Oleh Divisi Gudang / Warehouse
   // Tersinkronisasi dinamis dengan periode bulan aktif (activeMonth)
   const notifications = useMemo(() => {
     const list: NotificationItem[] = [];
     const seenIds = new Set<string>();
     const filterMonth = activeMonth && activeMonth !== 'all' ? activeMonth : null;
 
-    // 1. INPUT LAPORAN HARIAN (Daily Reports)
+    // 1. INPUT DAILY TASK
+    dailyTasks.forEach(task => {
+      if (!task || !task.title) return;
+      const taskDate = task.createdAt ? task.createdAt.split('T')[0] : '';
+      if (filterMonth && taskDate && !taskDate.startsWith(filterMonth) && (!task.dueDate || !task.dueDate.startsWith(filterMonth))) return;
+      const id = task.id || `task-${task.createdAt || Date.now()}-${task.title}`;
+      if (seenIds.has(id)) return;
+      seenIds.add(id);
+
+      list.push({
+        id,
+        date: task.createdAt ? task.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+        staffName: task.assignedName || task.assignedTo || 'Tim Lapangan',
+        division: task.division || 'Umum',
+        category: 'Daily Task',
+        title: `Input Daily Task: ${task.title}`,
+        activity: `${task.description || task.title}${task.dueDate ? ` • Target: ${task.dueDate}` : ''} [Status: ${task.status}]`,
+        qcResult: task.status === 'Done' ? 'OK' : 'INFO',
+        timestamp: parseSafeTimestamp(task.createdAt, task.id),
+        source: 'Daily Task Kanban',
+        targetTab: 'log_task'
+      });
+    });
+
+    // 2. INPUT DAILY LOG (Laporan Harian Staf & Checklist Logbook QC)
     dailyReports.forEach(rep => {
       if (!rep || !rep.activity || rep.activity === '-' || String(rep.activity).trim() === '') return;
       if (filterMonth && rep.date && !rep.date.startsWith(filterMonth)) return;
@@ -209,8 +237,8 @@ export default function QCNotificationCenter({
         date: rep.date,
         staffName: rep.staffName || 'Staff',
         division: rep.division || 'Umum',
-        category: 'Laporan Harian',
-        title: `Input Laporan Harian: ${rep.staffName}`,
+        category: 'Daily Log',
+        title: `Daily Log: ${rep.staffName}`,
         activity: rep.activity,
         notes: rep.notes && rep.notes !== '-' ? rep.notes : undefined,
         qcResult: isKendala ? 'NG' : 'OK',
@@ -220,7 +248,6 @@ export default function QCNotificationCenter({
       });
     });
 
-    // 2. INPUT CHECKLIST QC / LOGBOOK (Logbook Entries)
     logbookEntries.forEach(log => {
       if (!log || !log.activity) return;
       if (filterMonth && log.date && !log.date.startsWith(filterMonth)) return;
@@ -234,8 +261,8 @@ export default function QCNotificationCenter({
         date: log.date,
         staffName: log.staffName || 'Teknisi QC',
         division: log.division || 'Umum',
-        category: 'QC Checklist',
-        title: `Input QC ${log.division} (${log.result})`,
+        category: 'Daily Log',
+        title: `Daily Log QC ${log.division} (${log.result})`,
         activity: log.activity,
         notes: log.followUp && log.followUp !== '-' ? log.followUp : undefined,
         qcResult: isNg ? 'NG' : 'OK',
@@ -245,31 +272,7 @@ export default function QCNotificationCenter({
       });
     });
 
-    // 3. INPUT DAILY TASK KANBAN
-    dailyTasks.forEach(task => {
-      if (!task || !task.title) return;
-      const taskDate = task.createdAt ? task.createdAt.split('T')[0] : '';
-      if (filterMonth && taskDate && !taskDate.startsWith(filterMonth) && (!task.dueDate || !task.dueDate.startsWith(filterMonth))) return;
-      const id = task.id || `task-${task.createdAt || Date.now()}-${task.title}`;
-      if (seenIds.has(id)) return;
-      seenIds.add(id);
-
-      list.push({
-        id,
-        date: task.createdAt ? task.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
-        staffName: task.assignedName || task.assignedTo || 'Tim Lapangan',
-        division: task.division || 'Umum',
-        category: 'Daily Task',
-        title: `Input Tugas: ${task.title}`,
-        activity: `${task.description || task.title}${task.dueDate ? ` • Target: ${task.dueDate}` : ''} [Status: ${task.status}]`,
-        qcResult: task.status === 'Done' ? 'OK' : 'INFO',
-        timestamp: parseSafeTimestamp(task.createdAt, task.id),
-        source: 'Daily Task Kanban',
-        targetTab: 'log_task'
-      });
-    });
-
-    // 4. INPUT TEMUAN KENDALA (Findings)
+    // 3. TEMUAN UNIT BERMASALAH OLEH SEMUA DIVISI (Findings Audio, Lighting, Videotron, Multimedia, Service, Gudang)
     findings.forEach(f => {
       if (!f || !f.issue) return;
       if (filterMonth && f.dateCreated && !f.dateCreated.startsWith(filterMonth) && (!f.targetDate || !f.targetDate.startsWith(filterMonth))) return;
@@ -281,9 +284,9 @@ export default function QCNotificationCenter({
         id,
         date: f.dateCreated || new Date().toISOString().split('T')[0],
         staffName: f.pic || 'Teknisi',
-        division: f.division || 'Service',
-        category: 'Temuan Kendala',
-        title: `Input Temuan Kendala: ${f.equipment}`,
+        division: f.division || 'Semua Divisi',
+        category: 'Temuan Unit Bermasalah',
+        title: `Temuan Unit: ${f.equipment} (${f.division || 'Umum'})`,
         activity: `${f.issue}${f.targetDate ? ` • Target: ${f.targetDate}` : ''} [Status: ${f.status}]`,
         notes: f.priority ? `Prioritas: ${f.priority}` : undefined,
         qcResult: 'NG',
@@ -293,94 +296,38 @@ export default function QCNotificationCenter({
       });
     });
 
-    // 5. INPUT WORK ORDER (WO)
-    workOrders.forEach(wo => {
-      if (!wo || !wo.title) return;
-      const woDate = wo.dateCreated ? wo.dateCreated.split('T')[0] : '';
-      if (filterMonth && woDate && !woDate.startsWith(filterMonth) && (!wo.deadline || !wo.deadline.startsWith(filterMonth))) return;
-      const id = wo.id || `wo-${wo.dateCreated}-${wo.title}`;
+    // 4. UNIT YANG DIKELUARKAN DAN DITERIMA OLEH DIVISI GUDANG / WAREHOUSE (Mutasi Logistik)
+    warehouseLogs.forEach(log => {
+      if (!log || !log.itemName) return;
+      if (filterMonth && log.date && !log.date.startsWith(filterMonth)) return;
+      const id = log.id || `wh-${log.date}-${log.itemName}-${log.type}`;
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
-      list.push({
-        id,
-        date: wo.dateCreated ? wo.dateCreated.split('T')[0] : new Date().toISOString().split('T')[0],
-        staffName: wo.pic || 'Tim Perbaikan',
-        division: wo.division || 'Service',
-        category: 'Work Order',
-        title: `Input Work Order: ${wo.title}`,
-        activity: `Prioritas: ${wo.priority || 'Normal'} • Status: ${wo.status} • Target: ${wo.deadline || '-'}`,
-        qcResult: wo.status === 'Completed' ? 'OK' : 'INFO',
-        timestamp: parseSafeTimestamp(wo.dateCreated, wo.id),
-        source: 'Work Order Management',
-        targetTab: 'findings'
-      });
-    });
-
-    // 6. INPUT ABSENSI (Attendance Logs)
-    attendanceLogs.forEach(att => {
-      if (!att || !att.staffName) return;
-      if (filterMonth && att.date && !att.date.startsWith(filterMonth)) return;
-      const id = att.id || `att-${att.date}-${att.staffName}`;
-      if (seenIds.has(id)) return;
-      seenIds.add(id);
+      const isReceived = log.type === 'Masuk' || log.type === 'Servis Masuk' || log.type === 'Unloading';
+      const actionLabel = isReceived ? 'Unit Diterima' : 'Unit Dikeluarkan';
+      const title = `${actionLabel} Gudang: ${log.itemName}`;
+      const activity = `[${log.type}] ${log.qty || 1} unit ${log.itemName} • PIC: ${log.pic || 'Gudang'}${log.notes ? ` • Catatan: ${log.notes}` : ''}`;
 
       list.push({
         id,
-        date: att.date,
-        staffName: att.staffName,
-        division: att.division || 'Umum',
-        category: 'Absensi',
-        title: `Input Absensi: ${att.staffName}`,
-        activity: `Status: ${att.status} • Jam Masuk: ${att.checkInTime || '-'} ${att.isLate ? `(Terlambat ${att.lateMinutes} menit)` : '(Tepat Waktu)'}`,
-        notes: att.checkInGps ? `GPS: ${att.checkInGps}` : undefined,
-        qcResult: att.isLate ? 'NG' : 'OK',
-        timestamp: parseSafeTimestamp(att.date, att.id),
-        source: 'Absensi Mandiri (GPS + Selfie)',
-        targetTab: 'absensi_self'
-      });
-    });
-
-    // 7. INPUT AKTIVITAS OPERASIONAL (Hanya Aktivitas User Riil, Bukan Server Sync)
-    activities.forEach(act => {
-      if (!act || !act.action) return;
-      // TASK: Aktifitas server untuk proses penarikan atau pengiriman data tidak perlu dimunculkan atau ditampilkan
-      const isServerSync =
-        act.role === 'Server' ||
-        act.username === 'System Auto-Sync' ||
-        act.username === 'System Boot' ||
-        act.username === 'Server' ||
-        String(act.action || '').toLowerCase().includes('sinkronisasi') ||
-        String(act.action || '').toLowerCase().includes('auto-sync') ||
-        String(act.action || '').toLowerCase().includes('penarikan') ||
-        String(act.action || '').toLowerCase().includes('pengiriman');
-      if (isServerSync) return;
-
-      const actDate = act.timestamp && act.timestamp.includes('T') ? act.timestamp.split('T')[0] : new Date().toISOString().split('T')[0];
-      if (filterMonth && actDate && !actDate.startsWith(filterMonth)) return;
-      const id = act.id || `act-${act.timestamp}-${act.username}`;
-      if (seenIds.has(id)) return;
-      seenIds.add(id);
-
-      list.push({
-        id,
-        date: actDate,
-        time: act.timestamp,
-        staffName: act.username,
-        division: act.role || 'Operasional',
-        category: 'Aktivitas',
-        title: `Aktivitas Input: ${act.username}`,
-        activity: act.action,
-        qcResult: 'INFO',
-        timestamp: Date.now(),
-        source: 'Audit Log Real-Time',
-        targetTab: 'activities'
+        date: log.date || new Date().toISOString().split('T')[0],
+        staffName: log.pic || 'Staff Gudang',
+        division: 'Gudang',
+        category: 'Mutasi Unit Gudang',
+        title,
+        activity,
+        notes: log.notes && log.notes !== '-' ? log.notes : undefined,
+        qcResult: isReceived ? 'OK' : 'INFO',
+        timestamp: parseSafeTimestamp(log.date, log.id),
+        source: 'Manajemen Logistik Gudang',
+        targetTab: 'gudang'
       });
     });
 
     // Urutkan dari data terbaru ke data terlama (Descending timestamp)
     return list.sort((a, b) => b.timestamp - a.timestamp);
-  }, [dailyReports, logbookEntries, findings, dailyTasks, workOrders, attendanceLogs, activities, activeMonth]);
+  }, [dailyReports, logbookEntries, findings, dailyTasks, warehouseLogs, activeMonth]);
 
   // Deteksi penambahan data input secara live dalam sesi aktif untuk memicu Toast
   useEffect(() => {
@@ -430,7 +377,7 @@ export default function QCNotificationCenter({
   const filteredNotifications = useMemo(() => {
     return notifications.filter(n => {
       const matchDiv = selectedDivision === 'Semua' || n.division === selectedDivision;
-      const matchCat = selectedCategory === 'Semua Kategori' || n.category === selectedCategory;
+      const matchCat = selectedCategory === 'Semua' || n.category === selectedCategory;
       const matchStatus =
         statusFilter === 'ALL' ||
         (statusFilter === 'NG' && n.qcResult === 'NG') ||
@@ -475,21 +422,18 @@ export default function QCNotificationCenter({
 
   const handleItemClick = (item: NotificationItem) => {
     if (onNavigateTab && item.targetTab) {
-      const target = item.targetTab === 'absensi' ? 'absensi_self' : item.targetTab;
-      onNavigateTab(target);
+      onNavigateTab(item.targetTab);
       setIsOpen(false);
     }
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'Laporan Harian': return <FileText className="w-3.5 h-3.5 text-blue-600" />;
-      case 'QC Checklist': return <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />;
       case 'Daily Task': return <ClipboardList className="w-3.5 h-3.5 text-indigo-600" />;
-      case 'Temuan Kendala': return <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />;
-      case 'Work Order': return <Wrench className="w-3.5 h-3.5 text-amber-600" />;
-      case 'Absensi': return <UserCheck className="w-3.5 h-3.5 text-purple-600" />;
-      default: return <Activity className="w-3.5 h-3.5 text-slate-600" />;
+      case 'Daily Log': return <FileText className="w-3.5 h-3.5 text-blue-600" />;
+      case 'Temuan Unit Bermasalah': return <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />;
+      case 'Mutasi Unit Gudang': return <Package className="w-3.5 h-3.5 text-orange-600" />;
+      default: return <Layers className="w-3.5 h-3.5 text-slate-600" />;
     }
   };
 
@@ -635,14 +579,14 @@ export default function QCNotificationCenter({
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <h2 className="text-xs sm:text-sm font-bold text-white tracking-tight truncate">
-                        Pusat Notifikasi Input Data & QC
+                        Pusat Notifikasi Operasional
                       </h2>
                       <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[8px] font-mono font-bold uppercase tracking-wider shrink-0">
                         {activeMonth && activeMonth !== 'all' ? (activeMonth === '2026-10' ? 'Oktober 2026' : activeMonth === '2026-09' ? 'September 2026' : activeMonth) : 'Semua Periode'}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                      Periode: {activeMonth && activeMonth !== 'all' ? (activeMonth === '2026-10' ? 'Oktober 2026' : activeMonth === '2026-09' ? 'September 2026' : activeMonth) : 'Semua Periode'} • {notifications.length} Input Data
+                      Daily Task • Daily Log • Temuan Unit • Mutasi Gudang ({notifications.length} data)
                     </p>
                   </div>
                 </div>
@@ -684,17 +628,19 @@ export default function QCNotificationCenter({
             {/* Toolbar Filter & Pencarian */}
             <div className="flex-none px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 space-y-2">
               
-              {/* Baris 1: Filter Kategori Input Data */}
+              {/* Baris 1: Filter Kategori Input Data (4 Kategori Resmi Sesuai Komit) */}
               <div className="flex items-center gap-1 overflow-x-auto pb-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                {[
-                  'Semua Kategori',
-                  'QC Checklist',
+                {([
+                  'Semua',
                   'Daily Task',
-                  'Temuan Kendala',
-                  'Laporan Harian',
-                  'Absensi'
-                ].map(cat => {
+                  'Daily Log',
+                  'Temuan Unit Bermasalah',
+                  'Mutasi Unit Gudang'
+                ] as const).map(cat => {
                   const isSelected = selectedCategory === cat;
+                  const count = cat === 'Semua'
+                    ? notifications.length
+                    : notifications.filter(n => n.category === cat).length;
                   return (
                     <button
                       key={cat}
@@ -707,6 +653,9 @@ export default function QCNotificationCenter({
                     >
                       {getCategoryIcon(cat)}
                       <span>{cat}</span>
+                      <span className={`text-[9px] px-1 rounded font-mono ${isSelected ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-100 text-slate-500'}`}>
+                        {count}
+                      </span>
                     </button>
                   );
                 })}

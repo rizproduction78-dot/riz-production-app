@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Staff, LogbookEntry, DailyReport as DailyReportType, Finding, Asset, WorkOrder, MaintenanceSchedule, UserActivity, DailyTask, AttendanceLog, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL } from './types';
+import { Staff, LogbookEntry, DailyReport as DailyReportType, Finding, Asset, WorkOrder, MaintenanceSchedule, UserActivity, DailyTask, AttendanceLog, WarehouseLog, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL } from './types';
 import {
   STAFF_LIST,
   getMasterStaffList,
@@ -631,6 +631,19 @@ export default function App() {
     }
   });
 
+  const [warehouseLogs, setWarehouseLogs] = useState<WarehouseLog[]>(() => {
+    try {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        const saved = localStorage.getItem('riz_warehouse_logs');
+        if (saved) {
+          const parsed: WarehouseLog[] = JSON.parse(saved);
+          return parsed.filter(l => l && l.id !== 'wl-1' && l.id !== 'wl-2');
+        }
+      }
+    } catch {}
+    return [];
+  });
+
   // Google Sheet Daily Log Pull State
   const [isSyncingSheet, setIsSyncingSheet] = useState<boolean>(false);
   const [lastSheetPull, setLastSheetPull] = useState<string | null>(() => getDailyLogLastPull());
@@ -722,6 +735,15 @@ export default function App() {
       []
     );
 
+    const unsubWarehouse = subscribeCloudCollection<WarehouseLog>(
+      'warehouse_logs',
+      'riz_warehouse_logs',
+      (items) => {
+        setWarehouseLogs(items.filter(l => l && l.id !== 'wl-1' && l.id !== 'wl-2'));
+      },
+      []
+    );
+
     return () => {
       unsubStatus();
       unsubLogbook();
@@ -733,6 +755,7 @@ export default function App() {
       unsubSchedules();
       unsubActivities();
       unsubAttendance();
+      unsubWarehouse();
     };
   }, []);
 
@@ -1635,9 +1658,7 @@ export default function App() {
             logbookEntries={logbookEntries}
             findings={findings}
             dailyTasks={dailyTasks}
-            workOrders={workOrders}
-            attendanceLogs={attendanceLogs}
-            activities={activities}
+            warehouseLogs={warehouseLogs}
             onNavigateTab={setActiveTab}
             lastSyncTime={syncStatus.lastSyncedAt}
             isMobileHeader={true}
@@ -1804,9 +1825,7 @@ export default function App() {
               logbookEntries={logbookEntries}
               findings={findings}
               dailyTasks={dailyTasks}
-              workOrders={workOrders}
-              attendanceLogs={attendanceLogs}
-              activities={activities}
+              warehouseLogs={warehouseLogs}
               onNavigateTab={setActiveTab}
               lastSyncTime={syncStatus.lastSyncedAt}
               activeMonth={activeMonth}
