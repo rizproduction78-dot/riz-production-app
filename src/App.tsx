@@ -1612,6 +1612,7 @@ export default function App() {
             onNavigateTab={setActiveTab}
             lastSyncTime={syncStatus.lastSyncedAt}
             isMobileHeader={true}
+            activeMonth={activeMonth}
           />
 
           <span className="text-[11px] font-mono text-[#94a3b8] font-bold bg-[#1e293b] px-2 py-0.5 rounded border border-slate-700">
@@ -1779,6 +1780,7 @@ export default function App() {
               activities={activities}
               onNavigateTab={setActiveTab}
               lastSyncTime={syncStatus.lastSyncedAt}
+              activeMonth={activeMonth}
             />
 
             {/* Global Period Selector - Terkoordinasi ke seluruh modul & side panel */}

@@ -52,6 +52,7 @@ export interface QCNotificationCenterProps {
   onNavigateTab?: (tabId: string) => void;
   buttonClassName?: string;
   isMobileHeader?: boolean;
+  activeMonth?: string;
 }
 
 const READ_STORAGE_KEY = 'riz_notification_center_last_read_v2';
@@ -120,7 +121,8 @@ export default function QCNotificationCenter({
   lastSyncTime,
   onNavigateTab,
   buttonClassName = '',
-  isMobileHeader = false
+  isMobileHeader = false,
+  activeMonth = 'all'
 }: QCNotificationCenterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDivision, setSelectedDivision] = useState<string>('Semua');
@@ -178,13 +180,16 @@ export default function QCNotificationCenter({
   };
 
   // Menggabungkan SELURUH rekaman input data user (Laporan Harian, QC, Daily Task, Temuan, WO, Absensi)
+  // Tersinkronisasi dinamis dengan periode bulan aktif (activeMonth)
   const notifications = useMemo(() => {
     const list: NotificationItem[] = [];
     const seenIds = new Set<string>();
+    const filterMonth = activeMonth && activeMonth !== 'all' ? activeMonth : null;
 
     // 1. INPUT LAPORAN HARIAN (Daily Reports)
     dailyReports.forEach(rep => {
       if (!rep || !rep.activity || rep.activity === '-' || String(rep.activity).trim() === '') return;
+      if (filterMonth && rep.date && !rep.date.startsWith(filterMonth)) return;
       const id = rep.id || `rep-${rep.date}-${rep.staffName}-${rep.activity.slice(0, 10)}`;
       if (seenIds.has(id)) return;
       seenIds.add(id);
@@ -212,6 +217,7 @@ export default function QCNotificationCenter({
     // 2. INPUT CHECKLIST QC / LOGBOOK (Logbook Entries)
     logbookEntries.forEach(log => {
       if (!log || !log.activity) return;
+      if (filterMonth && log.date && !log.date.startsWith(filterMonth)) return;
       const id = log.id || `qc-${log.date}-${log.staffName}-${log.activity.slice(0, 10)}`;
       if (seenIds.has(id)) return;
       seenIds.add(id);
@@ -236,6 +242,8 @@ export default function QCNotificationCenter({
     // 3. INPUT DAILY TASK KANBAN
     dailyTasks.forEach(task => {
       if (!task || !task.title) return;
+      const taskDate = task.createdAt ? task.createdAt.split('T')[0] : '';
+      if (filterMonth && taskDate && !taskDate.startsWith(filterMonth) && (!task.dueDate || !task.dueDate.startsWith(filterMonth))) return;
       const id = task.id || `task-${task.createdAt || Date.now()}-${task.title}`;
       if (seenIds.has(id)) return;
       seenIds.add(id);
@@ -258,6 +266,7 @@ export default function QCNotificationCenter({
     // 4. INPUT TEMUAN KENDALA (Findings)
     findings.forEach(f => {
       if (!f || !f.issue) return;
+      if (filterMonth && f.dateCreated && !f.dateCreated.startsWith(filterMonth) && (!f.targetDate || !f.targetDate.startsWith(filterMonth))) return;
       const id = f.id || `find-${f.dateCreated}-${f.equipment}-${f.issue.slice(0, 10)}`;
       if (seenIds.has(id)) return;
       seenIds.add(id);
@@ -281,6 +290,8 @@ export default function QCNotificationCenter({
     // 5. INPUT WORK ORDER (WO)
     workOrders.forEach(wo => {
       if (!wo || !wo.title) return;
+      const woDate = wo.dateCreated ? wo.dateCreated.split('T')[0] : '';
+      if (filterMonth && woDate && !woDate.startsWith(filterMonth) && (!wo.deadline || !wo.deadline.startsWith(filterMonth))) return;
       const id = wo.id || `wo-${wo.dateCreated}-${wo.title}`;
       if (seenIds.has(id)) return;
       seenIds.add(id);
@@ -303,6 +314,7 @@ export default function QCNotificationCenter({
     // 6. INPUT ABSENSI (Attendance Logs)
     attendanceLogs.forEach(att => {
       if (!att || !att.staffName) return;
+      if (filterMonth && att.date && !att.date.startsWith(filterMonth)) return;
       const id = att.id || `att-${att.date}-${att.staffName}`;
       if (seenIds.has(id)) return;
       seenIds.add(id);
@@ -326,13 +338,15 @@ export default function QCNotificationCenter({
     // 7. INPUT AKTIVITAS OPERASIONAL (Activities)
     activities.forEach(act => {
       if (!act || !act.action || act.username === 'System Boot') return;
+      const actDate = act.timestamp && act.timestamp.includes('T') ? act.timestamp.split('T')[0] : new Date().toISOString().split('T')[0];
+      if (filterMonth && actDate && !actDate.startsWith(filterMonth)) return;
       const id = act.id || `act-${act.timestamp}-${act.username}`;
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
       list.push({
         id,
-        date: new Date().toISOString().split('T')[0],
+        date: actDate,
         time: act.timestamp,
         staffName: act.username,
         division: act.role || 'Operasional',
@@ -348,7 +362,7 @@ export default function QCNotificationCenter({
 
     // Urutkan dari data terbaru ke data terlama (Descending timestamp)
     return list.sort((a, b) => b.timestamp - a.timestamp);
-  }, [dailyReports, logbookEntries, findings, dailyTasks, workOrders, attendanceLogs, activities]);
+  }, [dailyReports, logbookEntries, findings, dailyTasks, workOrders, attendanceLogs, activities, activeMonth]);
 
   // Deteksi penambahan data input secara live dalam sesi aktif untuk memicu Toast
   useEffect(() => {
@@ -499,8 +513,8 @@ export default function QCNotificationCenter({
             : buttonClassName ||
               'px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold rounded-lg border border-slate-200 shadow-xs hover:border-slate-300 active:scale-95'
         }`}
-        title="Buka Pusat Notifikasi Input Data User & QC"
-        aria-label="Buka Pusat Notifikasi Input Data User & QC"
+        title={`Buka Pusat Notifikasi Input Data & QC (${activeMonth === 'all' ? 'Semua Periode' : activeMonth})`}
+        aria-label={`Buka Pusat Notifikasi Input Data & QC (${activeMonth === 'all' ? 'Semua Periode' : activeMonth})`}
       >
         <div className="relative flex items-center pointer-events-none">
           <Bell className={`w-4 h-4 ${isMobileHeader ? 'text-amber-400' : 'text-indigo-600'}`} />
@@ -518,7 +532,7 @@ export default function QCNotificationCenter({
         )}
 
         {!isMobileHeader && totalKendalaGlobal > 0 && (
-          <span className="ml-1.5 hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200 pointer-events-none">
+          <span className="ml-1.5 hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200 pointer-events-none">
             {totalKendalaGlobal} Kendala
           </span>
         )}
@@ -604,12 +618,12 @@ export default function QCNotificationCenter({
                       <h2 className="text-xs sm:text-sm font-bold text-white tracking-tight truncate">
                         Pusat Notifikasi Input Data & QC
                       </h2>
-                      <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[8px] font-mono font-bold uppercase tracking-wider shrink-0">
-                        Live Sync
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[8px] font-mono font-bold uppercase tracking-wider shrink-0">
+                        {activeMonth && activeMonth !== 'all' ? (activeMonth === '2026-10' ? 'Oktober 2026' : activeMonth === '2026-09' ? 'September 2026' : activeMonth) : 'Semua Periode'}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                      Monitoring Seluruh Input Staf • PT. Riz Production Multi Kreasi
+                      Periode: {activeMonth && activeMonth !== 'all' ? (activeMonth === '2026-10' ? 'Oktober 2026' : activeMonth === '2026-09' ? 'September 2026' : activeMonth) : 'Semua Periode'} • {notifications.length} Input Data
                     </p>
                   </div>
                 </div>
