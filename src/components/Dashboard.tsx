@@ -291,6 +291,35 @@ export default function Dashboard({
       });
   }, [activeStaff]);
 
+  // State filter divisi interaktif di Bagian 04
+  const [selectedDivisionFilter, setSelectedDivisionFilter] = React.useState<string>('All');
+
+  // Filter staf berdasarkan divisi yang dipilih (dengan dukungan penuh staf dual-divisi Mulyana)
+  const filteredStaffProductivityData = React.useMemo(() => {
+    if (selectedDivisionFilter === 'All') return activeStaffProductivityData;
+    return activeStaffProductivityData.filter(s => {
+      if (s.division === selectedDivisionFilter) return true;
+      // Staf dual-divisi Mulyana: muncul di Service dan Videotron
+      if ((selectedDivisionFilter === 'Videotron' || selectedDivisionFilter === 'Service') &&
+          (s.name.toLowerCase().includes('mulyana') || s.name.toLowerCase().includes('kharo') || s.id === 'staff-mulyana')) {
+        return true;
+      }
+      return false;
+    });
+  }, [activeStaffProductivityData, selectedDivisionFilter]);
+
+  // Total akumulasi untuk footer tabel Bagian 04 (Sinkron 100% dengan Bagian 03)
+  const totalsFilteredStaff = React.useMemo(() => {
+    const totalReports = filteredStaffProductivityData.reduce((acc, s) => acc + (s.reports || 0), 0);
+    const totalQcs = filteredStaffProductivityData.reduce((acc, s) => acc + (s.qcs || 0), 0);
+    const totalAttendance = filteredStaffProductivityData.reduce((acc, s) => acc + (s.attendanceCount || 0), 0);
+    const totalHours = filteredStaffProductivityData.reduce((acc, s) => acc + (s.hours || (s.attendanceCount * 8) || 0), 0);
+    const avgKpi = filteredStaffProductivityData.length > 0
+      ? Math.round(filteredStaffProductivityData.reduce((acc, s) => acc + s.kpi, 0) / filteredStaffProductivityData.length)
+      : 0;
+    return { totalReports, totalQcs, totalAttendance, totalHours, avgKpi };
+  }, [filteredStaffProductivityData]);
+
   // Grade distributions dynamically calculated from real active data
   const countGradeA = activeStaffProductivityData.filter(s => s.grade === 'A').length;
   const countGradeB = activeStaffProductivityData.filter(s => s.grade === 'B').length;
@@ -1214,14 +1243,33 @@ export default function Dashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-mono">
-                    {divisionStatsDynamic.map((d, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
-                        <td className="p-3 font-sans font-bold text-slate-800">{d.label}</td>
-                        <td className="p-3 text-center">{d.dr}</td>
-                        <td className="p-3 text-center">{d.qc}</td>
-                        <td className="p-3 text-center">{d.wo}</td>
-                      </tr>
-                    ))}
+                    {divisionStatsDynamic.map((d, idx) => {
+                      const isSelected = selectedDivisionFilter === d.key;
+                      return (
+                        <tr
+                          key={idx}
+                          onClick={() => setSelectedDivisionFilter(isSelected ? 'All' : d.key)}
+                          className={`cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-indigo-50/80 font-bold text-indigo-900 border-l-4 border-indigo-600'
+                              : 'hover:bg-slate-50/70'
+                          }`}
+                          title={`Klik untuk memfilter daftar staf divisi ${d.label} di Bagian 04`}
+                        >
+                          <td className="p-3 font-sans font-bold text-slate-800 flex items-center justify-between">
+                            <span>{d.label}</span>
+                            {isSelected && (
+                              <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded font-mono uppercase tracking-wider">
+                                Aktif
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-center">{d.dr}</td>
+                          <td className="p-3 text-center">{d.qc}</td>
+                          <td className="p-3 text-center">{d.wo}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1275,64 +1323,163 @@ export default function Dashboard({
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Productivity Table */}
-              <div className="lg:col-span-2 overflow-x-auto border border-slate-100 rounded-xl max-h-[360px] overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px] sticky top-0 z-10">
-                      <th className="p-3 text-center w-12">No</th>
-                      <th className="p-3">Nama Staff</th>
-                      <th className="p-3">Divisi</th>
-                      <th className="p-3 text-center">Daily Report</th>
-                      <th className="p-3 text-center">QC Checked</th>
-                      <th className="p-3 text-center">Kehadiran</th>
-                      <th className="p-3 text-center">Uji Komp.</th>
-                      <th className="p-3 text-center">Jam Kerja</th>
-                      <th className="p-3 text-center">KPI Score</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-mono">
-                    {activeStaffProductivityData.length > 0 ? (
-                      activeStaffProductivityData.map((staff, idx) => {
-                        const originalStaff = staffList.find(st => st.id === staff.id || st.name === staff.name) || (staff as any);
-                        const attendanceDays = staff.attendanceCount;
-                        const workHours = staff.hours || (attendanceDays * 8);
+              <div className="lg:col-span-2 space-y-2">
+                {/* Quick Division Filter Chips */}
+                <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className="text-slate-500 font-bold text-[11px] uppercase tracking-wider mr-1">Filter Divisi:</span>
+                    {[
+                      { key: 'All', label: 'Semua Divisi' },
+                      { key: 'Audio', label: 'Audio (Sound)' },
+                      { key: 'Lighting', label: 'Lighting' },
+                      { key: 'Videotron', label: 'Videotron' },
+                      { key: 'Service', label: 'Service' },
+                    ].map(tab => {
+                      const isSelected = selectedDivisionFilter === tab.key;
+                      const count = tab.key === 'All' 
+                        ? activeStaffProductivityData.length 
+                        : activeStaffProductivityData.filter(s => {
+                            if (s.division === tab.key) return true;
+                            if ((tab.key === 'Videotron' || tab.key === 'Service') &&
+                                (s.name.toLowerCase().includes('mulyana') || s.name.toLowerCase().includes('kharo') || s.id === 'staff-mulyana')) {
+                              return true;
+                            }
+                            return false;
+                          }).length;
 
-                        return (
-                          <tr key={idx} className="hover:bg-slate-50/50">
-                            <td className="p-3 text-center font-bold text-slate-500 font-mono">{idx + 1}</td>
-                            <td className="p-3">
-                              <div className="flex items-center gap-3">
-                                <img
-                                  src={originalStaff?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(staff.name)}&background=0f172a&color=fff&rounded=true&bold=true`}
-                                  alt={staff.name}
-                                  className="w-7 h-7 rounded-full border border-slate-200"
-                                />
-                                <span className="font-sans font-bold text-slate-800">{staff.name}</span>
-                              </div>
-                            </td>
-                            <td className="p-3 font-sans text-slate-600">{staff.division}</td>
-                            <td className="p-3 text-center text-slate-700">{staff.reports}</td>
-                            <td className="p-3 text-center text-slate-700">{staff.qcs}</td>
-                            <td className="p-3 text-center text-slate-700 font-sans">{attendanceDays > 0 ? `${attendanceDays} Hari` : '-'}</td>
-                            <td className="p-3 text-center text-slate-700">{staff.competencyCount}/6</td>
-                            <td className="p-3 text-center text-slate-700 font-sans">{workHours > 0 ? `${workHours} Jam` : '-'}</td>
-                            <td className="p-3 text-center">
-                              <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold text-[11px]">
-                                {staff.kpi}%
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={9} className="p-4 text-center text-slate-400 italic">
-                          Tidak ada aktifitas staff tercatat pada periode ini.
-                        </td>
+                      return (
+                        <button
+                          key={tab.key}
+                          onClick={() => setSelectedDivisionFilter(tab.key)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white shadow-xs'
+                              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                          }`}
+                        >
+                          <span>{tab.label}</span>
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                            isSelected ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-600'
+                          }`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedDivisionFilter !== 'All' && (
+                    <button
+                      onClick={() => setSelectedDivisionFilter('All')}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-bold underline cursor-pointer"
+                    >
+                      Reset Filter
+                    </button>
+                  )}
+                </div>
+
+                <div className="overflow-x-auto border border-slate-200 rounded-xl max-h-[520px] overflow-y-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px] sticky top-0 z-10">
+                        <th className="p-3 text-center w-12">No</th>
+                        <th className="p-3">Nama Staff</th>
+                        <th className="p-3">Divisi</th>
+                        <th className="p-3 text-center">Daily Report</th>
+                        <th className="p-3 text-center">QC Checked</th>
+                        <th className="p-3 text-center">Kehadiran</th>
+                        <th className="p-3 text-center">Uji Komp.</th>
+                        <th className="p-3 text-center">Jam Kerja</th>
+                        <th className="p-3 text-center">KPI Score</th>
                       </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-mono">
+                      {filteredStaffProductivityData.length > 0 ? (
+                        filteredStaffProductivityData.map((staff, idx) => {
+                          const originalStaff = staffList.find(st => st.id === staff.id || st.name === staff.name) || (staff as any);
+                          const attendanceDays = staff.attendanceCount;
+                          const workHours = staff.hours || (attendanceDays * 8);
+                          const isDualStaff = staff.name.toLowerCase().includes('mulyana') || 
+                                              staff.name.toLowerCase().includes('kharo') || 
+                                              staff.id === 'staff-mulyana';
+
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50/50">
+                              <td className="p-3 text-center font-bold text-slate-500 font-mono">{idx + 1}</td>
+                              <td className="p-3">
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={originalStaff?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(staff.name)}&background=0f172a&color=fff&rounded=true&bold=true`}
+                                    alt={staff.name}
+                                    className="w-7 h-7 rounded-full border border-slate-200"
+                                  />
+                                  <span className="font-sans font-bold text-slate-800">{staff.name}</span>
+                                </div>
+                              </td>
+                              <td className="p-3 font-sans">
+                                {isDualStaff ? (
+                                  <div className="flex flex-wrap items-center gap-1">
+                                    <span className="font-bold text-slate-800">Service</span>
+                                    <span className="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-mono font-bold border border-sky-200">
+                                      + Videotron
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-600">{staff.division}</span>
+                                )}
+                              </td>
+                              <td className="p-3 text-center font-bold text-slate-800">{staff.reports}</td>
+                              <td className="p-3 text-center text-slate-700">{staff.qcs}</td>
+                              <td className="p-3 text-center text-slate-700 font-sans">{attendanceDays > 0 ? `${attendanceDays} Hari` : '-'}</td>
+                              <td className="p-3 text-center text-slate-700">{staff.competencyCount}/6</td>
+                              <td className="p-3 text-center text-slate-700 font-sans">{workHours > 0 ? `${workHours} Jam` : '-'}</td>
+                              <td className="p-3 text-center">
+                                <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold text-[11px]">
+                                  {staff.kpi}%
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={9} className="p-4 text-center text-slate-400 italic">
+                            Tidak ada aktifitas staff tercatat pada periode ini.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                    {filteredStaffProductivityData.length > 0 && (
+                      <tfoot className="bg-slate-50 border-t-2 border-slate-200 font-mono font-bold text-slate-800 sticky bottom-0 z-10 shadow-xs">
+                        <tr>
+                          <td colSpan={2} className="p-3 text-center uppercase tracking-wider text-[11px] text-indigo-900 bg-indigo-50/70 font-sans">
+                            Total Akumulasi {selectedDivisionFilter !== 'All' ? `(${selectedDivisionFilter})` : 'Tim Aktif'}
+                          </td>
+                          <td className="p-3 text-slate-600 font-sans text-xs">
+                            {filteredStaffProductivityData.length} Staf
+                          </td>
+                          <td className="p-3 text-center text-indigo-700 font-black text-xs">
+                            {totalsFilteredStaff.totalReports}
+                          </td>
+                          <td className="p-3 text-center text-indigo-700 font-black text-xs">
+                            {totalsFilteredStaff.totalQcs}
+                          </td>
+                          <td className="p-3 text-center text-slate-700 font-sans text-xs">
+                            {totalsFilteredStaff.totalAttendance} Hari
+                          </td>
+                          <td className="p-3 text-center text-slate-400 text-xs">-</td>
+                          <td className="p-3 text-center text-slate-700 font-sans text-xs">
+                            {totalsFilteredStaff.totalHours} Jam
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="bg-indigo-600 text-white px-2 py-0.5 rounded font-black text-[11px]">
+                              {totalsFilteredStaff.avgKpi}%
+                            </span>
+                          </td>
+                        </tr>
+                      </tfoot>
                     )}
-                  </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
 
               {/* Top Performers (1 to 10 List) */}
