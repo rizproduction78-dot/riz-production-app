@@ -1596,6 +1596,11 @@ export default function AdminPanel({
           >
             <Lock className="w-3.5 h-3.5" />
             <span>Persetujuan Password</span>
+            {staffList.filter(s => Boolean(s.passwordRequest)).length > 0 && (
+              <span className="bg-rose-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold animate-pulse">
+                {staffList.filter(s => Boolean(s.passwordRequest)).length}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -3286,8 +3291,18 @@ export default function AdminPanel({
                             <button
                               onClick={async () => {
                                 try {
+                                  const updatedStaff = { ...staff, password: staff.passwordRequest, passwordRequest: '' };
                                   await saveCloudDoc('master_staff', staff.id, { password: staff.passwordRequest, passwordRequest: '' });
-                                } catch(e) { console.error(e) }
+                                  setStaffList(prev => {
+                                    const next = prev.map(s => s.id === staff.id ? updatedStaff : s);
+                                    try { localStorage.setItem('riz_master_staff_list', JSON.stringify(next)); } catch {}
+                                    return next;
+                                  });
+                                  alert(`Password baru untuk ${staff.name} berhasil disetujui dan aktif!`);
+                                } catch(e) {
+                                  console.error(e);
+                                  alert('Gagal menyetujui password. Periksa koneksi data.');
+                                }
                               }}
                               className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                             >
@@ -3296,8 +3311,18 @@ export default function AdminPanel({
                             <button
                               onClick={async () => {
                                 try {
+                                  const updatedStaff = { ...staff, passwordRequest: '' };
                                   await saveCloudDoc('master_staff', staff.id, { passwordRequest: '' });
-                                } catch(e) { console.error(e) }
+                                  setStaffList(prev => {
+                                    const next = prev.map(s => s.id === staff.id ? updatedStaff : s);
+                                    try { localStorage.setItem('riz_master_staff_list', JSON.stringify(next)); } catch {}
+                                    return next;
+                                  });
+                                  alert(`Pengajuan ganti password untuk ${staff.name} ditolak.`);
+                                } catch(e) {
+                                  console.error(e);
+                                  alert('Gagal menolak pengajuan. Periksa koneksi data.');
+                                }
                               }}
                               className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                             >

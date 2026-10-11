@@ -99,13 +99,21 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
     }
 
     const expectedPassword = staff.password || 'riz123';
-    if (oldPassword !== expectedPassword) {
+    if (oldPassword.trim().toLowerCase() !== expectedPassword.toLowerCase()) {
       setReqError('Password lama salah.');
       return;
     }
 
     try {
       await saveCloudDoc('master_staff', reqStaffId, { passwordRequest: newPassword });
+      try {
+        const saved = localStorage.getItem('riz_master_staff_list');
+        if (saved) {
+          const list = JSON.parse(saved);
+          const next = list.map((s: any) => s.id === reqStaffId ? { ...s, passwordRequest: newPassword } : s);
+          localStorage.setItem('riz_master_staff_list', JSON.stringify(next));
+        }
+      } catch {}
       setReqSuccess(true);
       setOldPassword('');
       setNewPassword('');
