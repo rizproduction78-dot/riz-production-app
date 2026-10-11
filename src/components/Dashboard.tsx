@@ -582,55 +582,43 @@ export default function Dashboard({
   }, [monthlyScheduleData, activeMonth]);
 
   const divisionAttendanceStats = divisionsAttendanceList.map(div => {
-    const staffInDiv = uniqueScheduleRows.filter(s => isScheduleDivisionMatch(s.division, div.key));
+    const staffInDiv = staffList.filter(s => isStaffInDivision(s, div.key));
     let hadirCount = 0;
     let terlambatCount = 0;
     let izinCount = 0;
     let sakitCount = 0;
     let alphaCount = 0;
 
-    staffInDiv.forEach(s => {
-      const shifts = s.shifts || {};
-      let relevantShifts: string[] = [];
+    const isDateInRange = (dateStr?: string) => {
+      if (!dateStr) return false;
+      if (activeTab === 'harian') return dateStr === today;
+      if (activeTab === 'daily_report') return dateStr === targetDate;
+      if (activeTab === 'weekly_report') return dateStr >= targetStartDate && dateStr <= targetEndDate;
+      if (activeTab === 'monthly_report' || activeTab === 'graphic_view') return dateStr.startsWith(activeMonth);
+      return true;
+    };
 
-      if (activeTab === 'harian') {
-        const dayStr = String(parseInt(today.split('-')[2] || '1', 10));
-        if (shifts[dayStr]) relevantShifts.push(shifts[dayStr]);
-      } else if (activeTab === 'daily_report') {
-        const dayStr = String(parseInt(targetDate.split('-')[2] || '1', 10));
-        if (shifts[dayStr]) relevantShifts.push(shifts[dayStr]);
-      } else if (activeTab === 'weekly_report') {
-        const startDay = parseInt(targetStartDate.split('-')[2] || '1', 10);
-        const endDay = parseInt(targetEndDate.split('-')[2] || '31', 10);
-        for (let d = startDay; d <= endDay; d++) {
-          if (shifts[String(d)]) relevantShifts.push(shifts[String(d)]);
-        }
-      } else {
-        // monthly_report & graphic_view
-        relevantShifts = Object.values(shifts);
-      }
+    staffInDiv.forEach(st => {
+      const staffDates = new Set<string>();
+      activeDailyReports
+        .filter(r => isStaffMatch(st, r.staffName) && isDateInRange(r.date))
+        .forEach(r => staffDates.add(r.date));
 
-      relevantShifts.forEach(shift => {
-        const up = (String(shift || '')).toUpperCase();
-        if (['P', 'MD', 'M', 'PM', 'MASUK'].includes(up)) {
-          hadirCount++;
-        } else if (up === 'IZIN') {
-          izinCount++;
-        } else if (up === 'SAKIT') {
-          sakitCount++;
-        } else if (up === 'ALPHA') {
-          alphaCount++;
-        }
-      });
+      activeLogbookEntries
+        .filter(e => isStaffMatch(st, e.staffName) && isDateInRange(e.date))
+        .forEach(e => staffDates.add(e.date));
+
+      rawAttendanceLogs
+        .filter(l => (l.staffId === st.id || isStaffMatch(st, l.staffName)) && (l.status === 'Hadir' || l.checkInTime) && isDateInRange(l.date))
+        .forEach(l => { if (l.date) staffDates.add(l.date); });
+
+      hadirCount += staffDates.size;
     });
 
     const divLogs = rawAttendanceLogs.filter(l => {
-      if (!isScheduleDivisionMatch(l.division || '', div.key)) return false;
-      if (activeTab === 'harian') return l.date === today;
-      if (activeTab === 'daily_report') return l.date === targetDate;
-      if (activeTab === 'weekly_report') return l.date >= targetStartDate && l.date <= targetEndDate;
-      if (activeTab === 'monthly_report' || activeTab === 'graphic_view') return l.date?.startsWith(activeMonth);
-      return true;
+      const matchDiv = isScheduleDivisionMatch(l.division || '', div.key) ||
+        staffInDiv.some(st => st.id === l.staffId || isStaffMatch(st, l.staffName));
+      return matchDiv && isDateInRange(l.date);
     });
 
     divLogs.forEach(l => {

@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, MaintenanceSchedule, DailyTask } from '../types';
 import { FileText, Printer, FileDown, Download, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
-import { calculateAllStaffKpis, isStaffMatch, isStaffInGoogleSheet } from '../utils/kpiCalculator';
+import { calculateAllStaffKpis, isStaffMatch, isStaffInGoogleSheet, isStaffInDivision } from '../utils/kpiCalculator';
 import { getScheduleByKey, StaffScheduleRow } from '../data/staffSchedules';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { generateOrchestratedReport } from '../lib/ragVectorEngine';
@@ -353,51 +353,42 @@ export default function Reports({
   }, [monthlyScheduleData, activeMonth]);
 
   const divisionAttendanceStats = reportAttendanceDivisions.map(div => {
-    const staffInDiv = uniqueScheduleRows.filter(s => isScheduleDivisionMatch(s.division, div.key));
+    const staffInDiv = staffList.filter(s => isStaffInDivision(s, div.key));
     let hadirCount = 0;
     let terlambatCount = 0;
     let izinCount = 0;
     let sakitCount = 0;
     let alphaCount = 0;
 
-    staffInDiv.forEach(s => {
-      const shifts = s.shifts || {};
-      let relevantShifts: string[] = [];
+    const isDateInRange = (dateStr?: string) => {
+      if (!dateStr) return false;
+      if (reportType === 'Harian') return dateStr === targetDate;
+      if (reportType === 'Mingguan') return dateStr >= targetStartDate && dateStr <= targetEndDate;
+      if (reportType === 'Bulanan') return dateStr.startsWith(targetMonth);
+      return true;
+    };
 
-      if (reportType === 'Harian') {
-        const dayStr = String(parseInt(targetDate.split('-')[2] || '1', 10));
-        if (shifts[dayStr]) relevantShifts.push(shifts[dayStr]);
-      } else if (reportType === 'Mingguan') {
-        const startDay = parseInt(targetStartDate.split('-')[2] || '1', 10);
-        const endDay = parseInt(targetEndDate.split('-')[2] || '31', 10);
-        for (let d = startDay; d <= endDay; d++) {
-          if (shifts[String(d)]) relevantShifts.push(shifts[String(d)]);
-        }
-      } else {
-        // Bulanan: seluruh hari dalam bulan berjalan
-        relevantShifts = Object.values(shifts);
-      }
+    staffInDiv.forEach(st => {
+      const staffDates = new Set<string>();
+      activeDailyReports
+        .filter(r => isStaffMatch(st, r.staffName) && isDateInRange(r.date))
+        .forEach(r => staffDates.add(r.date));
 
-      relevantShifts.forEach(shift => {
-        const up = (String(shift || '')).toUpperCase();
-        if (['P', 'MD', 'M', 'PM', 'MASUK'].includes(up)) {
-          hadirCount++;
-        } else if (up === 'IZIN') {
-          izinCount++;
-        } else if (up === 'SAKIT') {
-          sakitCount++;
-        } else if (up === 'ALPHA') {
-          alphaCount++;
-        }
-      });
+      activeLogbookEntries
+        .filter(e => isStaffMatch(st, e.staffName) && isDateInRange(e.date))
+        .forEach(e => staffDates.add(e.date));
+
+      rawAttendanceLogs
+        .filter(l => (l.staffId === st.id || isStaffMatch(st, l.staffName)) && (l.status === 'Hadir' || l.checkInTime) && isDateInRange(l.date))
+        .forEach(l => { if (l.date) staffDates.add(l.date); });
+
+      hadirCount += staffDates.size;
     });
 
     const divLogs = rawAttendanceLogs.filter(l => {
-      if (!isScheduleDivisionMatch(l.division || '', div.key)) return false;
-      if (reportType === 'Harian') return l.date === targetDate;
-      if (reportType === 'Mingguan') return l.date >= targetStartDate && l.date <= targetEndDate;
-      if (reportType === 'Bulanan') return l.date?.startsWith(targetMonth);
-      return true;
+      const matchDiv = isScheduleDivisionMatch(l.division || '', div.key) ||
+        staffInDiv.some(st => st.id === l.staffId || isStaffMatch(st, l.staffName));
+      return matchDiv && isDateInRange(l.date);
     });
 
     divLogs.forEach(l => {
@@ -832,9 +823,9 @@ export default function Reports({
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
                   {reportDivisions.map((div, idx) => {
-                    const drCount = activeDailyReports.filter(r => r.division === div.key || (div.key === 'Audio' && r.division === 'Sound')).length;
-                    const qcCount = activeLogbookEntries.filter(e => e.division === div.key || (div.key === 'Audio' && e.division === 'Sound')).length;
-                    const woCount = activeWorkOrders.filter(w => w.division === div.key || (div.key === 'Audio' && w.division === 'Sound')).length;
+                    const drCount = activeDailyReports.filter(r => r.division === div.key || (div.key === 'Audio' && (r.division as unknown as string) === 'Sound')).length;
+                    const qcCount = activeLogbookEntries.filter(e => e.division === div.key || (div.key === 'Audio' && (e.division as unknown as string) === 'Sound')).length;
+                    const woCount = activeWorkOrders.filter(w => w.division === div.key || (div.key === 'Audio' && (w.division as unknown as string) === 'Sound')).length;
                     return (
                       <tr key={idx} className="hover:bg-slate-50">
                         <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">{div.name}</td>
