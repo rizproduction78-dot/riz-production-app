@@ -223,9 +223,9 @@ export default function QCNotificationCenter({
         staffName: log.staffName || 'Teknisi QC',
         division: log.division || 'Umum',
         category: 'QC Checklist',
-        title: `Input QC ${log.equipment || 'Peralatan'} (${log.result})`,
+        title: `Input QC ${log.division} (${log.result})`,
         activity: log.activity,
-        notes: log.notes && log.notes !== '-' ? log.notes : undefined,
+        notes: log.followUp && log.followUp !== '-' ? log.followUp : undefined,
         qcResult: isNg ? 'NG' : 'OK',
         timestamp: parseSafeTimestamp(log.date, log.id),
         source: 'Form QC Onhouse',
@@ -243,11 +243,11 @@ export default function QCNotificationCenter({
       list.push({
         id,
         date: task.createdAt ? task.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
-        staffName: task.assignedTo || 'Tim Lapangan',
+        staffName: task.assignedName || task.assignedTo || 'Tim Lapangan',
         division: task.division || 'Umum',
         category: 'Daily Task',
         title: `Input Tugas: ${task.title}`,
-        activity: `${task.description || task.title}${task.location ? ` • Lokasi: ${task.location}` : ''} [Status: ${task.status}]`,
+        activity: `${task.description || task.title}${task.dueDate ? ` • Target: ${task.dueDate}` : ''} [Status: ${task.status}]`,
         qcResult: task.status === 'Done' ? 'OK' : 'INFO',
         timestamp: parseSafeTimestamp(task.createdAt, task.id),
         source: 'Daily Task Kanban',
@@ -265,12 +265,12 @@ export default function QCNotificationCenter({
       list.push({
         id,
         date: f.dateCreated || new Date().toISOString().split('T')[0],
-        staffName: f.reportedBy || 'Teknisi',
+        staffName: f.pic || 'Teknisi',
         division: f.division || 'Service',
         category: 'Temuan Kendala',
         title: `Input Temuan Kendala: ${f.equipment}`,
-        activity: `${f.issue}${f.actionTaken ? ` • Tindakan: ${f.actionTaken}` : ''} [Status: ${f.status}]`,
-        notes: f.actionPlan ? `Rencana: ${f.actionPlan}` : undefined,
+        activity: `${f.issue}${f.targetDate ? ` • Target: ${f.targetDate}` : ''} [Status: ${f.status}]`,
+        notes: f.priority ? `Prioritas: ${f.priority}` : undefined,
         qcResult: 'NG',
         timestamp: parseSafeTimestamp(f.dateCreated, f.id),
         source: 'Log Temuan Kerusakan',
@@ -281,20 +281,20 @@ export default function QCNotificationCenter({
     // 5. INPUT WORK ORDER (WO)
     workOrders.forEach(wo => {
       if (!wo || !wo.title) return;
-      const id = wo.id || `wo-${wo.createdAt}-${wo.title}`;
+      const id = wo.id || `wo-${wo.dateCreated}-${wo.title}`;
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
       list.push({
         id,
-        date: wo.createdAt ? wo.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
-        staffName: wo.assignedTo || 'Tim Perbaikan',
+        date: wo.dateCreated ? wo.dateCreated.split('T')[0] : new Date().toISOString().split('T')[0],
+        staffName: wo.pic || 'Tim Perbaikan',
         division: wo.division || 'Service',
         category: 'Work Order',
         title: `Input Work Order: ${wo.title}`,
-        activity: `Prioritas: ${wo.priority} • Status: ${wo.status} • Target: ${wo.dueDate || '-'}`,
-        qcResult: wo.status === 'Closed' ? 'OK' : 'INFO',
-        timestamp: parseSafeTimestamp(wo.createdAt, wo.id),
+        activity: `Prioritas: ${wo.priority || 'Normal'} • Status: ${wo.status} • Target: ${wo.deadline || '-'}`,
+        qcResult: wo.status === 'Completed' ? 'OK' : 'INFO',
+        timestamp: parseSafeTimestamp(wo.dateCreated, wo.id),
         source: 'Work Order Management',
         targetTab: 'findings'
       });
@@ -416,7 +416,11 @@ export default function QCNotificationCenter({
     });
   }, [notifications, selectedDivision, selectedCategory, statusFilter, searchQuery]);
 
-  const handleOpenDrawer = () => {
+  const handleOpenDrawer = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setIsOpen(true);
     const now = Date.now();
     setLastReadTimestamp(now);
@@ -425,7 +429,11 @@ export default function QCNotificationCenter({
     } catch {}
   };
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const now = Date.now();
     setLastReadTimestamp(now);
     try {
@@ -435,7 +443,8 @@ export default function QCNotificationCenter({
 
   const handleItemClick = (item: NotificationItem) => {
     if (onNavigateTab && item.targetTab) {
-      onNavigateTab(item.targetTab);
+      const target = item.targetTab === 'absensi' ? 'absensi_self' : item.targetTab;
+      onNavigateTab(target);
       setIsOpen(false);
     }
   };
@@ -482,32 +491,34 @@ export default function QCNotificationCenter({
       {/* 1. TOMBOL UTAMA ICON LONCENG NOTIFIKASI                    */}
       {/* ────────────────────────────────────────────────────────── */}
       <button
+        type="button"
         onClick={handleOpenDrawer}
-        className={`relative flex items-center justify-center transition-all cursor-pointer ${
+        className={`relative flex items-center justify-center transition-all cursor-pointer select-none ${
           isMobileHeader
             ? 'p-2 bg-[#1e293b] hover:bg-slate-700 text-white rounded-lg border border-slate-700 active:scale-95 shadow-xs'
             : buttonClassName ||
-              'px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs hover:border-slate-300 active:scale-95'
+              'px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 text-xs font-semibold rounded-lg border border-slate-200 shadow-xs hover:border-slate-300 active:scale-95'
         }`}
         title="Buka Pusat Notifikasi Input Data User & QC"
+        aria-label="Buka Pusat Notifikasi Input Data User & QC"
       >
-        <div className="relative flex items-center">
-          <Bell className="w-4 h-4 text-indigo-600 animate-in" />
+        <div className="relative flex items-center pointer-events-none">
+          <Bell className={`w-4 h-4 ${isMobileHeader ? 'text-amber-400' : 'text-indigo-600'}`} />
           {unreadCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-600 text-white text-[9px] font-black shadow-xs ring-2 ring-white animate-pulse">
+            <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-600 text-white text-[9px] font-black shadow-xs ring-2 ring-white animate-pulse pointer-events-none">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
         </div>
 
         {!isMobileHeader && (
-          <span className="ml-1.5 hidden lg:inline text-xs font-bold text-slate-700">
+          <span className="ml-1.5 hidden lg:inline text-xs font-bold text-slate-700 pointer-events-none">
             Notifikasi Input Data
           </span>
         )}
 
         {!isMobileHeader && totalKendalaGlobal > 0 && (
-          <span className="ml-1.5 hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200">
+          <span className="ml-1.5 hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200 pointer-events-none">
             {totalKendalaGlobal} Kendala
           </span>
         )}
@@ -516,21 +527,23 @@ export default function QCNotificationCenter({
       {/* ────────────────────────────────────────────────────────── */}
       {/* 2. REAL-TIME LIVE TOAST NOTIFICATION (Pop-up Singkat)       */}
       {/* ────────────────────────────────────────────────────────── */}
-      {liveToast && typeof document !== 'undefined' && createPortal(
+      {liveToast && (
         <div 
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
             setLiveToast(null);
             handleOpenDrawer();
           }}
-          className="fixed top-4 right-4 z-[99999] bg-slate-900/95 backdrop-blur-md text-white p-3 px-4 rounded-xl shadow-2xl border border-indigo-500/50 flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 cursor-pointer max-w-sm hover:border-indigo-400 transition-all"
+          className="fixed top-4 right-4 z-[99999] bg-slate-900/95 backdrop-blur-md text-white p-3 px-4 rounded-xl shadow-2xl border border-indigo-500/50 flex items-center gap-3 cursor-pointer max-w-sm hover:border-indigo-400 transition-all select-none"
         >
-          <div className="w-9 h-9 rounded-lg bg-indigo-600/40 border border-indigo-400/50 flex items-center justify-center text-indigo-300 shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-indigo-600/40 border border-indigo-400/50 flex items-center justify-center text-indigo-300 shrink-0 pointer-events-none">
             <Bell className="w-4 h-4 animate-bounce" />
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 pointer-events-none">
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] font-bold text-white">Input Data Baru</span>
-              <span className="px-1.5 py-0.2 rounded bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[9px] font-mono">
+              <span className="px-1.5 py-0.5 rounded bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[9px] font-mono">
                 {liveToast.category}
               </span>
             </div>
@@ -539,35 +552,45 @@ export default function QCNotificationCenter({
             </p>
           </div>
           <button 
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               setLiveToast(null);
             }}
-            className="text-slate-400 hover:text-white p-1 rounded"
+            className="text-slate-400 hover:text-white p-1 rounded cursor-pointer"
+            title="Tutup Notifikasi"
           >
             <X className="w-3.5 h-3.5" />
           </button>
-        </div>,
-        document.body
+        </div>
       )}
 
       {/* ────────────────────────────────────────────────────────── */}
-      {/* 3. SLIDE-OVER DRAWER NOTIFIKASI VIA PORTAL (100vh)         */}
+      {/* 3. SLIDE-OVER DRAWER NOTIFIKASI (PORTAL VIEWPORT 100%)     */}
       {/* ────────────────────────────────────────────────────────── */}
       {isOpen && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] overflow-hidden" role="dialog" aria-modal="true">
+        <div 
+          className="fixed inset-0 z-[99999] overflow-hidden flex justify-end" 
+          role="dialog" 
+          aria-modal="true"
+        >
           {/* Backdrop Blur */}
           <div
-            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
-            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity duration-200 cursor-pointer"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsOpen(false);
+              }
+            }}
             aria-hidden="true"
           />
 
-          {/* Full-Height Drawer Panel (100vh) */}
+          {/* Full-Height Drawer Panel */}
           <div
-            className="fixed top-0 right-0 bottom-0 z-[10000] w-full sm:max-w-lg md:max-w-xl bg-white shadow-2xl flex flex-col border-l border-slate-200 overflow-hidden animate-in slide-in-from-right duration-250 ease-out"
+            className="relative z-10 w-full sm:max-w-lg md:max-w-xl bg-white shadow-2xl flex flex-col border-l border-slate-200 overflow-hidden h-full max-h-screen"
             onClick={e => e.stopPropagation()}
-            style={{ height: '100vh', maxHeight: '100vh' }}
           >
             {/* Top Header */}
             <div className="shrink-0 bg-[#0f172a] text-white px-4 py-3.5 border-b border-slate-800">
