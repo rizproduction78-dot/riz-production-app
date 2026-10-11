@@ -5,7 +5,8 @@
 
 export type Division = 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Gudang' | 'Admin' | 'Service' | 'Semua Divisi' | 'Umum';
 
-export const OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL = "https://drive.google.com/drive/folders/1a2b3c4d5e6f7g8h9i0j";
+export const OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL = "https://drive.google.com/drive/folders/1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h?usp=sharing";
+export const OFFICIAL_GOOGLE_DRIVE_FOLDER_ID = "1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h";
 
 export interface Staff {
   id: string;

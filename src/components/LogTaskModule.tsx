@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PrintHeader } from './PrintHeader';
-import { Staff, Division, DailyReport as DailyReportType, DailyTask, Finding, LogbookEntry, WorkOrder } from '../types';
+import { Staff, Division, DailyReport as DailyReportType, DailyTask, Finding, LogbookEntry, WorkOrder, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, getMasterStaffList } from '../data';
 import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';
 import { db } from '../lib/firebase';
@@ -1109,6 +1109,14 @@ export default function LogTaskModule({
                         <span>Upload Beberapa Foto dari Perangkat / Kamera</span>
                         <span className="text-[10px] text-slate-400 font-normal">Pilih 1 atau beberapa foto sekaligus (JPG, PNG, WEBP)</span>
                       </label>
+                      <a
+                        href={OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                      >
+                        Buka Folder Google Drive (Penyimpanan Foto QC)
+                      </a>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -1503,6 +1511,14 @@ export default function LogTaskModule({
                           <Upload className="w-4 h-4" />
                           <span>Pilih Beberapa Foto dari Perangkat / Kamera</span>
                         </label>
+                        <a
+                          href={OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                          Buka Folder Google Drive (Penyimpanan Foto Daily Report)
+                        </a>
                       </div>
                     ) : (
                       <div className="space-y-2">

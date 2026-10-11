@@ -224,4 +224,10 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
     - **Dual-Ingestion Konsisten:** Baik data yang diinput manual langsung ke tab Google Sheet oleh personil lapangan, maupun data yang diinput melalui aplikasi (form Daily Task / QC Checklist / Logbook) yang di-append ke Google Sheet, keduanya memiliki validitas hukum operasional yang sama dan disinkronkan secara timbal-balik (bi-directional).
     - **Kaidah Kehadiran Faktual:** Staff yang dianggap hadir adalah staff yang namanya tercantum di dalam Google Sheet pada aktivitas hari bersangkutan. Dilarang menghitung kehadiran dari shift template teoritis yang menyebabkan distorsi angka (seperti kehadiran ratusan hari padahal sebulan maksimal 31 hari).
 
+13. **Komit Mutlak: Folder Resmi Google Drive Penyimpanan Foto Dokumentasi:**
+    - **URL Folder Resmi:** `https://drive.google.com/drive/folders/1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h?usp=sharing`
+    - **Folder ID:** `1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h`
+    - **Fungsi:** Tempat penyimpanan seluruh file foto dokumentasi kegiatan lapangan, checklist QC, foto temuan unit kendala/rusak, dan bukti absensi yang dikirim dari aplikasi oleh pengguna.
+
+
 

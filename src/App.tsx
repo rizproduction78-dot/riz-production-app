@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Staff, LogbookEntry, DailyReport as DailyReportType, Finding, Asset, WorkOrder, MaintenanceSchedule, UserActivity, DailyTask } from './types';
+import { Staff, LogbookEntry, DailyReport as DailyReportType, Finding, Asset, WorkOrder, MaintenanceSchedule, UserActivity, DailyTask, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL } from './types';
 import {
   STAFF_LIST,
   getMasterStaffList,
@@ -1530,7 +1530,7 @@ export default function App() {
                 </div>
               </div>
               <a
-                href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+                href={OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/50 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
@@ -1552,7 +1552,7 @@ export default function App() {
                 {currentUser.name.charAt(0).toUpperCase()}
               </div>
               <a
-                href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+                href={OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/50 rounded-lg transition-colors cursor-pointer"
@@ -1686,7 +1686,7 @@ export default function App() {
           </div>
           
           <a
-            href="https://drive.google.com/drive/folders/1vfayjDd8bmC0rWgtlZcTMBqc-kMPM16u?usp=sharing"
+            href={OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-900/40 hover:bg-emerald-800/60 text-emerald-300 border border-emerald-700/50 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
