@@ -229,5 +229,11 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
     - **Folder ID:** `1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h`
     - **Fungsi:** Tempat penyimpanan seluruh file foto dokumentasi kegiatan lapangan, checklist QC, foto temuan unit kendala/rusak, dan bukti absensi yang dikirim dari aplikasi oleh pengguna.
 
+14. **Komit Mutlak: Folder Resmi Google Drive Bukti Absensi:**
+    - **URL Folder Bukti Absensi:** `https://drive.google.com/drive/folders/1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h`
+    - **Folder ID:** `1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h`
+    - **Aturan Operasional:** Seluruh verifikasi foto selfie absensi kehadiran (Check In), absensi pulang (Check Out), bukti dokumentasi kehadiran lapangan, dan log absensi personil wajib tertaut secara permanen ke folder resmi ini. Tautan akses langsung wajib selalu tersedia di komponen Absensi Mandiri, form input foto selfie, dan histori log absensi.
+
+
 
 

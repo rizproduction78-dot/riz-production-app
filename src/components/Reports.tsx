@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, MaintenanceSchedule, DailyTask } from '../types';
+import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, MaintenanceSchedule, DailyTask, OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL } from '../types';
 import { FileText, Printer, FileDown, Download, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis, isStaffMatch, isStaffInGoogleSheet, isStaffInDivision } from '../utils/kpiCalculator';
@@ -760,8 +760,16 @@ export default function Reports({
 
           {/* 2. KEHADIRAN STAFF */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
               <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">2. KEHADIRAN STAFF</div>
+              <a
+                href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold transition-colors print:hidden inline-flex items-center gap-1"
+              >
+                📁 Folder Drive Bukti Absensi ↗
+              </a>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border border-slate-300 text-xs">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Staff, AttendanceLog, WorkSchedule, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL } from '../types';
+import { Staff, AttendanceLog, WorkSchedule, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL, OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import {
   SHIFT_LEGEND,
@@ -576,28 +576,41 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
             </p>
           </div>
 
-          {/* Sub-Tabs */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg self-start">
-            <button
-              onClick={() => setActiveSubTab('self')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                activeSubTab === 'self' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
-              }`}
+          {/* Sub-Tabs and Drive Bukti Button */}
+          <div className="flex flex-wrap items-center gap-2 self-start">
+            <a
+              href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
+              title="Folder Bukti Absensi Google Drive"
             >
-              Absensi Mandiri
-            </button>
-            
-            {/* Schedule Tab available to Admin, Supervisor and Manager */}
-            {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+              <Camera className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Folder Bukti Absensi ↗</span>
+            </a>
+
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg">
               <button
-                onClick={() => setActiveSubTab('schedule')}
+                onClick={() => setActiveSubTab('self')}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                  activeSubTab === 'schedule' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                  activeSubTab === 'self' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
                 }`}
               >
-                Penjadwalan (1-31)
+                Absensi Mandiri
               </button>
-            )}
+              
+              {/* Schedule Tab available to Admin, Supervisor and Manager */}
+              {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                <button
+                  onClick={() => setActiveSubTab('schedule')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                    activeSubTab === 'schedule' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                  }`}
+                >
+                  Penjadwalan (1-31)
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -721,28 +734,36 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                             >
                               <X className="w-4 h-4" />
                             </button>
+                            <a
+                              href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="absolute bottom-2 left-2 right-2 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] py-1 px-2 rounded font-bold text-center hover:bg-slate-900 transition-colors"
+                            >
+                              📁 Folder Bukti Absensi (Drive) ↗
+                            </a>
                           </div>
                         ) : (
                           <div className="h-32 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-500 bg-slate-50 relative overflow-hidden">
                               <Camera className="w-8 h-8 mb-2 text-slate-300" />
                               <span className="text-xs font-medium">Foto Selfie Area/Wajah</span>
                               <label className="mt-2 text-[11px] text-indigo-600 font-bold hover:underline cursor-pointer">
-                                Buka Kamera
+                                Buka Kamera / Pilih File
                                 <input 
                                   type="file" 
                                   accept="image/*" 
-                                  capture="environment" 
+                                  capture="user" 
                                   className="hidden" 
                                   onChange={handlePhotoUpload} 
                                 />
                               </label>
                               <a
-                                href={OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL}
+                                href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-1.5 text-[10px] text-indigo-500 hover:text-indigo-700 font-bold block transition-colors"
+                                className="mt-1.5 text-[10px] text-indigo-600 hover:text-indigo-800 font-bold block transition-colors underline"
                               >
-                                Folder Drive Bukti Absensi
+                                📁 Folder Drive Bukti Absensi ↗
                               </a>
                           </div>
                         )}
@@ -892,12 +913,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                   HISTORI LOG ABSENSI TERBARU
                 </div>
                 <a
-                  href={OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL}
+                  href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold transition-colors"
+                  className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold transition-colors inline-flex items-center gap-1"
                 >
-                  Drive Bukti Foto ↗
+                  📁 Drive Bukti Absensi ↗
                 </a>
               </div>
 
@@ -924,6 +945,14 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                         ) : (
                           <span className="text-[9px] text-emerald-600 font-bold font-mono">Tepat Waktu</span>
                         )}
+                        <a
+                          href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] text-indigo-600 hover:text-indigo-800 font-bold underline ml-auto"
+                        >
+                          Bukti Foto ↗
+                        </a>
                       </div>
                     </div>
                   ))
@@ -973,6 +1002,16 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
             </div>
 
             <div className="flex items-center gap-2">
+              <a
+                href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-700 flex items-center gap-1.5 transition-colors"
+                title="Folder Bukti Absensi Google Drive"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Drive Bukti Absensi ↗</span>
+              </a>
               <button
                 onClick={() => window.print()}
                 className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer"
