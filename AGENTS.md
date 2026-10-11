@@ -219,3 +219,9 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
     - **Monotonik & Logis:** Staf dengan kontribusi riil lebih tinggi (3 laporan, 2 QC, 24 jam) WAJIB mendapatkan skor KPI lebih tinggi dan berada pada peringkat lebih atas dibandingkan staf dengan kontribusi lebih rendah (2 laporan/16 jam, atau 1 laporan/8 jam).
     - **Urutan Resmi Tabel & Top Performer:** Tabel Produktivitas Staf dan widget Top Performer diurutkan secara konsisten: Total KPI (%) Descending -> Kehadiran Riil Descending -> Daily Report Descending -> QC Checklist Descending -> WO Descending.
 
+12. **Komit Mutlak: Google Sheet Sumber Acuan Resmi Mutlak (Single Source of Truth):**
+    - **Status Resmi:** Google Sheet yang disertakan (Spreadsheet ID: `1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA`) adalah satu-satunya sumber acuan data resmi mutlak operasional PT. Riz Production Multi Kreasi.
+    - **Dual-Ingestion Konsisten:** Baik data yang diinput manual langsung ke tab Google Sheet oleh personil lapangan, maupun data yang diinput melalui aplikasi (form Daily Task / QC Checklist / Logbook) yang di-append ke Google Sheet, keduanya memiliki validitas hukum operasional yang sama dan disinkronkan secara timbal-balik (bi-directional).
+    - **Kaidah Kehadiran Faktual:** Staff yang dianggap hadir adalah staff yang namanya tercantum di dalam Google Sheet pada aktivitas hari bersangkutan. Dilarang menghitung kehadiran dari shift template teoritis yang menyebabkan distorsi angka (seperti kehadiran ratusan hari padahal sebulan maksimal 31 hari).
+
+
