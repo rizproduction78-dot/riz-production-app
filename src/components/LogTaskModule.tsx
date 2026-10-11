@@ -269,11 +269,12 @@ export default function LogTaskModule({
       : 'Pending Verifikasi';
 
     const effectiveQcStaff = isManagement ? qcStaffName : currentUser.name;
+    const effectiveQcDivision = isManagement ? qcDivision : currentUser.division;
 
     if (onAddLogbookEntry) {
       onAddLogbookEntry({
         date: qcDate,
-        division: qcDivision as any,
+        division: effectiveQcDivision as any,
         staffName: effectiveQcStaff,
         activity: qcActivityType,
         result: overallResult,
@@ -290,7 +291,7 @@ export default function LogTaskModule({
     onAddReport({
       date: qcDate,
       staffName: effectiveQcStaff,
-      division: qcDivision,
+      division: effectiveQcDivision,
       activity: `[QC Checklist] ${qcActivityType} - ${qcEquipmentArea}`,
       notes: `Hasil Inspeksi: ${overallResult}. Catatan: ${qcFollowUp || 'Sesuai checklist SOP'}.`,
       photoUrl: qcPhotoUrls[0] || undefined,
@@ -298,7 +299,7 @@ export default function LogTaskModule({
       status: 'Submitted'
     });
 
-    onLogActivity(currentUser.name, currentUser.role, `Melakukan Checklist QC Divisi ${qcDivision} dengan hasil ${overallResult}`);
+    onLogActivity(currentUser.name, currentUser.role, `Melakukan Checklist QC Divisi ${effectiveQcDivision} dengan hasil ${overallResult}`);
 
     // Auto-create Finding for any NG item
     let ngCount = 0;
@@ -390,14 +391,17 @@ export default function LogTaskModule({
     e.preventDefault();
     if (!taskTitle.trim()) return;
 
+    const effectiveTaskDivision = isManagement ? taskDivision : currentUser.division;
+    const effectiveTaskAssignee = isManagement ? taskAssignee : currentUser.name;
+
     if (editingTask) {
       const updated: DailyTask = {
         ...editingTask,
         title: taskTitle,
         description: taskDesc,
-        division: taskDivision,
+        division: effectiveTaskDivision,
         priority: taskPriority,
-        assignedName: taskAssignee,
+        assignedName: effectiveTaskAssignee,
         dueDate: taskDueDate,
         photos: taskPhotos.length > 0 ? taskPhotos : undefined,
         photoUrl: taskPhotos[0] || undefined
@@ -410,10 +414,10 @@ export default function LogTaskModule({
         id: 'task-' + Date.now(),
         title: taskTitle,
         description: taskDesc,
-        division: taskDivision,
+        division: effectiveTaskDivision,
         priority: taskPriority,
         status: 'Pending',
-        assignedName: taskAssignee,
+        assignedName: effectiveTaskAssignee,
         dueDate: taskDueDate,
         createdAt: new Date().toISOString(),
         createdBy: currentUser.name,
@@ -422,7 +426,7 @@ export default function LogTaskModule({
       };
       setTasks(prev => [newTask, ...prev]);
       saveCloudDoc('daily_tasks', newTask.id, newTask, currentUser.name);
-      onLogActivity(currentUser.name, currentUser.role, `Menambahkan daily task baru "${taskTitle}" [${taskDivision}]`);
+      onLogActivity(currentUser.name, currentUser.role, `Menambahkan daily task baru "${taskTitle}" [${effectiveTaskDivision}]`);
     }
 
     setShowTaskModal(false);
@@ -466,11 +470,12 @@ export default function LogTaskModule({
       : logNotes;
 
     const effectiveStaffName = isManagement ? logStaffName : currentUser.name;
+    const effectiveLogDivision = isManagement ? logDivision : currentUser.division;
 
     onAddReport({
       date: logDate,
       staffName: effectiveStaffName,
-      division: logDivision,
+      division: effectiveLogDivision,
       activity: logActivity,
       notes: finalNotes,
       photoUrl: uploadOption === 'none' ? undefined : (logPhotoUrls[0] || logPhotoUrl || undefined),
@@ -480,7 +485,7 @@ export default function LogTaskModule({
 
     if (hasFaultyUnit && onAddFinding && faultyUnitName.trim() && faultyUnitIssue.trim()) {
       onAddFinding({
-        equipment: `${logDivision} - ${faultyUnitName}`,
+        equipment: `${effectiveLogDivision} - ${faultyUnitName}`,
         issue: faultyUnitIssue,
         priority: faultyUnitPriority,
         pic: effectiveStaffName,
@@ -533,7 +538,7 @@ export default function LogTaskModule({
                         (t.assignedName && t.assignedName.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchDiv = isManagement
       ? (filterDivision === 'All' || t.division === filterDivision || (isDualStaffName(t.assignedName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
-      : (t.division === currentUser.division || userDivs.includes(t.division) || t.assignedName === currentUser.name || t.createdBy === currentUser.name || isDualStaffName(t.assignedName) || filterDivision === 'All' || t.division === filterDivision);
+      : (t.division === currentUser.division || userDivs.includes(t.division) || t.assignedName === currentUser.name || t.createdBy === currentUser.name || (isDualStaffName(currentUser.name) && (t.division === 'Videotron' || t.division === 'Service')));
     const matchPri = filterPriority === 'All' || t.priority === filterPriority;
     const matchMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
       ? true
@@ -566,7 +571,7 @@ export default function LogTaskModule({
       return (prioOrder[a.priority] || 99) - (prioOrder[b.priority] || 99);
     } else {
       const dateA = String(a.createdAt || a.dueDate || '').slice(0, 10);
-      const dateB = String(b.createdAt || b.dueDate || '').slice(0, 10);
+      const dateB = String(b.dueDate || a.createdAt || '').slice(0, 10);
       if (dateA !== dateB) return dateB.localeCompare(dateA);
       return b.id.localeCompare(a.id, undefined, { numeric: true });
     }
@@ -581,8 +586,9 @@ export default function LogTaskModule({
     const matchSearch = r.staffName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         r.activity.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         r.notes.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchDiv = filterDivision === 'All' || r.division === filterDivision || 
-                     (isDualStaffName(r.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service'));
+    const effectiveFilterDiv = isManagement ? filterDivision : currentUser.division;
+    const matchDiv = effectiveFilterDiv === 'All' || r.division === effectiveFilterDiv || 
+                     (isDualStaffName(r.staffName) && (effectiveFilterDiv === 'Videotron' || effectiveFilterDiv === 'Service'));
     const matchMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
       ? true
       : (!r.date || r.date.startsWith(activeMonth));
@@ -598,8 +604,9 @@ export default function LogTaskModule({
   const filteredLogbookEntries = logbookEntries.filter(e => {
     const matchSearch = (e.staffName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                         (e.activity || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchDiv = filterDivision === 'All' || e.division === filterDivision ||
-                     (isDualStaffName(e.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service'));
+    const effectiveFilterDiv = isManagement ? filterDivision : currentUser.division;
+    const matchDiv = effectiveFilterDiv === 'All' || e.division === effectiveFilterDiv ||
+                     (isDualStaffName(e.staffName) && (effectiveFilterDiv === 'Videotron' || effectiveFilterDiv === 'Service'));
     const matchMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
       ? true
       : (!e.date || e.date.startsWith(activeMonth));
@@ -965,20 +972,29 @@ export default function LogTaskModule({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Divisi (Lintas Divisi)</label>
-                    <select
-                      value={qcDivision}
-                      onChange={(e) => setQcDivision(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
-                    >
-                      <option value="Audio">🔊 Audio (Sound)</option>
-                      <option value="Lighting">💡 Lighting</option>
-                      <option value="Videotron">📺 Videotron</option>
-                      <option value="Multimedia">🎥 Multimedia</option>
-                      <option value="Gudang">📦 Gudang</option>
-                      <option value="Service">🔧 Service</option>
-                      <option value="Umum">📌 Umum (Lintas Divisi)</option>
-                    </select>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Divisi</label>
+                    {isManagement ? (
+                      <select
+                        value={qcDivision}
+                        onChange={(e) => setQcDivision(e.target.value as any)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
+                      >
+                        <option value="Audio">🔊 Audio (Sound)</option>
+                        <option value="Lighting">💡 Lighting</option>
+                        <option value="Videotron">📺 Videotron</option>
+                        <option value="Multimedia">🎥 Multimedia</option>
+                        <option value="Gudang">📦 Gudang</option>
+                        <option value="Service">🔧 Service</option>
+                        <option value="Umum">📌 Umum (Lintas Divisi)</option>
+                      </select>
+                    ) : (
+                      <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          {currentUser.division}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1384,21 +1400,30 @@ export default function LogTaskModule({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Divisi Pekerjaan (Lintas Divisi)</label>
-                  <select
-                    value={logDivision}
-                    onChange={(e) => setLogDivision(e.target.value as Division)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer font-medium"
-                  >
-                    <option value="Audio">Audio (Sound)</option>
-                    <option value="Lighting">Lighting</option>
-                    <option value="Videotron">Videotron</option>
-                    <option value="Multimedia">Multimedia</option>
-                    <option value="Gudang">Gudang</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Service">Service</option>
-                    <option value="Umum">Umum (Lintas Divisi)</option>
-                  </select>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Divisi Pekerjaan</label>
+                  {isManagement ? (
+                    <select
+                      value={logDivision}
+                      onChange={(e) => setLogDivision(e.target.value as Division)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer font-medium"
+                    >
+                      <option value="Audio">Audio (Sound)</option>
+                      <option value="Lighting">Lighting</option>
+                      <option value="Videotron">Videotron</option>
+                      <option value="Multimedia">Multimedia</option>
+                      <option value="Gudang">Gudang</option>
+                      <option value="Admin">Admin</option>
+                      <option value="Service">Service</option>
+                      <option value="Umum">Umum (Lintas Divisi)</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        {currentUser.division}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1897,21 +1922,30 @@ export default function LogTaskModule({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-500 uppercase mb-1">Divisi Pelaksana (Lintas Divisi)</label>
-                  <select
-                    value={taskDivision}
-                    onChange={(e) => setTaskDivision(e.target.value as Division)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
-                  >
-                    <option value="Audio">🔊 Audio (Sound)</option>
-                    <option value="Lighting">💡 Lighting</option>
-                    <option value="Videotron">📺 Videotron</option>
-                    <option value="Multimedia">🎥 Multimedia</option>
-                    <option value="Gudang">📦 Gudang</option>
-                    <option value="Admin">🗄️ Admin</option>
-                    <option value="Service">🔧 Service</option>
-                    <option value="Umum">📌 Umum (Lintas Divisi)</option>
-                  </select>
+                  <label className="block font-bold text-slate-500 uppercase mb-1">Divisi Pelaksana</label>
+                  {isManagement ? (
+                    <select
+                      value={taskDivision}
+                      onChange={(e) => setTaskDivision(e.target.value as Division)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
+                    >
+                      <option value="Audio">🔊 Audio (Sound)</option>
+                      <option value="Lighting">💡 Lighting</option>
+                      <option value="Videotron">📺 Videotron</option>
+                      <option value="Multimedia">🎥 Multimedia</option>
+                      <option value="Gudang">📦 Gudang</option>
+                      <option value="Admin">🗄️ Admin</option>
+                      <option value="Service">🔧 Service</option>
+                      <option value="Umum">📌 Umum (Lintas Divisi)</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        {currentUser.division}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -1930,16 +1964,26 @@ export default function LogTaskModule({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-500 uppercase mb-1">Ditugaskan Kepada (PIC Lintas Divisi)</label>
-                  <select
-                    value={taskAssignee}
-                    onChange={(e) => setTaskAssignee(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
-                  >
-                    {staffList.map(s => (
-                      <option key={s.id} value={s.name}>{s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}</option>
-                    ))}
-                  </select>
+                  <label className="block font-bold text-slate-500 uppercase mb-1">Ditugaskan Kepada (PIC)</label>
+                  {isManagement ? (
+                    <select
+                      value={taskAssignee}
+                      onChange={(e) => setTaskAssignee(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
+                    >
+                      {staffList.map(s => (
+                        <option key={s.id} value={s.name}>{s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-slate-500" />
+                        {currentUser.name}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
+                    </div>
+                  )}
                 </div>
 
                 <div>

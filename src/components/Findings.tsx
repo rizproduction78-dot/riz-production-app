@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Finding, Division, Staff, WorkOrder, Asset } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
-import { AlertTriangle, Plus, Search, Trash2, CheckCircle, Clock, Check, X, ShieldAlert, Wrench, ArrowRight, Activity, Filter, Sparkles, CheckSquare } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Trash2, CheckCircle, Clock, Check, X, ShieldAlert, Wrench, ArrowRight, Activity, Filter, Sparkles, CheckSquare, User } from 'lucide-react';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 
 interface FindingsProps {
@@ -92,7 +92,7 @@ export default function Findings({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
-  const [filterDivision, setFilterDivision] = useState<string>('All');
+  const [filterDivision, setFilterDivision] = useState<string>(isManagement ? 'All' : (currentUser?.division || 'All'));
   const [filterByActiveMonth, setFilterByActiveMonth] = useState(true);
 
   // Form state for Findings
@@ -100,64 +100,74 @@ export default function Findings({
   const [equipment, setEquipment] = useState('');
   const [issue, setIssue] = useState('');
   const [priority, setPriority] = useState<'Tinggi' | 'Sedang' | 'Rendah'>('Sedang');
-  const [pic, setPic] = useState('');
-  const [findingDivision, setFindingDivision] = useState<Division>('Audio');
+  const [pic, setPic] = useState(isManagement ? '' : (currentUser?.name || ''));
+  const [findingDivision, setFindingDivision] = useState<Division>(currentUser?.division || 'Audio');
   const [targetDate, setTargetDate] = useState(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
   // Form state for Work Order
   const [showAddWOForm, setShowAddWOForm] = useState(false);
   const [woTitle, setWoTitle] = useState('');
   const [woDescription, setWoDescription] = useState('');
-  const [woPic, setWoPic] = useState('');
-  const [woDivision, setWoDivision] = useState<Division>('Service');
+  const [woPic, setWoPic] = useState(isManagement ? '' : (currentUser?.name || ''));
+  const [woDivision, setWoDivision] = useState<Division>(currentUser?.division || 'Service');
   const [woDeadline, setWoDeadline] = useState(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
+  const isDualStaffName = (name?: string) => {
+    if (!name) return false;
+    const n = name.toLowerCase();
+    return n.includes('mulyana') || n.includes('kharo');
+  };
 
   const handleSubmitFinding = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!equipment.trim() || !issue.trim() || !pic) return;
+    const effectivePic = isManagement ? pic : (currentUser?.name || pic);
+    const effectiveDiv = isManagement ? findingDivision : (currentUser?.division || findingDivision);
+    if (!equipment.trim() || !issue.trim() || !effectivePic) return;
 
     onAddFinding({
       equipment,
       issue,
       priority,
-      pic,
-      division: findingDivision,
+      pic: effectivePic,
+      division: effectiveDiv,
       targetDate,
       status: 'Open',
     });
 
-    onLogActivity(currentUser.name, currentUser.role, `Menambahkan temuan QC untuk ${equipment} (Divisi: ${findingDivision}, PIC: ${pic})`);
+    onLogActivity(currentUser.name, currentUser.role, `Menambahkan temuan QC untuk ${equipment} (Divisi: ${effectiveDiv}, PIC: ${effectivePic})`);
 
     // Reset Form
     setEquipment('');
     setIssue('');
     setPriority('Sedang');
-    setPic('');
-    setFindingDivision('Audio');
+    setPic(isManagement ? '' : (currentUser?.name || ''));
+    setFindingDivision(currentUser?.division || 'Audio');
     setShowAddForm(false);
   };
 
   const handleSubmitWO = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!woTitle.trim() || !woPic || !onAddWorkOrder) return;
+    const effectiveWoPic = isManagement ? woPic : (currentUser?.name || woPic);
+    const effectiveWoDiv = isManagement ? woDivision : (currentUser?.division || woDivision);
+    if (!woTitle.trim() || !effectiveWoPic || !onAddWorkOrder) return;
 
     onAddWorkOrder({
       title: woTitle,
       description: woDescription,
-      pic: woPic,
-      division: woDivision,
+      pic: effectiveWoPic,
+      division: effectiveWoDiv,
       deadline: woDeadline,
       progress: 0,
       status: 'Pending',
     });
 
-    onLogActivity(currentUser.name, currentUser.role, `Menerbitkan Work Order baru: "${woTitle}" untuk PIC ${woPic}`);
+    onLogActivity(currentUser.name, currentUser.role, `Menerbitkan Work Order baru: "${woTitle}" untuk PIC ${effectiveWoPic}`);
 
     // Reset Form
     setWoTitle('');
     setWoDescription('');
-    setWoPic('');
-    setWoDivision('Service');
+    setWoPic(isManagement ? '' : (currentUser?.name || ''));
+    setWoDivision(currentUser?.division || 'Service');
     setShowAddWOForm(false);
   };
 
@@ -346,7 +356,11 @@ export default function Findings({
     const matchesSearch = equip.includes(q) || iss.includes(q) || p.includes(q) || (findingDiv && findingDiv.toLowerCase().includes(q));
     const matchesPriority = filterPriority === 'All' || f?.priority === filterPriority;
     const matchesStatus = filterStatus === 'All' || f?.status === filterStatus;
-    const matchesDivision = filterDivision === 'All' || findingDiv === filterDivision;
+    const effectiveFilterDiv = isManagement ? filterDivision : (currentUser?.division || 'All');
+    const isDualUser = isDualStaffName(currentUser?.name || '');
+    const matchesDivision = isManagement
+      ? (filterDivision === 'All' || findingDiv === filterDivision)
+      : (effectiveFilterDiv === 'All' || findingDiv === effectiveFilterDiv || (isDualUser && (findingDiv === 'Videotron' || findingDiv === 'Service')));
     const matchesMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
       ? true
       : (!f?.dateCreated || f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth)));
@@ -370,7 +384,11 @@ export default function Findings({
     const q = searchTerm.toLowerCase();
 
     const matchesSearch = t.includes(q) || d.includes(q) || p.includes(q);
-    const matchesDivision = filterDivision === 'All' || w?.division === filterDivision;
+    const effectiveFilterDiv = isManagement ? filterDivision : (currentUser?.division || 'All');
+    const isDualUser = isDualStaffName(currentUser?.name || '');
+    const matchesDivision = isManagement
+      ? (filterDivision === 'All' || w?.division === filterDivision)
+      : (effectiveFilterDiv === 'All' || w?.division === effectiveFilterDiv || (isDualUser && (w?.division === 'Videotron' || w?.division === 'Service')));
     const matchesStatus = filterStatus === 'All' || w?.status === filterStatus;
     const matchesMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
       ? true
@@ -517,22 +535,28 @@ export default function Findings({
             </select>
           )}
 
-          <select
-            value={filterDivision}
-            onChange={(e) => setFilterDivision(e.target.value)}
-            className={`px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:outline-none cursor-pointer font-medium ${
-              activeSubTab === 'findings' ? 'focus:ring-indigo-500' : 'focus:ring-blue-500'
-            }`}
-          >
-            <option value="All">🌐 Semua Divisi (7 Divisi)</option>
-            <option value="Audio">🔊 Divisi Audio</option>
-            <option value="Lighting">💡 Divisi Lighting</option>
-            <option value="Videotron">📺 Divisi Videotron</option>
-            <option value="Multimedia">🎥 Divisi Multimedia</option>
-            <option value="Gudang">📦 Divisi Gudang</option>
-            <option value="Admin">💼 Divisi Admin</option>
-            <option value="Service">🔧 Divisi Service</option>
-          </select>
+          {isManagement ? (
+            <select
+              value={filterDivision}
+              onChange={(e) => setFilterDivision(e.target.value)}
+              className={`px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:outline-none cursor-pointer font-medium ${
+                activeSubTab === 'findings' ? 'focus:ring-indigo-500' : 'focus:ring-blue-500'
+              }`}
+            >
+              <option value="All">🌐 Semua Divisi (7 Divisi)</option>
+              <option value="Audio">🔊 Divisi Audio</option>
+              <option value="Lighting">💡 Divisi Lighting</option>
+              <option value="Videotron">📺 Divisi Videotron</option>
+              <option value="Multimedia">🎥 Divisi Multimedia</option>
+              <option value="Gudang">📦 Divisi Gudang</option>
+              <option value="Admin">💼 Divisi Admin</option>
+              <option value="Service">🔧 Divisi Service</option>
+            </select>
+          ) : (
+            <div className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-bold text-blue-800 flex items-center gap-1.5">
+              <span>Departemen: {currentUser?.division || 'Divisi'} (Akses Terkunci)</span>
+            </div>
+          )}
 
           <select
             value={filterStatus}
@@ -646,42 +670,61 @@ export default function Findings({
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                     PIC Penanggung Jawab
                   </label>
-                  <select
-                    value={pic}
-                    onChange={(e) => {
-                      const selectedName = e.target.value;
-                      setPic(selectedName);
-                    }}
-                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    required
-                  >
-                    <option value="">-- Pilih PIC Staff --</option>
-                    {staffList.map(s => (
-                      <option key={s.id} value={s.name}>
-                        {s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}
-                      </option>
-                    ))}
-                  </select>
+                  {isManagement ? (
+                    <select
+                      value={pic}
+                      onChange={(e) => {
+                        const selectedName = e.target.value;
+                        setPic(selectedName);
+                      }}
+                      className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      required
+                    >
+                      <option value="">-- Pilih PIC Staff --</option>
+                      {staffList.map(s => (
+                        <option key={s.id} value={s.name}>
+                          {s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-slate-500" />
+                        {currentUser?.name || pic}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                     Divisi Terkait
                   </label>
-                  <select
-                    value={findingDivision}
-                    onChange={(e) => setFindingDivision(e.target.value as Division)}
-                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    required
-                  >
-                    <option value="Audio">🔊 Audio</option>
-                    <option value="Lighting">💡 Lighting</option>
-                    <option value="Videotron">📺 Videotron</option>
-                    <option value="Multimedia">🎥 Multimedia</option>
-                    <option value="Gudang">📦 Gudang</option>
-                    <option value="Admin">💼 Admin</option>
-                    <option value="Service">🔧 Service</option>
-                  </select>
+                  {isManagement ? (
+                    <select
+                      value={findingDivision}
+                      onChange={(e) => setFindingDivision(e.target.value as Division)}
+                      className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      required
+                    >
+                      <option value="Audio">🔊 Audio</option>
+                      <option value="Lighting">💡 Lighting</option>
+                      <option value="Videotron">📺 Videotron</option>
+                      <option value="Multimedia">🎥 Multimedia</option>
+                      <option value="Gudang">📦 Gudang</option>
+                      <option value="Admin">💼 Admin</option>
+                      <option value="Service">🔧 Service</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        {currentUser?.division || findingDivision}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="col-span-2">
@@ -973,37 +1016,56 @@ export default function Findings({
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                     Divisi Pelaksana
                   </label>
-                  <select
-                    value={woDivision}
-                    onChange={(e) => setWoDivision(e.target.value as any)}
-                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  >
-                    <option value="Service">🔧 Divisi Service</option>
-                    <option value="Audio">🔊 Divisi Audio</option>
-                    <option value="Lighting">💡 Divisi Lighting</option>
-                    <option value="Videotron">📺 Divisi Videotron</option>
-                    <option value="Multimedia">🎥 Divisi Multimedia</option>
-                    <option value="Gudang">📦 Divisi Gudang</option>
-                  </select>
+                  {isManagement ? (
+                    <select
+                      value={woDivision}
+                      onChange={(e) => setWoDivision(e.target.value as any)}
+                      className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    >
+                      <option value="Service">🔧 Divisi Service</option>
+                      <option value="Audio">🔊 Divisi Audio</option>
+                      <option value="Lighting">💡 Divisi Lighting</option>
+                      <option value="Videotron">📺 Divisi Videotron</option>
+                      <option value="Multimedia">🎥 Divisi Multimedia</option>
+                      <option value="Gudang">📦 Divisi Gudang</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        {currentUser?.division || woDivision}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                     Teknisi PIC
                   </label>
-                  <select
-                    value={woPic}
-                    onChange={(e) => setWoPic(e.target.value)}
-                    className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    required
-                  >
-                    <option value="">-- Pilih PIC Teknisi --</option>
-                    {staffList.map(s => (
-                      <option key={s.id} value={s.name}>
-                        {s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}
-                      </option>
-                    ))}
-                  </select>
+                  {isManagement ? (
+                    <select
+                      value={woPic}
+                      onChange={(e) => setWoPic(e.target.value)}
+                      className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      required
+                    >
+                      <option value="">-- Pilih PIC Teknisi --</option>
+                      {staffList.map(s => (
+                        <option key={s.id} value={s.name}>
+                          {s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-slate-500" />
+                        {currentUser?.name || woPic}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="col-span-2">
