@@ -600,16 +600,26 @@ export default function App() {
   });
 
   const [activities, setActivities] = useState<UserActivity[]>(() => {
-    const saved = localStorage.getItem('riz_activities');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: '1',
-        timestamp: new Date().toLocaleTimeString('id-ID'),
-        username: 'System Boot',
-        role: 'Server',
-        action: 'Sistem logbook RIZ-PRODUCTION online'
+    try {
+      const saved = localStorage.getItem('riz_activities');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Bersihkan seluruh rekaman aktifitas server penarikan/pengiriman data
+          const userOnly = parsed.filter(act =>
+            act &&
+            act.role !== 'Server' &&
+            act.username !== 'System Auto-Sync' &&
+            act.username !== 'System Boot' &&
+            !String(act.action || '').toLowerCase().includes('sinkronisasi') &&
+            !String(act.action || '').toLowerCase().includes('auto-sync')
+          );
+          localStorage.setItem('riz_activities', JSON.stringify(userOnly));
+          return userOnly;
+        }
       }
-    ];
+    } catch {}
+    return [];
   });
 
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>(() => {
@@ -690,7 +700,18 @@ export default function App() {
     const unsubActivities = subscribeCloudCollection<UserActivity>(
       'activities',
       'riz_activities',
-      setActivities,
+      (items) => {
+        // Filter agar aktifitas server penarikan/pengiriman data tidak dimunculkan
+        const userOnly = items.filter(act =>
+          act &&
+          act.role !== 'Server' &&
+          act.username !== 'System Auto-Sync' &&
+          act.username !== 'System Boot' &&
+          !String(act.action || '').toLowerCase().includes('sinkronisasi') &&
+          !String(act.action || '').toLowerCase().includes('auto-sync')
+        );
+        setActivities(userOnly);
+      },
       []
     );
 
@@ -732,8 +753,17 @@ export default function App() {
     localStorage.setItem('riz_active_month_key', activeMonth);
   }, [activeMonth]);
 
-  // Logging Activity helper (defined first — diperlukan oleh handleSyncDailyLogFromSheet)
+  // Logging Activity helper (hanya aktivitas user riil; aktifitas server tidak disimpan/ditampilkan)
   const handleLogActivity = (username: string, role: string, action: string) => {
+    if (
+      role === 'Server' ||
+      username === 'System Auto-Sync' ||
+      username === 'System Boot' ||
+      String(action || '').toLowerCase().includes('sinkronisasi') ||
+      String(action || '').toLowerCase().includes('auto-sync')
+    ) {
+      return;
+    }
     const newAct: UserActivity = {
       id: 'act-' + Date.now(),
       timestamp: new Date().toLocaleString('id-ID'),
@@ -872,7 +902,6 @@ export default function App() {
         const ts = new Date().toISOString();
         setLastSheetPull(ts);
         try { localStorage.setItem('riz_daily_log_last_pull', ts); } catch (_e) {}
-        handleLogActivity('System Auto-Sync', 'Server', `Sinkronisasi Google Sheet: ${result.newReportsCount} laporan + ${result.newFindingsCount} temuan baru dari sheet ${activeMonth}`);
       } else if (result.success) {
         setLastSheetPull(new Date().toISOString());
         try { localStorage.setItem('riz_daily_log_last_pull', new Date().toISOString()); } catch (_e) {}

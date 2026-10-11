@@ -21,6 +21,17 @@ export default function ActivityHistory({
   const [searchTerm, setSearchTerm] = useState('');
 
   const filtered = activities.filter((act) => {
+    // Sesuai instruksi: aktifitas server untuk proses penarikan atau pengiriman data tidak perlu dimunculkan atau ditampilkan
+    const isServerSync =
+      act.role === 'Server' ||
+      act.username === 'System Auto-Sync' ||
+      act.username === 'System Boot' ||
+      String(act.action || '').toLowerCase().includes('sinkronisasi') ||
+      String(act.action || '').toLowerCase().includes('auto-sync') ||
+      String(act.action || '').toLowerCase().includes('penarikan') ||
+      String(act.action || '').toLowerCase().includes('pengiriman');
+    if (isServerSync) return false;
+
     return act.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
            act.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
            act.action.toLowerCase().includes(searchTerm.toLowerCase());

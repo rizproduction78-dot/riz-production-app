@@ -130,6 +130,7 @@ export default function QCNotificationCenter({
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'NG' | 'OK'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [liveToast, setLiveToast] = useState<NotificationItem | null>(null);
+  const [displayLimit, setDisplayLimit] = useState<number>(50);
 
   const [lastReadTimestamp, setLastReadTimestamp] = useState<number>(() => {
     try {
@@ -141,6 +142,11 @@ export default function QCNotificationCenter({
   });
 
   const previousCountRef = useRef<number>(0);
+
+  // Reset display limit saat filter berubah
+  useEffect(() => {
+    setDisplayLimit(50);
+  }, [selectedDivision, selectedCategory, statusFilter, searchQuery, activeMonth]);
 
   // Kunci scroll halaman ketika drawer terbuka & dengarkan tombol Escape
   useEffect(() => {
@@ -335,9 +341,21 @@ export default function QCNotificationCenter({
       });
     });
 
-    // 7. INPUT AKTIVITAS OPERASIONAL (Activities)
+    // 7. INPUT AKTIVITAS OPERASIONAL (Hanya Aktivitas User Riil, Bukan Server Sync)
     activities.forEach(act => {
-      if (!act || !act.action || act.username === 'System Boot') return;
+      if (!act || !act.action) return;
+      // TASK: Aktifitas server untuk proses penarikan atau pengiriman data tidak perlu dimunculkan atau ditampilkan
+      const isServerSync =
+        act.role === 'Server' ||
+        act.username === 'System Auto-Sync' ||
+        act.username === 'System Boot' ||
+        act.username === 'Server' ||
+        String(act.action || '').toLowerCase().includes('sinkronisasi') ||
+        String(act.action || '').toLowerCase().includes('auto-sync') ||
+        String(act.action || '').toLowerCase().includes('penarikan') ||
+        String(act.action || '').toLowerCase().includes('pengiriman');
+      if (isServerSync) return;
+
       const actDate = act.timestamp && act.timestamp.includes('T') ? act.timestamp.split('T')[0] : new Date().toISOString().split('T')[0];
       if (filterMonth && actDate && !actDate.startsWith(filterMonth)) return;
       const id = act.id || `act-${act.timestamp}-${act.username}`;
@@ -541,7 +559,7 @@ export default function QCNotificationCenter({
       {/* ────────────────────────────────────────────────────────── */}
       {/* 2. REAL-TIME LIVE TOAST NOTIFICATION (Pop-up Singkat)       */}
       {/* ────────────────────────────────────────────────────────── */}
-      {liveToast && (
+      {liveToast && typeof document !== 'undefined' && createPortal(
         <div 
           onClick={(e) => {
             e.preventDefault();
@@ -576,7 +594,8 @@ export default function QCNotificationCenter({
           >
             <X className="w-3.5 h-3.5" />
           </button>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ────────────────────────────────────────────────────────── */}
@@ -793,103 +812,114 @@ export default function QCNotificationCenter({
                   </p>
                 </div>
               ) : (
-                filteredNotifications.map(item => {
-                  const isNg = item.qcResult === 'NG';
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => handleItemClick(item)}
-                      className={`rounded-lg border bg-white transition-all shadow-xs overflow-hidden cursor-pointer hover:shadow-md ${
-                        isNg
-                          ? 'border-l-4 border-l-rose-500 border-slate-200'
-                          : 'border-l-4 border-l-emerald-500 border-slate-200'
-                      }`}
-                    >
-                      <div className="p-3">
-                        {/* Header Kartu: Staf, Divisi, Tanggal & Kategori */}
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                            <span className="text-xs font-bold text-slate-900 truncate">
-                              {item.staffName}
-                            </span>
-                            <span
-                              className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${getDivisionColor(
-                                item.division
-                              )}`}
-                            >
-                              {item.division}
-                            </span>
-                            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                              {item.category}
-                            </span>
+                <>
+                  {filteredNotifications.slice(0, displayLimit).map(item => {
+                    const isNg = item.qcResult === 'NG';
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => handleItemClick(item)}
+                        className={`rounded-lg border bg-white transition-all shadow-xs overflow-hidden cursor-pointer hover:shadow-md ${
+                          isNg
+                            ? 'border-l-4 border-l-rose-500 border-slate-200'
+                            : 'border-l-4 border-l-emerald-500 border-slate-200'
+                        }`}
+                      >
+                        <div className="p-3">
+                          {/* Header Kartu: Staf, Divisi, Tanggal & Kategori */}
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                              <span className="text-xs font-bold text-slate-900 truncate">
+                                {item.staffName}
+                              </span>
+                              <span
+                                className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${getDivisionColor(
+                                  item.division
+                                )}`}
+                              >
+                                {item.division}
+                              </span>
+                              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                {item.category}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10px] font-mono text-slate-400 font-semibold">
+                                {item.time || item.date}
+                              </span>
+                              <span
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                  isNg
+                                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                }`}
+                              >
+                                {isNg ? (
+                                  <>
+                                    <AlertTriangle className="w-2.5 h-2.5 text-rose-600" />
+                                    <span>Kendala</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                                    <span>Aman</span>
+                                  </>
+                                )}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10px] font-mono text-slate-400 font-semibold">
-                              {item.time || item.date}
-                            </span>
-                            <span
-                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
-                                isNg
-                                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              }`}
-                            >
-                              {isNg ? (
-                                <>
-                                  <AlertTriangle className="w-2.5 h-2.5 text-rose-600" />
-                                  <span>Kendala</span>
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                                  <span>Aman</span>
-                                </>
-                              )}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Judul & Detail Pekerjaan */}
-                        <div
-                          className={`rounded p-2 text-xs font-medium leading-relaxed mb-1.5 ${
-                            isNg
-                              ? 'bg-rose-50/50 text-rose-950 border border-rose-100'
-                              : 'bg-slate-50 text-slate-800 border border-slate-100'
-                          }`}
-                        >
-                          <p className="whitespace-pre-line">{item.activity}</p>
-                        </div>
-
-                        {/* Catatan Tambahan jika ada */}
-                        {item.notes && item.notes.trim() !== '' && (
+                          {/* Judul & Detail Pekerjaan */}
                           <div
-                            className={`text-[11px] rounded p-1.5 px-2 mb-1.5 border-l-2 ${
+                            className={`rounded p-2 text-xs font-medium leading-relaxed mb-1.5 ${
                               isNg
-                                ? 'bg-rose-100/60 text-rose-900 border-l-rose-500 border border-rose-200/60'
-                                : 'bg-amber-50/70 text-amber-900 border-l-amber-500 border border-amber-200/60'
+                                ? 'bg-rose-50/50 text-rose-950 border border-rose-100'
+                                : 'bg-slate-50 text-slate-800 border border-slate-100'
                             }`}
                           >
-                            <span className="font-bold mr-1">Catatan:</span>
-                            <span className="whitespace-pre-line">{item.notes}</span>
+                            <p className="whitespace-pre-line">{item.activity}</p>
                           </div>
-                        )}
 
-                        {/* Footer Sumber & Tombol Akses Cepat */}
-                        <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-mono">
-                          <span className="flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            {item.source}
-                          </span>
-                          <span className="text-indigo-600 font-bold flex items-center gap-0.5 hover:underline">
-                            Buka Modul
-                            <ArrowUpRight className="w-2.5 h-2.5" />
-                          </span>
+                          {/* Catatan Tambahan jika ada */}
+                          {item.notes && item.notes.trim() !== '' && (
+                            <div
+                              className={`text-[11px] rounded p-1.5 px-2 mb-1.5 border-l-2 ${
+                                isNg
+                                  ? 'bg-rose-100/60 text-rose-900 border-l-rose-500 border border-rose-200/60'
+                                  : 'bg-amber-50/70 text-amber-900 border-l-amber-500 border border-amber-200/60'
+                              }`}
+                            >
+                              <span className="font-bold mr-1">Catatan:</span>
+                              <span className="whitespace-pre-line">{item.notes}</span>
+                            </div>
+                          )}
+
+                          {/* Footer Sumber & Tombol Akses Cepat */}
+                          <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-mono">
+                            <span className="flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              {item.source}
+                            </span>
+                            <span className="text-indigo-600 font-bold flex items-center gap-0.5 hover:underline">
+                              Buka Modul
+                              <ArrowUpRight className="w-2.5 h-2.5" />
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                  {filteredNotifications.length > displayLimit && (
+                    <button
+                      type="button"
+                      onClick={() => setDisplayLimit(prev => prev + 50)}
+                      className="w-full py-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-all shadow-xs cursor-pointer text-center"
+                    >
+                      Tampilkan Lebih Banyak ({filteredNotifications.length - displayLimit} data tersisa)
+                    </button>
+                  )}
+                </>
               )}
             </div>
 
