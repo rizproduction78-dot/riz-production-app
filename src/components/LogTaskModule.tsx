@@ -66,6 +66,8 @@ interface LogTaskModuleProps {
   onAddLogbookEntry?: (entry: Omit<LogbookEntry, 'id'>) => void;
   workOrders?: WorkOrder[];
   initialSubTab?: 'kanban' | 'qc_checklist' | 'logbook' | 'rekap';
+  activeMonth?: string;
+  onActiveMonthChange?: (monthKey: string) => void;
 }
 
 const DIVISION_CONFIG: Record<Division, { color: string; bg: string; icon: string }> = {
@@ -99,7 +101,9 @@ export default function LogTaskModule({
   logbookEntries = [],
   onAddLogbookEntry,
   workOrders = [],
-  initialSubTab = 'kanban'
+  initialSubTab = 'kanban',
+  activeMonth = '2026-10',
+  onActiveMonthChange,
 }: LogTaskModuleProps) {
   const isManagement = Boolean(
     currentUser && (
@@ -500,12 +504,14 @@ export default function LogTaskModule({
     document.body.removeChild(link);
   };
 
-  // Filtered Tasks - Staff only sees their own division(s); Management can filter or see All
+  // Filtered Tasks - Staff can see and contribute to tasks across divisions
   const userDivs = getStaffDivisions(currentUser);
   const isDualStaffName = (name?: string) => {
     const lower = (name || '').toLowerCase();
     return lower.includes('mulyana') || lower.includes('kharo') || lower.includes('karo');
   };
+
+  const [filterByActiveMonth, setFilterByActiveMonth] = useState<boolean>(true);
 
   const filteredTasks = tasks.filter(t => {
     const matchSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -513,9 +519,12 @@ export default function LogTaskModule({
                         (t.assignedName && t.assignedName.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchDiv = isManagement
       ? (filterDivision === 'All' || t.division === filterDivision || (isDualStaffName(t.assignedName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
-      : (t.division === currentUser.division || userDivs.includes(t.division) || t.assignedName === currentUser.name || t.createdBy === currentUser.name || isDualStaffName(t.assignedName));
+      : (t.division === currentUser.division || userDivs.includes(t.division) || t.assignedName === currentUser.name || t.createdBy === currentUser.name || isDualStaffName(t.assignedName) || filterDivision === 'All' || t.division === filterDivision);
     const matchPri = filterPriority === 'All' || t.priority === filterPriority;
-    return matchSearch && matchDiv && matchPri;
+    const matchMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
+      ? true
+      : (!t.createdAt || t.createdAt.startsWith(activeMonth) || !t.dueDate || t.dueDate.startsWith(activeMonth));
+    return matchSearch && matchDiv && matchPri && matchMonth;
   });
 
   const sortedTasks = [...filteredTasks].sort((a, b) => {
@@ -550,16 +559,30 @@ export default function LogTaskModule({
   const progressTasks = sortedTasks.filter(t => t.status === 'In Progress');
   const doneTasks = sortedTasks.filter(t => t.status === 'Done');
 
-  // Filtered Reports for Logbook View - Staff sees reports from all assigned divisions
+  // Filtered Reports for Logbook View - Terkoordinasi dengan activeMonth dan 5W Framework
   const filteredReports = dailyReports.filter(r => {
     const matchSearch = r.staffName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         r.activity.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         r.notes.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchDiv = isManagement
-      ? (filterDivision === 'All' || r.division === filterDivision || (isDualStaffName(r.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
-      : (userDivs.includes(r.division) || r.staffName === currentUser.name || isDualStaffName(r.staffName));
-    return matchSearch && matchDiv;
+    const matchDiv = filterDivision === 'All' || r.division === filterDivision || 
+                     (isDualStaffName(r.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service'));
+    const matchMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
+      ? true
+      : (!r.date || r.date.startsWith(activeMonth));
+    return matchSearch && matchDiv && matchMonth;
   }).sort((a, b) => b.id.localeCompare(a.id, undefined, { numeric: true }));
+
+  // Filtered Logbook Entries (QC Checklist logs) - Terkoordinasi dengan activeMonth
+  const filteredLogbookEntries = logbookEntries.filter(e => {
+    const matchSearch = (e.staffName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (e.activity || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchDiv = filterDivision === 'All' || e.division === filterDivision ||
+                     (isDualStaffName(e.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service'));
+    const matchMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
+      ? true
+      : (!e.date || e.date.startsWith(activeMonth));
+    return matchSearch && matchDiv && matchMonth;
+  });
 
   return (
     <div className="space-y-6 font-sans">
@@ -570,11 +593,11 @@ export default function LogTaskModule({
             <span className="text-xl">📋</span>
             <h1 className="text-2xl font-black tracking-tight">LOG TASK & DAILY TASK</h1>
             <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
-              Multi-Divisi
+              Multi-Divisi (5W Workflow)
             </span>
           </div>
           <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-            Pusat kendali tugas harian, logbook aktivitas operasional gudang, tracking progres teknisi, dan pelaporan real-time divisi Audio, Lighting, Videotron, Multimedia, Gudang, Admin, & Service.
+            Pusat kendali alur tugas operasional (When, Who, What, Why, Where), QC unit, checklist gudang, dan pelaporan terpadu seluruh divisi.
           </p>
         </div>
 
@@ -583,7 +606,7 @@ export default function LogTaskModule({
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs font-mono">
             <span className={`w-2 h-2 rounded-full ${cloudSynced ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
             <span className={cloudSynced ? 'text-emerald-300' : 'text-amber-300'}>
-              {cloudSynced ? 'Firebase Cloud' : 'Penyimpanan Lokal'}
+              {cloudSynced ? 'Database Cloud Synced' : 'Penyimpanan Lokal'}
             </span>
           </div>
 
@@ -593,6 +616,45 @@ export default function LogTaskModule({
           >
             <Plus className="w-4 h-4" />
             <span>Task Baru</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 5W Coordinated Period & Reporting Sync Bar */}
+      <div className="bg-white p-3 px-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-bold text-slate-500 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Periode Data Terkoordinasi:</span>
+          </span>
+          <span className="font-bold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-md font-mono">
+            {activeMonth === 'all' ? 'Semua Periode' : activeMonth}
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-700 font-medium">
+            <strong className="text-indigo-600 font-bold">{filteredReports.length}</strong> Daily Report
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-700 font-medium">
+            <strong className="text-teal-600 font-bold">{filteredLogbookEntries.length}</strong> Log QC
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-700 font-medium">
+            <strong className="text-blue-600 font-bold">{filteredTasks.length}</strong> Kanban Tasks
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setFilterByActiveMonth(!filterByActiveMonth)}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              filterByActiveMonth
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+            }`}
+            title="Klik untuk beralih antara filter bulan aktif dan seluruh riwayat histori"
+          >
+            <span>{filterByActiveMonth ? '✓ Filter Periode Aktif' : 'Tampilkan Semua Histori'}</span>
           </button>
         </div>
       </div>

@@ -49,6 +49,7 @@ interface EmployeePerformanceModuleProps {
   workOrders?: WorkOrder[];
   dailyTasks?: DailyTask[];
   activeMonth?: string;
+  onActiveMonthChange?: (monthKey: string) => void;
 }
 
 export default function EmployeePerformanceModule({
@@ -58,7 +59,8 @@ export default function EmployeePerformanceModule({
   findings = [],
   workOrders = [],
   dailyTasks = [],
-  activeMonth = getActiveMonthKey()
+  activeMonth = getActiveMonthKey(),
+  onActiveMonthChange
 }: EmployeePerformanceModuleProps) {
   const isManagement = Boolean(
     currentUser && (
@@ -86,7 +88,16 @@ export default function EmployeePerformanceModule({
     return () => unsub();
   }, []);
 
-  const [selectedMonth, setSelectedMonth] = useState<string>('Oktober 2026');
+  const labelFromMonthKey: Record<string, string> = {
+    '2026-10': 'Oktober 2026',
+    '2026-09': 'September 2026',
+    '2026-08': 'Agustus 2026',
+    '2026-07': 'Juli 2026',
+    '2026-06': 'Juni 2026',
+    '2026-05': 'Mei 2026',
+    '2026-04': 'April 2026',
+    'all': 'Semua Periode'
+  };
 
   const monthKeyFromLabel: Record<string, string> = {
     'Oktober 2026': '2026-10',
@@ -95,16 +106,37 @@ export default function EmployeePerformanceModule({
     'Juli 2026': '2026-07',
     'Juni 2026': '2026-06',
     'Mei 2026': '2026-05',
-    'April 2026': '2026-04'
+    'April 2026': '2026-04',
+    'Semua Periode': 'all'
   };
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    return (activeMonth && labelFromMonthKey[activeMonth]) || 'Oktober 2026';
+  });
+
+  useEffect(() => {
+    if (activeMonth && labelFromMonthKey[activeMonth]) {
+      setSelectedMonth(labelFromMonthKey[activeMonth]);
+    }
+  }, [activeMonth]);
+
+  const handleMonthSelect = (monthLabel: string) => {
+    setSelectedMonth(monthLabel);
+    const key = monthKeyFromLabel[monthLabel];
+    if (key && onActiveMonthChange) {
+      onActiveMonthChange(key);
+    }
+  };
+
   const evalMonthKey = monthKeyFromLabel[selectedMonth] || activeMonth;
 
   // Real dynamic KPI scores, filtered by evalMonthKey
-  const monthlyDailyReports = dailyReports.filter(r => r.date.startsWith(evalMonthKey));
-  const monthlyLogbookEntries = logbookEntries.filter(e => e.date.startsWith(evalMonthKey));
-  const monthlyFindings = findings.filter(f => f.dateCreated.startsWith(evalMonthKey) || (f.targetDate && f.targetDate.startsWith(evalMonthKey)));
-  const monthlyWorkOrders = workOrders.filter(w => w.dateCreated.startsWith(evalMonthKey) || (w as any).date?.startsWith(evalMonthKey) || w.deadline.startsWith(evalMonthKey));
-  const monthlyDailyTasks = dailyTasks.filter(t => t.createdAt.startsWith(evalMonthKey) || t.dueDate.startsWith(evalMonthKey));
+  const isAllPeriod = evalMonthKey === 'all';
+  const monthlyDailyReports = dailyReports.filter(r => isAllPeriod || r.date.startsWith(evalMonthKey));
+  const monthlyLogbookEntries = logbookEntries.filter(e => isAllPeriod || e.date.startsWith(evalMonthKey));
+  const monthlyFindings = findings.filter(f => isAllPeriod || f.dateCreated.startsWith(evalMonthKey) || (f.targetDate && f.targetDate.startsWith(evalMonthKey)));
+  const monthlyWorkOrders = workOrders.filter(w => isAllPeriod || w.dateCreated.startsWith(evalMonthKey) || (w as any).date?.startsWith(evalMonthKey) || w.deadline.startsWith(evalMonthKey));
+  const monthlyDailyTasks = dailyTasks.filter(t => isAllPeriod || t.createdAt.startsWith(evalMonthKey) || t.dueDate.startsWith(evalMonthKey));
 
   const allStaffKpis = calculateAllStaffKpis(
     masterStaffList, 
@@ -359,7 +391,7 @@ export default function EmployeePerformanceModule({
             <Calendar className="w-4 h-4 text-slate-500" />
             <select
               value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
+              onChange={(e) => handleMonthSelect(e.target.value)}
               className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer"
             >
               <option value="Oktober 2026">Oktober 2026</option>
@@ -369,6 +401,7 @@ export default function EmployeePerformanceModule({
               <option value="Juni 2026">Juni 2026</option>
               <option value="Mei 2026">Mei 2026</option>
               <option value="April 2026">April 2026</option>
+              <option value="Semua Periode">Semua Periode</option>
             </select>
           </div>
 

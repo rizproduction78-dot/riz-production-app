@@ -1735,6 +1735,26 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Global Period Selector - Terkoordinasi ke seluruh modul & side panel */}
+            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-xs">
+              <Calendar className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">Periode:</span>
+              <select
+                value={activeMonth}
+                onChange={(e) => handleActiveMonthChange(e.target.value)}
+                className="text-xs font-bold text-indigo-950 bg-transparent focus:outline-none cursor-pointer"
+                title="Pilih periode kerja aktif untuk seluruh panel navigasi"
+              >
+                <option value="2026-10">Oktober 2026</option>
+                <option value="2026-09">September 2026</option>
+                <option value="2026-08">Agustus 2026</option>
+                <option value="2026-07">Juli 2026</option>
+                <option value="2026-06">Juni 2026</option>
+                <option value="2026-05">Mei 2026</option>
+                <option value="all">Semua Periode</option>
+              </select>
+            </div>
+
             {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
               <button
                 onClick={handleInstallPWA}
@@ -1789,6 +1809,8 @@ export default function App() {
             onAddLogbookEntry={handleAddLogbookEntry}
             workOrders={workOrders}
             initialSubTab={activeTab === 'qc' ? 'qc_checklist' : 'kanban'}
+            activeMonth={activeMonth}
+            onActiveMonthChange={handleActiveMonthChange}
           />
         )}
 
@@ -1809,6 +1831,8 @@ export default function App() {
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
             initialSubTab={activeTab === 'work_orders' ? 'work_orders' : 'findings'}
+            activeMonth={activeMonth}
+            onActiveMonthChange={handleActiveMonthChange}
           />
         )}
 
@@ -1911,6 +1935,7 @@ export default function App() {
             workOrders={workOrders}
             dailyTasks={dailyTasks}
             activeMonth={activeMonth}
+            onActiveMonthChange={handleActiveMonthChange}
           />
         )}
 

@@ -25,6 +25,8 @@ interface FindingsProps {
   currentUser: any;
   onLogActivity: (username: string, role: string, action: string) => void;
   initialSubTab?: 'findings' | 'work_orders';
+  activeMonth?: string;
+  onActiveMonthChange?: (monthKey: string) => void;
 }
 
 export default function Findings({
@@ -43,6 +45,8 @@ export default function Findings({
   currentUser,
   onLogActivity,
   initialSubTab = 'findings',
+  activeMonth = '2026-10',
+  onActiveMonthChange,
 }: FindingsProps) {
   // Dynamic Master Staff List
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
@@ -89,6 +93,7 @@ export default function Findings({
   const [filterPriority, setFilterPriority] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [filterDivision, setFilterDivision] = useState<string>('All');
+  const [filterByActiveMonth, setFilterByActiveMonth] = useState(true);
 
   // Form state for Findings
   const [showAddForm, setShowAddForm] = useState(false);
@@ -342,7 +347,10 @@ export default function Findings({
     const matchesPriority = filterPriority === 'All' || f?.priority === filterPriority;
     const matchesStatus = filterStatus === 'All' || f?.status === filterStatus;
     const matchesDivision = filterDivision === 'All' || findingDiv === filterDivision;
-    return matchesSearch && matchesPriority && matchesStatus && matchesDivision;
+    const matchesMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
+      ? true
+      : (!f?.dateCreated || f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth)));
+    return matchesSearch && matchesPriority && matchesStatus && matchesDivision && matchesMonth;
   }).sort((a, b) => {
     const priorityWeight: Record<string, number> = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
     const pA = priorityWeight[a.priority] || 0;
@@ -361,7 +369,10 @@ export default function Findings({
     const matchesSearch = t.includes(q) || d.includes(q) || p.includes(q);
     const matchesDivision = filterDivision === 'All' || w?.division === filterDivision;
     const matchesStatus = filterStatus === 'All' || w?.status === filterStatus;
-    return matchesSearch && matchesDivision && matchesStatus;
+    const matchesMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
+      ? true
+      : (!w?.dateCreated || w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || (w.deadline && w.deadline.startsWith(activeMonth)));
+    return matchesSearch && matchesDivision && matchesStatus && matchesMonth;
   }).sort((a, b) => {
     const priorityWeight: Record<string, number> = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
     const pA = priorityWeight[a.priority || ''] || 0;
@@ -405,6 +416,49 @@ export default function Findings({
               <span>{showAddWOForm ? 'Tutup Form' : '+ Terbitkan WO Baru'}</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Coordinated Period Bar - Sinkron dengan Dashboard & Seluruh Side Panel */}
+      <div className="bg-white p-3.5 rounded-xl border border-indigo-100 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-bold text-slate-500 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+            <span>📅</span>
+            <span>Sinkronisasi Periode:</span>
+          </span>
+          <span className="font-bold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-md font-mono">
+            {activeMonth === 'all' ? 'Semua Periode' : activeMonth}
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-700 font-medium">
+            <strong className="text-indigo-600 font-bold">{filteredFindings.length}</strong> Temuan QC
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-700 font-medium">
+            <strong className="text-rose-600 font-bold">{filteredFindings.filter(f => f.status === 'Open').length}</strong> Open
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-700 font-medium">
+            <strong className="text-emerald-600 font-bold">{filteredFindings.filter(f => f.status === 'Close').length}</strong> Close
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-700 font-medium">
+            <strong className="text-blue-600 font-bold">{filteredWorkOrders.length}</strong> Work Orders
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setFilterByActiveMonth(!filterByActiveMonth)}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              filterByActiveMonth
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+            }`}
+            title="Klik untuk beralih antara filter bulan aktif dan seluruh riwayat histori"
+          >
+            <span>{filterByActiveMonth ? '✓ Filter Periode Aktif' : 'Tampilkan Semua Histori'}</span>
+          </button>
         </div>
       </div>
 
