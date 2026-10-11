@@ -319,7 +319,11 @@ export default function App() {
   useEffect(() => {
     if (currentUser) {
       const allowedTabIds = NAVIGATION_ITEMS.map(item => item.id);
-      if (allowedTabIds.length > 0 && !allowedTabIds.includes(activeTab) && activeTab !== 'daily' && activeTab !== 'qc') {
+      const isAllowed = allowedTabIds.includes(activeTab) ||
+        ((activeTab === 'daily' || activeTab === 'qc') && allowedTabIds.includes('log_task')) ||
+        (activeTab === 'work_orders' && allowedTabIds.includes('findings')) ||
+        (activeTab === 'armada' && allowedTabIds.includes('gudang'));
+      if (allowedTabIds.length > 0 && !isAllowed) {
         setActiveTab(allowedTabIds[0]);
       }
     }
@@ -1511,6 +1515,28 @@ export default function App() {
   // Define tab navigation elements
   // (Using role-based dynamic NAVIGATION_ITEMS declared above)
 
+  const isOwnerOrAdmin = currentUser?.division === 'Admin' || currentUser?.role === 'Owner' || currentUser?.role === 'Direktur' || currentUser?.role === 'Admin' || currentUser?.id === 'director-wahyu' || String(currentUser?.name || '').toLowerCase().includes('wahyu (owner)');
+  const isManagement = Boolean(
+    currentUser && (
+      isOwnerOrAdmin ||
+      currentUser.role === 'Manager' ||
+      currentUser.role === 'Supervisor'
+    )
+  );
+  const isLeaderOrHigher = Boolean(
+    currentUser && (
+      isManagement ||
+      currentUser.role === 'Team Leader'
+    )
+  );
+  const isGudangAuthorized = Boolean(
+    currentUser && (
+      isManagement ||
+      currentUser.division === 'Gudang' ||
+      currentUser.role === 'Gudang'
+    )
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-800 font-sans">
       
@@ -1937,7 +1963,7 @@ export default function App() {
         )}
 
 
-        {activeTab === 'reports' && (
+        {activeTab === 'reports' && isLeaderOrHigher && (
           <Reports
             logbookEntries={logbookEntries}
             dailyReports={dailyReports}
@@ -1964,7 +1990,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'absensi_schedule' && (
+        {activeTab === 'absensi_schedule' && isLeaderOrHigher && (
           <Absensi
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
@@ -1984,7 +2010,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'admin_panel' && (
+        {activeTab === 'admin_panel' && isManagement && (
           <AdminPanel
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
@@ -2039,7 +2065,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'gudang' && (
+        {activeTab === 'gudang' && isGudangAuthorized && (
           <Gudang
             currentUser={currentUser}
             assets={assets}
@@ -2051,7 +2077,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'armada' && (
+        {activeTab === 'armada' && isGudangAuthorized && (
           <Gudang
             currentUser={currentUser}
             assets={assets}
@@ -2064,7 +2090,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'activities' && (
+        {activeTab === 'activities' && isManagement && (
           <ActivityHistory
             activities={activities}
             onClearActivities={handleClearActivities}

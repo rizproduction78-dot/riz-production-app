@@ -161,8 +161,10 @@ export default function EmployeePerformanceModule({
 
   const [selectedStaffName, setSelectedStaffName] = useState<string>(isManagement ? defaultStaff.name : currentUser.name);
 
-  // Pastikan jika staf belum dipilih atau ganti bulan, tetap sinkron
-  const selectedStaff = masterStaffList.find(s => s.name === selectedStaffName) || currentUser;
+  // Pastikan jika staf belum dipilih atau ganti bulan, tetap sinkron (Non-manajemen hanya dapat melihat akun dirinya sendiri)
+  const selectedStaff = isManagement
+    ? (masterStaffList.find(s => s.name === selectedStaffName) || currentUser)
+    : currentUser;
 
   // Real competencies state
   const [electricalCompetencies, setElectricalCompetencies] = useState<{ [staffId: string]: { [compKey: string]: { verified: boolean; verifiedBy?: string; dateVerified?: string } } }>(() => {

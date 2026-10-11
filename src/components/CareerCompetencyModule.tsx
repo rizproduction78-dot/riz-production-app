@@ -289,7 +289,9 @@ export default function CareerCompetencyModule({
   }, [careerRecords]);
 
   // Selected staff object for passport view
-  const activeStaff = staffList.find(s => s.id === selectedStaffId) || currentUser;
+  const isLeadership = isManagement || currentUser.role === 'Team Leader';
+  const effectiveSelectedStaffId = isLeadership ? selectedStaffId : currentUser.id;
+  const activeStaff = isLeadership ? (staffList.find(s => s.id === effectiveSelectedStaffId) || currentUser) : currentUser;
   const activeStaffKpi = calculateStaffKpi(
     activeStaff,
     dailyReports,
@@ -354,15 +356,17 @@ export default function CareerCompetencyModule({
     );
   };
 
-  // Filtered staff list
-  const filteredStaffList = staffList.filter(s => {
-    const matchDiv = isManagement
-      ? (filterDivision === 'All' || s.division === filterDivision)
-      : (s.division === currentUser.division);
-    const matchSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        s.role.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchDiv && matchSearch;
-  });
+  // Filtered staff list: regular staff can only see their own account
+  const filteredStaffList = isLeadership
+    ? staffList.filter(s => {
+        const matchDiv = isManagement
+          ? (filterDivision === 'All' || s.division === filterDivision)
+          : (s.division === currentUser.division);
+        const matchSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            s.role.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchDiv && matchSearch;
+      })
+    : staffList.filter(s => s.id === currentUser.id || s.name === currentUser.name);
 
   // Group color helper for matrix levels
   const getLevelGroupColor = (group: string) => {
@@ -940,42 +944,51 @@ export default function CareerCompetencyModule({
                 </span>
               </div>
 
-              {/* Division Filter */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-500 uppercase">Filter Divisi</label>
-                {isManagement ? (
-                  <select
-                    value={filterDivision}
-                    onChange={(e) => setFilterDivision(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
-                  >
-                    <option value="All">Semua Divisi (Manajemen)</option>
-                    <option value="Audio">🔊 Audio (Sound)</option>
-                    <option value="Lighting">💡 Lighting</option>
-                    <option value="Videotron">📺 Videotron</option>
-                    <option value="Multimedia">🎥 Multimedia</option>
-                    <option value="Gudang">📦 Gudang</option>
-                    <option value="Service">🔧 Service</option>
-                  </select>
-                ) : (
-                  <div className="w-full px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 flex items-center gap-2">
-                    <span>🏢</span>
-                    <span>Divisi: {currentUser.division} (Terkunci)</span>
+              {/* Division Filter / Account Isolation Badge */}
+              {isLeadership ? (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase">Filter Divisi</label>
+                    {isManagement ? (
+                      <select
+                        value={filterDivision}
+                        onChange={(e) => setFilterDivision(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
+                      >
+                        <option value="All">Semua Divisi (Manajemen)</option>
+                        <option value="Audio">🔊 Audio (Sound)</option>
+                        <option value="Lighting">💡 Lighting</option>
+                        <option value="Videotron">📺 Videotron</option>
+                        <option value="Multimedia">🎥 Multimedia</option>
+                        <option value="Gudang">📦 Gudang</option>
+                        <option value="Service">🔧 Service</option>
+                      </select>
+                    ) : (
+                      <div className="w-full px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-900 flex items-center gap-2">
+                        <span>🏢</span>
+                        <span>Divisi: {currentUser.division} (Terkunci)</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Search Box */}
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="text"
-                  placeholder="Cari nama staff / posisi..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
+                  {/* Search Box */}
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      placeholder="Cari nama staff / posisi..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="w-full px-3.5 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-900 flex items-center justify-between">
+                  <span>🔒 Paspor Karir Saya</span>
+                  <span className="text-[10px] font-mono bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">Terkunci ke Akun Anda</span>
+                </div>
+              )}
 
               {/* Staff List */}
               <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">

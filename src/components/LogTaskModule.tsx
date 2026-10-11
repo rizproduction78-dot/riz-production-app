@@ -268,11 +268,13 @@ export default function LogTaskModule({
       ? `${currentUser.name} (Verified ✓)`
       : 'Pending Verifikasi';
 
+    const effectiveQcStaff = isManagement ? qcStaffName : currentUser.name;
+
     if (onAddLogbookEntry) {
       onAddLogbookEntry({
         date: qcDate,
         division: qcDivision as any,
-        staffName: qcStaffName,
+        staffName: effectiveQcStaff,
         activity: qcActivityType,
         result: overallResult,
         followUp: qcFollowUp || (hasNG ? 'Terdapat item NG yang perlu tindakan teknis lanjutan.' : 'Semua item dalam kondisi OK dan aman siap produksi.'),
@@ -287,7 +289,7 @@ export default function LogTaskModule({
     // Auto-add to daily reports for tracking
     onAddReport({
       date: qcDate,
-      staffName: qcStaffName,
+      staffName: effectiveQcStaff,
       division: qcDivision,
       activity: `[QC Checklist] ${qcActivityType} - ${qcEquipmentArea}`,
       notes: `Hasil Inspeksi: ${overallResult}. Catatan: ${qcFollowUp || 'Sesuai checklist SOP'}.`,
@@ -369,6 +371,10 @@ export default function LogTaskModule({
   };
 
   const handleOpenEditTask = (t: DailyTask) => {
+    if (!isManagement && t.createdBy !== currentUser.name && t.assignedName !== currentUser.name) {
+      alert('Akses Ditolak: Anda hanya dapat mengedit task milik akun Anda sendiri.');
+      return;
+    }
     setEditingTask(t);
     setTaskTitle(t.title);
     setTaskDesc(t.description);
@@ -438,6 +444,12 @@ export default function LogTaskModule({
   };
 
   const handleDeleteTask = async (taskId: string) => {
+    const target = tasks.find(t => t.id === taskId);
+    if (!target) return;
+    if (!isManagement && target.createdBy !== currentUser.name && target.assignedName !== currentUser.name) {
+      alert('Akses Ditolak: Anda hanya dapat menghapus task milik akun Anda sendiri.');
+      return;
+    }
     if (!confirm('Hapus task ini?')) return;
     setTasks(prev => prev.filter(t => t.id !== taskId));
     deleteCloudDoc('daily_tasks', taskId);
@@ -453,9 +465,11 @@ export default function LogTaskModule({
       ? `${logNotes}\n[Temuan Unit Bermasalah: ${faultyUnitName} - ${faultyUnitIssue} (Prioritas: ${faultyUnitPriority})]`
       : logNotes;
 
+    const effectiveStaffName = isManagement ? logStaffName : currentUser.name;
+
     onAddReport({
       date: logDate,
-      staffName: logStaffName,
+      staffName: effectiveStaffName,
       division: logDivision,
       activity: logActivity,
       notes: finalNotes,
@@ -469,7 +483,7 @@ export default function LogTaskModule({
         equipment: `${logDivision} - ${faultyUnitName}`,
         issue: faultyUnitIssue,
         priority: faultyUnitPriority,
-        pic: logStaffName,
+        pic: effectiveStaffName,
         targetDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         status: 'Open'
       });

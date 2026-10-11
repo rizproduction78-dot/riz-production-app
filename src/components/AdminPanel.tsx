@@ -55,7 +55,8 @@ import {
   Copy,
   Check,
   Lock,
-  Key
+  Key,
+  RotateCcw
 } from 'lucide-react';
 import {
   forceSyncAllModules,
@@ -379,6 +380,48 @@ export default function AdminPanel({
       } catch (e) {
         console.warn('[Staff] Background delete error:', e);
       }
+    }
+  };
+
+  const handleResetPasswordDefault = async (targetStaff: Staff) => {
+    const staffDisplayName = targetStaff.fullName || targetStaff.name;
+    const confirmMessage = `KONFIRMASI RESET PASSWORD DEFAULT:\n\nApakah Anda yakin ingin mengembalikan password untuk staf "${staffDisplayName}" ke password default ("riz123")?\n\nSetelah direset, staf dapat langsung login kembali menggunakan password default "riz123" dan mengajukan password baru jika diperlukan.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const updatedStaff: Staff = {
+        ...targetStaff,
+        password: 'riz123',
+        passwordRequest: ''
+      };
+
+      // 1. Simpan ke Cloud Firestore master_staff
+      await saveCloudDoc('master_staff', targetStaff.id, {
+        password: 'riz123',
+        passwordRequest: ''
+      }, currentUser.name);
+
+      // 2. Perbarui state lokal dan localStorage
+      setStaffList(prev => {
+        const next = prev.map(s => s.id === targetStaff.id ? updatedStaff : s);
+        try {
+          localStorage.setItem('riz_master_staff_list', JSON.stringify(next));
+        } catch (e) {
+          console.warn('LocalStorage error:', e);
+        }
+        return next;
+      });
+
+      onLogActivity(
+        currentUser.name,
+        currentUser.role,
+        `Admin mengembalikan password untuk staf ${staffDisplayName} ke default (riz123)`
+      );
+
+      alert(`Sukses! Password untuk ${staffDisplayName} berhasil dikembalikan ke default ("riz123").`);
+    } catch (err) {
+      console.error('Error resetting staff password to default:', err);
+      alert('Gagal mereset password ke default. Silakan periksa koneksi internet.');
     }
   };
 
@@ -1498,6 +1541,33 @@ export default function AdminPanel({
     }
   };
 
+  const isAuthorizedAdmin = Boolean(
+    currentUser && (
+      currentUser.division === 'Admin' ||
+      currentUser.role === 'Admin' ||
+      currentUser.role === 'Owner' ||
+      currentUser.role === 'Direktur' ||
+      currentUser.role === 'Manager' ||
+      currentUser.role === 'Supervisor' ||
+      currentUser.id === 'director-wahyu' ||
+      String(currentUser.name || '').toLowerCase().includes('wahyu')
+    )
+  );
+
+  if (!isAuthorizedAdmin) {
+    return (
+      <div className="p-8 text-center bg-white rounded-2xl border border-rose-200 shadow-sm max-w-lg mx-auto my-12">
+        <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+          <AlertOctagon className="w-6 h-6" />
+        </div>
+        <h2 className="text-base font-bold text-slate-800">Akses Ditolak: Panel Kontrol Admin</h2>
+        <p className="text-xs text-slate-500 mt-2">
+          Akun Staff tidak diperkenankan mengakses Panel Kontrol Admin atau data akun user lainnya.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1845,6 +1915,15 @@ export default function AdminPanel({
                               )}
                             </td>
                           <td className="p-3.5 text-right space-x-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleResetPasswordDefault(staff)}
+                              title={`Kembalikan password ${staff.name} ke default (riz123)`}
+                              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 p-1.5 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 font-bold text-[11px]"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>Reset Pass</span>
+                            </button>
                             <button
                               onClick={() => handleOpenEditStaff(staff)}
                               className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 font-bold text-[11px]"
@@ -3328,6 +3407,15 @@ export default function AdminPanel({
                             >
                               Tolak
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => handleResetPasswordDefault(staff)}
+                              className="bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1"
+                              title="Kembalikan password ke default (riz123)"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>Reset Default</span>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -3335,6 +3423,44 @@ export default function AdminPanel({
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* KOTAK RESET CEPAT PASSWORD STAFF YANG LUPA */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+                <RotateCcw className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-800">Kembalikan Password Default Staff (Lupa Password)</h4>
+                <p className="text-[10px] text-slate-500 font-medium">
+                  Jika staf lupa password yang sudah ia rubah, pilih nama staf di bawah ini untuk mengembalikan passwordnya langsung ke default (<code className="font-mono font-bold text-indigo-600">riz123</code>).
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <select
+                id="reset-staff-select"
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none flex-1 min-w-[260px]"
+                defaultValue=""
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) return;
+                  const target = staffList.find(s => s.id === val);
+                  if (target) {
+                    handleResetPasswordDefault(target);
+                    e.target.value = '';
+                  }
+                }}
+              >
+                <option value="">-- Pilih Staf yang Lupa Password untuk Direset --</option>
+                {staffList.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division} ({s.role}) {s.password && s.password !== 'riz123' ? '• [Password Diubah]' : '• [Default: riz123]'}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -3961,19 +4087,34 @@ export default function AdminPanel({
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
               <button
-                onClick={() => setShowEditStaffModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                type="button"
+                onClick={() => {
+                  if (activeStaffForEdit) {
+                    handleResetPasswordDefault(activeStaffForEdit);
+                  }
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-all cursor-pointer inline-flex items-center gap-1.5"
+                title="Kembalikan password staf ini ke default: riz123"
               >
-                Batal
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Password ke Default (riz123)</span>
               </button>
-              <button
-                onClick={handleSaveEditStaff}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer shadow-xs"
-              >
-                Simpan Perubahan
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowEditStaffModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSaveEditStaff}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer shadow-xs"
+                >
+                  Simpan Perubahan
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -77,11 +77,6 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
     onLogin(staff);
   };
 
-  const handleQuickLogin = (staff: Staff) => {
-    onLogActivity(staff.name, `${staff.division} - ${staff.role}`, 'Login cepat berhasil');
-    onLogin(staff);
-  };
-
   const handlePasswordRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setReqError('');
@@ -396,6 +391,9 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
                     >
                       Ajukan Perubahan
                     </button>
+                    <p className="text-[11px] text-slate-500 text-center mt-3 font-medium">
+                      Lupa password yang sudah diubah? Silakan hubungi Admin / Fahrul untuk mengembalikan password ke default (<span className="font-mono font-bold text-indigo-600">riz123</span>).
+                    </p>
                   </div>
                 </form>
               )}
