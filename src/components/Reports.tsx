@@ -99,37 +99,37 @@ export default function Reports({
     setTargetEndDate(today.startsWith(activeMonth) ? today : `${activeMonth}-01`);
   }, [activeMonth, latestDateInActiveMonth]);
 
-  // Dynamic filter for active daily reports based on Harian / Mingguan / Bulanan
+  // Dynamic filter for active daily reports based on Harian / Mingguan / Bulanan (Urutan Tanggal Terbaru di Atas)
   const activeDailyReports = dailyReports.filter(r => {
     if (reportType === 'Harian') return r.date === targetDate;
     if (reportType === 'Mingguan') return r.date >= targetStartDate && r.date <= targetEndDate;
     if (reportType === 'Bulanan') return r.date.startsWith(targetMonth);
     return true;
-  });
+  }).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 
-  // Filter logbook entries based on report type (Harian vs Mingguan vs Bulanan)
+  // Filter logbook entries based on report type (Harian vs Mingguan vs Bulanan - Urutan Tanggal Terbaru di Atas)
   const activeLogbookEntries = logbookEntries.filter(e => {
     if (reportType === 'Harian') return e.date === targetDate;
     if (reportType === 'Mingguan') return e.date >= targetStartDate && e.date <= targetEndDate;
     if (reportType === 'Bulanan') return e.date.startsWith(targetMonth);
     return true;
-  });
+  }).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 
-  // Filter findings based on report type
+  // Filter findings based on report type (Urutan Tanggal Terbaru di Atas)
   const activeFindings = findings.filter(f => {
     if (reportType === 'Harian') return f.dateCreated === targetDate || f.targetDate === targetDate;
     if (reportType === 'Mingguan') return (f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate >= targetStartDate && f.targetDate <= targetEndDate);
     if (reportType === 'Bulanan') return f.dateCreated?.startsWith(targetMonth) || f.targetDate?.startsWith(targetMonth);
     return true;
-  });
+  }).sort((a, b) => String(b.dateCreated || '').localeCompare(String(a.dateCreated || '')));
 
-  // P3.1: Filter workOrders by report period
+  // P3.1: Filter workOrders by report period (Urutan Tanggal Terbaru di Atas)
   const activeWorkOrders = workOrders.filter(w => {
     if (reportType === 'Harian') return w.dateCreated === targetDate;
     if (reportType === 'Mingguan') return w.dateCreated >= targetStartDate && w.dateCreated <= targetEndDate;
     if (reportType === 'Bulanan') return w.dateCreated?.startsWith(targetMonth);
     return true;
-  });
+  }).sort((a, b) => String(b.dateCreated || (b as any).date || '').localeCompare(String(a.dateCreated || (a as any).date || '')));
 
   const totalChecked = activeLogbookEntries.length;
   

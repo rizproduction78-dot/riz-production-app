@@ -68,7 +68,7 @@ export interface PipelineStage {
   badgeColor: string;
 }
 
-export const PIPELINE_STAGES: PipelineStage[] = [
+const PIPELINE_STAGES: PipelineStage[] = [
   { id: 1,  code: 'TRAINING',            name: 'Training',             shortDesc: 'Pelatihan Teori SOP & Keselamatan Kerja Listrik K3',   icon: '🎓', badgeColor: 'bg-blue-100 text-blue-800 border-blue-200' },
   { id: 2,  code: 'PRACTICE',            name: 'Practice',             shortDesc: 'Praktek Lapangan & Simulasi Setup Warehouse',           icon: '🛠️', badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
   { id: 3,  code: 'ASSESSMENT',          name: 'Assessment',           shortDesc: 'Ujian Penilaian Kinerja oleh Supervisor / TL',          icon: '📝', badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-200' },

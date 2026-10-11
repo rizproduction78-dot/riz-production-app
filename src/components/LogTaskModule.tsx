@@ -551,6 +551,9 @@ export default function LogTaskModule({
       const prioOrder: Record<string, number> = { 'Tinggi': 1, 'Sedang': 2, 'Rendah': 3 };
       return (prioOrder[a.priority] || 99) - (prioOrder[b.priority] || 99);
     } else {
+      const dateA = String(a.createdAt || a.dueDate || '').slice(0, 10);
+      const dateB = String(b.createdAt || b.dueDate || '').slice(0, 10);
+      if (dateA !== dateB) return dateB.localeCompare(dateA);
       return b.id.localeCompare(a.id, undefined, { numeric: true });
     }
   });
@@ -559,7 +562,7 @@ export default function LogTaskModule({
   const progressTasks = sortedTasks.filter(t => t.status === 'In Progress');
   const doneTasks = sortedTasks.filter(t => t.status === 'Done');
 
-  // Filtered Reports for Logbook View - Terkoordinasi dengan activeMonth dan 5W Framework
+  // Filtered Reports for Logbook View - Terkoordinasi dengan activeMonth dan 5W Framework (Urutan Tanggal Terbaru di Atas)
   const filteredReports = dailyReports.filter(r => {
     const matchSearch = r.staffName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         r.activity.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -570,9 +573,14 @@ export default function LogTaskModule({
       ? true
       : (!r.date || r.date.startsWith(activeMonth));
     return matchSearch && matchDiv && matchMonth;
-  }).sort((a, b) => b.id.localeCompare(a.id, undefined, { numeric: true }));
+  }).sort((a, b) => {
+    const dateA = String(a.date || '').slice(0, 10);
+    const dateB = String(b.date || '').slice(0, 10);
+    if (dateA !== dateB) return dateB.localeCompare(dateA);
+    return b.id.localeCompare(a.id, undefined, { numeric: true });
+  });
 
-  // Filtered Logbook Entries (QC Checklist logs) - Terkoordinasi dengan activeMonth
+  // Filtered Logbook Entries (QC Checklist logs) - Terkoordinasi dengan activeMonth (Urutan Tanggal Terbaru di Atas)
   const filteredLogbookEntries = logbookEntries.filter(e => {
     const matchSearch = (e.staffName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                         (e.activity || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -582,6 +590,11 @@ export default function LogTaskModule({
       ? true
       : (!e.date || e.date.startsWith(activeMonth));
     return matchSearch && matchDiv && matchMonth;
+  }).sort((a, b) => {
+    const dateA = String(a.date || '').slice(0, 10);
+    const dateB = String(b.date || '').slice(0, 10);
+    if (dateA !== dateB) return dateB.localeCompare(dateA);
+    return (b.id || '').localeCompare(a.id || '', undefined, { numeric: true });
   });
 
   return (

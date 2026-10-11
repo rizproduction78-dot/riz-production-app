@@ -160,7 +160,12 @@ export default function DailyReport({
       ? (filterDivision === 'All' || r.division === filterDivision || (isDualStaffName(r.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
       : (userDivisions.includes(r.division) || r.staffName === currentUser.name || (isDualStaffName(r.staffName) && (userDivisions.includes('Videotron') || userDivisions.includes('Service'))));
     return matchSearch && matchDivision;
-  }).sort((a, b) => b.id.localeCompare(a.id, undefined, { numeric: true }));
+  }).sort((a, b) => {
+    const dateA = String(a.date || '').slice(0, 10);
+    const dateB = String(b.date || '').slice(0, 10);
+    if (dateA !== dateB) return dateB.localeCompare(dateA);
+    return b.id.localeCompare(a.id, undefined, { numeric: true });
+  });
 
   return (
     <div className="space-y-8 font-sans">

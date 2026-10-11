@@ -352,6 +352,9 @@ export default function Findings({
       : (!f?.dateCreated || f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth)));
     return matchesSearch && matchesPriority && matchesStatus && matchesDivision && matchesMonth;
   }).sort((a, b) => {
+    const dateA = String(a.dateCreated || (a as any).date || '').slice(0, 10);
+    const dateB = String(b.dateCreated || (b as any).date || '').slice(0, 10);
+    if (dateA !== dateB) return dateB.localeCompare(dateA);
     const priorityWeight: Record<string, number> = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
     const pA = priorityWeight[a.priority] || 0;
     const pB = priorityWeight[b.priority] || 0;
@@ -359,7 +362,7 @@ export default function Findings({
     return b.id.localeCompare(a.id, undefined, { numeric: true });
   });
 
-  // Filter Work Orders list
+  // Filter Work Orders list (Urutan Tanggal Terbaru di Atas)
   const filteredWorkOrders = workOrders.filter(w => {
     const t = String(w?.title || '').toLowerCase();
     const d = String(w?.description || (w as any)?.notes || '').toLowerCase();
@@ -374,6 +377,9 @@ export default function Findings({
       : (!w?.dateCreated || w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || (w.deadline && w.deadline.startsWith(activeMonth)));
     return matchesSearch && matchesDivision && matchesStatus && matchesMonth;
   }).sort((a, b) => {
+    const dateA = String(a.dateCreated || (a as any).date || '').slice(0, 10);
+    const dateB = String(b.dateCreated || (b as any).date || '').slice(0, 10);
+    if (dateA !== dateB) return dateB.localeCompare(dateA);
     const priorityWeight: Record<string, number> = { 'Tinggi': 3, 'Sedang': 2, 'Rendah': 1 };
     const pA = priorityWeight[a.priority || ''] || 0;
     const pB = priorityWeight[b.priority || ''] || 0;

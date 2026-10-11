@@ -326,7 +326,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference (100% authentic multi-month tabulation)
-  const REF_SYNC_KEY = 'riz_ref_synced_v56_staff_productivity_order_fixed';
+  const REF_SYNC_KEY = 'riz_ref_synced_v60_all_lists_descending_dates_fixed';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings_v2', JSON.stringify(INITIAL_FINDINGS));
