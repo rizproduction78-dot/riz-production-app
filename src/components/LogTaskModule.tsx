@@ -1966,6 +1966,14 @@ export default function LogTaskModule({
                       <Upload className="w-4 h-4" />
                       <span>Lampirkan Foto dari Kamera / Perangkat</span>
                     </label>
+                    <a
+                      href={OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      Buka Folder Google Drive (Penyimpanan Foto Daily Task)
+                    </a>
                   </div>
                 ) : (
                   <div className="space-y-2">

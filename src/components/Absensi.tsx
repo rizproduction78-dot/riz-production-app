@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Staff, AttendanceLog, WorkSchedule } from '../types';
+import { Staff, AttendanceLog, WorkSchedule, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import {
   SHIFT_LEGEND,
@@ -736,6 +736,14 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                                   onChange={handlePhotoUpload} 
                                 />
                               </label>
+                              <a
+                                href={OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-1.5 text-[10px] text-indigo-500 hover:text-indigo-700 font-bold block transition-colors"
+                              >
+                                Folder Drive Bukti Absensi
+                              </a>
                           </div>
                         )}
                         </div>
