@@ -1,7 +1,7 @@
 /**
  * Utility helper for image compression and processing
  * Menjamin file foto dari kamera/galeri di-resize dan dikompresi menjadi Base64 ringan
- * agar sinkronisasi Cloud Firestore cepat, hemat memori, dan tidak melebihi kuota 1MB Firestore.
+ * agar sinkronisasi cloud cepat, hemat memori, dan hemat bandwidth penyimpanan.
  */
 
 export async function compressImageFile(

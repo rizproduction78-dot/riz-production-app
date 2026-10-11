@@ -29,7 +29,7 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
 
   const [localStaffList, setLocalStaffList] = useState<Staff[]>(() => getMasterStaffList());
 
-  // Keep synced with Firestore and prop updates
+  // Keep synced with cloud and prop updates
   useEffect(() => {
     if (propsStaffList && propsStaffList.length > 0) {
       setLocalStaffList(normalizeStaffMaster(propsStaffList));

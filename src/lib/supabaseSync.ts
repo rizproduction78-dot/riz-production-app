@@ -1,7 +1,7 @@
 /**
  * Supabase Cloud Sync Adapter
  * PT. Riz Production Multi Kreasi
- * Dual-sync & Migration Bridge between local state / Firestore and Supabase PostgreSQL
+ * Sync & Persistence Bridge between local state and Supabase PostgreSQL
  */
 
 import { supabase, isSupabaseConfigured } from './supabase';

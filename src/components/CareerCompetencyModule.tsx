@@ -254,7 +254,7 @@ export default function CareerCompetencyModule({
     }
   };
 
-  // Real-time Cloud Firestore Subscription
+  // Real-time Cloud Subscription
   useEffect(() => {
     const unsub = subscribeCloudCollection<{ id: string; [key: string]: any }>(
       'career_records',
@@ -277,7 +277,7 @@ export default function CareerCompetencyModule({
     return () => unsub();
   }, []);
 
-  // Save to localStorage & Cloud Firestore
+  // Save to localStorage & Cloud
   useEffect(() => {
     localStorage.setItem('riz_career_pipeline_records', JSON.stringify(careerRecords));
     if (careerRecords && Object.keys(careerRecords).length > 0) {

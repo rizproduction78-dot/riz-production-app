@@ -74,7 +74,7 @@ export interface VehicleMaster {
   stnkTaxExpiry: string; // YYYY-MM-DD
   kirExpiry: string; // YYYY-MM-DD
   status: 'Siap Operasi' | 'Dalam Perjalanan' | 'Maintenance / Servis';
-  _syncedAt?: string; // Timestamp sinkronisasi Firestore
+  _syncedAt?: string; // Timestamp sinkronisasi cloud
   _syncMeta?: {
     updatedAt: string;
     updatedBy: string;
@@ -184,7 +184,7 @@ export interface LogbookEntry {
   photoUrl?: string; // Foto bukti inspeksi / QC (single/thumbnail)
   photos?: string[]; // Mendukung beberapa foto bukti sekaligus
   _source?: string;
-  _syncedAt?: string; // Timestamp sinkronisasi Firestore
+  _syncedAt?: string; // Timestamp sinkronisasi cloud
   _syncMeta?: {
     updatedAt: string;
     updatedBy: string;
@@ -205,7 +205,7 @@ export interface DailyReport {
   photos?: string[]; // Mendukung beberapa foto dokumentasi
   status: 'Draft' | 'Submitted';
   _source?: string;
-  _syncedAt?: string; // Timestamp sinkronisasi Firestore
+  _syncedAt?: string; // Timestamp sinkronisasi cloud
   _syncMeta?: {
     updatedAt: string;
     updatedBy: string;
@@ -224,13 +224,13 @@ export interface Finding {
   targetDate: string;
   status: 'Open' | 'Close';
   dateCreated: string;
-  date?: string; // Alias / field alternatif dari Firestore sync
-  updatedAt?: string; // Timestamp update terakhir dari Firestore
+  date?: string; // Alias / field alternatif tanggal
+  updatedAt?: string; // Timestamp update terakhir
   division?: Division;
   approvedBy?: string;
   approvedAt?: string;
   _source?: string;
-  _syncedAt?: string; // Timestamp sinkronisasi Firestore
+  _syncedAt?: string; // Timestamp sinkronisasi cloud
   _syncMeta?: {
     updatedAt: string;
     updatedBy: string;

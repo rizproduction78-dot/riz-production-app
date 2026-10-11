@@ -395,7 +395,7 @@ export default function AdminPanel({
         passwordRequest: ''
       };
 
-      // 1. Simpan ke Cloud Firestore master_staff
+      // 1. Simpan ke penyimpanan master_staff
       await saveCloudDoc('master_staff', targetStaff.id, {
         password: 'riz123',
         passwordRequest: ''
@@ -1530,10 +1530,10 @@ export default function AdminPanel({
   };
 
   const handleTriggerCloudSync = async () => {
-    setSyncMessage('Sedang menyinkronkan seluruh modul ke Cloud Firestore...');
+    setSyncMessage('Sedang menyinkronkan seluruh modul database...');
     try {
       await forceSyncAllModules();
-      setSyncMessage('Sinkronisasi database Cloud Firestore berhasil diselesaikan!');
+      setSyncMessage('Sinkronisasi database berhasil diselesaikan!');
       setTimeout(() => setSyncMessage(''), 4000);
     } catch (e) {
       setSyncMessage('Sinkronisasi selesai (data tersimpan di cloud & lokal).');
@@ -3611,7 +3611,7 @@ export default function AdminPanel({
                     )}
                   </div>
                   <p className="text-xs text-blue-200/80 mt-0.5">
-                    Baca langsung data Daily Log & QC yang diisi di Google Sheet → simpan ke aplikasi & Firestore secara otomatis
+                    Baca langsung data Daily Log & QC yang diisi di Google Sheet → simpan ke aplikasi secara otomatis
                   </p>
                 </div>
               </div>
@@ -3748,10 +3748,10 @@ export default function AdminPanel({
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center gap-2 text-indigo-600">
                 <RefreshCw className="w-5 h-5" />
-                <h2 className="text-base font-extrabold text-slate-900">Sinkronisasi Cloud Firestore</h2>
+                <h2 className="text-base font-extrabold text-slate-900">Sinkronisasi Database Terpadu</h2>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                Paksa sinkronisasi real-time seluruh modul transaksi (QC, Daily Task, Absensi, Temuan WO, Logistik Gudang) ke server Cloud Firestore.
+                Paksa sinkronisasi real-time seluruh modul transaksi (QC, Daily Task, Absensi, Temuan WO, Logistik Gudang) ke penyimpanan terpadu.
               </p>
               <button
                 onClick={handleTriggerCloudSync}

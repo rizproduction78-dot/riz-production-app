@@ -334,7 +334,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
   // Pagination or filters for schedule grid
   const [scheduleSearch, setScheduleSearch] = useState('');
 
-  // Real-time Cloud Firestore Subscriptions
+  // Real-time Cloud Subscriptions
   useEffect(() => {
     const unsubAttendance = subscribeCloudCollection<AttendanceLog>(
       'attendance_logs',
@@ -357,7 +357,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
     localStorage.setItem('riz_work_schedule', JSON.stringify(schedule));
   }, [schedule]);
 
-  // Handler to toggle / cycle shift with Cloud Firestore push
+  // Handler to toggle / cycle shift with Cloud push
   const handleToggleShift = (staffNo: number, day: number) => {
     if (currentUser.role !== 'Admin' && currentUser.role !== 'Supervisor' && currentUser.role !== 'Manager') return;
 
@@ -1965,6 +1965,27 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
           return svcNames.includes((picName || '').toLowerCase()) || divisionName === 'Service';
         };
 
+        const getWoMonthKey = (wo: any): string => {
+          const raw = String(wo.dateCreated || wo.date || wo.deadline || '');
+          if (raw.length >= 7) {
+            return raw.slice(0, 7);
+          }
+          const match = String(wo.id || wo.description || '').match(/202[0-9][-]?0[1-9]|202[0-9][-]1[0-2]/);
+          if (match) {
+            const clean = match[0].replace('-', '');
+            return `${clean.slice(0, 4)}-${clean.slice(4, 6)}`;
+          }
+          return '';
+        };
+
+        const getSchMonthKey = (sch: any): string => {
+          const raw = String(sch.nextDate || sch.lastDate || sch.date || '');
+          if (raw.length >= 7) {
+            return raw.slice(0, 7);
+          }
+          return '';
+        };
+
         const filteredSchedules = maintenanceSchedules.filter(sch => {
           const nameMatch = sch.assetName.toLowerCase().includes(maintenanceSearch.toLowerCase());
           const codeMatch = sch.assetCode.toLowerCase().includes(maintenanceSearch.toLowerCase());
@@ -1972,7 +1993,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
           const matchesSearch = nameMatch || codeMatch || notesMatch;
           
           const matchesDiv = maintenanceFilterDivision === 'All' || sch.assetCode.toLowerCase().includes(`-${maintenanceFilterDivision.substring(0,3).toLowerCase()}-`);
-          return matchesSearch && matchesDiv;
+
+          const schMonth = getSchMonthKey(sch);
+          const matchesMonth = !activeMonth || activeMonth === 'all' || !schMonth || schMonth === activeMonth;
+
+          return matchesSearch && matchesDiv && matchesMonth;
         });
 
         const filteredWorkOrders = localWorkOrders.filter(wo => {
@@ -1989,16 +2014,20 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                              (maintenanceFilterDivision === 'Multimedia' && wo.division === 'Multimedia') ||
                              (maintenanceFilterDivision === 'Gudang' && wo.division === 'Gudang') ||
                              (maintenanceFilterDivision === 'Service' && wo.division === 'Service');
-          return matchesSearch && matchesDiv;
+
+          const woMonth = getWoMonthKey(wo);
+          const matchesMonth = !activeMonth || activeMonth === 'all' || !woMonth || woMonth === activeMonth;
+
+          return matchesSearch && matchesDiv && matchesMonth;
         });
 
         const selfRepairItems = filteredWorkOrders.filter(wo => !isSvcDiv(wo.pic, wo.division));
         const serviceDivisionItems = filteredWorkOrders.filter(wo => isSvcDiv(wo.pic, wo.division));
 
-        const activeRoutineCount = maintenanceSchedules.filter(s => s.status !== 'Done').length;
-        const activeSelfRepairCount = localWorkOrders.filter(wo => !isSvcDiv(wo.pic, wo.division) && wo.status !== 'Completed' && wo.status !== 'Cancelled').length;
-        const activeServiceCount = localWorkOrders.filter(wo => isSvcDiv(wo.pic, wo.division) && wo.status !== 'Completed' && wo.status !== 'Cancelled').length;
-        const totalCompletedCount = maintenanceSchedules.filter(s => s.status === 'Done').length + localWorkOrders.filter(wo => wo.status === 'Completed').length;
+        const activeRoutineCount = filteredSchedules.filter(s => s.status !== 'Done').length;
+        const activeSelfRepairCount = selfRepairItems.filter(wo => wo.status !== 'Completed' && wo.status !== 'Cancelled').length;
+        const activeServiceCount = serviceDivisionItems.filter(wo => wo.status !== 'Completed' && wo.status !== 'Cancelled').length;
+        const totalCompletedCount = filteredSchedules.filter(s => s.status === 'Done').length + filteredWorkOrders.filter(wo => wo.status === 'Completed').length;
 
         const saveSchedulesState = (updated: any[]) => {
           setMaintenanceSchedules(updated);

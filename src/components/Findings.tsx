@@ -361,9 +361,10 @@ export default function Findings({
     const matchesDivision = isManagement
       ? (filterDivision === 'All' || findingDiv === filterDivision)
       : (effectiveFilterDiv === 'All' || findingDiv === effectiveFilterDiv || (isDualUser && (findingDiv === 'Videotron' || findingDiv === 'Service')));
-    const matchesMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
+    const fDate = String(f?.dateCreated || (f as any)?.date || f?.targetDate || '').slice(0, 7);
+    const matchesMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth || !fDate
       ? true
-      : (!f?.dateCreated || f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth)));
+      : fDate === activeMonth;
     return matchesSearch && matchesPriority && matchesStatus && matchesDivision && matchesMonth;
   }).sort((a, b) => {
     const dateA = String(a.dateCreated || (a as any).date || '').slice(0, 10);
@@ -390,9 +391,10 @@ export default function Findings({
       ? (filterDivision === 'All' || w?.division === filterDivision)
       : (effectiveFilterDiv === 'All' || w?.division === effectiveFilterDiv || (isDualUser && (w?.division === 'Videotron' || w?.division === 'Service')));
     const matchesStatus = filterStatus === 'All' || w?.status === filterStatus;
-    const matchesMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
+    const wDate = String(w?.dateCreated || (w as any)?.date || w?.deadline || '').slice(0, 7);
+    const matchesMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth || !wDate
       ? true
-      : (!w?.dateCreated || w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || (w.deadline && w.deadline.startsWith(activeMonth)));
+      : wDate === activeMonth;
     return matchesSearch && matchesDivision && matchesStatus && matchesMonth;
   }).sort((a, b) => {
     const dateA = String(a.dateCreated || (a as any).date || '').slice(0, 10);

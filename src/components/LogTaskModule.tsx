@@ -8,8 +8,6 @@ import { PrintHeader } from './PrintHeader';
 import { Staff, Division, DailyReport as DailyReportType, DailyTask, Finding, LogbookEntry, WorkOrder, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, getMasterStaffList } from '../data';
 import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';
-import { db } from '../lib/firebase';
-import { collection, onSnapshot, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { saveCloudDoc, deleteCloudDoc, subscribeCloudCollection } from '../lib/cloudSync';
 import { getStaffDivisions, isStaffInDivision } from '../utils/kpiCalculator';
 import { compressImageFile } from '../utils/imageUtils';
@@ -134,7 +132,7 @@ export default function LogTaskModule({
     return () => unsub();
   }, []);
 
-  // Tasks state (synced with Firebase if possible, fallback to local)
+  // Tasks state (synced with local storage & cloud broadcast)
   const [tasks, setTasks] = useState<DailyTask[]>(() => {
     const saved = localStorage.getItem('riz_daily_tasks');
     if (saved) {
@@ -327,29 +325,21 @@ export default function LogTaskModule({
     setQcPhotoUrls([]);
   };
 
-  // 1. Firebase Real-time Listener for Tasks
+  // Task Storage Synchronization
   useEffect(() => {
-    try {
-      const q = query(collection(db, 'daily_tasks'), orderBy('createdAt', 'desc'));
-      const unsub = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const cloudList: DailyTask[] = snapshot.docs.map(d => ({
-            id: d.id,
-            ...(d.data() as Omit<DailyTask, 'id'>)
-          }));
+    const unsub = subscribeCloudCollection<DailyTask>(
+      'daily_tasks',
+      'riz_daily_tasks',
+      (cloudList) => {
+        if (cloudList && cloudList.length > 0) {
           setTasks(cloudList);
-          localStorage.setItem('riz_daily_tasks', JSON.stringify(cloudList));
           if (onUpdateTasks) onUpdateTasks(cloudList);
           setCloudSynced(true);
         }
-      }, (err) => {
-        console.warn('Firebase sync notice (running in local storage mode):', err.message);
-        setCloudSynced(false);
-      });
-      return () => unsub();
-    } catch (e) {
-      setCloudSynced(false);
-    }
+      },
+      tasks
+    );
+    return () => unsub();
   }, []);
 
   // Save to local storage whenever tasks change
@@ -540,9 +530,10 @@ export default function LogTaskModule({
       ? (filterDivision === 'All' || t.division === filterDivision || (isDualStaffName(t.assignedName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
       : (t.division === currentUser.division || userDivs.includes(t.division) || t.assignedName === currentUser.name || t.createdBy === currentUser.name || (isDualStaffName(currentUser.name) && (t.division === 'Videotron' || t.division === 'Service')));
     const matchPri = filterPriority === 'All' || t.priority === filterPriority;
-    const matchMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth
+    const tDate = String(t.createdAt || t.dueDate || '').slice(0, 7);
+    const matchMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth || !tDate
       ? true
-      : (!t.createdAt || t.createdAt.startsWith(activeMonth) || !t.dueDate || t.dueDate.startsWith(activeMonth));
+      : tDate === activeMonth;
     return matchSearch && matchDiv && matchPri && matchMonth;
   });
 

@@ -1042,11 +1042,11 @@ export interface GvizPullResult {
 
 /**
  * Pull daily log data langsung dari Google Sheet publik via gviz/tq API.
- * Hasilnya diparse menjadi DailyReport[] dan Finding[] untuk disimpan ke Firestore.
+ * Hasilnya diparse menjadi DailyReport[] dan Finding[] untuk disimpan ke penyimpanan aplikasi.
  * 
- * @param gid - GID tab sheet (default: September 2026)
- * @param onSaveDailyReport - callback untuk simpan ke Firestore
- * @param onSaveFinding - callback untuk simpan temuan ke Firestore
+ * @param gid - GID tab sheet (default: Oktober 2026)
+ * @param onSaveDailyReport - callback untuk simpan laporan
+ * @param onSaveFinding - callback untuk simpan temuan
  * @param existingReportIds - Set ID report yang sudah ada (untuk dedup)
  */
 export async function pullDailyLogFromGviz(

@@ -452,32 +452,32 @@ export default function App() {
       level: 3
     }, 'System Auto-Sync').catch(() => {});
 
-    // Sinkronisasi Temuan QC Resmi ke Cloud Firestore
+    // Sinkronisasi Temuan QC Resmi ke Penyimpanan Sistem
     INITIAL_FINDINGS.forEach(f => {
       saveCloudDoc('findings', f.id, f, 'System Canonical Sync').catch(() => {});
     });
 
-    // Sinkronisasi Daily Reports Resmi ke Cloud Firestore
+    // Sinkronisasi Daily Reports Resmi ke Penyimpanan Sistem
     INITIAL_DAILY_REPORTS.forEach(r => {
       saveCloudDoc('daily_reports', r.id, r, 'System Canonical Sync').catch(() => {});
     });
 
-    // Sinkronisasi Logbook Entries Resmi ke Cloud Firestore
+    // Sinkronisasi Logbook Entries Resmi ke Penyimpanan Sistem
     INITIAL_LOGBOOK_ENTRIES.forEach(l => {
       saveCloudDoc('logbook_entries', l.id, l, 'System Canonical Sync').catch(() => {});
     });
 
-    // Sinkronisasi Daily Tasks Resmi ke Cloud Firestore
+    // Sinkronisasi Daily Tasks Resmi ke Penyimpanan Sistem
     INITIAL_DAILY_TASKS.forEach(t => {
       saveCloudDoc('daily_tasks', t.id, t, 'System Canonical Sync').catch(() => {});
     });
 
-    // Sinkronisasi Work Orders Resmi ke Cloud Firestore
+    // Sinkronisasi Work Orders Resmi ke Penyimpanan Sistem
     INITIAL_WORK_ORDERS.forEach(w => {
       saveCloudDoc('work_orders', w.id, w, 'System Canonical Sync').catch(() => {});
     });
 
-    // Sinkronisasi Semua Jadwal Bulanan ke Cloud Firestore
+    // Sinkronisasi Semua Jadwal Bulanan ke Penyimpanan Sistem
     ALL_MONTHLY_SCHEDULES.forEach(sch => {
       sch.rows.forEach((row, idx) => {
         saveCloudDoc(`schedule_${sch.key}`, `row-${row.no || idx + 1}`, row, 'System Auto-Sync').catch(() => {});
@@ -852,49 +852,42 @@ export default function App() {
         async (id, docData) => {
           const { getDeletedIds } = await import('./lib/cloudSync');
           if (getDeletedIds('daily_reports').has(id)) return;
+          if (existingIds.has(id)) return;
 
-          const { getDoc, doc: firestoreDoc } = await import('firebase/firestore');
-          const { db } = await import('./lib/firebase');
-          const snap = await getDoc(firestoreDoc(db, 'daily_reports', id));
-          if (!snap.exists()) {
-            saveCloudDoc('daily_reports', id, docData).catch(e => console.error('[Sheet Sync] Firestore report save error:', e));
-            newReportDocs.push(docData);
-          }
+          saveCloudDoc('daily_reports', id, docData).catch(e => console.error('[Sheet Sync] report save error:', e));
+          newReportDocs.push(docData);
         },
         async (id, docData) => {
           const { getDeletedIds } = await import('./lib/cloudSync');
           if (getDeletedIds('findings').has(id)) return;
+          if (existingIds.has(id)) return;
 
-          const { getDoc, getDocs, query, where, collection: fsCol, doc: firestoreDoc } = await import('firebase/firestore');
-          const { db } = await import('./lib/firebase');
-          // 1. Cek dari ID yang persis sama
-          const snap = await getDoc(firestoreDoc(db, 'findings', id));
-          if (snap.exists()) return;
+          // Cek dari teks issue yang persis sama
+          const currentFindingsRaw = localStorage.getItem('riz_findings_v2');
+          if (currentFindingsRaw) {
+            try {
+              const currentList = JSON.parse(currentFindingsRaw);
+              if (Array.isArray(currentList) && currentList.some((f: any) => f.issue === docData.issue || f.id === id)) {
+                return;
+              }
+            } catch {}
+          }
 
-          // 2. Cek dari teks issue yang persis sama (menghindari duplikat jika tanggal di Sheet diubah)
-          const q = query(fsCol(db, 'findings'), where('issue', '==', docData.issue));
-          const textSnap = await getDocs(q);
-          if (!textSnap.empty) return;
-
-          saveCloudDoc('findings', id, docData).catch(e => console.error('[Sheet Sync] Firestore finding save error:', e));
+          saveCloudDoc('findings', id, docData).catch(e => console.error('[Sheet Sync] finding save error:', e));
           newFindingDocs.push(docData);
         },
         existingIds,
         async (id, docData) => {
           const { getDeletedIds } = await import('./lib/cloudSync');
           if (getDeletedIds('logbook_entries').has(id)) return;
+          if (existingIds.has(id)) return;
 
-          const { getDoc, doc: firestoreDoc } = await import('firebase/firestore');
-          const { db } = await import('./lib/firebase');
-          const snap = await getDoc(firestoreDoc(db, 'logbook_entries', id));
-          if (!snap.exists()) {
-            saveCloudDoc('logbook_entries', id, docData).catch(e => console.error('[Sheet Sync] Firestore logbook save error:', e));
-            newLogDocs.push(docData);
-          }
+          saveCloudDoc('logbook_entries', id, docData).catch(e => console.error('[Sheet Sync] logbook save error:', e));
+          newLogDocs.push(docData);
         }
       );
 
-      // Update state lokal LANGSUNG tanpa menunggu Firestore subscription
+      // Update state lokal LANGSUNG secara reaktif
       if (newReportDocs.length > 0) {
         setDailyReports(prev => {
           const existingIdsSet = new Set(prev.map(r => r.id));
@@ -1831,7 +1824,7 @@ export default function App() {
             </span>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-slate-800">
-                {syncStatus.isOnline ? 'Cloud Firestore: Auto-Sync Aktif' : 'Mode Offline (Penyimpanan Lokal)'}
+                {syncStatus.isOnline ? 'Penyimpanan Terpadu: Auto-Sync Aktif' : 'Mode Offline (Penyimpanan Lokal)'}
               </span>
               {syncStatus.pendingQueueCount > 0 && (
                 <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">

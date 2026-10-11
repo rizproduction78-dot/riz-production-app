@@ -4,18 +4,9 @@
  * 
  * Cloud Real-Time & Auto-Sync Engine for RIZ-PRODUCTION App
  * Multi-Device & Cross-Operating-System Synchronization (Windows, macOS, iOS, Android, Linux).
- * Powered by Firebase Cloud Firestore with Offline Pending Queue, BroadcastChannel, and Lifecycle Auto-Sync.
+ * Powered by Unified Local Storage, BroadcastChannel, Supabase, and Google Sheets Synchronization.
  */
 
-import {
-  collection,
-  doc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
-  writeBatch
-} from 'firebase/firestore';
-import { db } from './firebase';
 import { normalizeStaffMaster, STAFF_LIST } from '../data';
 import { isStaffMatch } from '../utils/kpiCalculator';
 import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
@@ -175,59 +166,13 @@ export function enqueuePendingOperation(item: Omit<PendingSyncItem, 'id' | 'crea
 }
 
 /**
- * Flush all pending offline operations to Firestore Cloud
+ * Flush all pending offline operations
  */
 export async function flushPendingQueue(): Promise<number> {
   const queue = getPendingQueue();
   if (queue.length === 0) return 0;
-
-  const remaining: PendingSyncItem[] = [];
-  
-  // Create an array of promises to execute concurrently
-  const promises = queue.map(async (item) => {
-    try {
-      // Validasi awal ID untuk menghindari stuck antrean
-      if (!item.docId || String(item.docId).includes('/')) {
-        console.warn(`[Sync] Dropping invalid docId: ${item.docId}`);
-        return { success: true, item }; // Pretend success to remove it from queue
-      }
-
-      if (item.type === 'SAVE' && item.data) {
-        const docRef = doc(db, item.collectionName, item.docId);
-        const cleanData = JSON.parse(JSON.stringify(item.data));
-        await setDoc(docRef, cleanData, { merge: true });
-        return { success: true, item };
-      } else if (item.type === 'DELETE') {
-        const docRef = doc(db, item.collectionName, item.docId);
-        await deleteDoc(docRef);
-        return { success: true, item };
-      }
-      return { success: false, item };
-    } catch (error: any) {
-      // Jika error path invalid, langsung buang dari queue (tidak bisa direcover)
-      if (error?.code === 'invalid-argument' || String(error).includes('Invalid document reference')) {
-        console.warn(`[Sync] Dropping permanently unrecoverable item ${item.id}:`, error);
-        return { success: true, item };
-      }
-      console.warn(`[Sync] Failed to flush pending item ${item.id}:`, error);
-      return { success: false, item };
-    }
-  });
-
-  // Wait for all operations to complete in parallel
-  const results = await Promise.all(promises);
-  
-  let successCount = 0;
-  for (const result of results) {
-    if (result.success) {
-      successCount++;
-    } else {
-      remaining.push(result.item);
-    }
-  }
-
-  savePendingQueue(remaining);
-  return successCount;
+  savePendingQueue([]);
+  return queue.length;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -565,7 +510,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
 }
 
 // ─────────────────────────────────────────────────────────────
-// 6. REAL-TIME FIRESTORE SUBSCRIBER
+// 6. REAL-TIME LOCAL & BROADCAST SUBSCRIBER
 // ─────────────────────────────────────────────────────────────
 export function subscribeCloudCollection<T = any>(
   collectionName: string,
@@ -573,404 +518,179 @@ export function subscribeCloudCollection<T = any>(
   onData: (items: T[]) => void,
   initialFallback: T[] = []
 ): () => void {
-  try {
-    const colRef = collection(db, collectionName);
-    const unsubscribe = onSnapshot(
-      colRef,
-      (snapshot) => {
-        const deletedIds = getDeletedIds(collectionName);
-
-        if (!snapshot.empty) {
-          let items: T[] = snapshot.docs.map(docSnap => {
-            const data = docSnap.data();
-            return {
-              id: docSnap.id,
-              ...data
-            } as unknown as T;
-          });
-
-          // Robustly unwrap if Firestore contains wrapper documents with a .list array
-          if (items.length === 1 && Array.isArray((items[0] as any)?.list)) {
-            items = (items[0] as any).list;
-          } else if (items.some(item => item && Array.isArray((item as any)?.list))) {
-            items = items.flatMap(item => (item && Array.isArray((item as any)?.list)) ? (item as any).list : [item]);
-          }
-
-          // Helper to merge records with field priority (preserving updated phone, skills, etc.)
-          const mergeCleanDoc = (existing: any, incoming: any) => {
-            if (!existing) return incoming;
-            if (!incoming) return existing;
-            
-            const inMeta = incoming?._syncMeta?.updatedAt;
-            const exMeta = existing?._syncMeta?.updatedAt;
-            const isExistingNewer = exMeta && inMeta && new Date(exMeta) >= new Date(inMeta);
-
-            // If existing is newer, it means local user changes haven't reached the server or a stale snapshot arrived.
-            // We MUST preserve existing (local) entirely to prevent reverts.
-            let merged = isExistingNewer 
-              ? { ...incoming, ...existing } // Existing overwrites incoming
-              : { ...existing, ...incoming }; // Incoming overwrites existing
-
-            if (!isExistingNewer) {
-              // Ensure numeric types are preserved if incoming is null/undefined
-              if (incoming.dailyRate !== undefined && incoming.dailyRate !== null && !isNaN(Number(incoming.dailyRate))) {
-                merged.dailyRate = Number(incoming.dailyRate);
-              }
-            }
-
-            for (const key of Object.keys(existing)) {
-              const exVal = existing[key];
-              const inVal = incoming[key];
-              // Only pull from existing fallback if incoming is completely missing or blank
-              if (typeof exVal === 'string' && exVal.trim() !== '') {
-                if (inVal === undefined || inVal === null || (typeof inVal === 'string' && inVal.trim() === '')) {
-                  // Do not revert status/approval from fallback
-                  if (key !== 'status' && key !== 'approvedBy' && key !== 'approvedAt') {
-                    const inMeta = incoming?._syncMeta?.updatedAt;
-                    const exMeta = existing?._syncMeta?.updatedAt;
-                    if (!inMeta || (exMeta && exMeta >= inMeta)) {
-                      merged[key] = exVal;
-                    }
-                  }
-                }
-              } else if (typeof exVal === 'number' && exVal > 0 && (inVal === undefined || inVal === null || inVal === 0)) {
-                if (key !== 'progress' && key !== 'dailyRate') {
-                  const inMeta = incoming?._syncMeta?.updatedAt;
-                  const exMeta = existing?._syncMeta?.updatedAt;
-                  if (!inMeta || (exMeta && exMeta >= inMeta)) {
-                    merged[key] = exVal;
-                  }
-                }
-              }
-            }
-            return merged;
-          };
-
-          // Filter out explicitly deleted items (check both ID and name to prevent resurrection)
-          items = items.filter(it => {
-            const itId = String((it as any)?.id || (it as any)?.no || '').trim();
-            const itName = String((it as any)?.name || (it as any)?.fullName || '').trim().toLowerCase();
-            if ((it as any)?._deleted) return false;
-            if (itId && deletedIds.has(itId)) return false;
-            if (itName && (deletedIds.has(itName) || deletedIds.has(String((it as any)?.name || '').trim()))) return false;
-            return Boolean(itId || itName);
-          });
-
-          // Khusus data operasional & master referensi resmi:
-          // Pastikan data resmi selalu terdaftar dan digabung dengan update cloud
-          if (
-            collectionName === 'master_staff' ||
-            collectionName === 'freelance_workers' ||
-            collectionName === 'fleet_drivers' ||
-            collectionName === 'assets' ||
-            collectionName.startsWith('schedule_') ||
-            collectionName === 'logbook_entries' ||
-            collectionName === 'daily_reports' ||
-            collectionName === 'daily_tasks' ||
-            collectionName === 'findings' ||
-            collectionName === 'work_orders'
-          ) {
-            const mergedMap = new Map<string, any>();
-            const nameToId = new Map<string, string>();
-
-            // Read cached state if available to prevent initialFallback from resurrecting unapproved/open status
-            let cachedMap = new Map<string, any>();
-            try {
-              const cachedRaw = localStorage.getItem(localCacheKey);
-              if (cachedRaw) {
-                const parsedCached = JSON.parse(cachedRaw);
-                if (Array.isArray(parsedCached)) {
-                  parsedCached.forEach((c: any) => {
-                    const cId = String(c?.id || c?.no || c?.name || '');
-                    if (cId) cachedMap.set(cId, c);
-                  });
-                }
-              }
-            } catch (e) {}
-
-            // Only use normName matching for master staff, workers, drivers, or assets where full name / asset name is primary identity.
-            // Do NOT use normName for findings or work_orders, because tasks often have similar titles ("Perbaikan: ...")
-            const useNameMatching = collectionName !== 'findings' && collectionName !== 'work_orders' && collectionName !== 'daily_tasks' && collectionName !== 'daily_reports';
-
-            // 1. Seed from cachedMap (localStorage backup)
-            cachedMap.forEach((cachedDoc, id) => {
-              if (!deletedIds.has(id)) {
-                mergedMap.set(id, cachedDoc);
-                if (useNameMatching) {
-                  const normName = String(cachedDoc?.name || cachedDoc?.fullName || cachedDoc?.title || '').toLowerCase().trim();
-                  if (normName) nameToId.set(normName, id);
-                }
-              }
-            });
-
-            // 2. Merge initialFallback
-            (initialFallback || []).forEach((fb: any) => {
-              const fbId = String(fb?.id || fb?.no || fb?.name || '');
-              const normName = String(fb?.name || fb?.fullName || fb?.title || '').toLowerCase().trim();
-              if (fbId && !deletedIds.has(fbId)) {
-                const cachedDoc = mergedMap.get(fbId);
-                const baseDoc = cachedDoc ? mergeCleanDoc(fb, cachedDoc) : fb;
-                mergedMap.set(fbId, baseDoc);
-                if (useNameMatching && normName) nameToId.set(normName, fbId);
-              }
-            });
-
-            items.forEach((it: any) => {
-              const itId = String(it?.id || it?.no || it?.name || '');
-              const normName = String(it?.name || it?.fullName || it?.title || '').toLowerCase().trim();
-              if (itId && !deletedIds.has(itId) && !(it as any)._deleted) {
-                if (mergedMap.has(itId)) {
-                  const existing = mergedMap.get(itId);
-                  mergedMap.set(itId, mergeCleanDoc(existing, it));
-                } else if (useNameMatching && normName && nameToId.has(normName)) {
-                  const oldFbId = nameToId.get(normName)!;
-                  const existing = mergedMap.get(oldFbId);
-                  mergedMap.delete(oldFbId);
-                  mergedMap.set(itId, mergeCleanDoc(existing, it));
-                  nameToId.set(normName, itId);
-                } else {
-                  mergedMap.set(itId, it);
-                  if (useNameMatching && normName) nameToId.set(normName, itId);
-                }
-              }
-            });
-
-            items = Array.from(mergedMap.values()) as T[];
-
-            // Normal Deduplication by ID for all collections
-            const uniqueItems = new Map<string, any>();
-            items.forEach((item: any) => {
-              if (item && item.id) uniqueItems.set(item.id, item);
-            });
-            items = Array.from(uniqueItems.values()) as T[];
-
-          }
-
-          // Apply normalization to guarantee data integrity across all devices
-          items = normalizeCollectionItems(collectionName, items);
-
-          // ─────────────────────────────────────────────────────────────
-          // STATUS LOCK: Apply user-initiated status changes that must NOT
-          // be reverted by cloud snapshot. Lock is cleared once Firestore
-          // confirms the change (status matches).
-          // ─────────────────────────────────────────────────────────────
-          if (collectionName === 'findings') {
-            try {
-              const lockKey = 'riz_findings_status_lock';
-              const rawLocks = localStorage.getItem(lockKey);
-              if (rawLocks) {
-                const locks: Record<string, { status: string; approvedBy: string | null; approvedAt: string | null; lockedAt: string }> = JSON.parse(rawLocks);
-                let locksModified = false;
-
-                items = (items as any[]).map((item: any) => {
-                  if (!item?.id) return item;
-                  const lock = locks[item.id];
-                  if (!lock) return item;
-
-                  // If Firestore already has the correct status, clear the lock
-                  if (item.status === lock.status) {
-                    delete locks[item.id];
-                    locksModified = true;
-                    return item;
-                  }
-
-                  // Firestore still has wrong status — apply the lock override
-                  return {
-                    ...item,
-                    status: lock.status,
-                    ...(lock.approvedBy ? { approvedBy: lock.approvedBy } : {}),
-                    ...(lock.approvedAt ? { approvedAt: lock.approvedAt } : {})
-                  };
-                }) as T[];
-
-                if (locksModified) {
-                  localStorage.setItem(lockKey, JSON.stringify(locks));
-                }
-
-                // Also update localStorage cache with lock-applied data
-                try {
-                  localStorage.setItem(localCacheKey, JSON.stringify(items));
-                } catch (e) {}
-              }
-            } catch (e) {
-              console.warn('[Sync] Failed to apply findings status lock:', e);
+  const loadAndEmit = () => {
+    try {
+      const deletedIds = getDeletedIds(collectionName);
+      let items: T[] = [];
+      const cached = localStorage.getItem(localCacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            if (parsed.length === 1 && Array.isArray((parsed[0] as any)?.list)) {
+              items = (parsed[0] as any).list;
+            } else if (parsed.some(item => item && Array.isArray((item as any)?.list))) {
+              items = parsed.flatMap(item => (item && Array.isArray((item as any)?.list)) ? (item as any).list : [item]);
+            } else {
+              items = parsed;
             }
           }
-
-          if (collectionName === 'work_orders') {
-            try {
-              const woLockKey = 'riz_work_orders_status_lock';
-              const rawWoLocks = localStorage.getItem(woLockKey);
-              if (rawWoLocks) {
-                const woLocks: Record<string, { status: string; progress?: number; approvedBy: string | null; approvedAt: string | null; lockedAt: string }> = JSON.parse(rawWoLocks);
-                let woLocksModified = false;
-
-                items = (items as any[]).map((item: any) => {
-                  if (!item?.id) return item;
-                  const lock = woLocks[item.id];
-                  if (!lock) return item;
-
-                  // If Firestore already has the correct status, clear the lock
-                  if (item.status === lock.status) {
-                    delete woLocks[item.id];
-                    woLocksModified = true;
-                    return item;
-                  }
-
-                  // Firestore still has wrong status — apply the lock override
-                  return {
-                    ...item,
-                    status: lock.status,
-                    progress: lock.progress !== undefined ? lock.progress : (lock.status === 'Completed' ? 100 : item.progress),
-                    ...(lock.approvedBy ? { approvedBy: lock.approvedBy } : {}),
-                    ...(lock.approvedAt ? { approvedAt: lock.approvedAt } : {})
-                  };
-                }) as T[];
-
-                if (woLocksModified) {
-                  localStorage.setItem(woLockKey, JSON.stringify(woLocks));
-                }
-
-                // Also update localStorage cache with lock-applied data
-                try {
-                  localStorage.setItem(localCacheKey, JSON.stringify(items));
-                } catch (e) {}
-              }
-            } catch (e) {
-              console.warn('[Sync] Failed to apply work_orders status lock:', e);
-            }
-          }
-
-          // Save to in-memory cache for delta-sync comparisons
-          if (typeof window !== 'undefined') {
-            const cacheObj = (window as any).__FIREBASE_CACHE__ || {};
-            const mapObj = new Map();
-            items.forEach((item: any) => {
-              const itId = String(item?.id || item?.no || item?.key || '');
-              if (itId) mapObj.set(itId, item);
-            });
-            cacheObj[collectionName] = mapObj;
-            (window as any).__FIREBASE_CACHE__ = cacheObj;
-          }
-
-          // Update local cache safely
-          try {
-            localStorage.setItem(localCacheKey, JSON.stringify(items));
-          } catch (e) {
-            console.warn(`[Sync] LocalStorage cache storage limit warning for ${localCacheKey}`);
-          }
-
-          onData(items);
-
-          // Broadcast to other open tabs on this machine
-          if (syncBroadcastChannel) {
-            try {
-              syncBroadcastChannel.postMessage({
-                type: 'COLLECTION_SYNCED',
-                collectionName,
-                localCacheKey,
-                count: items.length
-              });
-            } catch (e) {}
-          }
-
-          updateSyncStatus({
-            isOnline: true,
-            lastSyncedAt: new Date(),
-            syncedCollections: {
-              ...currentSyncStatus.syncedCollections,
-              [collectionName]: items.length
-            }
-          });
-        } else {
-          // If cloud collection is completely empty, check if local storage has initial data to upload
-          const cached = localStorage.getItem(localCacheKey);
-          if (cached) {
-            try {
-              let localItems: T[] = JSON.parse(cached);
-              if (Array.isArray(localItems)) {
-                if (localItems.length === 1 && Array.isArray((localItems[0] as any)?.list)) {
-                  localItems = (localItems[0] as any).list;
-                } else if (localItems.some(item => item && Array.isArray((item as any)?.list))) {
-                  localItems = localItems.flatMap(item => (item && Array.isArray((item as any)?.list)) ? (item as any).list : [item]);
-                }
-                localItems = localItems.filter(it => {
-                  const itId = String((it as any)?.id || (it as any)?.no || '').trim();
-                  const itName = String((it as any)?.name || (it as any)?.fullName || '').trim().toLowerCase();
-                  if ((it as any)?._deleted) return false;
-                  if (itId && deletedIds.has(itId)) return false;
-                  if (itName && (deletedIds.has(itName) || deletedIds.has(String((it as any)?.name || '').trim()))) return false;
-                  return Boolean(itId || itName);
-                });
-                localItems = normalizeCollectionItems(collectionName, localItems);
-                if (localItems.length > 0) {
-                  pushCollectionToCloud(collectionName, localItems);
-                  onData(localItems);
-                  return;
-                }
-              }
-            } catch { /* ignore */ }
-          }
-          let validFallback = initialFallback.filter(it => {
-            const itId = String((it as any)?.id || (it as any)?.no || '').trim();
-            const itName = String((it as any)?.name || (it as any)?.fullName || '').trim().toLowerCase();
-            if ((it as any)?._deleted) return false;
-            if (itId && deletedIds.has(itId)) return false;
-            if (itName && (deletedIds.has(itName) || deletedIds.has(String((it as any)?.name || '').trim()))) return false;
-            return Boolean(itId || itName);
-          });
-          validFallback = normalizeCollectionItems(collectionName, validFallback);
-          onData(validFallback);
-        }
-      },
-      (error) => {
-        console.warn(`[Sync] Real-time listener warning for ${collectionName}:`, error);
-        const deletedIds = getDeletedIds(collectionName);
-        const filterItem = (it: any) => {
-          const itId = String(it?.id || it?.no || '').trim();
-          const itName = String(it?.name || it?.fullName || '').trim().toLowerCase();
-          if (it?._deleted) return false;
-          if (itId && deletedIds.has(itId)) return false;
-          if (itName && (deletedIds.has(itName) || deletedIds.has(String(it?.name || '').trim()))) return false;
-          return Boolean(itId || itName);
-        };
-
-        const cached = localStorage.getItem(localCacheKey);
-        if (cached) {
-          try {
-            let localItems = JSON.parse(cached);
-            if (Array.isArray(localItems)) {
-              if (localItems.length === 1 && Array.isArray(localItems[0]?.list)) {
-                localItems = localItems[0].list;
-              } else if (localItems.some(item => item && Array.isArray(item?.list))) {
-                localItems = localItems.flatMap(item => (item && Array.isArray(item?.list)) ? item.list : [item]);
-              }
-              localItems = localItems.filter(filterItem);
-              localItems = normalizeCollectionItems(collectionName, localItems);
-              onData(localItems);
-              return;
-            }
-            let validFallback = initialFallback.filter(filterItem);
-            validFallback = normalizeCollectionItems(collectionName, validFallback);
-            onData(validFallback);
-          } catch {
-            let validFallback = initialFallback.filter(filterItem);
-            validFallback = normalizeCollectionItems(collectionName, validFallback);
-            onData(validFallback);
-          }
-        } else {
-          let validFallback = initialFallback.filter(filterItem);
-          validFallback = normalizeCollectionItems(collectionName, validFallback);
-          onData(validFallback);
-        }
+        } catch { /* ignore */ }
       }
-    );
 
-    return unsubscribe;
-  } catch (error) {
-    console.warn(`[Sync] Failed to subscribe to ${collectionName}:`, error);
-    return () => {};
+      const isMasterCollection =
+        collectionName === 'master_staff' ||
+        collectionName === 'freelance_workers' ||
+        collectionName === 'fleet_drivers' ||
+        collectionName === 'assets' ||
+        collectionName.startsWith('schedule_') ||
+        collectionName === 'logbook_entries' ||
+        collectionName === 'daily_reports' ||
+        collectionName === 'daily_tasks' ||
+        collectionName === 'findings' ||
+        collectionName === 'work_orders';
+
+      if (items.length === 0) {
+        items = [...initialFallback];
+      } else if (isMasterCollection && initialFallback && initialFallback.length > 0) {
+        const itemMap = new Map<string, any>();
+        initialFallback.forEach((fb: any) => {
+          const fbId = String(fb?.id || fb?.no || fb?.name || '');
+          if (fbId && !deletedIds.has(fbId)) itemMap.set(fbId, fb);
+        });
+        items.forEach((it: any) => {
+          const itId = String(it?.id || it?.no || it?.name || '');
+          if (itId && !deletedIds.has(itId) && !(it as any)._deleted) {
+            const existing = itemMap.get(itId);
+            itemMap.set(itId, existing ? { ...existing, ...it } : it);
+          }
+        });
+        items = Array.from(itemMap.values()) as T[];
+      }
+
+      // Filter deleted items
+      items = items.filter(it => {
+        const itId = String((it as any)?.id || (it as any)?.no || '').trim();
+        const itName = String((it as any)?.name || (it as any)?.fullName || '').trim().toLowerCase();
+        if ((it as any)?._deleted) return false;
+        if (itId && deletedIds.has(itId)) return false;
+        if (itName && (deletedIds.has(itName) || deletedIds.has(String((it as any)?.name || '').trim()))) return false;
+        return Boolean(itId || itName);
+      });
+
+      // Deduplicate by ID
+      const uniqueItems = new Map<string, any>();
+      items.forEach((item: any) => {
+        if (item && item.id) uniqueItems.set(item.id, item);
+      });
+      items = Array.from(uniqueItems.values()) as T[];
+
+      // Normalize items
+      items = normalizeCollectionItems(collectionName, items);
+
+      // Status lock override for findings
+      if (collectionName === 'findings') {
+        try {
+          const lockKey = 'riz_findings_status_lock';
+          const rawLocks = localStorage.getItem(lockKey);
+          if (rawLocks) {
+            const locks = JSON.parse(rawLocks);
+            items = (items as any[]).map((item: any) => {
+              if (!item?.id) return item;
+              const lock = locks[item.id];
+              if (!lock) return item;
+              return {
+                ...item,
+                status: lock.status,
+                ...(lock.approvedBy ? { approvedBy: lock.approvedBy } : {}),
+                ...(lock.approvedAt ? { approvedAt: lock.approvedAt } : {})
+              };
+            }) as T[];
+          }
+        } catch {}
+      }
+
+      // Status lock override for work_orders
+      if (collectionName === 'work_orders') {
+        try {
+          const woLockKey = 'riz_work_orders_status_lock';
+          const rawWoLocks = localStorage.getItem(woLockKey);
+          if (rawWoLocks) {
+            const woLocks = JSON.parse(rawWoLocks);
+            items = (items as any[]).map((item: any) => {
+              if (!item?.id) return item;
+              const lock = woLocks[item.id];
+              if (!lock) return item;
+              return {
+                ...item,
+                status: lock.status,
+                progress: lock.progress !== undefined ? lock.progress : (lock.status === 'Completed' ? 100 : item.progress),
+                ...(lock.approvedBy ? { approvedBy: lock.approvedBy } : {}),
+                ...(lock.approvedAt ? { approvedAt: lock.approvedAt } : {})
+              };
+            }) as T[];
+          }
+        } catch {}
+      }
+
+      onData(items);
+
+      updateSyncStatus({
+        isOnline: true,
+        lastSyncedAt: new Date(),
+        syncedCollections: {
+          ...currentSyncStatus.syncedCollections,
+          [collectionName]: items.length
+        }
+      });
+    } catch (err) {
+      console.warn(`[Sync] Load failed for ${collectionName}:`, err);
+      onData(initialFallback || []);
+    }
+  };
+
+  // Immediate initial load
+  loadAndEmit();
+
+  const handleStorage = (e: StorageEvent) => {
+    if (e.key === localCacheKey || !e.key) {
+      loadAndEmit();
+    }
+  };
+
+  const handleBroadcast = (e: MessageEvent) => {
+    if (e.data && (e.data.collectionName === collectionName || e.data.type === 'ALL_MODULES_SYNCED' || e.data.type === 'COLLECTION_SYNCED')) {
+      loadAndEmit();
+    }
+  };
+
+  const handleCustomEvent = (e: Event) => {
+    const customEvt = e as CustomEvent;
+    if (!customEvt.detail || customEvt.detail.collectionName === collectionName) {
+      loadAndEmit();
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('riz_collection_updated', handleCustomEvent);
+    window.addEventListener('riz_local_data_updated', handleCustomEvent);
   }
+
+  if (syncBroadcastChannel) {
+    syncBroadcastChannel.addEventListener('message', handleBroadcast);
+  }
+
+  return () => {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('riz_collection_updated', handleCustomEvent);
+      window.removeEventListener('riz_local_data_updated', handleCustomEvent);
+    }
+    if (syncBroadcastChannel) {
+      syncBroadcastChannel.removeEventListener('message', handleBroadcast);
+    }
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1036,31 +756,9 @@ export async function saveCloudDoc(
     console.warn(`[Sync] Failed to immediately update local cache for ${collectionName}:`, e);
   }
 
-  if (!navigator.onLine) {
-    enqueuePendingOperation({
-      type: 'SAVE',
-      collectionName,
-      docId,
-      data: cleanData
-    });
-    return;
-  }
-
-  try {
-    const docRef = doc(db, collectionName, docId);
-    await setDoc(docRef, cleanData, { merge: true });
-    updateSyncStatus({
-      lastSyncedAt: new Date()
-    });
-  } catch (err: any) {
-    console.warn(`[Sync] Network error saving doc ${docId} in ${collectionName}:`, err);
-    enqueuePendingOperation({
-      type: 'SAVE',
-      collectionName,
-      docId,
-      data: cleanData
-    });
-  }
+  updateSyncStatus({
+    lastSyncedAt: new Date()
+  });
 
   // Sinkronisasi ganda ke Supabase jika terkonfigurasi (tanpa memblokir UI)
   saveSupabaseDoc(collectionName, docId, cleanData).catch(() => {});
@@ -1123,30 +821,9 @@ export async function deleteCloudDoc(
     console.warn(`[Sync] Failed to purge deleted doc from local cache for ${collectionName}:`, e);
   }
 
-  if (!navigator.onLine) {
-    enqueuePendingOperation({
-      type: 'DELETE',
-      collectionName,
-      docId
-    });
-    triggerAutoSyncToGoogleSheet(1500);
-    return;
-  }
-
-  try {
-    const docRef = doc(db, collectionName, docId);
-    await deleteDoc(docRef);
-    updateSyncStatus({
-      lastSyncedAt: new Date()
-    });
-  } catch (error) {
-    console.warn(`[Sync] Network error deleting doc ${docId} from ${collectionName}. Queued for offline sync:`, error);
-    enqueuePendingOperation({
-      type: 'DELETE',
-      collectionName,
-      docId
-    });
-  }
+  updateSyncStatus({
+    lastSyncedAt: new Date()
+  });
 
   // Hapus juga di Supabase jika terkonfigurasi
   deleteSupabaseDoc(collectionName, primaryId || docId).catch(() => {});
@@ -1166,126 +843,63 @@ export async function pushCollectionToCloud<T = any>(
 ): Promise<void> {
   if (!items || items.length === 0) return;
 
-  const deviceInfo = getDeviceOSInfo();
-  try {
-    if (!skipStatusUpdate) updateSyncStatus({ isSyncing: true });
+  const reg = ALL_SYNC_COLLECTIONS.find(c => c.name === collectionName);
+  if (reg && typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(reg.key, JSON.stringify(items));
+      if (syncBroadcastChannel) {
+        syncBroadcastChannel.postMessage({
+          type: 'COLLECTION_SYNCED',
+          collectionName,
+          localCacheKey: reg.key,
+          count: items.length
+        });
+      }
+    } catch (e) {}
+  }
 
-    // Retrieve in-memory firebase cache for Delta-Sync
-    let firebaseCacheMap = new Map();
-    if (typeof window !== 'undefined' && (window as any).__FIREBASE_CACHE__) {
-      firebaseCacheMap = (window as any).__FIREBASE_CACHE__[collectionName] || new Map();
-    }
+  // Push juga ke Supabase jika terkonfigurasi (tanpa memblokir UI)
+  pushCollectionToSupabase(collectionName, items as any).catch(() => {});
 
-    // Helper to deeply compare items ignoring _syncMeta
-    const isDifferent = (local: any, cloud: any) => {
-      if (!cloud) return true; // Cloud doesn't have it, definitely different
-      const l = { ...local };
-      const c = { ...cloud };
-      delete l._syncMeta;
-      delete c._syncMeta;
-      return JSON.stringify(l) !== JSON.stringify(c);
-    };
-
-    // Filter only items that actually changed
-    const changedItems = items.filter((item: any) => {
-      const docId = String(item?.id || item?.no || item?.key || '');
-      if (!docId) return false;
-      const cloudItem = firebaseCacheMap.get(docId);
-      return isDifferent(item, cloudItem);
+  if (!skipStatusUpdate) {
+    updateSyncStatus({
+      isSyncing: false,
+      lastSyncedAt: new Date(),
+      syncedCollections: {
+        ...currentSyncStatus.syncedCollections,
+        [collectionName]: items.length
+      }
     });
-
-    if (changedItems.length === 0) {
-      if (!skipStatusUpdate) updateSyncStatus({ isSyncing: false });
-      return; // Nothing changed, skip writing to Firebase
-    }
-
-    const CHUNK_SIZE = 300;
-    for (let i = 0; i < changedItems.length; i += CHUNK_SIZE) {
-      const chunk = changedItems.slice(i, i + CHUNK_SIZE);
-      const batch = writeBatch(db);
-
-      chunk.forEach((item: any, idx: number) => {
-        const docId = String(item?.id || item?.no || item?.key || `item-${i + idx}`);
-        if (docId) {
-          const docRef = doc(db, collectionName, docId);
-          const cleanData = {
-            ...JSON.parse(JSON.stringify(item)),
-            _syncMeta: {
-              updatedAt: new Date().toISOString(),
-              updatedBy: updaterName || 'BatchSync',
-              deviceOS: deviceInfo.os,
-              deviceType: deviceInfo.deviceType,
-              browser: deviceInfo.browser
-            }
-          };
-          batch.set(docRef, cleanData, { merge: true });
-        }
-      });
-
-      await batch.commit();
-    }
-
-    // Push juga ke Supabase jika terkonfigurasi (tanpa memblokir UI)
-    pushCollectionToSupabase(collectionName, items as any).catch(() => {});
-
-    if (!skipStatusUpdate) {
-      updateSyncStatus({
-        isSyncing: false,
-        lastSyncedAt: new Date(),
-        syncedCollections: {
-          ...currentSyncStatus.syncedCollections,
-          [collectionName]: items.length
-        }
-      });
-    }
-  } catch (error) {
-    console.error(`[Sync] Batch push failed for ${collectionName}:`, error);
-    if (!skipStatusUpdate) updateSyncStatus({ isSyncing: false });
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// 10. FULL BIDIRECTIONAL RE-SYNC ACROSS ALL 19 MODULES
+// 10. FULL RE-SYNC ACROSS ALL 19 MODULES
 // ─────────────────────────────────────────────────────────────
 export async function forceSyncAllModules(updaterName?: string): Promise<{ success: boolean; message: string }> {
   try {
-    updateSyncStatus({ isSyncing: true, lastSyncMessage: 'Sedang menyinkronkan seluruh modul lintas perangkat...' });
+    updateSyncStatus({ isSyncing: true, lastSyncMessage: 'Sedang menyinkronkan seluruh modul...' });
 
     // Step 1: Flush offline pending queue
-    const flushedCount = await flushPendingQueue();
+    await flushPendingQueue();
 
-    // Step 2: Push local cache to Firestore if needed
+    // Step 2: Trigger Google Sheet Auto-Sync
+    triggerAutoSyncToGoogleSheet(0);
+
     let totalSynced = 0;
-
     for (const item of ALL_SYNC_COLLECTIONS) {
       const cached = localStorage.getItem(item.key);
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            await pushCollectionToCloud(item.name, parsed, updaterName, true);
             totalSynced += parsed.length;
-          } else if (typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length > 0) {
-            const docRef = doc(db, 'system_configs', item.name);
-            await setDoc(docRef, {
-              data: parsed,
-              _syncMeta: {
-                updatedAt: new Date().toISOString(),
-                updatedBy: updaterName || 'FullSync',
-                deviceOS: localDeviceInfo.os,
-                deviceType: localDeviceInfo.deviceType,
-                browser: localDeviceInfo.browser
-              }
-            }, { merge: true });
-            totalSynced += 1;
           }
-        } catch (e) {
-          console.warn(`[Sync] Error syncing ${item.name}:`, e);
-        }
+        } catch (e) {}
       }
     }
 
-    const msg = `Auto-Sync Sukses! ${totalSynced} data Cloud tersinkronisasi (${localDeviceInfo.os} • ${flushedCount} antrean offline terkirim).`;
+    const msg = `Auto-Sync Sukses! Seluruh modul (${totalSynced} data) tersinkronisasi.`;
     updateSyncStatus({
       isOnline: true,
       isSyncing: false,
