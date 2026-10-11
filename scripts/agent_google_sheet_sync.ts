@@ -2,12 +2,14 @@ import fs from 'fs';
 import path from 'path';
 import Papa from 'papaparse';
 import { fileURLToPath } from 'url';
+import { parseDailySheet, SheetRow } from '../src/lib/dailySheetParser';
+import { DailyReport, LogbookEntry } from '../src/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
-const GID = '198998470';
+const GID = '938476420';
 const URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${GID}`;
 
 console.log('================================================================');
@@ -76,101 +78,105 @@ async function runAgent() {
     console.log(`[AGENT] Data berhasil di-dump ke: official_data.md`);
 
     // ==========================================
-    // PHASE 2: AST / CODE INJECTION TO FRONTEND
+    // PHASE 2: PARSE VIA DAILY_SHEET_PARSER (T6)
     // ==========================================
-    console.log(`[AGENT] Mem-parsing data baris ke struktur TypeScript untuk Dashboard UI...`);
+    console.log(`[AGENT] Mem-parsing data baris menggunakan dailySheetParser bersama...`);
     
-    const dailyReports: any[] = [];
-    const logbookEntries: any[] = [];
-    let currentDate = "2026-09-01";
-
-    dataRows.forEach((row, i) => {
+    const sheetRows: SheetRow[] = dataRows.map((row, idx) => {
       const paddedRow = row.slice(0, 7);
       while (paddedRow.length < 7) paddedRow.push('');
-
-      let rawDate = paddedRow[0].trim();
-      if (rawDate) {
-        const match = rawDate.match(/(\d+)\s+September\s+2026/i);
-        if (match) {
-          const day = match[1].padStart(2, '0');
-          currentDate = `2026-09-${day}`;
-        }
-      }
-
-      let crewString = paddedRow[1].trim();
-      if (!crewString) return; // Skip empty crew rows
-
-      // Split multiple crew names by newlines, commas, or slashes, and remove leading dashes
-      const crews = crewString.split(/[\n,\/]+/)
-        .map(c => c.replace(/^- /g, '').trim())
-        .filter(c => c.length > 0);
-
-      let division = "Umum";
-      let activity = "";
-      if (paddedRow[2].trim()) { division = "Audio"; activity = paddedRow[2].trim(); }
-      else if (paddedRow[3].trim()) { division = "Lighting"; activity = paddedRow[3].trim(); }
-      else if (paddedRow[4].trim()) { division = "Videotron"; activity = paddedRow[4].trim(); }
-      else if (paddedRow[5].trim()) { division = "Multimedia"; activity = paddedRow[5].trim(); }
-
-      const notes = paddedRow[6].trim();
-
-      if (activity) {
-        crews.forEach((crew, index) => {
-          dailyReports.push({
-            id: `rep-${currentDate.replace(/-/g, '')}-${crew.toLowerCase().replace(/[^a-z0-9]/g, '')}-${i}-${index}`,
-            date: currentDate,
-            staffName: crew,
-            division: division,
-            activity: activity,
-            notes: notes,
-            status: "Submitted",
-            _source: "google_sheet"
-          });
-
-          // Only push a logbook entry for QC stats if it actually represents a QC/Maintenance activity
-          const actLower = activity.toLowerCase();
-          const isQc = ['cek', 'qc', 'cleaning', 'repair', 'ganti', 'perbaikan', 'service'].some(kw => actLower.includes(kw));
-          
-          if (isQc) {
-            logbookEntries.push({
-              id: `log-${currentDate.replace(/-/g, '')}-${crew.toLowerCase().replace(/[^a-z0-9]/g, '')}-${i}-${index}`,
-              date: currentDate,
-              division: division,
-              staffName: crew,
-              activity: activity,
-              result: "OK",
-              followUp: notes || "Tugas harian selesai",
-              status: "Close",
-              verification: "Auto-Synced",
-              checklists: { "Sync": { status: "OK", notes: "Synced from Google Sheet" } },
-              _source: "google_sheet"
-            });
-          }
-        });
-      }
+      return {
+        rowNumber: idx + 6,
+        cells: paddedRow
+      };
     });
 
-    console.log(`[AGENT] Berhasil membuat ${dailyReports.length} Daily Reports & Logbook Entries dari data asli.`);
+    const parsedEntries = parseDailySheet(sheetRows);
+    console.log(`[AGENT] Total parsed entries: ${parsedEntries.length}`);
 
-    // Replace the mock data in canonicalFirestoreData.ts
+    const dailyReports: DailyReport[] = parsedEntries.map((e) => ({
+      id: e.id,
+      date: e.date,
+      staffName: e.staffName,
+      division: e.division,
+      activity: e.activity,
+      notes: e.notes || '',
+      status: 'Submitted',
+      _source: 'google_sheet'
+    }));
+
+    const logbookEntries: LogbookEntry[] = parsedEntries
+      .filter((e) => e.isQc)
+      .map((e) => {
+        const isNg = /harus service|service|rusak|kendala|masalah|error|mati|tidak berfungsi|ganti|perbaikan|repair|tidak ok|ng|perlu/i.test(e.notes);
+        return {
+          id: `log-${e.id}`,
+          date: e.date,
+          division: e.division,
+          staffName: e.staffName,
+          activity: e.activity,
+          result: isNg ? ('NG' as const) : ('OK' as const),
+          followUp: e.notes || (isNg ? 'Perlu perbaikan teknis' : 'Pengecekan selesai aman'),
+          status: isNg ? ('Open' as const) : ('Close' as const),
+          verification: 'Auto-Synced',
+          checklists: { [e.activity.substring(0, 40)]: { status: isNg ? ('NG' as const) : ('OK' as const), notes: e.notes || 'Synced from Google Sheet' } },
+          _source: 'google_sheet'
+        };
+      });
+
+    console.log(`[AGENT] Berhasil membuat ${dailyReports.length} Daily Reports & ${logbookEntries.length} Logbook Entries QC.`);
+
+    // ==========================================
+    // PHASE 3: SAFE MONTH-SCOPED MERGE (T6)
+    // ==========================================
     const tsPath = path.join(__dirname, '../src/data/canonicalFirestoreData.ts');
     if (fs.existsSync(tsPath)) {
-      let tsContent = fs.readFileSync(tsPath, 'utf8');
+      // Import existing arrays dynamically
+      const canonicalModule = await import('../src/data/canonicalFirestoreData');
+      const existingReports = (canonicalModule.CANONICAL_FIRESTORE_DAILY_REPORTS || []) as DailyReport[];
+      const existingLogs = (canonicalModule.CANONICAL_FIRESTORE_LOGBOOK_ENTRIES || []) as LogbookEntry[];
+      const existingFindings = canonicalModule.CANONICAL_FIRESTORE_FINDINGS || [];
+      const existingWOs = canonicalModule.CANONICAL_FIRESTORE_WORK_ORDERS || [];
 
-      // Simple string replacement using regex to clear out the arrays
-      tsContent = tsContent.replace(/export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport\[\] = \[[\s\S]*?\];/, `export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = ${JSON.stringify(dailyReports, null, 2)};`);
-      
-      tsContent = tsContent.replace(/export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry\[\] = \[[\s\S]*?\];/, `export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = ${JSON.stringify(logbookEntries, null, 2)};`);
+      // Month-scoped replace untuk bulan Oktober (2026-10) dengan _source: google_sheet
+      // Seluruh data bulan lain (September, dsb.) dan non-google_sheet TETAP UTUH!
+      const targetMonthPrefix = '2026-10';
 
-      // Clear the other fake data
-      tsContent = tsContent.replace(/export const CANONICAL_FIRESTORE_FINDINGS: Finding\[\] = \[[\s\S]*?\];/, `export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [];`);
-      tsContent = tsContent.replace(/export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder\[\] = \[[\s\S]*?\];/, `export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder[] = [];`);
+      const preservedReports = existingReports.filter(
+        (r) => !(r.date && r.date.startsWith(targetMonthPrefix) && r._source === 'google_sheet')
+      );
+      const mergedReports = [...preservedReports, ...dailyReports];
 
-      fs.writeFileSync(tsPath, tsContent);
-      console.log(`[AGENT] Berhasil memperbarui src/data/canonicalFirestoreData.ts dengan data asli (NO HALLUCINATION).`);
+      const preservedLogs = existingLogs.filter(
+        (l) => !(l.date && l.date.startsWith(targetMonthPrefix) && l._source === 'google_sheet')
+      );
+      const mergedLogs = [...preservedLogs, ...logbookEntries];
+
+      const updatedContent = `import { DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
+
+/**
+ * DATA KANONIKAL RESMI CLOUD FIRESTORE & GOOGLE SHEET PT. RIZ PRODUCTION MULTI KREASI
+ * Disinkronkan langsung dari Cloud Firestore (wh-logbook-2026).
+ * Total: ${mergedReports.length} Daily Reports | ${mergedLogs.length} Logbook Entries | ${existingFindings.length} Findings | ${existingWOs.length} Work Orders
+ */
+
+export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = ${JSON.stringify(mergedReports, null, 2)};
+
+export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = ${JSON.stringify(mergedLogs, null, 2)};
+
+export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = ${JSON.stringify(existingFindings, null, 2)};
+
+export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder[] = ${JSON.stringify(existingWOs, null, 2)};
+`;
+
+      fs.writeFileSync(tsPath, updatedContent);
+      console.log(`[AGENT] Month-scoped replace selesai:`);
+      console.log(`   - Daily Reports Total: ${mergedReports.length} (Oktober gsheet: ${dailyReports.length})`);
+      console.log(`   - Logbook Entries QC Total: ${mergedLogs.length} (Oktober gsheet: ${logbookEntries.length})`);
+      console.log(`   - Findings & Work Orders: TIDAK TERSENTUH (${existingFindings.length} findings, ${existingWOs.length} work orders).`);
     }
     
-    console.log('[AGENT] SINKRONISASI SELESAI. SILAKAN PERIKSA FRONTEND DASHBOARD.');
+    console.log('[AGENT] SINKRONISASI SELESAI.');
     
   } catch (err: any) {
     console.error(`[AGENT ERROR] Terjadi kesalahan saat sinkronisasi: ${err.message}`);

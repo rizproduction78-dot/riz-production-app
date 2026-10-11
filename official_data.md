@@ -3,65 +3,47 @@
 
 | Tanggal | Crew | SOUND | LIGHTING | LED | MULTIMEDIA | REMARK |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 September 2026 | - Jay |  |  |  | - Belajar Aplikasi Gemini | selesai basic progress tingkat lanjut |
-|  |  |  |  |  | - Belajar Aplikasi Chat GPT |  |
-| 3 September 2026 | - Mboh  | 1. pengecekan semua unit speker DBTtech15, dengan mengunakan smartlive berdasarkan data reference unit yang sehat |  |  |  | - DB Tech No.18 Ada Kendala dibagian Modul Amplifiernya, saat terkena beban input besar, hasil suara yang di keluarkan menjadi serak, tapi masih aman dan bisa digunakan untuk Event.<br>-Rekomendasi untuk di cek oleh team service terutama pada modul Amplifier dan pengecekan  spare-part Tweter |
-|  | - Yudis |  |  |  |  |  |
-|  | - Buluk |  |  |  |  |  |
-|  | - Butong | 2. membersihkan smua unit DBtech dari debu |  |  |  |  |
-| 4 September 2026 | - Opik | - Pengecekan Panel 3 Unit |  |  |  | - 2 panel Sudah OK |
-|  | - Buluk |  |  |  |  | - 1 Ganti Stop Kontak, 1 Ganti Legran Cewe |
-| 5 September 2026 | - Opik | - Perbaikan panel listrik dan praktek penggabungan metode sub cardioid dan End-Fire menggunakan Sub T45 |  |  |  | - Panel listrik dalam kondisi aman dan bisa di gunakan |
-|  | - Mboh |  |  |  |  |  |
-|  | - Kharo |  |  | - Repair/ perbaikan Ganti Pixel Kabinet LED 2 Box |  | selesai 2 box |
-| 6 September 2026 | - Kharo<br>- Wigi<br>- Irvan |  |  | - Repair/ perbaikan ganti pixel kabinet led 2 box |  | selesai 2 box |
-|  | -Dani | - Cek cable XLR dan Jack to Jack |  |  |  |  |
-| 7 September 2026 | - Heri |  | Cek unit, Cleaning, Cek Colour Parled |  |  | Harus service warm mati no 12,25,29 &#124; Warm Separo no 3,32 |
-| 9 September 2026 | - Kharo |  |  | - Repair dead pixel 1 box<br>- Copot Masking 7 box |  | selesai 1 box |
-|  | - Wigi |  |  |  |  | selesai 1 box |
-|  | - Ayong |  |  |  |  | selesai 1 box |
-|  | - Buluk | - Perbaikan/ Service Mandiri :<br>1. Kabel snake 8 ch <br>2. Kabel snake 16 ch <br>3. Kabel rumbay drum 8 ch<br>4. Cek Mic EWD/ Ganti Spul |  |  |  | - selesai dan dapat di gunakan |
-|  | - Opik |  |  |  |  |  |
-|  | - Butong |  |  |  |  |  |
-|  | - Dani |  |  |  |  |  |
-| 10 September 2026 | - Heri |  | Cek Unit, Cleaning, Cek colour, Perbaikan kabel  link :<br>- Beam 450 (9 bok / 18 Unit)<br>- BSW 550 (6 bok / 12 Unit)<br>- B-Eye (4 bok / 8 Unit) |  |  |  |
-|  |  |  | - Parled  |  |  | - Harus service warm separo no. 19,20,27 |
-|  |  |  | - XLR (Link) |  |  | - Sudah service |
-|  | - Mboh | *ngulik fitur DLMS marani MIR480I dan MIR480A |  |  |  | unit dalam kondisi aman tida ada kendala |
-|  |  | *CALIBRASI MIC RTA BEHRINGER ECM8000 |  |  |  |  |
-|  |  | *revisi pemasangan BEHRINGER ULTRA LINK  |  |  |  |  |
-| 11 September 2026 | - unyim<br>- buluk | - ganti skindrum tama star clasic<br>- cek mic baru drum sennheiser 3pcs<br>- membuat lubang pada tripot untuk sub db<br>- memasukan standmic ke hardcase yang baru di buat |  |  |  | selesai dengan baik dan bisa di gunakan |
-| 12 September 2026 | - Heri |  | Cek Unit, Cleaning, Cek Colour Parled |  |  |  |
-|  |  |  | - Cek Mixer Tiger Touch |  |  | Kondisi Normal |
-|  |  |  | - Cleaning All Stromy |  |  | Kondisi Bersih Normal |
-|  |  |  | - Cleaning All Freshnell 300 w |  |  | Kondisi Normal |
-|  |  |  | - Cleaning All blinder 4Cell |  |  | Kondisi Bersih Normal |
-|  |  |  | - Cleaning Parled No. 11,13,14,15,16,17 |  |  | Kondisi Bersih I No. 13 Harus Servic ( Merah Mati ) |
-| 16 September 2026 | - Kharo |  |  | - Reapir Dead Pixel |  |  |
-|  | - Ayong |  |  | - Buka Masking Kabinet |  |  |
-|  | - Jay |  |  |  | - Ganti Konektor SDI kabel panjang 1. Kabel pendek 1 |  |
-|  |  |  |  |  | - Cek Kabel SDI Perleng Box  |  |
-|  | - Unyim | - Cleaning Avanda 210 16 Box |  |  |  | Kondisi Bersih dan Normal |
-|  | - Dani | - Cleaning & Repaint Mic SM58, SM57 & VXT |  |  |  | SM58 ( Bagus 17, Rusak 1 ), SM57 ( Bagus 11, Rusak 4, Hilang 9 ), VXT ( Bagus 8, Rusak 2 ) |
-|  | - Butonk | - Bongkar RCF 8003 Kirim ke sambang |  |  |  | 2 Unit Speaker 18inc saja |
-|  |  Heri |  | CLEANING, CEK UNIT |  |  |  |
-|  |  |  | - Konek artnet ke Tiger Touch |  |  |  |
-|  |  |  | - Cleaning All Freshnell 200 W |  |  | Kondisi Normal |
-|  |  |  | - Cek Smoke erorr |  |  | Smoke No.3 ERORR |
-|  |  |  | - Rapihin Kabel PerlBox |  |  | Aman |
-|  |  |  | - Ganti Roda Box Kabel |  |  | Lancar |
-| 17 September 2026 | - Kharo |  |  | - Ganti Dead Pixel |  | - 5 Box Diluar Blom Beres |
-|  |  |  |  |  |  | - 1 Box Clear |
-|  |  |  |  |  |  | - 1 Box Baru Beres 4 Kabinet |
-|  |  |  |  |  |  | - 1 Box Kerusakan Berat |
-|  | - Jay |  |  |  | - Cek Kabel SDI 50 Meter Dan Ganti Konektor 3 Unit | - Dari 3 Unit Kabel SDI, 1 Unit Harus Ganti konektor ( 2 Unit Aman ) |
-|  | - Opik | - Cek Panel Dan Ganti 3 Unit Indikator |  |  |  | - Udah Aman Diganti baru |
-|  | - Dani | - Cek Mic  & Jumlahnya |  |  |  | - Bagus Dan Bersih |
-|  | - Unyim | - Cek Takel 1 & 2 Ton |  |  |  | - Takel yg 1 Ton LOS 1 Unit wajib di perbaiki |
-|  | - Yudis | - Cek Ampeg SVT-4 |  |  |  | - Harus service dan ganti PTC |
-|  | - Buluk |  |  |  |  |  |
-|  | - Butonk |  |  |  |  |  |
-| 18 September 2026 | - Kharo |  |  | - Ganti Dead Pixel |  | - 3 Box Belum Beres |
-|  |  |  |  |  |  | - 2 Box Clear |
-|  |  |  |  |  |  | - 1 Box Beres 3 Kabinet |
-|  |  |  |  |  |  | - 1 Box Kerusakan Berat |
+| 1 Oktober 2026 | - Irfan |  |  | - Cek kabel lan |  |  |
+|  | - Ayong |  |  | - Bersiin Prosesor dan cek kelengkapan kabel Di Processor |  |  |
+|  |  |  |  | - Nyuci pemberat |  |  |
+|  2 oktober 2026 | kharo |  |  | 1. repair 3 kabinet ic warna  + ganti dead pixel 2 kabinet clear |  |  |
+|  |  |  |  | 2. cek 11 modul kabinet |  |  |
+|  |  |  |  |  - 2 modul ilang jalur ic |  |  |
+|  |  |  |  |  - 3 modul ilang jalur pixel |  |  |
+|  |  |  |  |  - 3 modul kena ic warna |  |  |
+|  |  |  |  |  - 1 modul arus konslet |  |  |
+|  |  |  |  | 3. copot ic buat kanibal |  |  |
+|  |  |  |  | 4. sortir masking |  |  |
+| 2 oktober 2026 | unyim | inventory |  |  |  |  |
+|  |  | stand speaker 22pcs |  |  |  |  |
+|  |  | stand mic lama 44pcs |  |  |  |  |
+|  |  | stand mic baru 20pcs |  |  |  |  |
+|  |  | stand kick pendek 5pcs |  |  |  |  |
+|  |  | stand mic pendek 4pcs |  |  |  |  |
+|  |  | stand boox 22pcs |  |  |  |  |
+|  |  | stand key singel 4pcs |  |  |  |  |
+|  |  | stand key soubel 3pcs |  |  |  |  |
+|  |  | stand gtr lama isi 3 2pcs |  |  |  |  |
+|  |  | stand gtr singel 4pcs |  |  |  |  |
+|  |  | stand gtr baru isi 3 1pcs isi 3pcs |  |  |  |  |
+|  |  | marking mic sm58 57 condensor c1000 |  |  |  |  |
+|  |  | marking mic drum |  |  |  |  |
+|  |  | takel 2ton 2pcs |  |  |  |  |
+|  |  | takel 1ton 8pcs |  |  |  |  |
+|  |  | setrap takel panjang 10pcs pendek 2pcs |  |  |  |  |
+| 2 Oktober 2026 | Irfan |  |  | - Beraihin kaki level |  | - Kondisi Baik |
+|  | Ayong |  |  | - Bersihin Ambalan |  | - Kondisi Baik |
+|  | Wigi |  |  | - Beneren perleng legran |  | - Kondisi Normal |
+| 3 Oktober 2026 | Heri |  | Cek Unit Tripot |  |  |  |
+|  |  |  | - A , Tripot Centurion |  |  | Normal |
+|  |  |  | - B , Tripot Centurion |  |  | Normal |
+|  |  |  | - C , Tripot Lama (Berat) |  |  | Normal |
+|  |  |  | - D , Tripot Lama  |  |  | Normal |
+|  |  |  | - E , Tripot Lama ( Tipis Enteng ) |  |  | Normal |
+|  |  |  | - F , Tripot Lama ( Tipis Enteng ) |  |  | Normal |
+|  |  |  | - G , Tripot Custom |  |  | Keadaan tidak komplite |
+|  03 oktober 2026 | kharo |  |  |  - repair 1 kabinet ganti ic warna + ganti dead pixel |  | 1 modul pcb bengkok |
+|  |  |  |  |  - repair modul 1 clear ganti ic warna |  |  |
+| 04 oktober 2026 | dani  | cleaning up  16 speaker monitor db , LVX 2 unit  |  |  |  | kondisi baik |
+|  | unyim | cleaning up  16 speaker monitor db , LVX 2 unit  |  |  |  |  |
+| 04 Oktober 2026 | - Heri |  | Cleaning All Beam 450 24 Unit (No. 1 - 24) |  |  | Normal Semua |

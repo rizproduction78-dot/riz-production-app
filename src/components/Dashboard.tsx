@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { LogbookEntry, DailyReport, Finding, WorkOrder, AttendanceLog } from '../types';
+import { LogbookEntry, DailyReport, Finding, WorkOrder, AttendanceLog, DailyTask } from '../types';
 import { 
   Play, 
   CheckCircle2, 
@@ -116,63 +116,14 @@ export default function Dashboard({
   const [notesSolusi, setNotesSolusi] = React.useState('');
   const [notesTarget, setNotesTarget] = React.useState('');
 
-  // Analisis Manajemen — WAJIB filter activeMonth, DILARANG hardcode teks generik
+  // Analisis Manajemen — reset saat bulan berubah agar teks manual tetap konsisten per periode
   React.useEffect(() => {
-    // Reset saat bulan berubah agar teks lama tidak tersisa
     setNotesKendala('');
     setNotesAkar('');
     setNotesSolusi('');
     setNotesTarget('');
   }, [activeMonth]);
 
-  React.useEffect(() => {
-    // Filter ketat: hanya findings bulan aktif
-    const monthFindings = findings.filter(f =>
-      f.dateCreated?.startsWith(activeMonth) || f.targetDate?.startsWith(activeMonth)
-    );
-    // Filter ketat: hanya WO bulan aktif
-    const monthWOs = workOrders.filter(w =>
-      w.dateCreated?.startsWith(activeMonth) ||
-      (w as any).date?.startsWith(activeMonth) ||
-      w.deadline?.startsWith(activeMonth)
-    );
-
-    if (!notesKendala) {
-      if (monthFindings.length > 0) {
-        const issuesList = monthFindings.slice(0, 3)
-          .map(f => `${f.equipment}: ${f.issue.substring(0, 75)}`)
-          .join('. ');
-        setNotesKendala(`Ditemukan ${monthFindings.length} catatan kendala teknis pada periode ${targetMonth}: ${issuesList}.`);
-      }
-      // Jika tidak ada data bulan ini, biarkan kosong — jangan tampilkan data palsu
-    }
-
-    if (!notesAkar) {
-      if (monthFindings.length > 0) {
-        // Derive akar masalah dari tipe kerusakan yang ditemukan
-        const equipTypes = [...new Set(monthFindings.map(f => f.equipment.split(' ')[0]))].slice(0, 3).join(', ');
-        setNotesAkar(`Berdasarkan ${monthFindings.length} temuan bulan ini: kerusakan teridentifikasi pada unit ${equipTypes}. Analisis akar masalah perlu diisi oleh Supervisor.`);
-      }
-      // Jika tidak ada temuan, biarkan kosong
-    }
-
-    if (!notesSolusi) {
-      if (monthWOs.length > 0) {
-        const woSummary = monthWOs.slice(0, 5).map(w => w.title).join('; ');
-        setNotesSolusi(`Work Order bulan ini (${monthWOs.length} WO): ${woSummary}.`);
-      }
-      // Jika tidak ada WO, biarkan kosong
-    }
-
-    // Target: hanya isi jika ada data nyata, biarkan user mengisi sendiri
-    // Jangan hardcode target generik
-
-  }, [findings, workOrders, activeMonth, targetMonth]);
-
-  // States for interactive approvals
-  const [approvedSupervisor, setApprovedSupervisor] = React.useState(false);
-  const [approvedManager, setApprovedManager] = React.useState(false);
-  const [approvedDirektur, setApprovedDirektur] = React.useState(false);
 
   // Date and Calculations
   const today = new Date().toISOString().split('T')[0];
@@ -272,19 +223,11 @@ export default function Dashboard({
   const openIssues = activeFindings.filter(f => f.status === 'Open').length;
   const closedIssues = activeFindings.filter(f => f.status === 'Close').length;
 
-  // Dynamic PM metrics
+  // Dynamic PM metrics - strictly based on PM schedules and PM Work Orders
   const pmFromSchedules = activeSchedules.filter(s => s.type === 'Preventive');
-  const pmFromWO = activeWorkOrders.filter(w => w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive'));
-  const pmFromQC = activeLogbookEntries.filter(e => e.result === 'OK' && (
-    e.activity?.toLowerCase().includes('cleaning') ||
-    e.activity?.toLowerCase().includes('cek') ||
-    e.activity?.toLowerCase().includes('smartlive') ||
-    e.activity?.toLowerCase().includes('test') ||
-    e.activity?.toLowerCase().includes('kalibrasi') ||
-    e.activity?.toLowerCase().includes('inspeksi')
-  ));
-  const totalPM = pmFromSchedules.length + pmFromWO.length + pmFromQC.length;
-  const donePM = pmFromSchedules.filter(s => s.status === 'Done').length + pmFromWO.filter(w => w.status === 'Completed').length + pmFromQC.length;
+  const pmFromWO = activeWorkOrders.filter(w => w.type === 'PM' || w.title?.toLowerCase().includes('pm') || w.title?.toLowerCase().includes('preventive'));
+  const totalPM = pmFromSchedules.length + pmFromWO.length;
+  const donePM = pmFromSchedules.filter(s => s.status === 'Done').length + pmFromWO.filter(w => w.status === 'Completed').length;
   const pendingPM = Math.max(0, totalPM - donePM);
   const kepatuhanPM = totalPM > 0 ? ((donePM / totalPM) * 100).toFixed(1) : '100.0';
 
@@ -295,15 +238,18 @@ export default function Dashboard({
   const pendingRepair = activeFindings.filter(f => f.status === 'Open').length + cmFromSchedules.filter(s => s.status !== 'Done').length;
   const waitingSparepart = activeFindings.filter(f => f.status === 'Open' && (
     f.issue?.toLowerCase().includes('sparepart') ||
-    f.issue?.toLowerCase().includes('ganti') ||
-    f.issue?.toLowerCase().includes('mati') ||
-    f.issue?.toLowerCase().includes('rusak')
+    f.action?.toLowerCase().includes('sparepart') ||
+    f.issue?.toLowerCase().includes('menunggu part') ||
+    f.action?.toLowerCase().includes('menunggu part')
   )).length;
 
   // Dynamic derivations for report cards
   const totalDailyReportsCount = activeDailyReports.length;
   const totalQCCount = activeLogbookEntries.length;
   const totalWorkOrdersCount = totalRepair + totalPM;
+  const uniqueWorkingDays = React.useMemo(() => {
+    return new Set(activeDailyReports.map(r => r.date).filter(Boolean)).size;
+  }, [activeDailyReports]);
 
   // Staff Productivity metrics with comprehensive KPI calculating Attendance and Competency Tests
   // 1. Monthly Staff KPIs calculated from the entire monthly dataset (canonical Google Sheet)
@@ -315,9 +261,10 @@ export default function Dashboard({
       findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth))),
       undefined,
       undefined,
-      undefined,
+      getScheduleByKey(activeMonth)?.rows,
       workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth)),
-      dailyTasks.filter(t => t.createdAt.startsWith(activeMonth) || t.dueDate.startsWith(activeMonth))
+      dailyTasks.filter(t => t.createdAt.startsWith(activeMonth) || t.dueDate.startsWith(activeMonth)),
+      activeMonth
     );
   }, [staffList, dailyReports, logbookEntries, findings, workOrders, dailyTasks, activeMonth]);
 
@@ -556,13 +503,14 @@ export default function Dashboard({
       activeDailyReports,   // dailyReports (posisi ke-2)
       activeLogbookEntries, // logbookEntries (posisi ke-3)
       activeFindings,       // findings (posisi ke-4)
-      undefined,            // attendanceLogs
+      rawAttendanceLogs,    // attendanceLogs
       undefined,            // electricalCompetencies
-      undefined,            // septemberSchedule
+      monthlyScheduleData.length > 0 ? monthlyScheduleData : getScheduleByKey(activeMonth)?.rows,
       activeWorkOrders,     // workOrders (posisi ke-8)
-      activeDailyTasks      // dailyTasks (posisi ke-9)
+      activeDailyTasks,     // dailyTasks (posisi ke-9)
+      activeMonth
     );
-  }, [staffList, activeDailyReports, activeLogbookEntries, activeFindings, activeWorkOrders, activeDailyTasks]);
+  }, [staffList, activeDailyReports, activeLogbookEntries, activeFindings, activeWorkOrders, activeDailyTasks, monthlyScheduleData, activeMonth]);
 
   const divisionAttendanceStats = divisionsAttendanceList.map(div => {
     const staffInDiv = monthlyScheduleData.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
@@ -801,20 +749,21 @@ export default function Dashboard({
               
               <div className="space-y-4">
                 {divisionStats.map(stat => {
-                  const total = stat.total || 1;
-                  const okPercent = Math.round((stat.ok / total) * 100);
-                  const healthPercent = stat.total === 0 ? 100 : okPercent;
-                  const barColor = healthPercent >= 80 ? '#10b981' : healthPercent >= 60 ? '#f59e0b' : '#ef4444';
+                  const hasInspections = stat.total > 0;
+                  const healthPercent = hasInspections ? Math.round((stat.ok / stat.total) * 100) : 0;
+                  const barColor = !hasInspections ? '#94a3b8' : healthPercent >= 80 ? '#10b981' : healthPercent >= 60 ? '#f59e0b' : '#ef4444';
 
                   return (
                     <div key={stat.name} className="flex flex-col gap-1.5 text-[13px]">
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-slate-700">{stat.name}</span>
-                        <span className="font-semibold text-slate-900">{healthPercent}%</span>
+                        <span className="font-semibold text-slate-900">
+                          {hasInspections ? `${healthPercent}%` : 'N/A (Belum Ada Cek)'}
+                        </span>
                       </div>
                       <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
                         <div
-                          style={{ width: `${healthPercent}%`, backgroundColor: barColor }}
+                          style={{ width: hasInspections ? `${healthPercent}%` : '0%', backgroundColor: barColor }}
                           className="h-full rounded-full transition-all duration-500"
                         ></div>
                       </div>
@@ -1112,12 +1061,22 @@ export default function Dashboard({
                 </div>
               )}
               {activeTab === 'monthly_report' && (
-                <input
-                  type="text"
-                  value={targetMonth}
-                  onChange={(e) => setTargetMonth(e.target.value)}
-                  className="bg-white border border-slate-300 text-xs font-bold text-slate-800 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
+                <select
+                  value={activeMonth}
+                  onChange={(e) => {
+                    const newKey = e.target.value;
+                    if (onActiveMonthChange) onActiveMonthChange(newKey);
+                    const sch = getScheduleByKey(newKey);
+                    if (sch) setTargetMonth(sch.label);
+                  }}
+                  className="bg-white border border-slate-300 text-xs font-bold text-slate-800 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm"
+                >
+                  {ALL_MONTHLY_SCHEDULES.map((sch) => (
+                    <option key={sch.key} value={sch.key}>
+                      {sch.label}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
           </div>
@@ -1138,7 +1097,7 @@ export default function Dashboard({
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
                   <span className="text-[9px] text-slate-400 font-bold uppercase block">Hari Kerja</span>
                   <strong className="text-base text-slate-900 block mt-1 font-sans">
-                    {activeTab === 'daily_report' ? '1 Hari' : activeTab === 'weekly_report' ? '7 Hari' : '30 Hari'}
+                    {activeTab === 'daily_report' ? '1 Hari' : activeTab === 'weekly_report' ? '7 Hari' : `${uniqueWorkingDays} Hari`}
                   </strong>
                 </div>
                 <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] text-center">
@@ -1174,12 +1133,11 @@ export default function Dashboard({
             <div className="flex items-center gap-2 border-l-4 border-indigo-600 pl-3">
               <span className="text-indigo-600 font-mono font-bold text-sm">02.</span>
               <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">KEHADIRAN STAFF</h2>
-              <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">NON-AKTIF SEMENTARA</span>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Table with inactive opacity */}
-              <div className="lg:col-span-2 overflow-x-auto border border-slate-200 rounded-xl opacity-60">
+              {/* Table */}
+              <div className="lg:col-span-2 overflow-x-auto border border-slate-200 rounded-xl">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -1195,11 +1153,11 @@ export default function Dashboard({
                     {divisionAttendanceStats.map((d, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50">
                         <td className="p-3 font-sans font-bold text-slate-800">{d.label}</td>
-                        <td className="p-3 text-center text-slate-400 font-bold">-</td>
-                        <td className="p-3 text-center text-slate-400 font-bold">-</td>
-                        <td className="p-3 text-center text-slate-400">-</td>
-                        <td className="p-3 text-center text-slate-400">-</td>
-                        <td className="p-3 text-center text-slate-400 font-bold">-</td>
+                        <td className="p-3 text-center text-emerald-600 font-bold">{d.hadir}</td>
+                        <td className="p-3 text-center text-amber-600 font-bold">{d.terlambat}</td>
+                        <td className="p-3 text-center text-slate-500">{d.izin}</td>
+                        <td className="p-3 text-center text-indigo-500">{d.sakit}</td>
+                        <td className="p-3 text-center text-rose-600 font-bold">{d.alpha}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1214,7 +1172,7 @@ export default function Dashboard({
                   </svg>
                 </div>
                 <div className="text-sm text-slate-600">
-                  Pencatatan Kehadiran <strong>telah diaktifkan kembali</strong> dengan bobot <strong>15%</strong>.
+                  Pencatatan Kehadiran berkontribusi bobot <strong>15%</strong> pada KPI resmi, dihitung secara proporsional dari kehadiran aktual dan shift kerja.
                 </div>
               </div>
             </div>
@@ -1310,9 +1268,9 @@ export default function Dashboard({
                       <th className="p-3">Divisi</th>
                       <th className="p-3 text-center">Daily Report</th>
                       <th className="p-3 text-center">QC Checked</th>
-                      <th className="p-3 text-center text-slate-400">Kehadiran</th>
+                      <th className="p-3 text-center">Kehadiran</th>
                       <th className="p-3 text-center">Uji Komp.</th>
-                      <th className="p-3 text-center text-slate-400">Jam Kerja</th>
+                      <th className="p-3 text-center">Jam Kerja</th>
                       <th className="p-3 text-center">KPI Score</th>
                     </tr>
                   </thead>
@@ -1705,6 +1663,7 @@ export default function Dashboard({
                 <textarea
                   value={notesKendala}
                   onChange={(e) => setNotesKendala(e.target.value)}
+                  placeholder="Catatan kendala teknis operasional periode ini (diisi oleh Staff Admin / Supervisor)..."
                   rows={3}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
                 />
@@ -1715,6 +1674,7 @@ export default function Dashboard({
                 <textarea
                   value={notesAkar}
                   onChange={(e) => setNotesAkar(e.target.value)}
+                  placeholder="Analisis akar masalah teknis & operasional..."
                   rows={3}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
                 />
@@ -1725,6 +1685,7 @@ export default function Dashboard({
                 <textarea
                   value={notesSolusi}
                   onChange={(e) => setNotesSolusi(e.target.value)}
+                  placeholder="Tindakan korektif dan perbaikan yang diambil..."
                   rows={3}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
                 />
@@ -1735,6 +1696,7 @@ export default function Dashboard({
                 <textarea
                   value={notesTarget}
                   onChange={(e) => setNotesTarget(e.target.value)}
+                  placeholder="Target performa dan pemeliharaan alat bulan depan..."
                   rows={3}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
                 />
@@ -1742,90 +1704,48 @@ export default function Dashboard({
             </div>
           </div>
 
-          {/* SECTION 14: APPROVAL SIGNATURES WITH LIVE INTERACTION */}
+          {/* SECTION 14: LEMBAR PENGESAHAN STRUKTURAL RESMI */}
           <div className="space-y-4 pt-4 border-t border-slate-100">
             <div className="flex items-center gap-2 border-l-4 border-indigo-600 pl-3">
               <span className="text-indigo-600 font-mono font-bold text-sm">14.</span>
-              <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">APPROVAL & PERSETUJUAN LAPORAN</h2>
+              <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">LEMBAR PENGESAHAN LAPORAN OPERASIONAL</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-              {/* Supervisor Sign - Agustino Setiawan */}
-              <div className="bg-slate-50/50 p-5 rounded-xl border border-slate-150 flex flex-col justify-between text-center min-h-[180px]">
+              {/* Staff Admin - Agustino Setiawan */}
+              <div className="bg-slate-50/50 p-5 rounded-xl border border-slate-200 flex flex-col justify-between text-center min-h-[160px]">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Dipersiapkan Oleh,</span>
-                  <span className="text-xs font-extrabold text-slate-800 block mt-1 font-sans">Supervisor Operasional</span>
+                  <span className="text-xs font-extrabold text-slate-800 block mt-1 font-sans">Staff Admin</span>
                 </div>
-                <div className="my-4 flex items-center justify-center">
-                  {approvedSupervisor ? (
-                    <div className="text-center">
-                      <span className="text-emerald-600 font-serif font-extrabold italic text-sm tracking-widest block border border-dashed border-emerald-300 px-3 py-1 bg-emerald-50/80 rounded-md rotate-[-2deg]">
-                        ✔ APPROVED
-                      </span>
-                      <span className="text-[9px] text-emerald-500 block mt-1 font-mono font-bold">Time: {new Date().toLocaleDateString('id-ID')}</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setApprovedSupervisor(true)}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-4 py-2 rounded-lg cursor-pointer transition-colors"
-                    >
-                      Beri Persetujuan
-                    </button>
-                  )}
+                <div className="my-6">
+                  <div className="h-8 border-b border-dashed border-slate-300 w-3/4 mx-auto"></div>
                 </div>
                 <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">Agustino Setiawan</span>
               </div>
 
-              {/* Manager Sign - M. Fahrulyana A */}
-              <div className="bg-slate-50/50 p-5 rounded-xl border border-slate-150 flex flex-col justify-between text-center min-h-[180px]">
+              {/* Manager - M. Fahrulyana A */}
+              <div className="bg-slate-50/50 p-5 rounded-xl border border-slate-200 flex flex-col justify-between text-center min-h-[160px]">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Diperiksa Oleh,</span>
-                  <span className="text-xs font-extrabold text-slate-800 block mt-1 font-sans">Manager Operasional</span>
+                  <span className="text-xs font-extrabold text-slate-800 block mt-1 font-sans">Manager</span>
                 </div>
-                <div className="my-4 flex items-center justify-center">
-                  {approvedManager ? (
-                    <div className="text-center">
-                      <span className="text-emerald-600 font-serif font-extrabold italic text-sm tracking-widest block border border-dashed border-emerald-300 px-3 py-1 bg-emerald-50/80 rounded-md rotate-[-2deg]">
-                        ✔ APPROVED
-                      </span>
-                      <span className="text-[9px] text-emerald-500 block mt-1 font-mono font-bold">Time: {new Date().toLocaleDateString('id-ID')}</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setApprovedManager(true)}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-4 py-2 rounded-lg cursor-pointer transition-colors"
-                    >
-                      Beri Persetujuan
-                    </button>
-                  )}
+                <div className="my-6">
+                  <div className="h-8 border-b border-dashed border-slate-300 w-3/4 mx-auto"></div>
                 </div>
-                <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">M. Fahrulyana A / Fahrul</span>
+                <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">M. Fahrulyana . A / Fahrul</span>
               </div>
 
-              {/* Director Sign - Wahyu */}
-              <div className="bg-slate-50/50 p-5 rounded-xl border border-slate-150 flex flex-col justify-between text-center min-h-[180px]">
+              {/* Director - Wahyu */}
+              <div className="bg-slate-50/50 p-5 rounded-xl border border-slate-200 flex flex-col justify-between text-center min-h-[160px]">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Disetujui Oleh,</span>
-                  <span className="text-xs font-extrabold text-slate-800 block mt-1 font-sans">Direktur Utama</span>
+                  <span className="text-xs font-extrabold text-slate-800 block mt-1 font-sans">Director / Owner</span>
                 </div>
-                <div className="my-4 flex items-center justify-center">
-                  {approvedDirektur ? (
-                    <div className="text-center">
-                      <span className="text-emerald-600 font-serif font-extrabold italic text-sm tracking-widest block border border-dashed border-emerald-300 px-3 py-1 bg-emerald-50/80 rounded-md rotate-[-2deg]">
-                        ✔ APPROVED
-                      </span>
-                      <span className="text-[9px] text-emerald-500 block mt-1 font-mono font-bold">Time: {new Date().toLocaleDateString('id-ID')}</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setApprovedDirektur(true)}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-4 py-2 rounded-lg cursor-pointer transition-colors"
-                    >
-                      Beri Persetujuan
-                    </button>
-                  )}
+                <div className="my-6">
+                  <div className="h-8 border-b border-dashed border-slate-300 w-3/4 mx-auto"></div>
                 </div>
-                <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">Wahyu (Owner / Direktur)</span>
+                <span className="text-xs font-extrabold text-slate-800 font-sans border-t border-slate-200/80 pt-2 block">Wahyu</span>
               </div>
             </div>
           </div>

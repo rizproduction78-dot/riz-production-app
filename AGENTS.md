@@ -34,6 +34,10 @@ Setiap tindakan pengkodean, perubahan fitur, dan respons HARUS mematuhi aturan k
    - Dilarang melakukan improvisasi atau interpretasi liar di luar referensi data resmi yang disediakan oleh user.
    - Seluruh laporan, status, dan respons harus disampaikan secara murni faktual, dingin, presisi, dan objektif berbasis data nyata.
 
+8. **DILARANG MENYELESAIKAN MASALAH DENGAN MENAMBAH MASALAH BARU SECARA STRUKTURAL**
+   - Setiap perbaikan wajib menyasar akar masalah utama secara bedah tuntas (root-cause resolution) tanpa merusak ketergantungan antar-modul, tanpa merusak tipe data baku, dan tanpa menciptakan regresi pada fitur yang sudah berjalan.
+   - Dilarang melakukan siklus bongkar-pasang spekulatif yang tidak terarah; setiap perubahan harus terbukti lulus pengujian menyeluruh (`npm run test:all` dan `npm run lint`) sebelum dinyatakan selesai.
+
 ---
 
 ## 2. STRUKTUR JABATAN STRUKTURAL RESMI (PERMANENT SYSTEM MEMORY)
@@ -44,7 +48,7 @@ Agen dan Orkestrator wajib selalu mengingat dan menggunakan susunan struktural j
 
 1. **Wahyu** (`director-wahyu`) — *Director / Owner*
 2. **M. Fahrulyana . A / Fahrul** (`staff-fahrul`) — *Manager*
-3. **Agustino Setiawan / Agus** (`staff-agustino`) — *Supervisor*
+3. **Agustino Setiawan / Agus** (`staff-agustino`) — *Staff Admin*
 4. **Syalsa Sri Hestariana / Caca** (`staff-syalsa`) — *Staff Admin*
 5. **Seno Subroto / Seno** (`staff-seno`) — *Staff Admin*
 
@@ -134,3 +138,77 @@ Semua agen yang beroperasi wajib mengadopsi standar kinerja berikut:
 1. **Pola R.A.G Wajib:** Sebelum memodifikasi logika kalkulasi, UI, atau integrasi data, agen wajib melakukan *Retrieval* (pengambilan data silang) dari base data resmi (Spreadsheet, `staffSchedules.ts`, rules). Tidak boleh ada injeksi instruksi tanpa memvalidasi struktur sumber data yang sesungguhnya (*Augmented Generation*).
 2. **Keterhubungan Menyeluruh (Connected End-to-End):** Agen harus memastikan perubahan di satu titik secara otomatis terefleksi dan terkoneksi dengan titik lain (Hulu ke Hilir). *State*, properti komponen, antarmuka TypeScript, hingga database Firestore harus sinkron.
 3. **Harmonisasi Multi-Agentic:** Agen mengingat pekerjaan yang telah dieksekusi sebelumnya melalui dokumen `AGENTS.md` (Permanent System Memory) ini agar tidak terjadi tumpang tindih perintah, *error looping*, ataupun degradasi kinerja oleh agen yang bekerja secara paralel atau di *session* berikutnya.
+
+---
+
+## 6. REGISTRI EKSEKUSI & AMANAH REVISI TERBARU (OCTOBER 2026 & MULTI-MONTH INTEGRATION)
+
+Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terbaru berikut:
+
+1. **Sumber Referensi Resmi & GID Aktif:**
+   - URL Google Sheet Resmi: `https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=938476420#gid=938476420`
+   - Spreadsheet ID: `1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA`
+   - GID Tab Aktif Oktober 2026: `938476420`
+
+2. **Aturan Sinkronisasi Non-Destruktif (Safe Merge Protocol):**
+   - Engine `agent_google_sheet_sync.ts` **dilarang keras** menghapus atau mengganti `CANONICAL_FIRESTORE_FINDINGS` dan `CANONICAL_FIRESTORE_WORK_ORDERS` menjadi array kosong (`[]`).
+   - Setiap kali data Google Sheet bulan baru di-pull, data harian wajib di-merge berdasarkan ID ke `canonicalFirestoreData.ts` agar seluruh histori harian dari bulan-bulan sebelumnya (September, Oktober, dst.) tetap 100% tersimpan secara utuh tanpa ada yang hilang.
+
+3. **Aturan Parsing Tanggal Multi-Bulan (Dynamic Date Parsing):**
+   - Dilarang keras melakukan hardcode string bulan tertentu (seperti regex khusus `/September/i`).
+   - Engine parsing tanggal wajib mendukung seluruh 12 bulan bahasa Indonesia (`Januari` s/d `Desember`) dan bahasa Inggris (`January` s/d `December`) agar tanggal kegiatan staf terpetakan secara presisi pada hari aktualnya masing-masing.
+
+4. **Protokol Pembersihan Cache Peramban (Auto-Flush LocalStorage):**
+   - Ketika dataset kanonikal atau referensi resmi diubah, kunci versi `REF_SYNC_KEY` di `src/App.tsx` wajib diperbarui (contoh: `riz_ref_synced_v40_canonical_october_exact_gsheet`).
+   - Inisialisasi state wajib menggabungkan data kanonikal terbaru dengan `localStorage` peramban agar peramban laptop user tidak menampilkan data cache lama yang usang.
+
+5. **Integritas Metrik Performa Staf (Anti-Duplikasi):**
+   - Metrik `QC Checked` diisolasi khusus untuk aktivitas inspeksi teknis, checklist gudang, P2H, dan testing (`qc`, `inspeksi`, `checklist`, `onhouse`, `p2h`). Dilarang menduplikasi entri daily report biasa menjadi entri QC.
+   - Kehadiran riil staf (`attendanceCount`) dihitung dari kombinasi log absensi dan hari kerja unik aktivitas di lapangan. Staf tanpa entri kegiatan di bulan aktif dieliminasi secara otomatis dari tabel produktivitas bulan tersebut.
+
+6. **Sumber Tunggal Aturan Baca Sheet (`src/lib/dailySheetParser.ts`):**
+   - Seluruh logika pembacaan format 7 kolom Google Sheet, pemetaan nama panggilan staf (`NAME_TO_STAFF_ID`), normalisasi entri, dan deteksi QC (`checkIsQc`) dipusatkan secara permanen di `src/lib/dailySheetParser.ts`.
+   - Modul aplikasi runtime (`src/lib/googleSheetSync.ts`), script sinkronisasi CLI (`scripts/agent_google_sheet_sync.ts`), dan test suite (`scripts/test_daily_sheet_parser.ts`) wajib selalu menggunakan `parseDailySheet()` agar aturan baca 100% konsisten antar-lingkungan.
+
+7. **Kategori Penilaian & Bobot Resmi KPI (Komit Mutlak 100%):**
+   - **Disiplin Kerja**: Bobot 10%
+   - **Produktivitas (Daily Report)**: Bobot 25%
+   - **Kualitas Pemeriksaan QC**: Bobot 20%
+   - **Kompleksitas Tugas & Work Order**: Bobot 10%
+   - **Kerja Sama Tim & Pengembangan**: Bobot 5%
+   - **Jumlah Absensi (Kehadiran)**: Bobot 15%
+   - **Uji Kompetensi yang Diikuti**: Bobot 15%
+   - *Total Bobot*: 100% (Formula: `(discipline * 0.10) + (report * 0.25) + (qc * 0.20) + (wo * 0.10) + (teamwork * 0.05) + (attendance * 0.15) + (competency * 0.15)`).
+
+8. **Komit Mutlak: Semua Staff Bisa Lintas Divisi:**
+   - Seluruh staf (Admin, Gudang, Sound, Lighting, Multimedia, Videotron, Service) memiliki kapabilitas penuh untuk bertugas lintas divisi pada modul: **Daily Task**, **Temuan (Findings)**, **Work Order**, **QC Checklist**, dan **Daily Report**.
+   - Dilarang mengunci form input, pemilihan divisi pelaksana, atau dropdown PIC hanya untuk divisi bawaan staf. Seluruh 22 staf inhouse dapat ditugaskan atau berkontribusi pada peralatan/divisi manapun.
+
+9. **Komit Logika Workflow Operasional (5W: When, Who, What, Why, Where):**
+   - Prinsip utama pelaporan: *"Siapa (Staff) melakukan tindakan apa, menghasilkan apa?"*
+   - **WHEN? (Kapan?)**: Tanggal kejadian / laporan, target penyelesaian, deadline tugas.
+   - **WHO? (Siapa?)**: Teknisi / staf PIC penanggung jawab tindakan nyata.
+   - **WHAT? (Apa?)**: Aktivitas, pengerjaan tugas, unit alat, atau temuan kerusakan.
+   - **WHY? (Mengapa?)**: Detail masalah, alasan tindakan, prioritas, catatan tindak lanjut.
+   - **WHERE? (Di mana?)**: Divisi pelaksana, area set/posisi alat (FOH, panggung, gudang, workshop event).
+
+10. **Protokol Pembacaan Data Excel & Google Sheet (Anti-Halusinasi & Sumber Nyata):**
+
+    - **ID Spreadsheet Resmi:** `1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA`
+    - **Daftar Tab Bulanan & GID Terverifikasi:**
+      - Mei 2026: GID `673324712` (Month: `2026-05`)
+      - Juni 2026: GID `86125629` (Month: `2026-06`)
+      - Juli 2026: GID `2099865640` (Month: `2026-07`)
+      - Agustus 2026: GID `1894783738` (Month: `2026-08`)
+      - September 2026: GID `1869844599` (Month: `2026-09`)
+      - Oktober 2026: GID `938476420` (Month: `2026-10`)
+      - November 2026: GID `1463883290` (Month: `2026-11`)
+      - Desember 2026: GID `646140708` (Month: `2026-12`)
+    - **Normalisasi Dinamis Header (Wajib):** Pada tab bulan Mei s/d Agustus, kolom A kosong atau berisi nomor urut sehingga kolom Tanggal bergeser ke indeks 1 atau 2. Agen dan parser WAJIB menggunakan `extractNormalizedDailySheetRows` dari `src/lib/dailySheetParser.ts` untuk mendeteksi posisi `Tanggal` secara dinamis, bukan mengasumsikan kolom 0.
+    - **Larangan Halusinasi, Data Sintetis & Gimmick:**
+      - Dilarang mengarang baris kegiatan atau nama kru yang tidak tercatat di Google Sheet.
+      - Dilarang menganggap temuan kendala sebagai "Menunggu Sparepart" kecuali secara eksplisit tercantum kebutuhan komponen/sparepart pada deskripsi temuan.
+      - Dilarang menggandakan logbook biasa menjadi Preventive Maintenance (PM). PM hanya dihitung dari jadwal Preventive resmi dan Work Order tipe PM.
+      - Dilarang menampilkan 100% kesehatan aset jika divisi tersebut belum pernah melakukan inspeksi pada periode bersangkutan (tampilkan `N/A (Belum Ada Cek)`).
+      - Dilarang membuat tombol stempel interaktif fiktif ("✔ APPROVED") di luar alur pengesahan dokumen riil. Lembar pengesahan wajib mencantumkan nama dan jabatan struktural resmi yang valid.
+      - Dilarang mengisi textarea catatan manajemen dengan teks otomatis (*boilerplate generator*). Teks catatan harus berasal murni dari input manual pengguna/manajemen.

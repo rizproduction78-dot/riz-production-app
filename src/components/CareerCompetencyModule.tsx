@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PrintHeader } from './PrintHeader';
-import { Staff, Division, DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
+import { Staff, Division, DailyReport, LogbookEntry, Finding, WorkOrder, DailyTask } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { OFFICIAL_COMPETENCY_MATRICES, DivisionMatrix, CompetencyLevel } from '../data/competencyMatrixData';
 import {
@@ -55,6 +55,7 @@ interface CareerCompetencyModuleProps {
   findings?: Finding[];
   workOrders?: WorkOrder[];
   dailyTasks?: DailyTask[];
+  activeMonth?: string; // Bulan aktif untuk filter data KPI
 }
 
 // 10 Tahap Pipeline Karir & Kompetensi Resmi RIZ-PRODUCTION

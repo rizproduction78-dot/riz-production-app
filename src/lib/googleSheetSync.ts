@@ -20,6 +20,8 @@ import {
 } from '../data';
 import { getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
 import { isStaffMatch } from '../utils/kpiCalculator';
+import { parseDailySheet, SheetRow, extractNormalizedDailySheetRows, OFFICIAL_GSHEET_TABS } from './dailySheetParser';
+import Papa from 'papaparse';
 
 export const DEFAULT_SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
 export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=938476420#gid=938476420';
@@ -158,20 +160,20 @@ export function getExportPayloadForGoogleSheet() {
     }
   };
 
-  const logs = parseStorage('riz_logbook_entries', INITIAL_LOGBOOK_ENTRIES);
-  const reports = parseStorage('riz_daily_reports', INITIAL_DAILY_REPORTS);
+  const logs = parseStorage('riz_logbook_entries_v2', INITIAL_LOGBOOK_ENTRIES);
+  const reports = parseStorage('riz_daily_reports_v2', INITIAL_DAILY_REPORTS);
   const staff = parseStorage('riz_master_staff_list', STAFF_LIST);
   const freelance = parseStorage('riz_freelance_workers', INITIAL_FREELANCE_WORKERS);
   const vehicles = parseStorage('riz_master_vehicles', INITIAL_VEHICLES);
   const drivers = parseStorage('riz_fleet_drivers', INITIAL_FLEET_DRIVERS);
   const fleetAssignments = parseStorage('riz_fleet_assignments', []);
-  const findings = parseStorage('riz_findings', INITIAL_FINDINGS);
-  const workOrders = parseStorage('riz_work_orders', INITIAL_WORK_ORDERS);
+  const findings = parseStorage('riz_findings_v2', INITIAL_FINDINGS);
+  const workOrders = parseStorage('riz_work_orders_v2', INITIAL_WORK_ORDERS);
   const activeMonthKey = getActiveMonthKey();
   const currentMonthSch = ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonthKey);
   const defaultSchRows = currentMonthSch ? currentMonthSch.rows : [];
   const schedules = parseStorage(`riz_schedule_${activeMonthKey}`, defaultSchRows);
-  const dailyTasks = parseStorage('riz_daily_tasks', INITIAL_DAILY_TASKS);
+  const dailyTasks = parseStorage('riz_daily_tasks_v2', INITIAL_DAILY_TASKS);
 
   const activeLogs = Array.isArray(logs) && logs.length > 0 ? logs : INITIAL_LOGBOOK_ENTRIES;
   const activeReports = Array.isArray(reports) && reports.length > 0 ? reports : INITIAL_DAILY_REPORTS;
@@ -523,6 +525,46 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (action === 'APPEND_DAILY_REPORT') {
+      var targetGid = String(payload.gid || '');
+      var rowData = payload.row || [];
+      var appId = payload.appId || '';
+      
+      var targetSheet = null;
+      var allSheets = ss.getSheets();
+      for (var s = 0; s < allSheets.length; s++) {
+        if (String(allSheets[s].getSheetId()) === targetGid) {
+          targetSheet = allSheets[s];
+          break;
+        }
+      }
+      
+      if (!targetSheet) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: 'error',
+          message: 'Sheet dengan GID ' + targetGid + ' tidak ditemukan'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      var finalRow = [
+        rowData[0] || '',
+        rowData[1] || '',
+        rowData[2] || '',
+        rowData[3] || '',
+        rowData[4] || '',
+        rowData[5] || '',
+        rowData[6] || '',
+        appId
+      ];
+      
+      targetSheet.appendRow(finalRow);
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'success',
+        message: 'Laporan berhasil ditambahkan ke sheet ' + targetSheet.getName(),
+        timestamp: new Date().toISOString()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     if (action === 'PULL_SCHEDULE_DATA') {
       var scheduleData = readScheduleShiftsSheet(ss);
       return ContentService.createTextOutput(JSON.stringify({
@@ -819,17 +861,24 @@ function readScheduleShiftsSheet(ss) {
 
 export const DAILY_LOG_SHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
 
-/** GID untuk setiap tab sheet daily log */
-export const SHEET_GID_SEPTEMBER_2026 = '198998470';
-export const SHEET_GID_OKTOBER_2026 = '938476420';
-export const SHEET_GID_HISTORICAL     = '0'; // Mei 2026 (historis)
+/** Peta GID resmi seluruh 8 bulan kalender kerja PT. RIZ PRODUCTION */
+export const SHEET_GIDS: Record<string, string> = {
+  '2026-05': '673324712',   // MEI 2026
+  '2026-06': '86125629',    // JUNI 2026
+  '2026-07': '2099865640',  // JULI 2026
+  '2026-08': '1894783738',  // AGUSTUS 2026
+  '2026-09': '1869844599',  // SEPTEMBER 2026 (Official GID terverifikasi)
+  '2026-10': '938476420',   // OKTOBER 2026 (Official GID tab aktif)
+  '2026-11': '1463883290',  // NOVEMBER 2026
+  '2026-12': '646140708',   // DESEMBER 2026
+};
+
+export const SHEET_GID_SEPTEMBER_2026 = SHEET_GIDS['2026-09'];
+export const SHEET_GID_OKTOBER_2026   = SHEET_GIDS['2026-10'];
+export const SHEET_GID_HISTORICAL     = SHEET_GIDS['2026-05'];
 
 export function getGidForMonth(monthKey: string): string {
-  switch (monthKey) {
-    case '2026-09': return SHEET_GID_SEPTEMBER_2026;
-    case '2026-10': return SHEET_GID_OKTOBER_2026;
-    default: return SHEET_GID_OKTOBER_2026;
-  }
+  return SHEET_GIDS[monthKey] || SHEET_GIDS['2026-10'] || '938476420';
 }
 
 /** Key localStorage untuk timestamp terakhir pull daily log */
@@ -1007,6 +1056,17 @@ export async function pullDailyLogFromGviz(
   existingReportIds: Set<string> = new Set(),
   onSaveLogbookEntry?: (id: string, doc: any) => Promise<void>
 ): Promise<GvizPullResult> {
+  if (!gid) {
+    return {
+      success: false,
+      message: 'GID tab bulan ini belum didaftarkan',
+      timestamp: new Date().toISOString(),
+      newReportsCount: 0,
+      newFindingsCount: 0,
+      skippedCount: 0
+    };
+  }
+
   const url = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
 
   let newReports = 0;
@@ -1028,11 +1088,30 @@ export async function pullDailyLogFromGviz(
 
     const text = await response.text();
     // gviz response wrapped in: google.visualization.Query.setResponse({...});
-    const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?\s*$/);
-    if (!jsonMatch) {
+    let rawCellMatrix: string[][] = [];
+    const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[1]);
+      const rawRows: any[] = parsed?.table?.rows || [];
+      rawCellMatrix = rawRows.map(row => 
+        (row.c || []).map((cell: any) => String(cell?.f || cell?.v || ''))
+      );
+    } else {
+      // Fallback pipeline: fetch direct CSV export
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/export?format=csv&gid=${gid}`;
+      const csvRes = await fetch(csvUrl, { cache: 'no-store' });
+      if (csvRes.ok) {
+        const csvText = await csvRes.text();
+        const parsedCsv = Papa.parse(csvText, { skipEmptyLines: true });
+        rawCellMatrix = parsedCsv.data as string[][];
+      }
+    }
+
+    if (rawCellMatrix.length === 0) {
       return {
         success: false,
-        message: 'Format respons Google Sheet tidak dikenali',
+        message: 'Data Google Sheet kosong atau tidak dapat diakses',
         timestamp: new Date().toISOString(),
         newReportsCount: 0,
         newFindingsCount: 0,
@@ -1040,136 +1119,79 @@ export async function pullDailyLogFromGviz(
       };
     }
 
-    const parsed = JSON.parse(jsonMatch[1]);
-    const rows: any[] = parsed?.table?.rows || [];
+    // Gunakan normalisasi dinamis kolom (otomatis mendeteksi posisi header Tanggal, Crew, dsb)
+    const sheetRows: SheetRow[] = extractNormalizedDailySheetRows(rawCellMatrix);
+    const parsedEntries = parseDailySheet(sheetRows);
 
-    // State carry-over: tanggal & staf terakhir yang diketahui
-    let currentDate: string | null = null;
-    let currentStaffNames: string[] = [];
+    for (const entry of parsedEntries) {
+      // 1. Simpan Daily Report
+      if (!existingReportIds.has(entry.id)) {
+        const reportDoc = {
+          id: entry.id,
+          date: entry.date,
+          staffName: entry.staffName,
+          division: entry.division,
+          activity: entry.activity,
+          notes: entry.notes || '',
+          status: 'Submitted',
+          _source: 'google_sheet',
+          _syncedAt: new Date().toISOString()
+        };
+        await onSaveDailyReport(entry.id, reportDoc);
+        existingReportIds.add(entry.id);
+        newReports++;
+      } else {
+        skipped++;
+      }
 
-    for (const row of rows) {
-      const cells = row.c || [];
-      const rawDate   = cells[0]?.f || cells[0]?.v || '';
-      const rawStaff  = cells[1]?.v || '';
-      const sound     = cells[2]?.v || '';
-      const lighting  = cells[3]?.v || '';
-      const led       = cells[4]?.v || '';
-      const multimedia= cells[5]?.v || '';
-      const remark    = cells[6]?.v || '';
-
-      // Pertahankan tanggal dari baris sebelumnya jika baris ini tidak punya tanggal
-      if (rawDate) {
-        const parsed = parseIndonesianDate(String(rawDate));
-        if (parsed) {
-          if (parsed !== currentDate) {
-            currentStaffNames = []; // Reset nama staf jika berganti tanggal
-          }
-          currentDate = parsed;
+      // 2. Simpan LogbookEntry QC HANYA jika isQc === true
+      if (entry.isQc && onSaveLogbookEntry) {
+        const logDedupKey = `log-${entry.id}`;
+        if (!existingReportIds.has(logDedupKey)) {
+          const isNg = isFindingRemark(entry.notes);
+          const logDoc = {
+            id: logDedupKey,
+            date: entry.date,
+            division: entry.division,
+            staffName: entry.staffName,
+            activity: entry.activity,
+            result: isNg ? ('NG' as const) : ('OK' as const),
+            followUp: entry.notes || (isNg ? 'Perlu perbaikan teknis' : 'Pengecekan selesai aman'),
+            status: isNg ? ('Open' as const) : ('Close' as const),
+            verification: 'Supervisor Operasional',
+            checklists: {
+              [entry.activity.substring(0, 40)]: {
+                status: isNg ? ('NG' as const) : ('OK' as const),
+                notes: entry.notes || 'Kondisi operasional normal'
+              }
+            },
+            _source: 'google_sheet',
+            _syncedAt: new Date().toISOString()
+          };
+          await onSaveLogbookEntry(logDedupKey, logDoc);
+          existingReportIds.add(logDedupKey);
         }
       }
 
-      if (!currentDate) continue;
+      // 3. Simpan Finding jika kolom remark mengindikasikan masalah
+      if (entry.notes && isFindingRemark(entry.notes)) {
+        const remarkNorm = entry.notes.trim().toLowerCase().substring(0, 30);
+        const remarkLower = entry.notes.trim().toLowerCase();
 
-      const parsedStaff = parseStaffNames(String(rawStaff));
-      if (parsedStaff.length > 0) {
-        currentStaffNames = parsedStaff;
-      }
-
-      const activeStaffList = parsedStaff.length > 0
-        ? parsedStaff
-        : (currentStaffNames.length > 0 ? currentStaffNames : ['Tim Operasional']);
-
-      const activity = [sound, lighting, led, multimedia].filter(Boolean).join('; ').trim();
-
-      // Hanya proses baris yang punya aktivitas atau remark
-      if (!activity && !remark) continue;
-
-      const division = detectDivision(String(sound), String(lighting), String(led), String(multimedia), activeStaffList[0]);
-
-      // Buat DailyReport & LogbookEntry jika ada activity untuk setiap staf yang bertugas
-      if (activity) {
-        for (const staffName of activeStaffList) {
-          const sObj = STAFF_LIST.find(s => isStaffMatch(s, staffName));
-          const sId = sObj ? sObj.id : String(staffName || '').toLowerCase().trim();
-          const staffCompositeKey = `${currentDate}|${sId}`;
-          const logCompositeKey = `log|${currentDate}|${sId}`;
-
-          const dedupKey = buildDedupKey(currentDate, sObj ? sObj.fullName : staffName, activity);
-
-          if (!existingReportIds.has(dedupKey)) {
-            const reportDoc = {
-              id: dedupKey,
-              date: currentDate,
-              staffName: sObj ? sObj.fullName : (staffName || 'Tim Operasional'),
-              division: division as any,
-              activity,
-              notes: remark || '',
-              status: 'Submitted',
-              _source: 'google_sheet',
-              _syncedAt: new Date().toISOString()
-            };
-            await onSaveDailyReport(dedupKey, reportDoc);
-            existingReportIds.add(dedupKey);
-            newReports++;
-          } else {
-            skipped++;
-          }
-
-          // Buat LogbookEntry QC Checklist jika callback disediakan
-          if (onSaveLogbookEntry) {
-            const logDedupKey = `log-${dedupKey}`;
-            if (!existingReportIds.has(logDedupKey)) {
-              const isNg = isFindingRemark(String(remark));
-              const logDoc = {
-                id: logDedupKey,
-                date: currentDate,
-                division: division as any,
-                staffName: sObj ? sObj.fullName : (staffName || 'Tim Operasional'),
-                activity,
-                result: isNg ? ('NG' as const) : ('OK' as const),
-                followUp: remark || (isNg ? 'Perlu perbaikan teknis' : 'Pengecekan selesai aman'),
-                status: isNg ? ('Open' as const) : ('Close' as const),
-                verification: 'Supervisor Operasional',
-                checklists: {
-                  [activity.substring(0, 40)]: {
-                    status: isNg ? ('NG' as const) : ('OK' as const),
-                    notes: remark || 'Kondisi operasional normal'
-                  }
-                },
-                _source: 'google_sheet',
-                _syncedAt: new Date().toISOString()
-              };
-              await onSaveLogbookEntry(logDedupKey, logDoc);
-              existingReportIds.add(logDedupKey);
-            }
-          }
-        }
-      }
-
-      // Buat Finding jika remark mengindikasikan masalah
-      if (isFindingRemark(String(remark))) {
-        const remarkNorm = String(remark).trim().toLowerCase().substring(0, 30);
-        const remarkLower = String(remark).trim().toLowerCase();
-        
-        // Deteksi divisi temuan yang lebih akurat dari konteks remark atau staf
-        let findingDiv = division;
+        let findingDiv = entry.division;
         if (remarkLower.includes('led') || remarkLower.includes('pixel') || remarkLower.includes('kabinet') || remarkLower.includes('videotron') || remarkLower.includes('box kerusakan')) {
           findingDiv = 'Videotron';
         } else if (remarkLower.includes('parled') || remarkLower.includes('beam') || remarkLower.includes('lighting') || remarkLower.includes('lampu') || remarkLower.includes('smoke')) {
           findingDiv = 'Lighting';
         } else if (remarkLower.includes('sdi') || remarkLower.includes('hdmi') || remarkLower.includes('kamera') || remarkLower.includes('multimedia')) {
           findingDiv = 'Multimedia';
-        } else if (activeStaffList[0]) {
-          const sObj = STAFF_LIST.find(s => isStaffMatch(s, activeStaffList[0]));
-          if (sObj && sObj.division) findingDiv = sObj.division;
         }
 
-        // Tentukan nama equipment yang deskriptif dan akurat
-        let equipName = activity;
+        let equipName = entry.activity;
         const isActivityLikeTask = equipName.length > 30 || /cek|pengecekan|service|perbaikan|ganti|cleaning|bongkar|pasang|install/i.test(equipName);
-        
+
         if (!equipName || equipName.toLowerCase().startsWith('unit divisi') || isActivityLikeTask) {
-          const combinedContext = (remarkLower + ' ' + activity.toLowerCase());
+          const combinedContext = (remarkLower + ' ' + entry.activity.toLowerCase());
           if (combinedContext.includes('box') && (combinedContext.includes('kerusakan') || combinedContext.includes('rusak') || findingDiv === 'Videotron')) {
             equipName = 'Modul Kabinet LED Videotron';
           } else if (combinedContext.includes('parled') || combinedContext.includes('par led')) {
@@ -1191,12 +1213,10 @@ export async function pullDailyLogFromGviz(
           } else if (combinedContext.includes('kamera') || combinedContext.includes('camera')) {
             equipName = 'Kamera (Multimedia)';
           } else {
-            // Jika tidak ada pattern yang match dan masih berupa task description
-            equipName = isActivityLikeTask ? `Peralatan ${findingDiv}` : activity;
+            equipName = isActivityLikeTask ? `Peralatan ${findingDiv}` : entry.activity;
           }
         }
 
-        // Helper untuk mencocokkan isu dengan temuan kanonikal resmi
         const getSemanticKey = (eq: string, iss: string): string => {
           const combined = `${eq} ${iss}`.toLowerCase();
           if (combined.includes('ampeg') || combined.includes('svt-4') || (combined.includes('ptc') && combined.includes('amplifier'))) {
@@ -1231,14 +1251,15 @@ export async function pullDailyLogFromGviz(
           return `dedup_${eq.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}_${iss.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
         };
 
-        // Normalize the exact same way as cloudSync.ts contentKey for rigorous deduplication
+        const remarkIssue = entry.notes.trim();
+        const remarkKey = remarkIssue.substring(0, 30).replace(/[^a-zA-Z0-9-]/g, '_');
         const eqNorm = equipName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-        const issNorm = String(remark).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-        const picNorm = String(activeStaffList[0] || 'Tim Operasional').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const issNorm = remarkIssue.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const picNorm = entry.staffName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const contentKeyNorm = `dedup_${eqNorm}_${issNorm}_${picNorm}`;
-        const semKeyNorm = getSemanticKey(equipName, String(remark));
+        const semKeyNorm = getSemanticKey(equipName, remarkIssue);
 
-        const findingKey = `gsheet-finding-${currentDate}-${String(remark).trim().substring(0, 30).replace(/[^a-zA-Z0-9-]/g, '_')}`;
+        const findingKey = `gsheet-finding-${entry.date}-${remarkKey}`;
 
         if (
           !existingReportIds.has(findingKey) &&
@@ -1249,13 +1270,13 @@ export async function pullDailyLogFromGviz(
           const findingDoc = {
             id: findingKey,
             equipment: equipName,
-            issue: String(remark).trim(),
+            issue: remarkIssue,
             priority: 'Sedang',
-            pic: activeStaffList[0] || 'Tim Operasional',
-            targetDate: currentDate,
+            pic: entry.staffName,
+            targetDate: entry.date,
             status: 'Open',
-            dateCreated: currentDate,
-            division: findingDiv as any,
+            dateCreated: entry.date,
+            division: findingDiv,
             _source: 'google_sheet',
             _syncedAt: new Date().toISOString()
           };
@@ -1304,4 +1325,87 @@ export function getDailyLogLastPull(): string | null {
   } catch (e) {}
   return null;
 }
+
+/**
+ * T9: Kirim input Daily Report baru dari aplikasi ke Google Sheet tab bulan aktif (Arah B)
+ */
+export async function appendDailyReportToGoogleSheet(report: {
+  id: string;
+  date: string;
+  staffName: string;
+  division: string;
+  activity: string;
+  notes?: string;
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    const webhookUrl = getGoogleSheetWebhookUrl();
+    if (!webhookUrl) {
+      return { success: false, message: 'Webhook URL belum dikonfigurasi' };
+    }
+
+    const monthKey = report.date ? report.date.substring(0, 7) : '';
+    const gid = getGidForMonth(monthKey);
+    if (!gid) {
+      return { success: false, message: 'GID tab bulan ini belum didaftarkan' };
+    }
+
+    // Format tanggal ke "<d MMMM yyyy>" (contoh: "5 Oktober 2026")
+    const d = new Date(report.date);
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    let formattedDate = report.date;
+    if (!isNaN(d.getTime())) {
+      const day = d.getDate();
+      const monthStr = months[d.getMonth()];
+      const year = d.getFullYear();
+      formattedDate = `${day} ${monthStr} ${year}`;
+    }
+
+    // Tentukan kolom C-F berdasarkan divisi staf
+    let sound = '';
+    let lighting = '';
+    let led = '';
+    let multimedia = '';
+
+    const divLower = (report.division || '').toLowerCase();
+    if (divLower.includes('sound') || divLower.includes('audio')) {
+      sound = report.activity;
+    } else if (divLower.includes('lighting')) {
+      lighting = report.activity;
+    } else if (divLower.includes('video') || divLower.includes('led')) {
+      led = report.activity;
+    } else if (divLower.includes('multi')) {
+      multimedia = report.activity;
+    } else {
+      sound = report.activity;
+    }
+
+    const payload = {
+      action: 'APPEND_DAILY_REPORT',
+      gid,
+      row: [
+        formattedDate,
+        report.staffName,
+        sound,
+        lighting,
+        led,
+        multimedia,
+        report.notes || ''
+      ],
+      appId: report.id
+    };
+
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      mode: 'no-cors'
+    });
+
+    return { success: true, message: 'Laporan berhasil dikirim ke Google Sheet' };
+  } catch (err: any) {
+    console.error('[Sheet Sync] Gagal append daily report ke Sheet:', err);
+    return { success: false, message: err.message };
+  }
+}
+
 

@@ -3465,7 +3465,7 @@ export default function AdminPanel({
                 </div>
               </div>
               <a
-                href="https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470"
+                href={DEFAULT_SPREADSHEET_URL}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 rounded-xl text-xs font-bold text-blue-200 transition-all cursor-pointer shrink-0"

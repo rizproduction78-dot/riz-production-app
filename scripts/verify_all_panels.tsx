@@ -62,6 +62,7 @@ const panelsToTest = [
         dailyReports={INITIAL_DAILY_REPORTS}
         findings={INITIAL_FINDINGS}
         workOrders={INITIAL_WORK_ORDERS}
+        dailyTasks={INITIAL_DAILY_TASKS}
         currentUser={testAdminUser}
         onNavigate={() => {}}
       />

@@ -12,6 +12,7 @@ import { db } from '../lib/firebase';
 import { collection, onSnapshot, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { saveCloudDoc, deleteCloudDoc, subscribeCloudCollection } from '../lib/cloudSync';
 import { getStaffDivisions, isStaffInDivision } from '../utils/kpiCalculator';
+import { compressImageFile } from '../utils/imageUtils';
 import {
   ClipboardList,
   CheckCircle2,
@@ -157,6 +158,7 @@ export default function LogTaskModule({
   const [taskPriority, setTaskPriority] = useState<'Tinggi' | 'Sedang' | 'Rendah'>('Sedang');
   const [taskAssignee, setTaskAssignee] = useState(currentUser.name);
   const [taskDueDate, setTaskDueDate] = useState(new Date().toISOString().split('T')[0]);
+  const [taskPhotos, setTaskPhotos] = useState<string[]>([]);
 
   // Logbook form state
   const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
@@ -167,7 +169,7 @@ export default function LogTaskModule({
   const [logStatus, setLogStatus] = useState<'Submitted' | 'Draft'>('Submitted');
   const [logPhotoUrl, setLogPhotoUrl] = useState('');
   const [logPhotoUrls, setLogPhotoUrls] = useState<string[]>([]);
-  const [uploadOption, setUploadOption] = useState<'preset' | 'file' | 'none'>('preset');
+  const [uploadOption, setUploadOption] = useState<'preset' | 'file' | 'none'>('file');
   const [hasFaultyUnit, setHasFaultyUnit] = useState(false);
   const [faultyUnitName, setFaultyUnitName] = useState('');
   const [faultyUnitIssue, setFaultyUnitIssue] = useState('');
@@ -191,23 +193,18 @@ export default function LogTaskModule({
   const [selectedQCEntry, setSelectedQCEntry] = useState<LogbookEntry | null>(null);
   const [qcChecklistState, setQcChecklistState] = useState<Record<string, QcItemState>>({});
 
-  const handleQcPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleQcPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const fileArray = Array.from(files) as File[];
-      const readPromises = fileArray.map((file: File) => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            resolve(reader.result as string);
-          };
-          reader.readAsDataURL(file);
-        });
-      });
-
-      Promise.all(readPromises).then(newImages => {
-        setQcPhotoUrls(prev => [...prev, ...newImages]);
-      });
+      try {
+        const compressedList = await Promise.all(
+          fileArray.map((file: File) => compressImageFile(file, 1200, 1200, 0.75))
+        );
+        setQcPhotoUrls(prev => [...prev, ...compressedList]);
+      } catch (err) {
+        console.error('Error compressing QC photos:', err);
+      }
     }
     e.target.value = '';
   };
@@ -363,6 +360,7 @@ export default function LogTaskModule({
     setTaskPriority('Sedang');
     setTaskAssignee(currentUser.name);
     setTaskDueDate(new Date().toISOString().split('T')[0]);
+    setTaskPhotos([]);
     setShowTaskModal(true);
   };
 
@@ -374,6 +372,7 @@ export default function LogTaskModule({
     setTaskPriority(t.priority);
     setTaskAssignee(t.assignedName || currentUser.name);
     setTaskDueDate(t.dueDate || new Date().toISOString().split('T')[0]);
+    setTaskPhotos(t.photos && t.photos.length > 0 ? t.photos : (t.photoUrl ? [t.photoUrl] : []));
     setShowTaskModal(true);
   };
 
@@ -390,6 +389,8 @@ export default function LogTaskModule({
         priority: taskPriority,
         assignedName: taskAssignee,
         dueDate: taskDueDate,
+        photos: taskPhotos.length > 0 ? taskPhotos : undefined,
+        photoUrl: taskPhotos[0] || undefined
       };
       setTasks(prev => prev.map(t => t.id === editingTask.id ? updated : t));
       saveCloudDoc('daily_tasks', editingTask.id, updated, currentUser.name);
@@ -405,7 +406,9 @@ export default function LogTaskModule({
         assignedName: taskAssignee,
         dueDate: taskDueDate,
         createdAt: new Date().toISOString(),
-        createdBy: currentUser.name
+        createdBy: currentUser.name,
+        photos: taskPhotos.length > 0 ? taskPhotos : undefined,
+        photoUrl: taskPhotos[0] || undefined
       };
       setTasks(prev => [newTask, ...prev]);
       saveCloudDoc('daily_tasks', newTask.id, newTask, currentUser.name);
@@ -510,7 +513,7 @@ export default function LogTaskModule({
                         (t.assignedName && t.assignedName.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchDiv = isManagement
       ? (filterDivision === 'All' || t.division === filterDivision || (isDualStaffName(t.assignedName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
-      : (userDivs.includes(t.division) || isDualStaffName(t.assignedName));
+      : (t.division === currentUser.division || userDivs.includes(t.division) || t.assignedName === currentUser.name || t.createdBy === currentUser.name || isDualStaffName(t.assignedName));
     const matchPri = filterPriority === 'All' || t.priority === filterPriority;
     return matchSearch && matchDiv && matchPri;
   });
@@ -554,7 +557,7 @@ export default function LogTaskModule({
                         r.notes.toLowerCase().includes(searchQuery.toLowerCase());
     const matchDiv = isManagement
       ? (filterDivision === 'All' || r.division === filterDivision || (isDualStaffName(r.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
-      : (userDivs.includes(r.division) || isDualStaffName(r.staffName));
+      : (userDivs.includes(r.division) || r.staffName === currentUser.name || isDualStaffName(r.staffName));
     return matchSearch && matchDiv;
   }).sort((a, b) => b.id.localeCompare(a.id, undefined, { numeric: true }));
 
@@ -649,20 +652,26 @@ export default function LogTaskModule({
             />
           </div>
 
-          <select
-            value={filterDivision}
-            onChange={(e) => setFilterDivision(e.target.value)}
-            className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer font-medium"
-          >
-            <option value="All">🌐 Semua Divisi</option>
-            <option value="Audio">🔊 Audio (Sound)</option>
-            <option value="Lighting">💡 Lighting</option>
-            <option value="Videotron">📺 Videotron</option>
-            <option value="Multimedia">🎥 Multimedia</option>
-            <option value="Gudang">📦 Gudang</option>
-            <option value="Admin">🗄️ Admin</option>
-            <option value="Service">🔧 Service</option>
-          </select>
+          {isManagement ? (
+            <select
+              value={filterDivision}
+              onChange={(e) => setFilterDivision(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer font-medium"
+            >
+              <option value="All">🌐 Semua Divisi</option>
+              <option value="Audio">🔊 Audio (Sound)</option>
+              <option value="Lighting">💡 Lighting</option>
+              <option value="Videotron">📺 Videotron</option>
+              <option value="Multimedia">🎥 Multimedia</option>
+              <option value="Gudang">📦 Gudang</option>
+              <option value="Admin">🗄️ Admin</option>
+              <option value="Service">🔧 Service</option>
+            </select>
+          ) : (
+            <div className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-bold text-blue-800 flex items-center gap-1.5">
+              <span>Departemen: {currentUser.division} (Akses Terkunci)</span>
+            </div>
+          )}
 
           {subTab === 'kanban' && (
             <>
@@ -823,7 +832,7 @@ export default function LogTaskModule({
             <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
               <div className="text-[10px] font-mono uppercase text-indigo-600 font-bold">Riwayat Inspeksi</div>
               <div className="text-2xl font-black text-indigo-600 mt-1">
-                {logbookEntries.filter(e => isManagement || e.division === currentUser.division).length}
+                {logbookEntries.filter(e => isManagement || e.division === currentUser.division || e.staffName === currentUser.name).length}
                 <span className="text-xs text-slate-500 font-normal ml-1">Entri Tercatat</span>
               </div>
             </div>
@@ -867,38 +876,20 @@ export default function LogTaskModule({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Divisi</label>
-                    {isManagement ? (
-                      <select
-                        value={qcDivision}
-                        onChange={(e) => setQcDivision(e.target.value as any)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
-                      >
-                        <option value="Audio">🔊 Audio (Sound)</option>
-                        <option value="Lighting">💡 Lighting</option>
-                        <option value="Videotron">📺 Videotron</option>
-                        <option value="Multimedia">🎥 Multimedia</option>
-                        <option value="Gudang">📦 Gudang</option>
-                        <option value="Service">🔧 Service</option>
-                      </select>
-                    ) : userDivs.length > 1 ? (
-                      <select
-                        value={qcDivision}
-                        onChange={(e) => setQcDivision(e.target.value as any)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-indigo-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
-                      >
-                        {userDivs.map(d => (
-                          <option key={d} value={d}>
-                            {DIVISION_CONFIG[d]?.icon} {d} (Multi-Posisi)
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <span>{DIVISION_CONFIG[currentUser.division]?.icon}</span>
-                        <span>{currentUser.division} (Terkunci)</span>
-                      </div>
-                    )}
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Divisi (Lintas Divisi)</label>
+                    <select
+                      value={qcDivision}
+                      onChange={(e) => setQcDivision(e.target.value as any)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer"
+                    >
+                      <option value="Audio">🔊 Audio (Sound)</option>
+                      <option value="Lighting">💡 Lighting</option>
+                      <option value="Videotron">📺 Videotron</option>
+                      <option value="Multimedia">🎥 Multimedia</option>
+                      <option value="Gudang">📦 Gudang</option>
+                      <option value="Service">🔧 Service</option>
+                      <option value="Umum">📌 Umum (Lintas Divisi)</option>
+                    </select>
                   </div>
 
                   <div>
@@ -914,9 +905,12 @@ export default function LogTaskModule({
                         ))}
                       </select>
                     ) : (
-                      <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5 text-slate-500" />
-                        <span>{currentUser.name}</span>
+                      <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 text-slate-500" />
+                          {currentUser.name} ({currentUser.division})
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
                       </div>
                     )}
                   </div>
@@ -1174,7 +1168,7 @@ export default function LogTaskModule({
 
                 <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
                   {logbookEntries
-                    .filter(e => isManagement || e.division === currentUser.division)
+                    .filter(e => isManagement || e.division === currentUser.division || e.staffName === currentUser.name)
                     .slice(0, 8)
                     .map((entry) => (
                       <div key={entry.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
@@ -1222,7 +1216,7 @@ export default function LogTaskModule({
                       </div>
                     ))}
 
-                  {logbookEntries.filter(e => isManagement || e.division === currentUser.division).length === 0 && (
+                  {logbookEntries.filter(e => isManagement || e.division === currentUser.division || e.staffName === currentUser.name).length === 0 && (
                     <div className="col-span-full bg-slate-50/50 py-16 flex flex-col items-center justify-center text-center rounded-2xl border border-dashed border-slate-200">
                       <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
                         <CheckCircle2 className="w-8 h-8" />
@@ -1282,47 +1276,32 @@ export default function LogTaskModule({
                       ))}
                     </select>
                   ) : (
-                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{currentUser.name}</span>
+                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-slate-500" />
+                        <span>{currentUser.name} ({currentUser.division})</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Divisi</label>
-                  {isManagement ? (
-                    <select
-                      value={logDivision}
-                      onChange={(e) => setLogDivision(e.target.value as Division)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
-                    >
-                      <option value="Audio">Audio (Sound)</option>
-                      <option value="Lighting">Lighting</option>
-                      <option value="Videotron">Videotron</option>
-                      <option value="Multimedia">Multimedia</option>
-                      <option value="Gudang">Gudang</option>
-                      <option value="Admin">Admin</option>
-                      <option value="Service">Service</option>
-                    </select>
-                  ) : userDivs.length > 1 ? (
-                    <select
-                      value={logDivision}
-                      onChange={(e) => setLogDivision(e.target.value as Division)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-blue-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
-                    >
-                      {userDivs.map(d => (
-                        <option key={d} value={d}>
-                          {DIVISION_CONFIG[d]?.icon} {d} (Multi-Posisi)
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <span>{DIVISION_CONFIG[currentUser.division]?.icon}</span>
-                      <span>{currentUser.division}</span>
-                    </div>
-                  )}
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Divisi Pekerjaan (Lintas Divisi)</label>
+                  <select
+                    value={logDivision}
+                    onChange={(e) => setLogDivision(e.target.value as Division)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer font-medium"
+                  >
+                    <option value="Audio">Audio (Sound)</option>
+                    <option value="Lighting">Lighting</option>
+                    <option value="Videotron">Videotron</option>
+                    <option value="Multimedia">Multimedia</option>
+                    <option value="Gudang">Gudang</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Service">Service</option>
+                    <option value="Umum">Umum (Lintas Divisi)</option>
+                  </select>
                 </div>
               </div>
 
@@ -1447,19 +1426,11 @@ export default function LogTaskModule({
                             const files = e.target.files;
                             if (files && files.length > 0) {
                               const fileArray = Array.from(files) as File[];
-                              const readPromises = fileArray.map((file: File) => {
-                                return new Promise<string>((resolve) => {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    resolve(reader.result as string);
-                                  };
-                                  reader.readAsDataURL(file);
-                                });
-                              });
-
-                              Promise.all(readPromises).then(newImages => {
-                                setLogPhotoUrls(prev => [...prev, ...newImages]);
-                              });
+                              Promise.all(fileArray.map(file => compressImageFile(file, 1200, 1200, 0.75)))
+                                .then(newImages => {
+                                  setLogPhotoUrls(prev => [...prev, ...newImages]);
+                                })
+                                .catch(err => console.error('Error compressing logbook photos:', err));
                             }
                             e.target.value = '';
                           }}
@@ -1509,19 +1480,11 @@ export default function LogTaskModule({
                                 const files = e.target.files;
                                 if (files && files.length > 0) {
                                   const fileArray = Array.from(files) as File[];
-                                  const readPromises = fileArray.map((file: File) => {
-                                    return new Promise<string>((resolve) => {
-                                      const reader = new FileReader();
-                                      reader.onloadend = () => {
-                                        resolve(reader.result as string);
-                                      };
-                                      reader.readAsDataURL(file);
-                                    });
-                                  });
-
-                                  Promise.all(readPromises).then(newImages => {
-                                    setLogPhotoUrls(prev => [...prev, ...newImages]);
-                                  });
+                                  Promise.all(fileArray.map(file => compressImageFile(file, 1200, 1200, 0.75)))
+                                    .then(newImages => {
+                                      setLogPhotoUrls(prev => [...prev, ...newImages]);
+                                    })
+                                    .catch(err => console.error('Error compressing logbook photos:', err));
                                 }
                                 e.target.value = '';
                               }}
@@ -1829,27 +1792,21 @@ export default function LogTaskModule({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-500 uppercase mb-1">Divisi Pelaksana</label>
-                  {isManagement ? (
-                    <select
-                      value={taskDivision}
-                      onChange={(e) => setTaskDivision(e.target.value as Division)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
-                    >
-                      <option value="Audio">🔊 Audio (Sound)</option>
-                      <option value="Lighting">💡 Lighting</option>
-                      <option value="Videotron">📺 Videotron</option>
-                      <option value="Multimedia">🎥 Multimedia</option>
-                      <option value="Gudang">📦 Gudang</option>
-                      <option value="Admin">🗄️ Admin</option>
-                      <option value="Service">🔧 Service</option>
-                    </select>
-                  ) : (
-                    <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 flex items-center gap-2">
-                      <span>{DIVISION_CONFIG[currentUser.division]?.icon}</span>
-                      <span>{currentUser.division} (Divisi Anda)</span>
-                    </div>
-                  )}
+                  <label className="block font-bold text-slate-500 uppercase mb-1">Divisi Pelaksana (Lintas Divisi)</label>
+                  <select
+                    value={taskDivision}
+                    onChange={(e) => setTaskDivision(e.target.value as Division)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
+                  >
+                    <option value="Audio">🔊 Audio (Sound)</option>
+                    <option value="Lighting">💡 Lighting</option>
+                    <option value="Videotron">📺 Videotron</option>
+                    <option value="Multimedia">🎥 Multimedia</option>
+                    <option value="Gudang">📦 Gudang</option>
+                    <option value="Admin">🗄️ Admin</option>
+                    <option value="Service">🔧 Service</option>
+                    <option value="Umum">📌 Umum (Lintas Divisi)</option>
+                  </select>
                 </div>
 
                 <div>
@@ -1868,13 +1825,13 @@ export default function LogTaskModule({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-500 uppercase mb-1">Ditugaskan Kepada (PIC)</label>
+                  <label className="block font-bold text-slate-500 uppercase mb-1">Ditugaskan Kepada (PIC Lintas Divisi)</label>
                   <select
                     value={taskAssignee}
                     onChange={(e) => setTaskAssignee(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer"
                   >
-                    {staffList.filter(s => isManagement || s.division === currentUser.division).map(s => (
+                    {staffList.map(s => (
                       <option key={s.id} value={s.name}>{s.name} {s.nickname && s.nickname.toLowerCase() !== s.name.toLowerCase() ? `(${s.nickname})` : ''} - {s.division}</option>
                     ))}
                   </select>
@@ -1889,6 +1846,103 @@ export default function LogTaskModule({
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
+              </div>
+
+              {/* Lampiran Foto Bukti Task */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-bold text-slate-500 uppercase">Lampiran Foto / Bukti Pekerjaan ({taskPhotos.length})</label>
+                  {taskPhotos.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setTaskPhotos([])}
+                      className="text-[10px] text-rose-600 font-bold hover:underline cursor-pointer"
+                    >
+                      Hapus Semua
+                    </button>
+                  )}
+                </div>
+
+                {taskPhotos.length === 0 ? (
+                  <div className="border border-dashed border-blue-200 hover:border-blue-400 bg-slate-50 rounded-xl p-3 text-center transition-colors">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                          const fileArray = Array.from(files) as File[];
+                          Promise.all(fileArray.map(file => compressImageFile(file, 1200, 1200, 0.75)))
+                            .then(newImages => {
+                              setTaskPhotos(prev => [...prev, ...newImages]);
+                            })
+                            .catch(err => console.error('Error compressing task photos:', err));
+                        }
+                        e.target.value = '';
+                      }}
+                      className="hidden"
+                      id="daily-task-photo-upload"
+                    />
+                    <label htmlFor="daily-task-photo-upload" className="cursor-pointer flex flex-col items-center gap-1 text-xs font-semibold text-blue-600">
+                      <Upload className="w-4 h-4" />
+                      <span>Lampirkan Foto dari Kamera / Perangkat</span>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      {taskPhotos.map((imgSrc, idx) => (
+                        <div key={idx} className="relative group rounded-lg overflow-hidden border border-slate-200 bg-white shadow-xs">
+                          <img src={imgSrc} alt={`Bukti ${idx + 1}`} className="w-full h-16 object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewModalImg(imgSrc)}
+                              className="p-1 bg-white/95 text-slate-800 rounded text-[9px] cursor-pointer"
+                              title="Lihat"
+                            >
+                              <Eye className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setTaskPhotos(prev => prev.filter((_, i) => i !== idx))}
+                              className="p-1 bg-rose-600 text-white rounded text-[9px] cursor-pointer"
+                              title="Hapus"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="border border-dashed border-blue-200 hover:border-blue-400 rounded-lg flex items-center justify-center bg-slate-50 cursor-pointer min-h-[64px] transition-colors">
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            const files = e.target.files;
+                            if (files && files.length > 0) {
+                              const fileArray = Array.from(files) as File[];
+                              Promise.all(fileArray.map(file => compressImageFile(file, 1200, 1200, 0.75)))
+                                .then(newImages => {
+                                  setTaskPhotos(prev => [...prev, ...newImages]);
+                                })
+                                .catch(err => console.error('Error compressing task photos:', err));
+                            }
+                            e.target.value = '';
+                          }}
+                          className="hidden"
+                          id="daily-task-photo-upload-more"
+                        />
+                        <label htmlFor="daily-task-photo-upload-more" className="cursor-pointer flex flex-col items-center gap-0.5 text-blue-600 text-[10px] font-bold p-1">
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Foto</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -2047,6 +2101,23 @@ export default function LogTaskModule({
             </p>
           )}
         </div>
+
+        {((task.photos && task.photos.length > 0) || task.photoUrl) && (
+          <div className="flex items-center gap-1.5 overflow-x-auto py-1">
+            {(task.photos && task.photos.length > 0 ? task.photos : [task.photoUrl!]).map((pSrc, pIdx) => (
+              <img
+                key={pIdx}
+                src={pSrc}
+                alt="Foto Task"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPreviewModalImg(pSrc);
+                }}
+                className="w-12 h-12 object-cover rounded-lg border border-slate-200 hover:border-blue-500 cursor-pointer shadow-xs transition-transform hover:scale-105 shrink-0"
+              />
+            ))}
+          </div>
+        )}
 
         <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-2 border-t border-slate-100">
           <span className="flex items-center gap-1">

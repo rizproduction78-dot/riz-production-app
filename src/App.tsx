@@ -80,7 +80,8 @@ import { workspaceManager } from './lib/workspaceConfig';
 import {
   pullDailyLogFromGviz,
   getGidForMonth,
-  getDailyLogLastPull
+  getDailyLogLastPull,
+  appendDailyReportToGoogleSheet
 } from './lib/googleSheetSync';
 
 export default function App() {
@@ -98,8 +99,18 @@ export default function App() {
     return saved && saved !== 'assets' ? saved : 'dashboard';
   });
 
-  // Active Month for multi-month schedule system (Sep 2026, Okt 2026, dst)
-  const [activeMonth, setActiveMonth] = useState<string>(getActiveMonthKey);
+  // Active Month for multi-month schedule system (Default: Oktober 2026 / 2026-10)
+  const [activeMonth, setActiveMonth] = useState<string>(() => {
+    const saved = localStorage.getItem('riz_active_month');
+    return saved || '2026-10';
+  });
+
+  const handleActiveMonthChange = (monthKey: string) => {
+    setActiveMonth(monthKey);
+    try {
+      localStorage.setItem('riz_active_month', monthKey);
+    } catch (e) {}
+  };
 
   // Mobile sidebar menu open
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -312,8 +323,8 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Forced one-time re-sync for all official data from Google Sheet reference (1-17 September 2026 full tabulation)
-  const REF_SYNC_KEY = 'riz_ref_synced_v35_canonical_clean_dedup';
+  // Forced one-time re-sync for all official data from Google Sheet reference (100% authentic multi-month tabulation)
+  const REF_SYNC_KEY = 'riz_ref_synced_v54_october_qc_real';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings_v2', JSON.stringify(INITIAL_FINDINGS));
@@ -470,25 +481,35 @@ export default function App() {
 
   // Core States - Bersih murni dari data dummy & tersinkronisasi data riil resmi
   const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>(() => {
+    let baseLogs = INITIAL_LOGBOOK_ENTRIES;
     const saved = localStorage.getItem('riz_logbook_entries_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const map = new Map(baseLogs.map(l => [l.id, l]));
+          parsed.forEach((l: LogbookEntry) => map.set(l.id, l));
+          return Array.from(map.values());
+        }
       } catch (e) {}
     }
-    return INITIAL_LOGBOOK_ENTRIES;
+    return baseLogs;
   });
 
   const [dailyReports, setDailyReports] = useState<DailyReportType[]>(() => {
+    let baseReports = INITIAL_DAILY_REPORTS;
     const saved = localStorage.getItem('riz_daily_reports_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const map = new Map(baseReports.map(r => [r.id, r]));
+          parsed.forEach((r: DailyReportType) => map.set(r.id, r));
+          return Array.from(map.values());
+        }
       } catch (e) {}
     }
-    return INITIAL_DAILY_REPORTS;
+    return baseReports;
   });
 
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>(() => {
@@ -953,6 +974,9 @@ export default function App() {
     setTimeout(() => {
       if (!isDuplicate) {
         saveCloudDoc('daily_reports', newRep.id, newRep);
+        appendDailyReportToGoogleSheet(newRep).catch(err => {
+          console.warn('[App] Gagal sync Arah B ke Google Sheet:', err);
+        });
       }
     }, 0);
   };
@@ -1745,7 +1769,7 @@ export default function App() {
             currentUser={currentUser}
             onNavigate={setActiveTab}
             activeMonth={activeMonth}
-            onActiveMonthChange={setActiveMonth}
+            onActiveMonthChange={handleActiveMonthChange}
             onSyncDailyLogFromSheet={handleSyncDailyLogFromSheet}
             isSyncingSheet={isSyncingSheet}
           />
@@ -1800,7 +1824,7 @@ export default function App() {
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
             activeMonth={activeMonth}
-            onActiveMonthChange={setActiveMonth}
+            onActiveMonthChange={handleActiveMonthChange}
             onSyncDailyLogFromSheet={handleSyncDailyLogFromSheet}
             isSyncingSheet={isSyncingSheet}
           />
@@ -1812,7 +1836,7 @@ export default function App() {
             onLogActivity={handleLogActivity}
             forceSubTab="self"
             activeMonth={activeMonth}
-            onActiveMonthChange={setActiveMonth}
+            onActiveMonthChange={handleActiveMonthChange}
           />
         )}
 
@@ -1822,7 +1846,7 @@ export default function App() {
             onLogActivity={handleLogActivity}
             forceSubTab="schedule"
             activeMonth={activeMonth}
-            onActiveMonthChange={setActiveMonth}
+            onActiveMonthChange={handleActiveMonthChange}
           />
         )}
 
@@ -1832,7 +1856,7 @@ export default function App() {
             onLogActivity={handleLogActivity}
             forceSubTab="maintenance_dashboard"
             activeMonth={activeMonth}
-            onActiveMonthChange={setActiveMonth}
+            onActiveMonthChange={handleActiveMonthChange}
           />
         )}
 

@@ -66,9 +66,9 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
       return;
     }
 
-    // Check against custom password or fallback
+    // Check against custom password or fallback (case-insensitive & trim whitespace)
     const expectedPassword = staff.password || 'riz123';
-    if (password !== expectedPassword) {
+    if (password.trim().toLowerCase() !== expectedPassword.toLowerCase()) {
       setError('Password salah! Silakan coba lagi.');
       return;
     }

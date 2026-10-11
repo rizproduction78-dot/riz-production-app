@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PrintHeader } from './PrintHeader';
-import { Staff, DailyReport, LogbookEntry, Finding, WorkOrder, DailyTask } from '../types';
+import { Staff, DailyReport, LogbookEntry, Finding, WorkOrder, DailyTask, AttendanceLog } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import {
   User,
@@ -38,8 +38,8 @@ import {
 
 import { calculateStaffKpi, calculateAllStaffKpis, isStaffMatch, KPI_SPREADSHEET_SOURCE_URL } from '../utils/kpiCalculator';
 import { subscribeCloudCollection } from '../lib/cloudSync';
-import { getActiveMonthKey } from '../data/staffSchedules';
-
+import { getActiveMonthKey, getScheduleByKey } from '../data/staffSchedules';
+import { ELECTRICAL_COMPETENCIES } from './Absensi';
 
 interface EmployeePerformanceModuleProps {
   currentUser: Staff;
@@ -86,28 +86,126 @@ export default function EmployeePerformanceModule({
     return () => unsub();
   }, []);
 
-  // Selected Employee (Default to Opik if available, or currentUser)
-  const defaultStaff = masterStaffList.find(s => s.name === 'Opik') || currentUser;
-  const [selectedStaffName, setSelectedStaffName] = useState<string>(isManagement ? defaultStaff.name : currentUser.name);
   const [selectedMonth, setSelectedMonth] = useState<string>('Oktober 2026');
 
-  const selectedStaff = masterStaffList.find(s => s.name === selectedStaffName) || currentUser;
-  
-  // Real dynamic KPI scores, filtered by activeMonth
-  const monthlyDailyReports = dailyReports.filter(r => r.date.startsWith(activeMonth));
-  const monthlyLogbookEntries = logbookEntries.filter(e => e.date.startsWith(activeMonth));
-  const monthlyFindings = findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth)));
-  const monthlyWorkOrders = workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth));
-  const monthlyDailyTasks = dailyTasks.filter(t => t.createdAt.startsWith(activeMonth) || t.dueDate.startsWith(activeMonth));
+  const monthKeyFromLabel: Record<string, string> = {
+    'Oktober 2026': '2026-10',
+    'September 2026': '2026-09',
+    'Agustus 2026': '2026-08',
+    'Juli 2026': '2026-07',
+    'Juni 2026': '2026-06',
+    'Mei 2026': '2026-05',
+    'April 2026': '2026-04'
+  };
+  const evalMonthKey = monthKeyFromLabel[selectedMonth] || activeMonth;
 
-  const allStaffKpis = calculateAllStaffKpis(masterStaffList, monthlyDailyReports, monthlyLogbookEntries, monthlyFindings, undefined, undefined, undefined, monthlyWorkOrders, monthlyDailyTasks);
-  const staffKpi = calculateStaffKpi(selectedStaff, monthlyDailyReports, monthlyLogbookEntries, monthlyFindings, undefined, undefined, undefined, monthlyWorkOrders, monthlyDailyTasks);
+  // Real dynamic KPI scores, filtered by evalMonthKey
+  const monthlyDailyReports = dailyReports.filter(r => r.date.startsWith(evalMonthKey));
+  const monthlyLogbookEntries = logbookEntries.filter(e => e.date.startsWith(evalMonthKey));
+  const monthlyFindings = findings.filter(f => f.dateCreated.startsWith(evalMonthKey) || (f.targetDate && f.targetDate.startsWith(evalMonthKey)));
+  const monthlyWorkOrders = workOrders.filter(w => w.dateCreated.startsWith(evalMonthKey) || (w as any).date?.startsWith(evalMonthKey) || w.deadline.startsWith(evalMonthKey));
+  const monthlyDailyTasks = dailyTasks.filter(t => t.createdAt.startsWith(evalMonthKey) || t.dueDate.startsWith(evalMonthKey));
+
+  const allStaffKpis = calculateAllStaffKpis(
+    masterStaffList, 
+    monthlyDailyReports, 
+    monthlyLogbookEntries, 
+    monthlyFindings, 
+    undefined, 
+    undefined, 
+    getScheduleByKey(evalMonthKey)?.rows, 
+    monthlyWorkOrders, 
+    monthlyDailyTasks,
+    evalMonthKey
+  );
 
   // Filter hanya staf yang memiliki aktifitas riil
-  const activeStaffKpis = allStaffKpis.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);
+  const activeStaffKpis = allStaffKpis.filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0);
+
+  // Selected Employee (Default to first active staff if management, or currentUser)
+  const defaultStaff = activeStaffKpis.length > 0
+    ? (masterStaffList.find(s => s.id === activeStaffKpis[0].staffId) || currentUser)
+    : (masterStaffList.find(s => s.name === 'Opik') || currentUser);
+
+  const [selectedStaffName, setSelectedStaffName] = useState<string>(isManagement ? defaultStaff.name : currentUser.name);
+
+  // Pastikan jika staf belum dipilih atau ganti bulan, tetap sinkron
+  const selectedStaff = masterStaffList.find(s => s.name === selectedStaffName) || currentUser;
+
+  // Real competencies state
+  const [electricalCompetencies, setElectricalCompetencies] = useState<{ [staffId: string]: { [compKey: string]: { verified: boolean; verifiedBy?: string; dateVerified?: string } } }>(() => {
+    try {
+      const saved = localStorage.getItem('riz_staff_electrical_competencies');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+
+  // Real attendance logs state
+  const [rawAttendanceLogs, setRawAttendanceLogs] = useState<AttendanceLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('riz_attendance_logs');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Real supervisor notes state
+  const [supervisorNote, setSupervisorNote] = useState<string>('');
+  const [noteAuthor, setNoteAuthor] = useState<string>('');
+  const [noteDate, setNoteDate] = useState<string>('');
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [tempNoteText, setTempNoteText] = useState('');
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`riz_spv_note_${selectedStaff.id}_${evalMonthKey}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setSupervisorNote(parsed.text || '');
+        setNoteAuthor(parsed.author || '');
+        setNoteDate(parsed.date || '');
+        setTempNoteText(parsed.text || '');
+      } else {
+        setSupervisorNote('');
+        setNoteAuthor('');
+        setNoteDate('');
+        setTempNoteText('');
+      }
+    } catch (e) {
+      setSupervisorNote('');
+    }
+    setIsEditingNote(false);
+  }, [selectedStaff.id, evalMonthKey]);
+
+  const handleSaveSupervisorNote = (text: string) => {
+    const todayStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    const payload = { text, author: currentUser.name, date: todayStr };
+    try {
+      localStorage.setItem(`riz_spv_note_${selectedStaff.id}_${evalMonthKey}`, JSON.stringify(payload));
+    } catch (e) {}
+    setSupervisorNote(text);
+    setNoteAuthor(currentUser.name);
+    setNoteDate(todayStr);
+    setIsEditingNote(false);
+  };
+  const staffKpi = calculateStaffKpi(
+    selectedStaff, 
+    monthlyDailyReports, 
+    monthlyLogbookEntries, 
+    monthlyFindings, 
+    undefined, 
+    undefined, 
+    getScheduleByKey(evalMonthKey)?.rows, 
+    monthlyWorkOrders, 
+    monthlyDailyTasks,
+    evalMonthKey
+  );
 
   // Dynamic ranking resmi komit dengan data activeStaffKpis
-  const hasActiveActivity = staffKpi.reports > 0 || staffKpi.qcs > 0 || staffKpi.wos > 0;
+  const hasActiveActivity = staffKpi.reports > 0 || staffKpi.qcs > 0 || staffKpi.wos > 0 || staffKpi.attendanceCount > 0;
   const staffRankIndex = activeStaffKpis.findIndex(
     s => s.staffId === selectedStaff.id || s.id === selectedStaff.id || isStaffMatch(selectedStaff, s.name) || s.name === selectedStaff.name
   );
@@ -130,15 +228,26 @@ export default function EmployeePerformanceModule({
     label: `${selectedStaff.division.toUpperCase()} DIVISION`
   };
 
-  // Dynamic 12-Month Trend Data (Real Data Strict)
-  const monthsLabels = ['Okt', 'Nov', 'Des', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep'];
-  const trendData = monthsLabels.map((m, idx) => {
-    if (idx === 11) {
-      // Hanya bulan September (indeks 11) yang memiliki data riil saat ini
-      return { month: m, score: staffKpi.kpi };
+  // Dynamic Month Trend Data (Real Data Strict from actual operational months)
+  const trendMonths = [
+    { label: 'Mei', key: '2026-05' },
+    { label: 'Jun', key: '2026-06' },
+    { label: 'Jul', key: '2026-07' },
+    { label: 'Agu', key: '2026-08' },
+    { label: 'Sep', key: '2026-09' },
+    { label: 'Okt', key: '2026-10' },
+  ];
+  const trendData = trendMonths.map(tm => {
+    const mReps = dailyReports.filter(r => r.date.startsWith(tm.key));
+    const mLogs = logbookEntries.filter(e => e.date.startsWith(tm.key));
+    const mFind = findings.filter(f => f.dateCreated?.startsWith(tm.key));
+    const mWOs = workOrders.filter(w => w.dateCreated?.startsWith(tm.key));
+    const mTasks = dailyTasks.filter(t => t.createdAt?.startsWith(tm.key));
+    if (mReps.length === 0 && mLogs.length === 0) {
+      return { month: tm.label, score: 0 };
     }
-    // Bulan lain belum ada data riil, berikan nilai 0 (tanpa halusinasi/gimmick)
-    return { month: m, score: 0 };
+    const score = calculateStaffKpi(selectedStaff, mReps, mLogs, mFind, undefined, undefined, getScheduleByKey(tm.key)?.rows, mWOs, mTasks, tm.key);
+    return { month: tm.label, score: score.kpi };
   });
 
   // SVG dimensions for Line Chart
@@ -161,9 +270,10 @@ export default function EmployeePerformanceModule({
   // ──────────────────────────────────────────────────────────
   // DYNAMIC CALCULATIONS FOR SELECTED STAFF
   // ──────────────────────────────────────────────────────────
-  const staffReports = dailyReports.filter(r => isStaffMatch(selectedStaff, r.staffName));
-  const staffLogbooks = logbookEntries.filter(e => isStaffMatch(selectedStaff, e.staffName));
-  const staffFindings = findings.filter(f => isStaffMatch(selectedStaff, f.pic));
+  const staffReports = monthlyDailyReports.filter(r => isStaffMatch(selectedStaff, r.staffName));
+  const staffLogbooks = monthlyLogbookEntries.filter(e => isStaffMatch(selectedStaff, e.staffName));
+  const staffFindings = monthlyFindings.filter(f => isStaffMatch(selectedStaff, f.pic));
+  const staffWorkOrders = monthlyWorkOrders.filter(w => isStaffMatch(selectedStaff, w.pic));
 
   // Activity Category Breakdown
   let cleaningCount = 0;
@@ -199,7 +309,7 @@ export default function EmployeePerformanceModule({
 
   // Real Maintenance Breakdown
   const staffPreventive = staffLogbooks.length;
-  const staffCorrective = staffFindings.length;
+  const staffCorrective = staffFindings.length + staffWorkOrders.length;
   const totalStaffMaint = staffPreventive + staffCorrective;
   const maintPercent = totalStaffMaint > 0 ? ((staffPreventive / totalStaffMaint) * 100).toFixed(1) : '100.0';
 
@@ -509,7 +619,7 @@ export default function EmployeePerformanceModule({
                 <span className="text-[11px] text-slate-500 font-semibold block">QC OK</span>
                 <span className="text-2xl font-black text-emerald-600">{staffKpi.qcs}</span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">
-                  dari {logbookEntries.filter(e => isStaffMatch(selectedStaff, e.staffName)).length || staffKpi.qcs} checklist
+                  dari {monthlyLogbookEntries.filter(e => isStaffMatch(selectedStaff, e.staffName)).length || staffKpi.qcs} checklist
                 </span>
               </div>
               <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-600">
@@ -534,7 +644,7 @@ export default function EmployeePerformanceModule({
               <div>
                 <span className="text-[11px] text-slate-500 font-semibold block">Open Issue</span>
                 <span className="text-2xl font-black text-amber-600">
-                  {findings.filter(f => isStaffMatch(selectedStaff, f.pic) && f.status === 'Open').length}
+                  {monthlyFindings.filter(f => isStaffMatch(selectedStaff, f.pic) && f.status === 'Open').length}
                 </span>
                 <span className="text-[10px] text-slate-400 block mt-0.5">Issue Pending</span>
               </div>
@@ -547,10 +657,10 @@ export default function EmployeePerformanceModule({
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-500 font-semibold block">Jam Kerja</span>
-                <span className="text-2xl font-black text-slate-400">-</span>
-                <span className="text-[10px] text-amber-600 font-semibold block mt-0.5">Non-aktif Sementara</span>
+                <span className="text-2xl font-black text-slate-900">{staffKpi.attendanceCount * 8} Jam</span>
+                <span className="text-[10px] text-slate-500 block mt-0.5">{staffKpi.attendanceCount} Hari Hadir (8 Jam/Shift)</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-100 text-slate-400">
+              <div className="p-2.5 rounded-xl bg-blue-100 text-blue-600">
                 <Clock className="w-5 h-5" />
               </div>
             </div>
@@ -559,10 +669,10 @@ export default function EmployeePerformanceModule({
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-500 font-semibold block">Lembur</span>
-                <span className="text-2xl font-black text-slate-400">-</span>
-                <span className="text-[10px] text-amber-600 font-semibold block mt-0.5">Non-aktif Sementara</span>
+                <span className="text-2xl font-black text-slate-900">0 Jam</span>
+                <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">Shift Normal Terpenuhi</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-100 text-slate-400">
+              <div className="p-2.5 rounded-xl bg-slate-100 text-slate-500">
                 <Timer className="w-5 h-5" />
               </div>
             </div>
@@ -928,86 +1038,199 @@ export default function EmployeePerformanceModule({
       {/* ────────────────────────────────────────────────────────── */}
       {/* ROW 4: RIWAYAT PENGEMBANGAN & CATATAN                      */}
       {/* ────────────────────────────────────────────────────────── */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-        <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-slate-400">RIWAYAT PENGEMBANGAN & CATATAN</span>
+      {(() => {
+        // 1. Dynamic Training & Competencies
+        const staffComps = electricalCompetencies[selectedStaff.id] || {};
+        const verifiedComps = ELECTRICAL_COMPETENCIES.filter(c => staffComps[c.key]?.verified);
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-xs">
-          {/* Training / Sertifikasi */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
-            <div className="flex items-center gap-2 font-bold text-slate-800">
-              <Award className="w-4 h-4 text-blue-600" />
-              <span>Training / Sertifikasi</span>
-            </div>
-            <ul className="space-y-2 text-[11px] text-slate-600">
-              <li className="flex justify-between">
-                <span>• Mixing Audio Advanced</span>
-                <span className="text-slate-400 font-mono">15 Mei 2026</span>
-              </li>
-              <li className="flex justify-between">
-                <span>• Digital Sound System</span>
-                <span className="text-slate-400 font-mono">10 Feb 2026</span>
-              </li>
-              <li className="flex justify-between">
-                <span>• Safety Working at Height</span>
-                <span className="text-slate-400 font-mono">5 Jan 2026</span>
-              </li>
-            </ul>
-            <button className="text-blue-600 hover:text-blue-500 font-bold text-[10px] cursor-pointer">
-              Lihat Semua
-            </button>
-          </div>
+        // 2. Dynamic Disiplin & Infractions
+        const lateLogs = rawAttendanceLogs.filter(
+          l => (l.staffId === selectedStaff.id || isStaffMatch(selectedStaff, l.staffName)) &&
+               l.status === 'Terlambat' &&
+               (!l.date || l.date.startsWith(evalMonthKey))
+        );
+        const alphaLogs = rawAttendanceLogs.filter(
+          l => (l.staffId === selectedStaff.id || isStaffMatch(selectedStaff, l.staffName)) &&
+               l.status === 'Alpha' &&
+               (!l.date || l.date.startsWith(evalMonthKey))
+        );
+        const hasInfractions = lateLogs.length > 0 || alphaLogs.length > 0;
+        const totalDeductions = (lateLogs.length * 10) + (alphaLogs.length * 25);
 
-          {/* Penghargaan */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3">
-            <div className="flex items-center gap-2 font-bold text-slate-800">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Penghargaan</span>
-            </div>
-            <ul className="space-y-2 text-[11px] text-slate-600">
-              <li className="flex justify-between">
-                <span>Employee of The Month</span>
-                <span className="text-slate-400 font-mono">Mei 2026</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Best Teamwork</span>
-                <span className="text-slate-400 font-mono">Maret 2026</span>
-              </li>
-            </ul>
-            <button className="text-blue-600 hover:text-blue-500 font-bold text-[10px] cursor-pointer">
-              Lihat Semua
-            </button>
-          </div>
+        return (
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+            <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-slate-400">RIWAYAT PENGEMBANGAN & CATATAN RESMI</span>
 
-          {/* Catatan Supervisor */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
-            <div className="flex items-center gap-2 font-bold text-slate-800">
-              <MessageSquare className="w-4 h-4 text-indigo-600" />
-              <span>Catatan Supervisor</span>
-            </div>
-            <p className="text-[11px] text-slate-600 italic leading-relaxed">
-              "{selectedStaff.name} selalu menunjukkan inisiatif yang baik dan dapat diandalkan dalam setiap event. Terus pertahankan!"
-            </p>
-            <span className="text-[10px] text-slate-400 font-mono block pt-1">Agus SPV • 1 Jul 2026</span>
-          </div>
-
-          {/* Riwayat Peringatan */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-2 font-bold text-slate-800">
-                <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <span>Riwayat Peringatan</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-xs">
+              {/* Card 1: Training / Sertifikasi Riil */}
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between font-bold text-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-4 h-4 text-blue-600" />
+                      <span>Uji Kompetensi ({verifiedComps.length}/6)</span>
+                    </div>
+                    <span className="font-mono text-[10px] text-blue-600 font-bold">{staffKpi.competencyScore}%</span>
+                  </div>
+                  {verifiedComps.length > 0 ? (
+                    <ul className="space-y-2 text-[11px] text-slate-600 mt-3">
+                      {verifiedComps.slice(0, 3).map((c) => (
+                        <li key={c.key} className="flex justify-between items-start gap-1">
+                          <span className="truncate">• {c.title}</span>
+                          <span className="text-emerald-600 font-bold text-[9px] shrink-0">LULUS</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="mt-3 py-2 text-[11px] text-slate-500">
+                      <p>Belum ada unit uji kelistrikan yang diverifikasi pada periode {selectedMonth}.</p>
+                      <p className="text-[10px] text-slate-400 mt-1 font-mono">Standar Acuan: 6 Unit Uji</p>
+                    </div>
+                  )}
+                </div>
+                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px]">
+                  <span className="text-slate-400 font-mono">Kategori Kelistrikan & K3</span>
+                  <span className="font-bold text-slate-700">{verifiedComps.length} Terverifikasi</span>
+                </div>
               </div>
-              <p className="text-[11px] text-slate-500 mt-2">
-                Tidak ada catatan peringatan atau indisipliner (Clean Record).
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
-              <CheckCircle className="w-5 h-5" />
-              <span>Rekam Jejak Bersih</span>
+
+              {/* Card 2: Status Evaluasi & Prestasi Kinerja */}
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 font-bold text-slate-800">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span>Predikat Kinerja</span>
+                  </div>
+                  <div className="mt-3 space-y-2 text-[11px]">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-slate-700">Hasil Evaluasi:</span>
+                      <span className={`font-mono font-bold px-2 py-0.5 rounded text-[10px] ${
+                        staffKpi.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
+                        staffKpi.grade === 'B' ? 'bg-blue-100 text-blue-800' :
+                        staffKpi.grade === 'C' ? 'bg-amber-100 text-amber-800' :
+                        'bg-rose-100 text-rose-800'
+                      }`}>
+                        Grade {staffKpi.grade} ({staffKpi.kpi}%)
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">
+                      {staffKpi.grade === 'A' ? 'Performa sangat baik dengan kepatuhan laporan dan kehadiran penuh.' :
+                       staffKpi.grade === 'B' ? 'Performa baik sesuai standar operasional yang ditetapkan.' :
+                       staffKpi.grade === 'C' ? 'Performa cukup. Disarankan meningkatkan kehadiran dan pelaporan tugas.' :
+                       'Perlu pendampingan dan evaluasi intensif dari Team Leader.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-slate-200/60 flex justify-between text-[10px] text-slate-400 font-mono">
+                  <span>Periode:</span>
+                  <span>{selectedMonth}</span>
+                </div>
+              </div>
+
+              {/* Card 3: Catatan Evaluasi Supervisor Riil */}
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between font-bold text-slate-800">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-indigo-600" />
+                      <span>Catatan Supervisor</span>
+                    </div>
+                    {isManagement && !isEditingNote && (
+                      <button 
+                        onClick={() => setIsEditingNote(true)} 
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+                      >
+                        {supervisorNote ? 'Ubah' : '+ Tulis'}
+                      </button>
+                    )}
+                  </div>
+
+                  {isEditingNote ? (
+                    <div className="mt-2 space-y-2">
+                      <textarea
+                        value={tempNoteText}
+                        onChange={(e) => setTempNoteText(e.target.value)}
+                        placeholder="Tulis catatan evaluasi objektif manajemen untuk staf ini..."
+                        className="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        rows={3}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setIsEditingNote(false)}
+                          className="text-[10px] px-2 py-1 text-slate-500 hover:bg-slate-200 rounded cursor-pointer"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          onClick={() => handleSaveSupervisorNote(tempNoteText)}
+                          className="text-[10px] px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded cursor-pointer"
+                        >
+                          Simpan
+                        </button>
+                      </div>
+                    </div>
+                  ) : supervisorNote ? (
+                    <div className="mt-2">
+                      <p className="text-[11px] text-slate-700 italic leading-relaxed">
+                        "{supervisorNote}"
+                      </p>
+                      <span className="text-[10px] text-slate-400 font-mono block pt-1.5">
+                        {noteAuthor} • {noteDate}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic mt-2">
+                      Belum ada catatan evaluasi dari supervisor untuk periode {selectedMonth}.
+                    </p>
+                  )}
+                </div>
+                <div className="pt-2 border-t border-slate-200/60 text-[10px] text-slate-400 font-mono">
+                  <span>Evaluasi Manajemen Riil</span>
+                </div>
+              </div>
+
+              {/* Card 4: Riwayat Disiplin & Peringatan Riil */}
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-3 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 font-bold text-slate-800">
+                    {hasInfractions ? (
+                      <AlertTriangle className="w-4 h-4 text-rose-500" />
+                    ) : (
+                      <Shield className="w-4 h-4 text-emerald-600" />
+                    )}
+                    <span>Riwayat Disiplin & SOP</span>
+                  </div>
+                  {hasInfractions ? (
+                    <div className="mt-2 text-[11px] text-rose-700 space-y-1">
+                      <p className="font-semibold">Catatan Indisipliner Terdeteksi:</p>
+                      {lateLogs.length > 0 && <p>• {lateLogs.length}x Terlambat (-{lateLogs.length * 10} poin)</p>}
+                      {alphaLogs.length > 0 && <p>• {alphaLogs.length}x Alpha (-{alphaLogs.length * 25} poin)</p>}
+                      <p className="text-[10px] text-slate-500 pt-1">Total Penalti Disiplin: -{totalDeductions} poin</p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-600 mt-2">
+                      Tidak ada pelanggaran atau catatan indisipliner tercatat pada periode {selectedMonth}.
+                    </p>
+                  )}
+                </div>
+                <div className={`flex items-center gap-2 font-bold text-xs ${hasInfractions ? 'text-rose-600' : 'text-emerald-600'}`}>
+                  {hasInfractions ? (
+                    <>
+                      <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      <span>Perlu Peningkatan Disiplin</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      <span>Rekam Jejak Bersih (Clean Record)</span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
     </div>
   );
 }

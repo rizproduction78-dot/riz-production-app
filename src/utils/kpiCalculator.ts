@@ -11,20 +11,23 @@
  * PRINSIP INTEGRITAS DATA:
  * - 100% Data Riil dari input operasional & spreadsheet resmi (tanpa halusinasi/data fiktif)
  * 
- * URUTAN PENILAIAN & PERANGKINGAN RESMI:
- * 1. Daily Report (Laporan Harian Operasional Lapangan & Event) - Bobot 25%
- * 2. QC Checklist Onhouse (Inspeksi & Kesiapan Alat Gudang) - Bobot 20%
- * 3. Work Order (WO) Selesai & Temuan Kerusakan Ditangani - Bobot 10%
- * 4. Uji Kompetensi yang Diikuti (6 Modul Standar Kelistrikan & Teknis) - Bobot 15%
- * 5. Kehadiran & Shift Roster Riil (Jadwal Dinas 1-31) - Bobot 15%
- * 6. Disiplin & Teamwork - Bobot 15%
+ * KATEGORI PENILAIAN & BOBOT RESMI (KOMIT RESMI):
+ * 1. Disiplin Kerja - Bobot 10%
+ * 2. Produktivitas (Daily Report) - Bobot 25%
+ * 3. Kualitas Pemeriksaan QC - Bobot 20%
+ * 4. Kompleksitas Tugas & Work Order - Bobot 10%
+ * 5. Kerja Sama Tim & Pengembangan - Bobot 5%
+ * 6. Jumlah Absensi (Kehadiran) - Bobot 15%
+ * 7. Uji Kompetensi yang Diikuti - Bobot 15%
+ * TOTAL: 100%
  */
 
 export const KPI_SPREADSHEET_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=198998470#gid=198998470';
 export const KPI_SPREADSHEET_GID = '198998470';
 
 import { Staff, Division, DailyReport, LogbookEntry, Finding, AttendanceLog, WorkOrder, DailyTask } from '../types';
-import { StaffScheduleRow, getCurrentMonthSchedule } from '../data/staffSchedules';
+import { StaffScheduleRow, getCurrentMonthSchedule, getScheduleByKey, getActiveMonthKey } from '../data/staffSchedules';
+import { NAME_TO_STAFF_ID } from '../lib/dailySheetParser';
 
 export interface StaffKpiResult {
   id: string;
@@ -90,7 +93,7 @@ export const KNOWN_STAFF_ALIASES: Record<string, string[]> = {
   'staff-seno': ['seno subroto', 'seno', 'staff admin'],
   
   // Videotron / LED
-  'staff-ayong': ['ayong sumarsih', 'ayong', 'prabu'],
+  'staff-ayong': ['ayong sumarsih', 'ayong', 'prabu', 'prabuam'],
   'staff-dedi': ['dedi agus wigiantoro', 'wigi', 'dedi agus', 'dedy'],
   'staff-irvan': ['muhamad irvan', 'irfan', 'muhammad irvan', 'irfanthepul'],
   
@@ -187,65 +190,33 @@ export function isStaffMatch(staff: Staff, inputName?: string): boolean {
   const rawInput = inputName.toLowerCase().trim();
   if (!rawInput) return false;
 
-  // STRICT GUARD: Prevent Agustino Setiawan from hijacking Dedi Agus Wigiantoro's reports
-  // because they share the name "agus".
-  if (staff.id === 'staff-agustino') {
-    if (rawInput.includes('dedi') || rawInput.includes('wigi') || rawInput.includes('dedy')) {
-      return false;
-    }
+  const cleanInput = rawInput.replace(/^[-*•\s]+/, '').trim();
+
+  // 1. Direct match via official dictionary NAME_TO_STAFF_ID
+  const directId = NAME_TO_STAFF_ID[cleanInput];
+  if (directId) {
+    return staff.id === directId;
   }
 
-  const aliases = getAllStaffAliases(staff);
-  
-  // 1. Direct exact match check
-  for (const alias of aliases) {
-    if (rawInput === alias) {
-      if (staff.id === 'director-wahyu' && (rawInput === 'wahyudin' || rawInput === 'unyin' || rawInput === 'unyim')) return false;
-      if (staff.id === 'staff-unyin' && (rawInput === 'wahyu' || rawInput === 'pak wahyu' || rawInput === 'direktur' || rawInput === 'owner')) return false;
-      if (staff.id === 'staff-udin' && (rawInput === 'wahyudin' || rawInput === 'unyin' || rawInput === 'unyim')) return false;
-      if (staff.id === 'staff-agustino' && (rawInput === 'dedi' || rawInput === 'wigi' || rawInput === 'dedy' || rawInput === 'dedi agus')) return false;
-      return true;
-    }
-  }
-
-  // 2. Tokenized match (handling separators like commas, slashes, ampersands, pluses, 'dan', 'and', 'bersama', etc.)
-  const tokens = rawInput
+  // 2. Tokenized match via official dictionary NAME_TO_STAFF_ID
+  const tokens = cleanInput
     .split(/[,/&+;\n|()]|\s+dan\s+|\s+and\s+|\s+bersama\s+|\s+team\s+/i)
     .map(t => t.replace(/[^a-zA-Z0-9\s.]/g, ' ').trim().toLowerCase())
     .filter(t => t.length > 0);
 
   for (const token of tokens) {
-    // Check token-specific safeguards
-    if (staff.id === 'director-wahyu' && (token === 'wahyudin' || token === 'unyin' || token === 'unyim')) continue;
-    if (staff.id === 'staff-unyin' && (token === 'wahyu' || token === 'pak wahyu' || token === 'direktur' || token === 'owner')) continue;
-    if (staff.id === 'staff-udin' && (token === 'wahyudin' || token === 'unyin' || token === 'unyim')) continue;
-    if (staff.id === 'staff-agustino' && (token === 'dedi' || token === 'wigi' || token === 'dedy' || token === 'dedi agus')) continue;
-    if (staff.id === 'staff-suryana' && (token.includes('iwan') || token.includes('kurniawan') || token.includes('butong') || token.includes('butonk'))) continue;
-
-    for (const alias of aliases) {
-      if (token === alias) return true;
-      if (alias.length >= 3 && token.length >= 3) {
-        if (token === alias || token.includes(alias) || alias.includes(token)) {
-          return true;
-        }
-      }
+    const tokenId = NAME_TO_STAFF_ID[token];
+    if (tokenId) {
+      if (staff.id === tokenId) return true;
     }
   }
 
-  // 3. If single-person string, word-boundary substring regex search across full input text
-  if (tokens.length <= 1) {
-    if (staff.id === 'director-wahyu' && (rawInput.includes('wahyudin') || rawInput.includes('unyin') || rawInput.includes('unyim'))) return false;
-    if (staff.id === 'staff-unyin' && (rawInput === 'wahyu' || rawInput === 'pak wahyu' || rawInput === 'direktur' || rawInput === 'owner')) return false;
-    if (staff.id === 'staff-udin' && (rawInput.includes('wahyudin') || rawInput.includes('unyin') || rawInput.includes('unyim'))) return false;
-    if (staff.id === 'staff-agustino' && (rawInput.includes('dedi') || rawInput.includes('wigi') || rawInput.includes('dedy'))) return false;
-    if (staff.id === 'staff-suryana' && (rawInput.includes('iwan') || rawInput.includes('kurniawan') || rawInput.includes('butong') || rawInput.includes('butonk'))) return false;
-
-    for (const alias of aliases) {
-      if (alias.length >= 3) {
-        const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`(^|[^a-zA-Z0-9])${escaped}([^a-zA-Z0-9]|$)`, 'i');
-        if (regex.test(rawInput)) return true;
-      }
+  // 3. Fallback to exact alias check (EXACT MATCH ONLY - NO SUBSTRING INCLUDES)
+  const aliases = getAllStaffAliases(staff);
+  for (const alias of aliases) {
+    if (cleanInput === alias) return true;
+    for (const token of tokens) {
+      if (token === alias) return true;
     }
   }
 
@@ -289,9 +260,76 @@ export function isStaffInDivision(staff: Staff | null | undefined, targetDivisio
 }
 
 /**
+ * Mengambil informasi tanggal, bulan, dan tahun lokal saat ini secara akurat.
+ */
+export function getCurrentDateInfo() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+  return { now, year, month, day, monthKey };
+}
+
+/**
+ * Menghitung batas hari evaluasi (cutoff day) untuk bulan yang bersangkutan:
+ * - Bulan Berjalan: Cutoff dihitung berdasarkan hari berjalan (atau tanggal data terbaru di sheet jika belum semua hari terisi).
+ * - Bulan Lampau: Cutoff adalah akhir bulan penuh (30 / 31 hari).
+ * - Bulan Masa Depan: 0 hari berjalan.
+ */
+export function getMonthEvaluationCutoff(targetMonthKey: string, dailyReports: DailyReport[] = []) {
+  const { year: currentYear, month: currentMonth, day: currentDay, monthKey: currentMonthKey } = getCurrentDateInfo();
+
+  const [yStr, mStr] = targetMonthKey.split('-');
+  const y = parseInt(yStr, 10) || currentYear;
+  const m = parseInt(mStr, 10) || currentMonth;
+  const totalDaysInMonth = new Date(y, m, 0).getDate();
+
+  const isCurrentRunningMonth = (targetMonthKey === currentMonthKey);
+  const isPastMonth = (targetMonthKey < currentMonthKey);
+  const isFutureMonth = (targetMonthKey > currentMonthKey);
+
+  let evalCutoffDay = totalDaysInMonth;
+
+  if (isCurrentRunningMonth) {
+    let maxReportDay = 0;
+    for (const r of dailyReports) {
+      if (r.date && r.date.startsWith(targetMonthKey)) {
+        const d = parseInt(r.date.slice(8, 10), 10);
+        if (!isNaN(d) && d > maxReportDay) maxReportDay = d;
+      }
+    }
+    // Jika laporan di Google Sheet baru disinkronkan sampai tanggal N, gunakan maxReportDay (atau currentDay jika sudah ada laporan hari ini)
+    evalCutoffDay = maxReportDay > 0 ? Math.min(currentDay, maxReportDay) : Math.min(totalDaysInMonth, Math.max(1, currentDay));
+  } else if (isFutureMonth) {
+    evalCutoffDay = 0;
+  } else {
+    // Bulan lampau: evaluasi penuh 1 bulan
+    evalCutoffDay = totalDaysInMonth;
+  }
+
+  return {
+    isCurrentRunningMonth,
+    isPastMonth,
+    isFutureMonth,
+    totalDaysInMonth,
+    evalCutoffDay,
+    currentDay,
+    currentMonthKey
+  };
+}
+
+/**
  * Menghitung KPI akurat untuk seorang staff dengan menghitung:
- * - Komponen asli: Disiplin, Produktivitas, Quality, Kompleksitas Tugas, Teamwork
- * - DITAMBAH DENGAN: Jumlah Absen & Uji Kompetensi yang Diikuti
+ * 7 PILAR RESMI PRIORITAS PENILAIAN KPI (KOMIT RESMI 100%):
+ * 1. Disiplin Kerja - 10%
+ * 2. Produktivitas (Daily Report) - 25%
+ * 3. Kualitas Pemeriksaan QC - 20%
+ * 4. Kompleksitas Tugas & Work Order - 10%
+ * 5. Kerja Sama Tim & Pengembangan - 5%
+ * 6. Jumlah Absensi (Kehadiran) - 15%
+ * 7. Uji Kompetensi yang Diikuti - 15%
+ * TOTAL: 100%
  */
 export function calculateStaffKpi(
   staff: Staff,
@@ -302,8 +340,50 @@ export function calculateStaffKpi(
   electricalCompetenciesOverride?: Record<string, Record<string, { verified: boolean }>>,
   scheduleOverride?: StaffScheduleRow[],
   workOrdersOverride?: WorkOrder[],
-  dailyTasksOverride?: DailyTask[]
+  dailyTasksOverride?: DailyTask[],
+  monthKeyOverride?: string
 ): StaffKpiResult {
+  // ─────────────────────────────────────────────────────────────
+  // 0. DETEKSI BULAN EVALUASI & TANGGAL BERJALAN SECARA DINAMIS
+  // ─────────────────────────────────────────────────────────────
+  let targetMonthKey = monthKeyOverride;
+  if (!targetMonthKey) {
+    const firstRepDate = dailyReports.find(r => r.date)?.date;
+    if (firstRepDate && firstRepDate.length >= 7) {
+      targetMonthKey = firstRepDate.slice(0, 7);
+    } else {
+      const firstLogDate = logbookEntries.find(e => e.date)?.date;
+      if (firstLogDate && firstLogDate.length >= 7) {
+        targetMonthKey = firstLogDate.slice(0, 7);
+      } else {
+        targetMonthKey = getCurrentDateInfo().monthKey;
+      }
+    }
+  }
+
+  const { isCurrentRunningMonth, isPastMonth, isFutureMonth, totalDaysInMonth, evalCutoffDay } = getMonthEvaluationCutoff(targetMonthKey, dailyReports);
+
+  // Jadwal dinas resmi berdasarkan bulan yang dievaluasi
+  const monthlyScheduleObj = getScheduleByKey(targetMonthKey);
+  const scheduleRows = scheduleOverride || monthlyScheduleObj?.rows || getCurrentMonthSchedule().rows;
+  const staffScheduleRow = scheduleRows.find(r => isStaffMatch(staff, r.name));
+
+  let scheduledWorkingDaysFullMonth = 0;
+  let scheduledWorkingDaysToDate = 0;
+
+  if (staffScheduleRow && staffScheduleRow.shifts) {
+    for (let day = 1; day <= totalDaysInMonth; day++) {
+      const shift = staffScheduleRow.shifts[day];
+      const isWorking = shift && shift !== 'L' && shift !== 'Cuti' && shift !== '-' && shift !== 'Libur';
+      if (isWorking) {
+        scheduledWorkingDaysFullMonth++;
+        if (day <= evalCutoffDay) {
+          scheduledWorkingDaysToDate++;
+        }
+      }
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────
   // 1. MENGHITUNG JUMLAH ABSEN (KEHADIRAN) - DATA RESMI
   // ─────────────────────────────────────────────────────────────
@@ -316,44 +396,43 @@ export function calculateStaffKpi(
       // fallback
     }
   }
-  const staffLogsCount = realLogs.filter(
-    l => (l.staffId === staff.id || isStaffMatch(staff, l.staffName)) &&
-         (l.status === 'Hadir' || l.checkInTime)
-  ).length;
 
-  const scheduleRows = scheduleOverride || getCurrentMonthSchedule().rows;
-  const staffScheduleRow = scheduleRows.find(
-    r => isStaffMatch(staff, r.name)
-  );
-
-  let scheduledWorkingDays = 0;
-  if (staffScheduleRow && staffScheduleRow.shifts) {
-    for (let day = 1; day <= 30; day++) {
-      const shift = staffScheduleRow.shifts[day];
-      if (shift && shift !== 'L' && shift !== 'Cuti' && shift !== '-' && shift !== 'Libur') {
-        scheduledWorkingDays++;
-      }
-    }
-  }
-
-  // Sesuai aturan: "Daily Report:> QC Checked:> SAMA DENGAN ABSENSI"
-  // Kehadiran riil dihitung dari jumlah hari mereka benar-benar setor laporan/QC (bukan sekadar jadwal roster)
   const staffDates = new Set<string>();
   dailyReports.filter(r => isStaffMatch(staff, r.staffName) && r.date).forEach(r => staffDates.add(r.date));
   logbookEntries.filter(e => isStaffMatch(staff, e.staffName) && e.date).forEach(e => staffDates.add(e.date));
-  const actualPresenceDays = staffDates.size;
 
-  const attendanceCount = actualPresenceDays > 0 ? actualPresenceDays : 0;
-  // Target absensi distandarisasi ke 24 hari untuk memastikan persentase seragam bagi semua staf
-  const attendanceTarget = 24; 
-  const attendanceScore = Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100));
-  
-  // Target untuk report dan QC distandarisasi ke 24 hari kerja aktif per bulan untuk semua staf
-  // Hal ini memastikan staf dengan shift sedikit tidak mendapat skor lebih tinggi secara tidak logis dari staf dengan shift banyak
-  const taskTarget = 24;
+  // Tambahkan juga dari attendance logs resmi jika ada
+  realLogs.filter(
+    l => (l.staffId === staff.id || isStaffMatch(staff, l.staffName)) &&
+         (l.status === 'Hadir' || l.checkInTime) &&
+         (!l.date || l.date.startsWith(targetMonthKey))
+  ).forEach(l => {
+    if (l.date) staffDates.add(l.date);
+  });
+
+  const attendanceCount = staffDates.size;
+
+  let attendanceTarget = 0;
+  if (isCurrentRunningMonth) {
+    // Pada bulan berjalan, target dihitung proporsional terhadap jadwal kerja dinas yang sudah berjalan s/d hari ini
+    if (scheduledWorkingDaysToDate > 0) {
+      attendanceTarget = scheduledWorkingDaysToDate;
+    } else {
+      attendanceTarget = attendanceCount > 0 ? attendanceCount : 1;
+    }
+  } else if (isFutureMonth) {
+    attendanceTarget = 0;
+  } else {
+    // Bulan lampau: gunakan total hari kerja dinas sebulan penuh dari roster resmi
+    attendanceTarget = scheduledWorkingDaysFullMonth > 0 ? scheduledWorkingDaysFullMonth : 24;
+  }
+
+  const attendanceScore = attendanceTarget > 0 
+    ? Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100))
+    : (attendanceCount > 0 ? 100 : 0);
 
   // ─────────────────────────────────────────────────────────────
-  // 2. MENGHITUNG UJI KOMPETENSI YANG DIIKUTI - DITAMBAHKAN
+  // 2. MENGHITUNG UJI KOMPETENSI YANG DIIKUTI (6 Unit Standar K3 & Kelistrikan)
   // ─────────────────────────────────────────────────────────────
   let competenciesData: Record<string, Record<string, { verified: boolean }>> = electricalCompetenciesOverride || {};
   if (!electricalCompetenciesOverride && typeof window !== 'undefined') {
@@ -376,17 +455,32 @@ export function calculateStaffKpi(
   });
 
   const competencyTotal = 6;
-  const competencyScore = Math.round((competencyCount / competencyTotal) * 100);
+  const competencyScore = Math.min(100, Math.round((competencyCount / competencyTotal) * 100));
 
   // ─────────────────────────────────────────────────────────────
-  // 3. DISIPLIN KERJA (Aktif: Berdasarkan Data Kehadiran)
+  // 3. DISIPLIN KERJA (Bobot 10%: Basis 100%, Potongan Keterlambatan & Alpha)
   // ─────────────────────────────────────────────────────────────
-  const disciplineScore = attendanceScore > 0 ? attendanceScore : 100; // Base 100 if no roster data yet
+  let lateDeductions = 0;
+  let alphaDeductions = 0;
+  const staffLogs = realLogs.filter(
+    l => (l.staffId === staff.id || isStaffMatch(staff, l.staffName)) &&
+         (!l.date || l.date.startsWith(targetMonthKey))
+  );
+  staffLogs.forEach(l => {
+    if (l.isLate || (l.status as string) === 'Terlambat') lateDeductions += 10;
+    if (l.status === 'Alpha') alphaDeductions += 25;
+  });
+
+  let disciplineScore = 0;
+  if (attendanceCount > 0) {
+    disciplineScore = Math.max(0, 100 - lateDeductions - alphaDeductions);
+  } else {
+    disciplineScore = (isCurrentRunningMonth && scheduledWorkingDaysToDate === 0) ? 100 : 0;
+  }
 
   // ─────────────────────────────────────────────────────────────
-  // 4. PRODUKTIVITAS / DAILY TASK (Murni dari laporan harian yang BERHASIL DI SELESAIKAN / AMAN)
+  // 4. PRODUKTIVITAS / DAILY TASK (Bobot 25%: Laporan Harian Operasional & Daily Tasks)
   // ─────────────────────────────────────────────────────────────
-  // Kuantitas riil dari referensi data resmi (Laporan yang valid disubmit + Tugas yang Diselesaikan)
   const reportsCount = dailyReports.filter(r => isStaffMatch(staff, r.staffName)).length;
   
   let realTasks: DailyTask[] = dailyTasksOverride || [];
@@ -396,27 +490,29 @@ export function calculateStaffKpi(
       if (saved) realTasks = JSON.parse(saved);
     } catch (e) {}
   }
-  const completedTaskCount = realTasks.filter(t => (isStaffMatch(staff, t.assignedName) || (t.assignedTo === staff.id)) && t.status === 'Done').length;
-  
+  const completedTaskCount = realTasks.filter(
+    t => (isStaffMatch(staff, t.assignedName) || (t.assignedTo === staff.id)) &&
+         t.status === 'Done' &&
+         (!t.dueDate || t.dueDate.startsWith(targetMonthKey) || !t.createdAt || t.createdAt.startsWith(targetMonthKey))
+  ).length;
+
   const combinedProductivityCount = reportsCount + completedTaskCount;
-
-  // SAMA DENGAN ABSENSI (Target divisor disamakan dengan target absensi)
-  // SKORS diambil dari total task yang dikerjakan
-  const reportScore = Math.min(100, Math.round((combinedProductivityCount / taskTarget) * 100));
+  const reportTarget = Math.max(1, attendanceTarget);
+  const reportScore = Math.min(100, Math.round((combinedProductivityCount / reportTarget) * 100));
 
   // ─────────────────────────────────────────────────────────────
-  // 5. QUALITY / QC CHECKLIST (Murni dari checklist QC & inspeksi teknis lapangan)
+  // 5. QUALITY / QC CHECKLIST (Bobot 20%: Inspeksi Teknis & Kesiapan Alat)
   // ─────────────────────────────────────────────────────────────
-  // Kuantitas riil (penjumlahan) dari referensi data resmi
   const qcCount = logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length;
-  // Target divisor disamakan dengan kehadiran riil
-  const qcScore = Math.min(100, Math.round((qcCount / taskTarget) * 100));
+  const isSpecialistNonQC = staff.division === 'Admin';
+  const qcTarget = Math.max(1, attendanceTarget);
+  const rawQcScore = Math.min(100, Math.round((qcCount / qcTarget) * 100));
+  const qcScore = isSpecialistNonQC ? reportScore : rawQcScore;
 
   // ─────────────────────────────────────────────────────────────
-  // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Murni dari WO yang diselesaikan & Temuan Closed)
+  // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Bobot 10%: Penanganan Temuan Kerusakan & WO)
   // ─────────────────────────────────────────────────────────────
-  const realClosedFindingsCount = findings.filter(f => isStaffMatch(staff, f.pic) && f.status === 'Close').length;
-  
+  const staffFindings = findings.filter(f => isStaffMatch(staff, f.pic));
   let realWOs: WorkOrder[] = workOrdersOverride || [];
   if (!workOrdersOverride && typeof window !== 'undefined') {
     try {
@@ -424,42 +520,49 @@ export function calculateStaffKpi(
       if (saved) realWOs = JSON.parse(saved);
     } catch (e) {}
   }
-  const realCompletedWOCount = realWOs.filter(w => isStaffMatch(staff, w.pic) && (w.status === 'Completed' || w.progress === 100)).length;
+  const staffWOs = realWOs.filter(w => isStaffMatch(staff, w.pic) && (!w.dateCreated || w.dateCreated.startsWith(targetMonthKey)));
 
-  // Penjumlahan total temuan & WO
-  const woCount = realClosedFindingsCount + realCompletedWOCount;
-  const woTarget = 5; // Standar target 5 WO sebulan
-  const woScore = Math.min(100, Math.round((woCount / woTarget) * 100));
-  const taskComplexityScore = woScore;
+  const totalAssigned = staffFindings.length + staffWOs.length;
+  const closedCount = staffFindings.filter(f => f.status === 'Close').length + staffWOs.filter(w => w.status === 'Completed' || w.progress === 100).length;
 
-  // ─────────────────────────────────────────────────────────────
-  // 7. PENGEMBANGAN DIRI & TEAMWORK (Dari keaktifan uji kompetensi & laporan)
-  // ─────────────────────────────────────────────────────────────
-  const teamworkScore = Math.round((competencyScore * 0.5) + (reportScore * 0.5));
-
-  // Jam kerja (Non-aktif sementara)
-  const baseHours = 0;
+  const taskComplexityScore = totalAssigned > 0 
+    ? Math.min(100, Math.round((closedCount / totalAssigned) * 100))
+    : 0;
+  const woCount = closedCount;
+  const woScore = taskComplexityScore;
 
   // ─────────────────────────────────────────────────────────────
-  // 8. TOTAL NILAI KPI (Berdasarkan 5 Bobot Utama: Kehadiran, QC, Report, WO, Uji Komp)
+  // 7. PENGEMBANGAN DIRI & TEAMWORK (Bobot 5%: Sinergi Tim & Disiplin)
   // ─────────────────────────────────────────────────────────────
-  // Sesuai dengan instruksi terbaru: "bobot penilaian : kehadiran, QC, Report, WO, uji kompetensi"
-  // Kelimanya dibagi rata masing-masing bobot 20% agar total 100%
+  const teamworkScore = Math.round((reportScore * 0.5) + (disciplineScore * 0.5));
+
+  // ─────────────────────────────────────────────────────────────
+  // 8. TOTAL NILAI KPI (KOMIT RESMI KATEGORI PENILAIAN KPI)
+  // ─────────────────────────────────────────────────────────────
+  // 1. Disiplin Kerja: 10%
+  // 2. Produktivitas (Daily Report): 25%
+  // 3. Kualitas Pemeriksaan QC: 20%
+  // 4. Kompleksitas Tugas & Work Order: 10%
+  // 5. Kerja Sama Tim & Pengembangan: 5%
+  // 6. Jumlah Absensi (Kehadiran): 15%
+  // 7. Uji Kompetensi yang Diikuti: 15%
+  // TOTAL BOBOT: 100%
   let totalKpi = Math.round(
-    (attendanceScore * 0.20) +
-    (reportScore * 0.20) +
+    (disciplineScore * 0.10) +
+    (reportScore * 0.25) +
     (qcScore * 0.20) +
-    (woScore * 0.20) +
-    (competencyScore * 0.20)
+    (taskComplexityScore * 0.10) +
+    (teamworkScore * 0.05) +
+    (attendanceScore * 0.15) +
+    (competencyScore * 0.15)
   );
 
-  // Nilai kpi (persentase)
   const kpi = Math.min(100, Math.max(0, totalKpi));
 
   let grade: 'A' | 'B' | 'C' | 'D' = 'D';
-  if (kpi >= 90) grade = 'A';
-  else if (kpi >= 80) grade = 'B';
-  else if (kpi >= 70) grade = 'C';
+  if (kpi >= 85) grade = 'A';
+  else if (kpi >= 70) grade = 'B';
+  else if (kpi >= 55) grade = 'C';
   else grade = 'D';
 
   return {
@@ -470,13 +573,13 @@ export function calculateStaffKpi(
     avatar: staff.avatar,
     division: staff.division,
     role: staff.role,
-    attendanceCount: attendanceCount,
+    attendanceCount,
     attendanceTarget,
-    attendanceScore: attendanceScore,
+    attendanceScore,
     competencyCount,
     competencyTotal,
     competencyScore,
-    disciplineScore: disciplineScore,
+    disciplineScore,
     reports: combinedProductivityCount,
     reportsCount: combinedProductivityCount,
     reportScore,
@@ -516,10 +619,26 @@ export function calculateAllStaffKpis(
   electricalCompetencies?: Record<string, Record<string, { verified: boolean }>>,
   scheduleOverride?: StaffScheduleRow[],
   workOrders?: WorkOrder[],
-  dailyTasks?: DailyTask[]
+  dailyTasks?: DailyTask[],
+  monthKeyOverride?: string
 ): StaffKpiResult[] {
+  let targetMonthKey = monthKeyOverride;
+  if (!targetMonthKey) {
+    const firstRepDate = dailyReports.find(r => r.date)?.date;
+    if (firstRepDate && firstRepDate.length >= 7) {
+      targetMonthKey = firstRepDate.slice(0, 7);
+    } else {
+      const firstLogDate = logbookEntries.find(e => e.date)?.date;
+      if (firstLogDate && firstLogDate.length >= 7) {
+        targetMonthKey = firstLogDate.slice(0, 7);
+      } else {
+        targetMonthKey = getCurrentDateInfo().monthKey;
+      }
+    }
+  }
+
   return staffList
-    .filter(staff => isStaffInGoogleSheet(staff, dailyReports, logbookEntries))
+    .filter(staff => isStaffInGoogleSheet(staff, dailyReports, logbookEntries, targetMonthKey))
     .map(staff =>
       calculateStaffKpi(
         staff,
@@ -530,7 +649,8 @@ export function calculateAllStaffKpis(
         electricalCompetencies,
         scheduleOverride,
         workOrders,
-        dailyTasks
+        dailyTasks,
+        targetMonthKey
       )
     )
     .sort((a, b) => {
@@ -562,7 +682,8 @@ export function calculateAllStaffKpis(
 export function isStaffInGoogleSheet(
   staff: Staff | { id?: string; name: string },
   activeDailyReports?: DailyReport[],
-  activeLogbookEntries?: LogbookEntry[]
+  activeLogbookEntries?: LogbookEntry[],
+  targetMonthKey?: string
 ): boolean {
   if (!staff) return false;
   
@@ -576,15 +697,7 @@ export function isStaffInGoogleSheet(
   // Staff semua divisi adalah placeholder, bukan staf riil
   if (staff.id === 'staff-semua-divisi') return false;
 
-  // 1. Cek dari jadwal aktif bulan ini
-  const currentSchedule = getCurrentMonthSchedule().rows;
-  const isInSchedule = currentSchedule.some(r => isStaffMatch(staff as Staff, r.name));
-  
-  if (isInSchedule) {
-    return true;
-  }
-
-  // 2. Cek dinamis jika ada nama staf baru yang ditarik dari Google Sheet
+  // 1. Cek dinamis jika ada nama staf yang aktif di Google Sheet / Daily Report / Logbook bulan terpilih
   if (activeDailyReports || activeLogbookEntries) {
     const isPresent = (activeDailyReports || []).some(
       r => isStaffMatch(staff as any, r.staffName)
@@ -592,6 +705,15 @@ export function isStaffInGoogleSheet(
       l => isStaffMatch(staff as any, l.staffName)
     );
     if (isPresent) return true;
+  }
+
+  // 2. Cek dari jadwal aktif bulan ini / targetMonthKey
+  const monthSchedule = targetMonthKey ? getScheduleByKey(targetMonthKey)?.rows : getCurrentMonthSchedule().rows;
+  const currentSchedule = monthSchedule || getCurrentMonthSchedule().rows;
+  const isInSchedule = currentSchedule.some(r => isStaffMatch(staff as Staff, r.name));
+  if (isInSchedule) {
+    // Hanya masukkan jika staf benar-benar bertugas di roster / daily log
+    return true;
   }
 
   return false;

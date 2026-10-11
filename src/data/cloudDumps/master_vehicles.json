@@ -1,0 +1,142 @@
+[
+  {
+    "id": "veh-1",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-05T09:23:07.001Z",
+      "browser": "Chrome",
+      "deviceType": "Desktop"
+    },
+    "name": "SUZUKI CARRY",
+    "status": "Siap Operasi",
+    "tonnageCapacity": 1,
+    "policeNumber": "F 8446 BF",
+    "kirExpiry": "2026-09-30",
+    "stnkTaxExpiry": "2027-09-01",
+    "cbmCapacity": 1.5,
+    "vehicleType": "Truk Box CDD (6 Roda)",
+    "odometerKM": 5000,
+    "ownership": "Internal"
+  },
+  {
+    "id": "veh-2",
+    "tonnageCapacity": 1,
+    "odometerKM": 10000,
+    "ownership": "Internal",
+    "name": "SUZUKI CARRY",
+    "kirExpiry": "2026-10-12",
+    "stnkTaxExpiry": "2027-09-01",
+    "vehicleType": "Truk Box CDE Engkel (4 Roda)",
+    "policeNumber": "F 8433 BF",
+    "cbmCapacity": 1.5,
+    "_syncMeta": {
+      "updatedAt": "2026-10-05T09:23:07.001Z",
+      "browser": "Chrome",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync"
+    },
+    "status": "Siap Operasi"
+  },
+  {
+    "id": "veh-3",
+    "cbmCapacity": 1.5,
+    "_syncMeta": {
+      "updatedAt": "2026-10-05T09:23:07.001Z",
+      "browser": "Chrome",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync"
+    },
+    "tonnageCapacity": 1,
+    "vehicleType": "Blindvan Logistik",
+    "odometerKM": 10000,
+    "kirExpiry": "2027-01-20",
+    "name": "SUZUKI CARRY",
+    "policeNumber": "F 8569 BH",
+    "ownership": "Internal",
+    "status": "Siap Operasi",
+    "stnkTaxExpiry": "2027-06-01"
+  },
+  {
+    "id": "veh-4",
+    "_syncMeta": {
+      "updatedAt": "2026-10-05T09:23:07.002Z",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync"
+    },
+    "stnkTaxExpiry": "2027-06-01",
+    "status": "Siap Operasi",
+    "vehicleType": "Pick-Up Box",
+    "kirExpiry": "2026-10-28",
+    "policeNumber": "F 8594 BH",
+    "name": "SUZUKI CARRY ",
+    "odometerKM": 12000,
+    "cbmCapacity": 1.5,
+    "tonnageCapacity": 1,
+    "ownership": "Internal"
+  },
+  {
+    "id": "veh-5",
+    "status": "Siap Operasi",
+    "cbmCapacity": 2.8,
+    "ownership": "Internal",
+    "odometerKM": 52100,
+    "kirExpiry": "2027-04-14",
+    "stnkTaxExpiry": "2026-12-01",
+    "vehicleType": "Mobil Kru / Operasional",
+    "_syncMeta": {
+      "updatedAt": "2026-10-05T09:23:07.002Z",
+      "browser": "Chrome",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync"
+    },
+    "name": "DAIHATSU LUXIO  Operasional",
+    "tonnageCapacity": 0.6,
+    "policeNumber": "B 2673 TVI"
+  },
+  {
+    "id": "veh-6",
+    "kirExpiry": "2027-01-15",
+    "stnkTaxExpiry": "2027-01-01",
+    "name": "Truk CANTER PS 110",
+    "odometerKM": 145000,
+    "status": "Siap Operasi",
+    "ownership": "Internal",
+    "vehicleType": "Truk Wingbox Tronton",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-05T09:23:07.002Z",
+      "browser": "Chrome",
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync"
+    },
+    "policeNumber": "F 8942 BG",
+    "tonnageCapacity": 3,
+    "cbmCapacity": 7
+  },
+  {
+    "id": "veh-7",
+    "vehicleType": "Truk CDD Long Box",
+    "ownership": "Sewa Mitra",
+    "name": "Truk CDD Long Mitra Logistik",
+    "stnkTaxExpiry": "2026-11-30",
+    "policeNumber": "B 9331 JXQ",
+    "cbmCapacity": 28,
+    "kirExpiry": "2026-11-15",
+    "tonnageCapacity": 6,
+    "status": "Siap Operasi",
+    "_syncMeta": {
+      "updatedBy": "Seno Subroto",
+      "browser": "Chrome",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-09-13T16:05:47.685Z"
+    },
+    "odometerKM": 98000
+  }
+]

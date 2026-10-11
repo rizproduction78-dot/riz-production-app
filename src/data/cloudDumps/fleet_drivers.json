@@ -1,0 +1,214 @@
+[
+  {
+    "id": "drv-1788687817794",
+    "assignedVehicle": "Truk CANTER PS 110",
+    "simType": "SIM B1",
+    "notes": "",
+    "createdAt": "2026-09-06",
+    "phone": "082125242340",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-05T09:22:57.917Z",
+      "deviceType": "Desktop"
+    },
+    "address": "",
+    "simExpiry": "2027-09-06",
+    "idCardNumber": "",
+    "emergencyContact": "",
+    "driverType": "Freelance Driver",
+    "status": "Siap Jalan",
+    "name": "SISWOYO (WOYO)"
+  },
+  {
+    "id": "drv-1788687983277",
+    "idCardNumber": "",
+    "emergencyContact": "",
+    "simType": "SIM A",
+    "simExpiry": "2027-09-06",
+    "driverType": "Freelance Driver",
+    "name": "YOSEP",
+    "status": "Siap Jalan",
+    "createdAt": "2026-09-06",
+    "address": "",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-05T09:22:57.917Z"
+    },
+    "phone": "081291225933",
+    "assignedVehicle": "SUZUKI CARRY ",
+    "notes": ""
+  },
+  {
+    "id": "drv-1788688088975",
+    "phone": "087726355305",
+    "address": "",
+    "name": "ANDRI BUDIYANTO (BUNONK)",
+    "idCardNumber": "",
+    "notes": "",
+    "simExpiry": "2027-09-06",
+    "status": "Siap Jalan",
+    "assignedVehicle": "SUZUKI CARRY",
+    "emergencyContact": "",
+    "createdAt": "2026-09-06",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-05T09:22:57.917Z",
+      "browser": "Chrome",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync"
+    },
+    "simType": "SIM A",
+    "driverType": "Freelance Driver"
+  },
+  {
+    "id": "drv-1788688161816",
+    "_syncMeta": {
+      "updatedAt": "2026-10-05T09:22:57.917Z",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "browser": "Chrome"
+    },
+    "notes": "",
+    "simType": "SIM A",
+    "createdAt": "2026-09-06",
+    "assignedVehicle": "SUZUKI CARRY",
+    "name": "SYARIF HIDAYATULLAH ( TIMBUL)",
+    "driverType": "Freelance Driver",
+    "phone": "089670427430",
+    "idCardNumber": "",
+    "address": "",
+    "emergencyContact": "",
+    "status": "Siap Jalan",
+    "simExpiry": "2027-09-06"
+  },
+  {
+    "id": "drv-1788688270855",
+    "simType": "SIM A",
+    "name": "FIKI FAUJI",
+    "assignedVehicle": "SUZUKI CARRY",
+    "simExpiry": "2027-03-16",
+    "status": "Siap Jalan",
+    "phone": "082299245583",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-05T09:22:57.917Z",
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync"
+    },
+    "idCardNumber": "",
+    "createdAt": "2026-09-06",
+    "address": "",
+    "driverType": "Freelance Driver",
+    "emergencyContact": "",
+    "notes": ""
+  },
+  {
+    "id": "drv-1788957001183",
+    "driverType": "Freelance Driver",
+    "status": "Siap Jalan",
+    "simExpiry": "2027-07-28",
+    "simType": "SIM A",
+    "emergencyContact": "",
+    "name": "YOPI SURAHMAN",
+    "assignedVehicle": "SUZUKI CARRY",
+    "address": "",
+    "phone": "081288489465",
+    "createdAt": "2026-09-09",
+    "notes": "",
+    "idCardNumber": "",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-05T09:22:57.917Z",
+      "browser": "Chrome"
+    }
+  },
+  {
+    "id": "drv-1788959273980",
+    "simExpiry": "2027-09-09",
+    "simType": "SIM A",
+    "driverType": "Freelance Driver",
+    "status": "Siap Jalan",
+    "address": "",
+    "idCardNumber": "",
+    "assignedVehicle": "SUZUKI CARRY",
+    "phone": "0895-2695-9199",
+    "name": "ANDYAR RAZZAQ ILHAMSYAH (DYAR)",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-05T09:22:57.917Z",
+      "deviceOS": "macOS",
+      "browser": "Chrome"
+    },
+    "notes": "",
+    "createdAt": "2026-09-09",
+    "emergencyContact": ""
+  },
+  {
+    "id": "drv-2",
+    "status": "Siap Jalan",
+    "driverType": "Freelance Driver",
+    "simExpiry": "2027-10-20",
+    "phone": "087726355305",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-05T09:22:57.917Z",
+      "deviceOS": "macOS",
+      "browser": "Chrome"
+    },
+    "simType": "SIM B1",
+    "assignedVehicle": "Truk Box Hino Dutro CDE Engkel (4 Roda)",
+    "createdAt": "2026-09-01",
+    "name": "BUNONK"
+  },
+  {
+    "id": "drv-3",
+    "notes": "",
+    "assignedVehicle": "Truk Box Mitsubishi Canter CDD (6 Roda)",
+    "createdAt": "2026-09-01",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-05T09:22:57.917Z"
+    },
+    "phone": "083819622172",
+    "emergencyContact": "",
+    "driverType": "Internal",
+    "address": "",
+    "name": "Gatot Wiliyanto",
+    "status": "Siap Jalan",
+    "simType": "SIM B1",
+    "simExpiry": "2028-03-10",
+    "idCardNumber": ""
+  },
+  {
+    "id": "drv-4",
+    "createdAt": "2026-09-01",
+    "simType": "SIM A",
+    "name": "Udin Saepudin",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-05T09:22:57.917Z",
+      "browser": "Chrome"
+    },
+    "simExpiry": "2028-05-12",
+    "phone": "082221948861",
+    "status": "Siap Jalan",
+    "driverType": "Internal",
+    "assignedVehicle": "Blind Van Gran Max Operasional"
+  }
+]

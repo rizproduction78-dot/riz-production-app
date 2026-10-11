@@ -8,6 +8,7 @@ import { LogbookEntry, Division, Finding, Staff } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, getMasterStaffList } from '../data';
 import { Check, X, Shield, Calendar, User, Briefcase, ChevronRight, ClipboardCheck, AlertOctagon, Save, Activity, Award, CheckCircle, Camera, Upload, Trash2, Eye, Plus } from 'lucide-react';
 import { subscribeCloudCollection } from '../lib/cloudSync';
+import { compressImageFile } from '../utils/imageUtils';
 
 interface QCOnhouseProps {
   logbookEntries: LogbookEntry[];
@@ -75,12 +76,8 @@ export default function QCOnhouse({
     )
   );
   
-  // Get allowed divisions for the user
-  const allowedDivisions = isManagement
-    ? (['Audio', 'Lighting', 'Videotron', 'Multimedia', 'Service'] as const)
-    : (['Audio', 'Lighting', 'Videotron', 'Multimedia', 'Service'] as const).filter(
-        div => div === currentUser.division
-      );
+  // Get allowed divisions for the inspection (Pekerjaan QC bisa lintas divisi)
+  const allowedDivisions = ['Audio', 'Lighting', 'Videotron', 'Multimedia', 'Service'] as const;
 
   const [selectedDivision, setSelectedDivision] = useState<'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Service'>(() => {
     if (currentUser.division && ['Audio', 'Lighting', 'Videotron', 'Multimedia', 'Service'].includes(currentUser.division)) {
@@ -99,23 +96,18 @@ export default function QCOnhouse({
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [previewModalImg, setPreviewModalImg] = useState<string | null>(null);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const fileArray = Array.from(files) as File[];
-      const readPromises = fileArray.map((file: File) => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            resolve(reader.result as string);
-          };
-          reader.readAsDataURL(file);
-        });
-      });
-
-      Promise.all(readPromises).then(newImages => {
-        setPhotoUrls(prev => [...prev, ...newImages]);
-      });
+      try {
+        const compressedList = await Promise.all(
+          fileArray.map((file: File) => compressImageFile(file, 1200, 1200, 0.75))
+        );
+        setPhotoUrls(prev => [...prev, ...compressedList]);
+      } catch (err) {
+        console.error('Error compressing QC photos:', err);
+      }
     }
     e.target.value = '';
   };
@@ -319,27 +311,31 @@ export default function QCOnhouse({
             {/* Staff PIC */}
             <div className="space-y-1">
               <label className="block text-xs font-medium text-slate-500">Nama Pemeriksa (Staff)</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <select
-                  value={staffName}
-                  onChange={(e) => setStaffName(e.target.value)}
-                  className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50"
-                  required
-                >
-                  {staffList.filter(
-                    (staff) =>
-                      staff.division === selectedDivision ||
-                      staff.role === 'Admin' ||
-                      staff.role === 'Supervisor' ||
-                      staff.role === 'Manager'
-                  ).map((staff) => (
-                    <option key={staff.id} value={staff.name}>
-                      {staff.name} ({staff.division})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {isManagement ? (
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <select
+                    value={staffName}
+                    onChange={(e) => setStaffName(e.target.value)}
+                    className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50"
+                    required
+                  >
+                    {staffList.map((staff) => (
+                      <option key={staff.id} value={staff.name}>
+                        {staff.name} ({staff.division})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+                  <span className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-slate-500" />
+                    {currentUser.name} ({currentUser.division})
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
+                </div>
+              )}
             </div>
 
             {/* Activity Type */}

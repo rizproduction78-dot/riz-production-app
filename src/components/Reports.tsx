@@ -170,14 +170,26 @@ export default function Reports({
   // 2. QC Checklist
   // 3. WO Selesai
   // NOTE: Selalu gunakan data master (dailyReports, logbookEntries) bukan data filter active, agar KPI tetap berbobot bulanan meskipun sedang melihat report harian/mingguan.
-  // Namun, WAJIB memfilter berdasarkan bulan berjalan (activeMonth) agar data bulan sebelumnya tidak masuk!
-  const monthlyDailyReports = dailyReports.filter(r => r.date.startsWith(activeMonth));
-  const monthlyLogbookEntries = logbookEntries.filter(e => e.date.startsWith(activeMonth));
-  const monthlyFindings = findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth)));
-  const monthlyWorkOrders = workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth));
-  const monthlyDailyTasks = dailyTasks.filter(t => t.createdAt.startsWith(activeMonth) || t.dueDate.startsWith(activeMonth));
+  // Namun, WAJIB memfilter berdasarkan bulan yang dipilih (selectedMonthKey) agar data periode terpilih sinkron
+  const selectedMonthKey = reportType === 'Bulanan' ? (targetMonth || activeMonth) : activeMonth;
+  const monthlyDailyReports = dailyReports.filter(r => r.date.startsWith(selectedMonthKey));
+  const monthlyLogbookEntries = logbookEntries.filter(e => e.date.startsWith(selectedMonthKey));
+  const monthlyFindings = findings.filter(f => f.dateCreated.startsWith(selectedMonthKey) || (f.targetDate && f.targetDate.startsWith(selectedMonthKey)));
+  const monthlyWorkOrders = workOrders.filter(w => w.dateCreated.startsWith(selectedMonthKey) || (w as any).date?.startsWith(selectedMonthKey) || w.deadline.startsWith(selectedMonthKey));
+  const monthlyDailyTasks = dailyTasks.filter(t => t.createdAt.startsWith(selectedMonthKey) || t.dueDate.startsWith(selectedMonthKey));
 
-  const staffKpis = calculateAllStaffKpis(staffList, monthlyDailyReports, monthlyLogbookEntries, monthlyFindings, undefined, undefined, undefined, monthlyWorkOrders, monthlyDailyTasks);
+  const staffKpis = calculateAllStaffKpis(
+    staffList,
+    monthlyDailyReports,
+    monthlyLogbookEntries,
+    monthlyFindings,
+    undefined,
+    undefined,
+    getScheduleByKey(selectedMonthKey)?.rows,
+    monthlyWorkOrders,
+    monthlyDailyTasks,
+    selectedMonthKey
+  );
   
   // Hanya tampilkan staf yang punya aktivitas nyata di bulan/periode aktif
   // Mencegah staf dengan 0/0/0 masuk tabel KPI & Top 3 (data palsu)
@@ -707,9 +719,8 @@ export default function Reports({
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">2. KEHADIRAN STAFF</div>
-              <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">NON-AKTIF SEMENTARA</span>
             </div>
-            <div className="overflow-x-auto opacity-60">
+            <div className="overflow-x-auto">
               <table className="w-full text-left border border-slate-300 text-xs">
                 <thead>
                   <tr className="bg-slate-50 text-slate-800 font-mono border-b border-slate-300 uppercase">
@@ -725,11 +736,11 @@ export default function Reports({
                   {divisionAttendanceStats.map((d, idx) => (
                     <tr key={idx}>
                       <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">{d.label}</td>
-                      <td className="p-2 border-r border-slate-300 text-center">-</td>
-                      <td className="p-2 border-r border-slate-300 text-center text-amber-600">-</td>
-                      <td className="p-2 border-r border-slate-300 text-center">-</td>
-                      <td className="p-2 border-r border-slate-300 text-center">-</td>
-                      <td className="p-2 border-r border-slate-300 text-center text-rose-600">-</td>
+                      <td className="p-2 border-r border-slate-300 text-center font-bold text-emerald-600">{d.hadir}</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-amber-600 font-bold">{d.terlambat}</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-slate-600">{d.izin}</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-indigo-600">{d.sakit}</td>
+                      <td className="p-2 border-r border-slate-300 text-center text-rose-600 font-bold">{d.alpha}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -849,9 +860,9 @@ export default function Reports({
                     <th className="p-2 border-r border-slate-300">Divisi</th>
                     <th className="p-2 border-r border-slate-300 text-center">Daily Report</th>
                     <th className="p-2 border-r border-slate-300 text-center">QC</th>
-                    <th className="p-2 border-r border-slate-300 text-center text-slate-400">Absensi</th>
+                    <th className="p-2 border-r border-slate-300 text-center">Absensi</th>
                     <th className="p-2 border-r border-slate-300 text-center">Uji Komp.</th>
-                    <th className="p-2 border-r border-slate-300 text-center text-slate-400">Jam Kerja</th>
+                    <th className="p-2 border-r border-slate-300 text-center">Jam Kerja</th>
                     <th className="p-2 text-center">Performance Score</th>
                   </tr>
                 </thead>
@@ -1091,12 +1102,14 @@ export default function Reports({
             <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">12. KPI STAFF</div>
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
               <div className="text-xs font-semibold text-slate-700">Kategori Evaluasi Kinerja Staff:</div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-center text-[10px] font-mono">
-                <div className="bg-indigo-50 border border-indigo-200 p-2 rounded font-semibold text-indigo-800">1. Kehadiran (20%)</div>
-                <div className="bg-white p-2 border rounded font-semibold">2. Daily Report (20%)</div>
-                <div className="bg-white p-2 border rounded font-semibold">3. QC Checklist (20%)</div>
-                <div className="bg-white p-2 border rounded font-semibold">4. Work Order (20%)</div>
-                <div className="bg-amber-50 border border-amber-200 p-2 rounded font-semibold text-amber-800">5. Uji Komp (20%)</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-center text-[10px] font-mono">
+                <div className="bg-white p-2 border rounded font-semibold">Disiplin Kerja (10%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">Produktivitas (25%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">Kualitas QC (20%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">Kompleksitas & WO (10%)</div>
+                <div className="bg-white p-2 border rounded font-semibold">Teamwork (5%)</div>
+                <div className="bg-indigo-50 border border-indigo-200 p-2 rounded font-semibold text-indigo-800">Kehadiran (15%)</div>
+                <div className="bg-amber-50 border border-amber-200 p-2 rounded font-semibold text-amber-800">Uji Komp (15%)</div>
               </div>
               <div className="pt-2">
                 <div className="text-xs font-semibold text-slate-700 mb-2">Nilai Akhir Staff Aktif Periode Ini ({activeStaffKpis.length} Staff):</div>
@@ -1400,12 +1413,12 @@ export default function Reports({
                     <th className="p-2 border-r border-slate-300 w-8 text-center">No</th>
                     <th className="p-2 border-r border-slate-300">Nama Staff</th>
                     <th className="p-2 border-r border-slate-300">Divisi</th>
-                    <th className="p-2 border-r border-slate-300 text-center text-slate-400">Kehadiran</th>
+                    <th className="p-2 border-r border-slate-300 text-center">Kehadiran</th>
                     <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">Daily Report</th>
                     <th className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700 bg-indigo-50/50">QC Checklist</th>
                     <th className="p-2 border-r border-slate-300 text-center font-bold text-emerald-700 bg-emerald-50/50">WO Selesai</th>
                     <th className="p-2 border-r border-slate-300 text-center">Uji Komp.</th>
-                    <th className="p-2 border-r border-slate-300 text-center text-slate-400">Jam Kerja</th>
+                    <th className="p-2 border-r border-slate-300 text-center">Jam Kerja</th>
                     <th className="p-2 text-center font-bold">Nilai KPI (%)</th>
                   </tr>
                 </thead>

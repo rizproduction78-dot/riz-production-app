@@ -15,14 +15,14 @@ export const STAFF_LIST: Staff[] = [
   // 1. Gudang
   { id: 'staff-absobur', name: 'Aep Saepudin', fullName: 'Aep Saepudin', nickname: 'Aep / Subur', phone: '085778940596', division: 'Gudang', role: 'Staff', level: 3 },
   { id: 'staff-gatot', name: 'Gatot Wiliyanto', fullName: 'Gatot Wiliyanto', nickname: 'Gatot', email: 'gatotwiliyanto397@gmail.com', phone: '083819622172', division: 'Gudang', role: 'Staff', level: 3 },
-  { id: 'staff-udin', name: 'Udin Saepudin', fullName: 'Udin Saepudin', nickname: 'Mang ube', email: 'usaepudin1511@gmail.com', phone: '082221948861', division: 'Gudang', role: 'Team Leader', level: 5 },
+  { id: 'staff-udin', name: 'Udin Saepudin', fullName: 'Udin Saepudin', nickname: 'Mang ube', email: 'usaepudin1511@gmail.com', phone: '082221948861', division: 'Gudang', role: 'Staff Leader', level: 5 },
 
   // 2. Admin / Manajemen
   { id: 'director-wahyu', name: 'Wahyu', fullName: 'Wahyu', nickname: 'Wahyu', email: 'zakimau06@gmail.com', phone: '083819947193', division: 'Admin', role: 'Direktur', level: 8 },
-  { id: 'staff-agustino', name: 'Agustino Setiawan', fullName: 'Agustino Setiawan', nickname: 'Agus', email: 'agustinostwn@gmail.com', phone: '082128263551', division: 'Admin', role: 'Supervisor', level: 6 },
+  { id: 'staff-agustino', name: 'Agustino Setiawan', fullName: 'Agustino Setiawan', nickname: 'Agus', email: 'agustinostwn@gmail.com', phone: '082128263551', division: 'Admin', role: 'Staff Admin', level: 4 },
   { id: 'staff-fahrul', name: 'M. Fahrulyana . A', fullName: 'M. Fahrulyana . A', nickname: 'Fahrul', email: 'rullyana888@gmail.com', phone: '081287364025', division: 'Admin', role: 'Manager', level: 7 },
-  { id: 'staff-syalsa', name: 'Syalsa Sri Hestariana', fullName: 'Syalsa Sri Hestariana', nickname: 'Caca', email: 'Syalsaassh24@gmail.com', phone: '087834180561', division: 'Admin', role: 'Staff', level: 4 },
-  { id: 'staff-seno', name: 'Seno Subroto', fullName: 'Seno Subroto', nickname: 'Seno', email: 'seno.subroto78@gmail.com', phone: '081297541980', division: 'Admin', role: 'Staff', level: 4 },
+  { id: 'staff-syalsa', name: 'Syalsa Sri Hestariana', fullName: 'Syalsa Sri Hestariana', nickname: 'Caca', email: 'Syalsaassh24@gmail.com', phone: '087834180561', division: 'Admin', role: 'Staff Admin', level: 4 },
+  { id: 'staff-seno', name: 'Seno Subroto', fullName: 'Seno Subroto', nickname: 'Seno', email: 'seno.subroto78@gmail.com', phone: '081297541980', division: 'Admin', role: 'Staff Admin', level: 4 },
 
   // 3. Videotron / LED
   { id: 'staff-ayong', name: 'Ayong Sumarsih', fullName: 'Ayong Sumarsih', nickname: 'Ayong', email: 'Prabuam7@gmail.com', phone: '087716184516', division: 'Videotron', role: 'Team Leader', level: 5 },
@@ -46,10 +46,7 @@ export const STAFF_LIST: Staff[] = [
 
   // 7. Service
   { id: 'staff-damri', name: 'Damri', fullName: 'Damri', nickname: 'Damri', email: 'damri.service@rizproduction.com', phone: '081288990011', division: 'Service', role: 'Team Leader', level: 5 },
-  { id: 'staff-mulyana', name: 'Mulyana', fullName: 'Mulyana', nickname: 'Kharo', email: 'tabitakharo@gmail.com', phone: '089523134060', division: 'Service', secondaryDivision: 'Videotron', divisions: ['Service', 'Videotron'], role: 'Staff', level: 3 },
-
-  // 8. UMUM
-  { id: 'staff-semua-divisi', name: 'STAFF SEMUA DIVISI', fullName: 'STAFF SEMUA DIVISI', nickname: 'STAFF', division: 'Semua Divisi', role: 'Staff', level: 1 }
+  { id: 'staff-mulyana', name: 'Mulyana', fullName: 'Mulyana', nickname: 'Kharo', email: 'tabitakharo@gmail.com', phone: '089523134060', division: 'Service', secondaryDivision: 'Videotron', divisions: ['Service', 'Videotron'], role: 'Staff', level: 3 }
 ];
 
 export const MASTER_STAFF: Staff[] = [...STAFF_LIST];
@@ -182,8 +179,8 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
       canonicalId = 'staff-irvan';
       canonicalStaff.id = 'staff-irvan';
     }
-    // 16. Abah Sobur (Gudang)
-    else if (rawId === 'staff-absobur' || combinedStr.includes('sobur')) {
+    // 16. Aep Saepudin / Aep / Subur (Gudang)
+    else if (rawId === 'staff-absobur' || /\b(aep|subur|sobur|absobur)\b/i.test(rawName + ' ' + rawNick)) {
       canonicalId = 'staff-absobur';
       canonicalStaff.id = 'staff-absobur';
     }
@@ -193,7 +190,7 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
       canonicalStaff.id = 'staff-gatot';
     }
     // 18. Udin Saepudin / Mang ube (Gudang)
-    else if (rawId === 'staff-udin' || combinedStr.includes('saepudin') || combinedStr.includes('mang ube') || combinedStr.includes('udin')) {
+    else if (rawId === 'staff-udin' || /\b(udin|mang ube|ube|ubed)\b/i.test(rawName + ' ' + rawNick)) {
       canonicalId = 'staff-udin';
       canonicalStaff.id = 'staff-udin';
     }
@@ -503,200 +500,1574 @@ export const INITIAL_DAILY_TASKS: DailyTask[] = [
 
 // 50+ Official Freelance & Operator Partners PT RIZ-PRODUCTION - Sorted by Division
 export const INITIAL_FREELANCE_WORKERS: FreelanceWorker[] = [
-  // ── 0. UMUM ──────────────────────────────────────────
-  { id: 'fl-semua-divisi', name: 'FREE-LANCE SEMUA DIVISI', email: '', phone: '', specialization: 'Umum', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-
-  // ── 1. DIVISI SOUND / AUDIO ───────────────────────────
-  { id: 'fl-sound-1', name: 'ADIN ANDRIANSYAH (ADIN)', email: 'adinandriyansyah@gmail.com', phone: '08561206888', specialization: 'Audio', roleTitle: 'OPERATOR', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-2', name: 'ARDI', phone: '085717518337', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-3', name: 'ASEP', email: 'agungprihadie@gmail.com', phone: '081294015587', specialization: 'Audio', roleTitle: 'OPERATOR', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-4', name: "HENDAR SUPARDI (N'DAY)", email: 'supardihendar320@gmail.com', phone: '085157226126', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-5', name: 'MOCHAMAD FIRMANSYAH (ACA)', email: 'acafirmansyah@gmail.com', phone: '085867814398', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-6', name: "NURDIANSYAH (CI'ONG)", email: 'onks.rieut@gmail.com', phone: '085891456730', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-7', name: 'RACHMAT MULYANA (JORDY)', email: 'rchmulyana21@gmail.com', phone: '087770123122', specialization: 'Audio', roleTitle: 'OPERATOR', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-8', name: 'RINALDI KURNIAWAN (INAL)', email: 'ak5905856@gmail.com', phone: '085939712262', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-9', name: 'SYARIF HIDAYATULLAH (TIMBUL)', email: 'syariftimbul06@gmail.com', phone: '089670427430', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-10', name: 'KIKI', phone: '0895385263310', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-11', name: 'NANA (KADOT)', phone: '', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-12', name: 'RAMDAN', phone: '', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-13', name: 'BOI', phone: '', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-14', name: 'APLES', phone: '', specialization: 'Audio', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-sound-16', name: 'Djunaedi Sugianto (REBINK)', phone: '0856-1304-448', specialization: 'Audio', roleTitle: 'OPERATOR', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
-
-  // ── 2. DIVISI MULTIMEDIA ──────────────────────────────
-  { id: 'fl-multi-chandra', name: 'CHANDRA', email: 'Chandrakakaaja@gmail.com', phone: '088225873364', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-rizky', name: 'RIZKY NASRULLAH (ULLOH)', email: 'rizkiuloh@gmail.com', phone: '085155188909', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-1', name: 'ARIQ', email: 'ariqarrobani2@gmail.com', phone: '085156892661', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-2', name: 'HERIANA', email: 'Heriana1905@gmail.com', phone: '085693948411', specialization: 'Multimedia', roleTitle: 'OPERATOR', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-3', name: 'IMAN', email: 'mhanshungkul@gmail.com', phone: '083896782116', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-4', name: 'KEMAL', phone: '08561130189', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-5', name: 'KEVIN AXL YOHANES WAGEY', email: 'hitmeup.kevinaxl@gmail.com', phone: '081806484747', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-6', name: 'FERA', email: 'feramaulida34@gmail.com', phone: '8993886831', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-7', name: 'ANDI', phone: '', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-8', name: 'ALI', phone: '', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-9', name: 'ROFIQ', phone: '', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-10', name: 'ZIDAN', phone: '', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-11', name: 'RICHARD', phone: '', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-12', name: 'TOPAN', phone: '', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-13', name: 'INDRA', phone: '', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-multi-14', name: 'INU', phone: '', specialization: 'Multimedia', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-
-  // ── 3. DIVISI LIGHTING ────────────────────────────────
-  { id: 'fl-light-1', name: 'ENDANG (GHELE)', email: 'Enda891@gmail.com', phone: '081818653180', specialization: 'Lighting', roleTitle: 'OPERATOR', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-light-2', name: 'ENDIN', email: 'lightingendin@gmail.com', phone: '085782255517', specialization: 'Lighting', roleTitle: 'OPERATOR', dailyRate: 350000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-light-3', name: 'FAISAL NUGRAHA ISKANDAR (ISAL)', email: 'faisalnugraha11455@gmail.com', phone: '088210979655', specialization: 'Lighting', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-light-4', name: 'IDRUS MAULANA', email: 'iddrusmaulana17@gmail.com', phone: '083870557341', specialization: 'Lighting', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-light-5', name: 'MIING', phone: '088220972242', specialization: 'Lighting', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-light-6', name: 'UGAN', email: 'gilanguganhaziq@gmail.com', phone: '089612152799', specialization: 'Lighting', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-light-7', name: 'KEVIN', phone: '083147165162', specialization: 'Lighting', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-light-8', name: 'BOANG', phone: '85695708082', specialization: 'Lighting', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-light-ceper', name: 'CEPER', phone: '', specialization: 'Lighting', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-light-9', name: 'OTANG', phone: '', specialization: 'Lighting', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-
-  // ── 4. DIVISI VIDEOTRON / LED ─────────────────────────
-  { id: 'fl-video-1', name: 'ADI', phone: '082210333041', specialization: 'Videotron', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-video-2', name: 'FIKI FAUJI', email: 'Vickysatrya1414@gmail.com', phone: '082299245583', specialization: 'Videotron', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-video-3', name: 'IPAL', email: 'ifpalpadilah170104@gmail.com', phone: '085889915925', specialization: 'Videotron', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-video-4', name: 'SANTOSO (AMBON)', email: 'Sanambonambon@gmail.com', phone: '082325343690', specialization: 'Videotron', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-video-5', name: 'SISWOYO (WOYO)', email: 'siswoyo9995@gmail.com', phone: '082125242340', specialization: 'Videotron', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-video-6', name: 'YOPI SURAHMAN', email: 'yopiy712@gmail.com', phone: '081288489465', specialization: 'Videotron', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-
-  // ── 5. DIVISI DRIVER / ARMADA ─────────────────────────
-  { id: 'fl-drv-1', name: 'YOSEP', phone: '81291225933', specialization: 'Driver', roleTitle: 'FREELANCE', dailyRate: 250000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-drv-2', name: 'Andri Budiyanto (BUNONK)', phone: '87726355305', specialization: 'Driver', roleTitle: 'FREELANCE', dailyRate: 250000, status: 'Aktif', createdAt: '2026-09-01' },
-
-  // ── 6. DIVISI UMUM / LAPANGAN ─────────────────────────
-  { id: 'fl-umum-2', name: 'RIO', phone: '', specialization: 'Umum', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' },
-  { id: 'fl-umum-3', name: 'JAE', phone: '', specialization: 'Umum', roleTitle: 'FREELANCE', dailyRate: 200000, status: 'Aktif', createdAt: '2026-09-01' }
+  {
+    "id": "fl-1788686708932",
+    "address": "",
+    "email": "",
+    "phone": "085155188909",
+    "dailyRate": 200000,
+    "skills": "",
+    "idCardNumber": "",
+    "name": "RIZKY NASRULLAH",
+    "specialization": "Multimedia",
+    "createdAt": "2026-09-06",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "updatedAt": "2026-09-28T11:34:29.783Z",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "browser": "Chrome"
+    },
+    "bankAccountHolder": "RIZKY NASRULLAH",
+    "notes": "",
+    "rating": 5,
+    "roleTitle": "VIDEO DIRECTOR",
+    "status": "Aktif",
+    "bankName": "BCA",
+    "bankAccountNumber": ""
+  },
+  {
+    "id": "fl-1788686764881",
+    "notes": "",
+    "skills": "",
+    "address": "",
+    "roleTitle": "CAMERA-PERSON",
+    "idCardNumber": "",
+    "bankAccountHolder": "CHANDRA",
+    "name": "CHANDRA",
+    "dailyRate": 200000,
+    "phone": "088225873364",
+    "email": "Chandrakakaaja@gmail.com",
+    "rating": 5,
+    "bankAccountNumber": "",
+    "bankName": "BCA",
+    "createdAt": "2026-09-06",
+    "specialization": "Multimedia",
+    "status": "Aktif",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-09-08T23:18:37.535Z"
+    }
+  },
+  {
+    "id": "fl-1788686929568",
+    "name": "HERIANA",
+    "dailyRate": 200000,
+    "bankAccountNumber": "",
+    "address": "",
+    "status": "Aktif",
+    "rating": 5,
+    "email": "Heriana1905@gmail.com",
+    "phone": "085693948411",
+    "createdAt": "2026-09-06",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-09-08T23:18:37.535Z",
+      "browser": "Chrome"
+    },
+    "bankName": "BCA",
+    "bankAccountHolder": "HERIANA",
+    "skills": "",
+    "specialization": "Multimedia",
+    "notes": "",
+    "roleTitle": "CAMERA-PERSON",
+    "idCardNumber": ""
+  },
+  {
+    "id": "fl-1788687073193",
+    "bankAccountNumber": "",
+    "address": "",
+    "skills": "",
+    "roleTitle": "CAMERA-PERSON",
+    "email": "hitmeup.kevinaxl@gmail.com",
+    "phone": "081806484747",
+    "name": "KEVIN AXL YOHANES WAGEY",
+    "idCardNumber": "",
+    "rating": 5,
+    "bankAccountHolder": "KEVIN AXL YOHANES WAGEY",
+    "bankName": "BCA",
+    "dailyRate": 200000,
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-09-08T23:18:37.535Z",
+      "browser": "Chrome"
+    },
+    "status": "Aktif",
+    "specialization": "Multimedia",
+    "notes": "",
+    "createdAt": "2026-09-06"
+  },
+  {
+    "id": "fl-1788687145820",
+    "status": "Aktif",
+    "address": "",
+    "email": "",
+    "phone": "08561130189",
+    "bankName": "BCA",
+    "roleTitle": "Freelance Multimedia",
+    "bankAccountNumber": "",
+    "rating": 5,
+    "dailyRate": 200000,
+    "specialization": "Multimedia",
+    "notes": "",
+    "name": "KEMAL",
+    "createdAt": "2026-09-06",
+    "idCardNumber": "",
+    "bankAccountHolder": "KEMAL",
+    "_syncMeta": {
+      "updatedAt": "2026-09-08T23:18:37.535Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS"
+    },
+    "skills": ""
+  },
+  {
+    "id": "fl-1788687198428",
+    "notes": "",
+    "address": "",
+    "name": "FERA",
+    "idCardNumber": "",
+    "roleTitle": "Freelance Multimedia",
+    "bankAccountHolder": "FERA",
+    "skills": "",
+    "bankName": "BCA",
+    "dailyRate": 200000,
+    "email": "feramaulida34@gmail.com",
+    "phone": "08993886831",
+    "status": "Aktif",
+    "specialization": "Multimedia",
+    "createdAt": "2026-09-06",
+    "bankAccountNumber": "",
+    "rating": 5,
+    "_syncMeta": {
+      "updatedAt": "2026-09-08T23:18:37.535Z",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "browser": "Chrome"
+    }
+  },
+  {
+    "id": "fl-1788687392609",
+    "dailyRate": 350000,
+    "bankAccountHolder": "ADIN ANDRIANSYAH",
+    "idCardNumber": "",
+    "phone": "08561206888",
+    "email": "adinandriyansyah@gmail.com",
+    "address": "",
+    "createdAt": "2026-09-06",
+    "skills": "MIDAS HD-96, MIDAS M32,",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-09-08T23:18:37.535Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync"
+    },
+    "status": "Aktif",
+    "bankAccountNumber": "",
+    "notes": "",
+    "name": "ADIN ANDRIANSYAH (ADIN)",
+    "roleTitle": "OPERATOR",
+    "rating": 5,
+    "specialization": "Audio",
+    "bankName": "BCA"
+  },
+  {
+    "id": "fl-1788687512305",
+    "notes": "",
+    "name": "MOCHAMAD FIRMANSYAH (ACA)",
+    "bankAccountHolder": "MOCHAMAD FIRMANSYAH (ACA)",
+    "rating": 5,
+    "bankName": "BCA",
+    "status": "Aktif",
+    "roleTitle": "STAGE-CREW",
+    "idCardNumber": "",
+    "address": "",
+    "phone": "085867814398",
+    "email": "acafirmansyah@gmail.com",
+    "bankAccountNumber": "",
+    "specialization": "Audio",
+    "skills": "PATCHING, ROUTING",
+    "dailyRate": 200000,
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "browser": "Chrome",
+      "updatedAt": "2026-09-08T23:18:37.535Z"
+    },
+    "createdAt": "2026-09-06"
+  },
+  {
+    "id": "fl-drv-1",
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.500Z",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS"
+    },
+    "phone": "81291225933",
+    "name": "YOSEP",
+    "status": "Aktif",
+    "dailyRate": 250000,
+    "specialization": "Driver"
+  },
+  {
+    "id": "fl-drv-2",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "roleTitle": "FREELANCE",
+    "specialization": "Driver",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T07:18:44.500Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync"
+    },
+    "phone": "87726355305",
+    "dailyRate": 250000,
+    "name": "Andri Budiyanto (BUNONK)"
+  },
+  {
+    "id": "fl-light-1",
+    "specialization": "Lighting",
+    "roleTitle": "OPERATOR",
+    "createdAt": "2026-09-01",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceType": "Desktop"
+    },
+    "name": "ENDANG (GHELE)",
+    "dailyRate": 350000,
+    "email": "Enda891@gmail.com",
+    "phone": "081818653180",
+    "status": "Aktif"
+  },
+  {
+    "id": "fl-light-2",
+    "roleTitle": "OPERATOR",
+    "createdAt": "2026-09-01",
+    "specialization": "Lighting",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "updatedBy": "BatchSync"
+    },
+    "dailyRate": 350000,
+    "status": "Aktif",
+    "phone": "085782255517",
+    "email": "lightingendin@gmail.com",
+    "name": "ENDIN"
+  },
+  {
+    "id": "fl-light-3",
+    "dailyRate": 200000,
+    "status": "Aktif",
+    "email": "faisalnugraha11455@gmail.com",
+    "phone": "088210979655",
+    "specialization": "Lighting",
+    "name": "FAISAL NUGRAHA ISKANDAR (ISAL)",
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "browser": "Chrome"
+    }
+  },
+  {
+    "id": "fl-light-4",
+    "name": "IDRUS MAULANA",
+    "phone": "083870557341",
+    "email": "iddrusmaulana17@gmail.com",
+    "specialization": "Lighting",
+    "status": "Aktif",
+    "dailyRate": 200000,
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.499Z",
+      "browser": "Chrome",
+      "deviceType": "Desktop"
+    },
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01"
+  },
+  {
+    "id": "fl-light-5",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.499Z",
+      "deviceType": "Desktop"
+    },
+    "phone": "088220972242",
+    "roleTitle": "FREELANCE",
+    "name": "MIING",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "specialization": "Lighting",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-light-6",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T07:18:44.499Z",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop"
+    },
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE",
+    "specialization": "Lighting",
+    "name": "UGAN",
+    "email": "gilanguganhaziq@gmail.com",
+    "phone": "089612152799",
+    "status": "Aktif",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-light-7",
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE",
+    "name": "KEVIN",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "browser": "Chrome",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T07:18:44.499Z",
+      "updatedBy": "BatchSync"
+    },
+    "specialization": "Lighting",
+    "phone": "083147165162",
+    "dailyRate": 200000,
+    "status": "Aktif"
+  },
+  {
+    "id": "fl-light-8",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-01T07:18:44.499Z"
+    },
+    "createdAt": "2026-09-01",
+    "rating": 5,
+    "notes": "",
+    "status": "Aktif",
+    "address": "",
+    "dailyRate": 200000,
+    "bankAccountHolder": "BOANG",
+    "bankName": "BCA",
+    "specialization": "Lighting",
+    "roleTitle": "FREELANCE",
+    "skills": "",
+    "email": "",
+    "phone": "85695708082",
+    "idCardNumber": "",
+    "name": "BOANG",
+    "bankAccountNumber": ""
+  },
+  {
+    "id": "fl-light-9",
+    "status": "Aktif",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.499Z",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "browser": "Chrome",
+      "deviceOS": "macOS"
+    },
+    "createdAt": "2026-09-01",
+    "phone": "",
+    "roleTitle": "FREELANCE",
+    "dailyRate": 200000,
+    "name": "OTANG",
+    "specialization": "Lighting"
+  },
+  {
+    "id": "fl-light-ceper",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "roleTitle": "FREELANCE",
+    "phone": "",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.499Z",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "browser": "Chrome"
+    },
+    "name": "CEPER",
+    "dailyRate": 200000,
+    "specialization": "Lighting"
+  },
+  {
+    "id": "fl-multi-1",
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-01T07:18:44.498Z"
+    },
+    "dailyRate": 200000,
+    "phone": "085156892661",
+    "email": "ariqarrobani2@gmail.com",
+    "name": "ARIQ",
+    "specialization": "Multimedia"
+  },
+  {
+    "id": "fl-multi-10",
+    "name": "ZIDAN",
+    "specialization": "Multimedia",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.498Z"
+    },
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE",
+    "phone": "",
+    "status": "Aktif",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-multi-11",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceType": "Desktop"
+    },
+    "name": "RICHARD",
+    "phone": "",
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE",
+    "specialization": "Multimedia",
+    "status": "Aktif",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-multi-12",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "updatedBy": "BatchSync",
+      "browser": "Chrome",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS"
+    },
+    "name": "TOPAN",
+    "createdAt": "2026-09-01",
+    "specialization": "Multimedia",
+    "roleTitle": "FREELANCE",
+    "phone": "",
+    "dailyRate": 200000,
+    "status": "Aktif"
+  },
+  {
+    "id": "fl-multi-13",
+    "specialization": "Multimedia",
+    "dailyRate": 200000,
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS"
+    },
+    "roleTitle": "FREELANCE",
+    "status": "Aktif",
+    "createdAt": "2026-09-01",
+    "name": "INDRA",
+    "phone": ""
+  },
+  {
+    "id": "fl-multi-14",
+    "specialization": "Multimedia",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceType": "Desktop"
+    },
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01",
+    "name": "INU",
+    "phone": "",
+    "status": "Aktif",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-multi-2",
+    "bankAccountNumber": "",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.498Z"
+    },
+    "address": "",
+    "idCardNumber": "",
+    "dailyRate": 350000,
+    "rating": 5,
+    "notes": "",
+    "bankAccountHolder": "HERIANA",
+    "roleTitle": "OPERATOR",
+    "bankName": "BCA",
+    "skills": "",
+    "name": "HERIANA",
+    "specialization": "Multimedia",
+    "email": "Heriana1905@gmail.com",
+    "phone": "085693948411"
+  },
+  {
+    "id": "fl-multi-3",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.498Z"
+    },
+    "specialization": "Multimedia",
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE",
+    "name": "IMAN",
+    "email": "mhanshungkul@gmail.com",
+    "phone": "083896782116",
+    "status": "Aktif",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-multi-4",
+    "bankAccountNumber": "",
+    "notes": "",
+    "address": "",
+    "roleTitle": "FREELANCE",
+    "idCardNumber": "",
+    "skills": "",
+    "specialization": "Multimedia",
+    "bankAccountHolder": "KEMAL",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "browser": "Chrome"
+    },
+    "status": "Aktif",
+    "phone": "08561130189",
+    "email": "",
+    "createdAt": "2026-09-01",
+    "name": "KEMAL",
+    "rating": 5,
+    "dailyRate": 200000,
+    "bankName": "BCA"
+  },
+  {
+    "id": "fl-multi-5",
+    "notes": "",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "browser": "Chrome"
+    },
+    "rating": 5,
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "dailyRate": 200000,
+    "bankAccountNumber": "",
+    "name": "KEVIN AXL YOHANES WAGEY",
+    "address": "",
+    "email": "hitmeup.kevinaxl@gmail.com",
+    "phone": "081806484747",
+    "roleTitle": "FREELANCE",
+    "skills": "",
+    "bankName": "BCA",
+    "specialization": "Multimedia",
+    "bankAccountHolder": "KEVIN AXL YOHANES WAGEY",
+    "idCardNumber": ""
+  },
+  {
+    "id": "fl-multi-6",
+    "createdAt": "2026-09-01",
+    "specialization": "Multimedia",
+    "bankAccountNumber": "",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop"
+    },
+    "email": "feramaulida34@gmail.com",
+    "phone": "8993886831",
+    "rating": 5,
+    "idCardNumber": "",
+    "status": "Aktif",
+    "dailyRate": 200000,
+    "name": "FERA",
+    "roleTitle": "FREELANCE",
+    "bankAccountHolder": "FERA",
+    "notes": "",
+    "skills": "",
+    "bankName": "BCA",
+    "address": ""
+  },
+  {
+    "id": "fl-multi-7",
+    "status": "Aktif",
+    "specialization": "Multimedia",
+    "dailyRate": 200000,
+    "_syncMeta": {
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS"
+    },
+    "name": "ANDI",
+    "phone": "",
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE"
+  },
+  {
+    "id": "fl-multi-8",
+    "name": "ALI",
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE",
+    "specialization": "Multimedia",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS"
+    },
+    "status": "Aktif",
+    "phone": "",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-multi-9",
+    "specialization": "Multimedia",
+    "dailyRate": 200000,
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceType": "Desktop",
+      "browser": "Chrome"
+    },
+    "name": "ROFIQ",
+    "phone": "",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "roleTitle": "FREELANCE"
+  },
+  {
+    "id": "fl-multi-chandra",
+    "roleTitle": "FREELANCE",
+    "bankName": "BCA",
+    "address": "",
+    "skills": "",
+    "name": "CHANDRA",
+    "bankAccountNumber": "",
+    "specialization": "Multimedia",
+    "email": "Chandrakakaaja@gmail.com",
+    "phone": "088225873364",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop"
+    },
+    "status": "Aktif",
+    "createdAt": "2026-09-01",
+    "rating": 5,
+    "dailyRate": 200000,
+    "bankAccountHolder": "CHANDRA",
+    "notes": "",
+    "idCardNumber": ""
+  },
+  {
+    "id": "fl-multi-rizky",
+    "status": "Aktif",
+    "dailyRate": 350000,
+    "phone": "085155188909",
+    "email": "rizkiuloh@gmail.com",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "browser": "Chrome"
+    },
+    "specialization": "Multimedia",
+    "roleTitle": "FREELANCE",
+    "name": "RIZKY NASRULLAH (ULLOH)",
+    "createdAt": "2026-09-01"
+  },
+  {
+    "id": "fl-semua-divisi",
+    "name": "FREE-LANCE SEMUA DIVISI",
+    "specialization": "Umum",
+    "dailyRate": 200000,
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.496Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop"
+    },
+    "email": "",
+    "phone": "",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "roleTitle": "FREELANCE"
+  },
+  {
+    "id": "fl-sound-1",
+    "dailyRate": 350000,
+    "notes": "",
+    "bankAccountHolder": "ADIN ANDRIANSYAH",
+    "bankName": "BCA",
+    "name": "ADIN ANDRIANSYAH (ADIN)",
+    "createdAt": "2026-09-01",
+    "skills": "MIDAS HD-96, MIDAS M32,",
+    "specialization": "Audio",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T07:18:44.496Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop"
+    },
+    "email": "adinandriyansyah@gmail.com",
+    "phone": "08561206888",
+    "bankAccountNumber": "",
+    "status": "Aktif",
+    "idCardNumber": "",
+    "address": "",
+    "roleTitle": "OPERATOR",
+    "rating": 4
+  },
+  {
+    "id": "fl-sound-10",
+    "skills": "",
+    "dailyRate": 200000,
+    "createdAt": "2026-09-01",
+    "notes": "",
+    "bankAccountHolder": "KIKI",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.497Z",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "browser": "Chrome",
+      "deviceOS": "macOS"
+    },
+    "rating": 5,
+    "idCardNumber": "",
+    "bankName": "BCA",
+    "name": "KIKI",
+    "phone": "0895385263310",
+    "email": "",
+    "roleTitle": "FREELANCE",
+    "address": "",
+    "bankAccountNumber": "",
+    "specialization": "Audio",
+    "status": "Aktif"
+  },
+  {
+    "id": "fl-sound-11",
+    "createdAt": "2026-09-01",
+    "phone": "",
+    "roleTitle": "FREELANCE",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.497Z",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "browser": "Chrome"
+    },
+    "name": "NANA (KADOT)",
+    "specialization": "Audio",
+    "status": "Aktif",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-sound-12",
+    "name": "RAMDAN",
+    "specialization": "Audio",
+    "dailyRate": 200000,
+    "status": "Aktif",
+    "phone": "",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.498Z"
+    },
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01"
+  },
+  {
+    "id": "fl-sound-13",
+    "specialization": "Audio",
+    "dailyRate": 200000,
+    "phone": "",
+    "status": "Aktif",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "browser": "Chrome"
+    },
+    "name": "BOI",
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE"
+  },
+  {
+    "id": "fl-sound-14",
+    "dailyRate": 200000,
+    "status": "Aktif",
+    "name": "APLES",
+    "createdAt": "2026-09-01",
+    "phone": "",
+    "roleTitle": "FREELANCE",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceType": "Desktop",
+      "browser": "Chrome"
+    },
+    "specialization": "Audio"
+  },
+  {
+    "id": "fl-sound-16",
+    "roleTitle": "OPERATOR",
+    "specialization": "Audio",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T07:18:44.498Z",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync"
+    },
+    "name": "Djunaedi Sugianto (REBINK)",
+    "dailyRate": 350000,
+    "phone": "0856-1304-448"
+  },
+  {
+    "id": "fl-sound-2",
+    "skills": "",
+    "address": "",
+    "bankName": "BCA",
+    "bankAccountHolder": "ARDI",
+    "dailyRate": 200000,
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.496Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop"
+    },
+    "name": "ARDI",
+    "createdAt": "2026-09-01",
+    "specialization": "Audio",
+    "notes": "",
+    "rating": 3,
+    "bankAccountNumber": "",
+    "status": "Aktif",
+    "idCardNumber": "",
+    "roleTitle": "FREELANCE",
+    "email": "",
+    "phone": "085717518337"
+  },
+  {
+    "id": "fl-sound-3",
+    "notes": "",
+    "skills": "",
+    "roleTitle": "OPERATOR",
+    "address": "",
+    "idCardNumber": "",
+    "bankAccountHolder": "ASEP",
+    "name": "ASEP",
+    "phone": "081294015587",
+    "email": "agungprihadie@gmail.com",
+    "dailyRate": 350000,
+    "rating": 5,
+    "bankAccountNumber": "",
+    "bankName": "BCA",
+    "specialization": "Audio",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.496Z"
+    }
+  },
+  {
+    "id": "fl-sound-4",
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01",
+    "email": "supardihendar320@gmail.com",
+    "phone": "085157226126",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.496Z",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "browser": "Chrome"
+    },
+    "name": "HENDAR SUPARDI (N'DAY)",
+    "dailyRate": 200000,
+    "status": "Aktif",
+    "specialization": "Audio"
+  },
+  {
+    "id": "fl-sound-5",
+    "notes": "",
+    "roleTitle": "FREELANCE",
+    "name": "MOCHAMAD FIRMANSYAH (ACA)",
+    "bankAccountHolder": "MOCHAMAD FIRMANSYAH (ACA)",
+    "skills": "PATCHING, ROUTING",
+    "specialization": "Audio",
+    "phone": "085867814398",
+    "email": "acafirmansyah@gmail.com",
+    "status": "Aktif",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.496Z",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS"
+    },
+    "address": "",
+    "bankName": "BCA",
+    "createdAt": "2026-09-01",
+    "idCardNumber": "",
+    "dailyRate": 200000,
+    "bankAccountNumber": "",
+    "rating": 5
+  },
+  {
+    "id": "fl-sound-6",
+    "phone": "085891456730",
+    "email": "onks.rieut@gmail.com",
+    "dailyRate": 200000,
+    "specialization": "Audio",
+    "status": "Aktif",
+    "name": "NURDIANSYAH (CI'ONG)",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.497Z",
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "deviceType": "Desktop"
+    },
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01"
+  },
+  {
+    "id": "fl-sound-7",
+    "email": "rchmulyana21@gmail.com",
+    "phone": "087770123122",
+    "name": "RACHMAT MULYANA (JORDY)",
+    "status": "Aktif",
+    "dailyRate": 350000,
+    "_syncMeta": {
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.497Z",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS"
+    },
+    "createdAt": "2026-09-01",
+    "specialization": "Audio",
+    "roleTitle": "OPERATOR"
+  },
+  {
+    "id": "fl-sound-8",
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.497Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop"
+    },
+    "dailyRate": 200000,
+    "specialization": "Audio",
+    "name": "RINALDI KURNIAWAN (INAL)",
+    "email": "ak5905856@gmail.com",
+    "phone": "085939712262",
+    "status": "Aktif"
+  },
+  {
+    "id": "fl-sound-9",
+    "specialization": "Audio",
+    "dailyRate": 200000,
+    "name": "SYARIF HIDAYATULLAH (TIMBUL)",
+    "phone": "089670427430",
+    "email": "syariftimbul06@gmail.com",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.497Z",
+      "browser": "Chrome",
+      "deviceType": "Desktop"
+    },
+    "roleTitle": "FREELANCE",
+    "status": "Aktif",
+    "createdAt": "2026-09-01"
+  },
+  {
+    "id": "fl-umum-2",
+    "name": "RIO",
+    "status": "Aktif",
+    "dailyRate": 200000,
+    "_syncMeta": {
+      "browser": "Chrome",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T07:18:44.500Z",
+      "updatedBy": "BatchSync"
+    },
+    "phone": "",
+    "createdAt": "2026-09-01",
+    "specialization": "Umum",
+    "roleTitle": "FREELANCE"
+  },
+  {
+    "id": "fl-umum-3",
+    "phone": "",
+    "status": "Aktif",
+    "dailyRate": 200000,
+    "specialization": "Umum",
+    "name": "JAE",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T07:18:44.500Z",
+      "browser": "Chrome",
+      "deviceOS": "macOS"
+    },
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01"
+  },
+  {
+    "id": "fl-video-1",
+    "name": "ADI",
+    "phone": "082210333041",
+    "specialization": "Videotron",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.499Z",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "browser": "Chrome",
+      "deviceOS": "macOS"
+    },
+    "status": "Aktif",
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-video-2",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T07:18:44.499Z",
+      "deviceType": "Desktop"
+    },
+    "roleTitle": "FREELANCE",
+    "email": "Vickysatrya1414@gmail.com",
+    "phone": "082299245583",
+    "specialization": "Videotron",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "name": "FIKI FAUJI",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-video-3",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.500Z"
+    },
+    "specialization": "Videotron",
+    "roleTitle": "FREELANCE",
+    "createdAt": "2026-09-01",
+    "status": "Aktif",
+    "dailyRate": 200000,
+    "email": "ifpalpadilah170104@gmail.com",
+    "phone": "085889915925",
+    "name": "IPAL"
+  },
+  {
+    "id": "fl-video-4",
+    "phone": "082325343690",
+    "email": "Sanambonambon@gmail.com",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T07:18:44.500Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS"
+    },
+    "status": "Aktif",
+    "name": "SANTOSO (AMBON)",
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE",
+    "specialization": "Videotron",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-video-5",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T07:18:44.500Z",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop"
+    },
+    "specialization": "Videotron",
+    "createdAt": "2026-09-01",
+    "roleTitle": "FREELANCE",
+    "status": "Aktif",
+    "phone": "082125242340",
+    "email": "siswoyo9995@gmail.com",
+    "name": "SISWOYO (WOYO)",
+    "dailyRate": 200000
+  },
+  {
+    "id": "fl-video-6",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T07:18:44.500Z",
+      "deviceType": "Desktop"
+    },
+    "roleTitle": "FREELANCE",
+    "phone": "081288489465",
+    "email": "yopiy712@gmail.com",
+    "createdAt": "2026-09-01",
+    "name": "YOPI SURAHMAN",
+    "status": "Aktif",
+    "specialization": "Videotron",
+    "dailyRate": 200000
+  }
 ];
 
 // Master Driver Armada Resmi
 export const INITIAL_FLEET_DRIVERS: FleetDriver[] = [
   {
-    id: 'drv-1',
-    name: 'YOSEP',
-    phone: '081291225933',
-    driverType: 'Freelance Driver',
-    simType: 'SIM B1',
-    simExpiry: '2027-08-15',
-    assignedVehicle: 'Truk Box Mitsubishi Canter CDD (6 Roda)',
-    status: 'Siap Jalan',
-    createdAt: '2026-09-01'
+    "id": "drv-1788687817794",
+    "assignedVehicle": "Truk CANTER PS 110",
+    "notes": "",
+    "createdAt": "2026-09-06",
+    "driverType": "Freelance Driver",
+    "simExpiry": "2027-09-06",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T08:18:54.425Z",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS"
+    },
+    "emergencyContact": "",
+    "name": "SISWOYO (WOYO)",
+    "phone": "082125242340",
+    "idCardNumber": "",
+    "address": "",
+    "status": "Siap Jalan",
+    "simType": "SIM B1"
   },
   {
-    id: 'drv-2',
-    name: 'BUNONK',
-    phone: '087726355305',
-    driverType: 'Freelance Driver',
-    simType: 'SIM B1',
-    simExpiry: '2027-10-20',
-    assignedVehicle: 'Truk Box Hino Dutro CDE Engkel (4 Roda)',
-    status: 'Siap Jalan',
-    createdAt: '2026-09-01'
+    "id": "drv-1788687983277",
+    "idCardNumber": "",
+    "address": "",
+    "phone": "081291225933",
+    "simType": "SIM A",
+    "driverType": "Freelance Driver",
+    "simExpiry": "2027-09-06",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T08:18:54.425Z",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "browser": "Chrome",
+      "deviceOS": "macOS"
+    },
+    "createdAt": "2026-09-06",
+    "notes": "",
+    "name": "YOSEP",
+    "emergencyContact": "",
+    "status": "Siap Jalan",
+    "assignedVehicle": "SUZUKI CARRY "
   },
   {
-    id: 'drv-3',
-    name: 'Gatot Wiliyanto',
-    phone: '083819622172',
-    driverType: 'Internal',
-    simType: 'SIM B1',
-    simExpiry: '2028-03-10',
-    assignedVehicle: 'Truk Box Mitsubishi Canter CDD (6 Roda)',
-    status: 'Siap Jalan',
-    createdAt: '2026-09-01'
+    "id": "drv-1788688088975",
+    "idCardNumber": "",
+    "driverType": "Freelance Driver",
+    "notes": "",
+    "emergencyContact": "",
+    "createdAt": "2026-09-06",
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-01T08:18:54.425Z",
+      "browser": "Chrome"
+    },
+    "simExpiry": "2027-09-06",
+    "assignedVehicle": "SUZUKI CARRY",
+    "status": "Siap Jalan",
+    "phone": "087726355305",
+    "name": "ANDRI BUDIYANTO (BUNONK)",
+    "simType": "SIM A",
+    "address": ""
   },
   {
-    id: 'drv-4',
-    name: 'Udin Saepudin',
-    phone: '082221948861',
-    driverType: 'Internal',
-    simType: 'SIM A',
-    simExpiry: '2028-05-12',
-    assignedVehicle: 'Blind Van Gran Max Operasional',
-    status: 'Siap Jalan',
-    createdAt: '2026-09-01'
+    "id": "drv-1788688161816",
+    "idCardNumber": "",
+    "assignedVehicle": "SUZUKI CARRY",
+    "simExpiry": "2027-09-06",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T08:18:54.425Z"
+    },
+    "address": "",
+    "phone": "089670427430",
+    "simType": "SIM A",
+    "createdAt": "2026-09-06",
+    "status": "Siap Jalan",
+    "name": "SYARIF HIDAYATULLAH ( TIMBUL)",
+    "notes": "",
+    "driverType": "Freelance Driver",
+    "emergencyContact": ""
+  },
+  {
+    "id": "drv-1788688270855",
+    "address": "",
+    "simType": "SIM A",
+    "name": "FIKI FAUJI",
+    "notes": "",
+    "createdAt": "2026-09-06",
+    "emergencyContact": "",
+    "driverType": "Freelance Driver",
+    "simExpiry": "2027-03-16",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T08:18:54.425Z"
+    },
+    "idCardNumber": "",
+    "assignedVehicle": "SUZUKI CARRY",
+    "status": "Siap Jalan",
+    "phone": "082299245583"
+  },
+  {
+    "id": "drv-1788957001183",
+    "simType": "SIM A",
+    "driverType": "Freelance Driver",
+    "address": "",
+    "name": "YOPI SURAHMAN",
+    "idCardNumber": "",
+    "phone": "081288489465",
+    "assignedVehicle": "SUZUKI CARRY",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T08:18:54.425Z"
+    },
+    "simExpiry": "2027-07-28",
+    "status": "Siap Jalan",
+    "createdAt": "2026-09-09",
+    "emergencyContact": "",
+    "notes": ""
+  },
+  {
+    "id": "drv-1788959273980",
+    "phone": "0895-2695-9199",
+    "name": "ANDYAR RAZZAQ ILHAMSYAH (DYAR)",
+    "driverType": "Freelance Driver",
+    "address": "",
+    "status": "Siap Jalan",
+    "simType": "SIM A",
+    "idCardNumber": "",
+    "simExpiry": "2027-09-09",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-01T08:18:54.426Z",
+      "browser": "Chrome"
+    },
+    "assignedVehicle": "SUZUKI CARRY",
+    "notes": "",
+    "createdAt": "2026-09-09",
+    "emergencyContact": ""
+  },
+  {
+    "id": "drv-2",
+    "name": "BUNONK",
+    "phone": "087726355305",
+    "simExpiry": "2027-10-20",
+    "_syncMeta": {
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T08:18:54.425Z",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop"
+    },
+    "simType": "SIM B1",
+    "createdAt": "2026-09-01",
+    "driverType": "Freelance Driver",
+    "assignedVehicle": "Truk Box Hino Dutro CDE Engkel (4 Roda)",
+    "status": "Siap Jalan"
+  },
+  {
+    "id": "drv-3",
+    "status": "Siap Jalan",
+    "notes": "",
+    "simExpiry": "2028-03-10",
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T08:18:54.425Z",
+      "deviceType": "Desktop",
+      "browser": "Chrome"
+    },
+    "createdAt": "2026-09-01",
+    "driverType": "Internal",
+    "emergencyContact": "",
+    "phone": "083819622172",
+    "idCardNumber": "",
+    "simType": "SIM B1",
+    "assignedVehicle": "Truk Box Mitsubishi Canter CDD (6 Roda)",
+    "address": "",
+    "name": "Gatot Wiliyanto"
+  },
+  {
+    "id": "drv-4",
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T08:18:54.425Z",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS"
+    },
+    "simExpiry": "2028-05-12",
+    "assignedVehicle": "Blind Van Gran Max Operasional",
+    "name": "Udin Saepudin",
+    "createdAt": "2026-09-01",
+    "status": "Siap Jalan",
+    "simType": "SIM A",
+    "phone": "082221948861",
+    "driverType": "Internal"
   }
 ];
 
 // Master Inventaris Armada Kendaraan Resmi PT RIZ-PRODUCTION
 export const INITIAL_VEHICLES: VehicleMaster[] = [
   {
-    id: 'veh-1',
-    name: 'SUZUKI CARRY 012',
-    ownership: 'Internal',
-    policeNumber: 'F 8446 BF',
-    vehicleType: 'SUZUKI CARRY',
-    tonnageCapacity: 1.0,
-    cbmCapacity: 1.5,
-    odometerKM: 10000,
-    stnkTaxExpiry: '2027-09-01',
-    kirExpiry: '2027-03-08',
-    status: 'Siap Operasi'
-  },
-
-  {
-    id: 'veh-2',
-    name: 'SUZUKI CARRY 011',
-    ownership: 'Internal',
-    policeNumber: 'F 8433 BF',
-    vehicleType: 'SUZUKI CARRY',
-    tonnageCapacity: 1.0,
-    cbmCapacity: 1.5,
-    odometerKM: 10000,
-    stnkTaxExpiry: '2027-09-01',
-    kirExpiry: '2027-02-26',
-    status: 'Siap Operasi'
+    "id": "veh-1",
+    "name": "SUZUKI CARRY",
+    "tonnageCapacity": 1,
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "updatedAt": "2026-10-01T08:18:54.508Z",
+      "browser": "Chrome"
+    },
+    "cbmCapacity": 1.5,
+    "stnkTaxExpiry": "2027-09-01",
+    "status": "Siap Operasi",
+    "odometerKM": 5000,
+    "kirExpiry": "2026-09-30",
+    "vehicleType": "Truk Box CDD (6 Roda)",
+    "policeNumber": "F 8446 BF",
+    "ownership": "Internal"
   },
   {
-    id: 'veh-3',
-    name: 'SUZUKI CARRY 013',
-    ownership: 'Internal',
-    policeNumber: 'F 8569 BH',
-    vehicleType: 'SUZUKI CARRY',
-    tonnageCapacity: 1.0,
-    cbmCapacity: 1.5,
-    odometerKM: 10000,
-    stnkTaxExpiry: '2027-06-01',
-    kirExpiry: '2026-12-10',
-    status: 'Siap Operasi'
+    "id": "veh-2",
+    "kirExpiry": "2026-10-12",
+    "policeNumber": "F 8433 BF",
+    "status": "Siap Operasi",
+    "tonnageCapacity": 1,
+    "vehicleType": "Truk Box CDE Engkel (4 Roda)",
+    "ownership": "Internal",
+    "cbmCapacity": 1.5,
+    "name": "SUZUKI CARRY",
+    "stnkTaxExpiry": "2027-09-01",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T08:18:54.511Z",
+      "browser": "Chrome",
+      "updatedBy": "BatchSync",
+      "deviceOS": "macOS",
+      "deviceType": "Desktop"
+    },
+    "odometerKM": 10000
   },
   {
-    id: 'veh-4',
-    name: 'SUZUKI CARRY 014',
-    ownership: 'Internal',
-    policeNumber: 'F 8594 BH',
-    vehicleType: 'SUZUKI CARRY',
-    tonnageCapacity: 1.0,
-    cbmCapacity: 1.5,
-    odometerKM: 12000,
-    stnkTaxExpiry: '2027-06-01',
-    kirExpiry: '2026-12-15',
-    status: 'Siap Operasi'
+    "id": "veh-3",
+    "ownership": "Internal",
+    "kirExpiry": "2027-01-20",
+    "status": "Siap Operasi",
+    "cbmCapacity": 1.5,
+    "name": "SUZUKI CARRY",
+    "stnkTaxExpiry": "2027-06-01",
+    "tonnageCapacity": 1,
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "updatedBy": "BatchSync",
+      "browser": "Chrome",
+      "deviceType": "Desktop",
+      "updatedAt": "2026-10-01T08:18:54.511Z"
+    },
+    "odometerKM": 10000,
+    "vehicleType": "Blindvan Logistik",
+    "policeNumber": "F 8569 BH"
   },
   {
-    id: 'veh-5',
-    name: 'DAIHATSU LUXIO Operasional',
-    ownership: 'Internal',
-    policeNumber: 'B 2673 TVI',
-    vehicleType: 'Mobil Kru / Operasional',
-    tonnageCapacity: 0.6,
-    cbmCapacity: 2.8,
-    odometerKM: 52100,
-    stnkTaxExpiry: '2026-12-01',
-    kirExpiry: '-',
-    status: 'Siap Operasi'
+    "id": "veh-4",
+    "odometerKM": 12000,
+    "stnkTaxExpiry": "2027-06-01",
+    "kirExpiry": "2026-10-28",
+    "ownership": "Internal",
+    "status": "Siap Operasi",
+    "vehicleType": "Pick-Up Box",
+    "name": "SUZUKI CARRY ",
+    "policeNumber": "F 8594 BH",
+    "tonnageCapacity": 1,
+    "cbmCapacity": 1.5,
+    "_syncMeta": {
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "updatedAt": "2026-10-01T08:18:54.512Z",
+      "browser": "Chrome"
+    }
   },
   {
-    id: 'veh-6',
-    name: 'Truk CANTER PS 110',
-    ownership: 'Internal',
-    policeNumber: 'F 8942 BG',
-    vehicleType: 'Truk Box CDD (6 Roda)',
-    tonnageCapacity: 3.0,
-    cbmCapacity: 7.0,
-    odometerKM: 145000,
-    stnkTaxExpiry: '2027-05-01',
-    kirExpiry: '2027-09-01',
-    status: 'Siap Operasi'
+    "id": "veh-5",
+    "tonnageCapacity": 0.6,
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedBy": "BatchSync",
+      "browser": "Chrome",
+      "updatedAt": "2026-10-01T08:18:54.512Z"
+    },
+    "name": "DAIHATSU LUXIO  Operasional",
+    "cbmCapacity": 2.8,
+    "odometerKM": 52100,
+    "ownership": "Internal",
+    "vehicleType": "Mobil Kru / Operasional",
+    "status": "Siap Operasi",
+    "policeNumber": "B 2673 TVI",
+    "stnkTaxExpiry": "2026-12-01",
+    "kirExpiry": "2027-04-14"
+  },
+  {
+    "id": "veh-6",
+    "vehicleType": "Truk Wingbox Tronton",
+    "stnkTaxExpiry": "2027-01-01",
+    "_syncMeta": {
+      "updatedAt": "2026-10-01T08:18:54.512Z",
+      "updatedBy": "BatchSync",
+      "deviceType": "Desktop",
+      "deviceOS": "macOS",
+      "browser": "Chrome"
+    },
+    "tonnageCapacity": 3,
+    "name": "Truk CANTER PS 110",
+    "status": "Siap Operasi",
+    "ownership": "Internal",
+    "cbmCapacity": 7,
+    "kirExpiry": "2027-01-15",
+    "policeNumber": "F 8942 BG",
+    "odometerKM": 145000
+  },
+  {
+    "id": "veh-7",
+    "stnkTaxExpiry": "2026-11-30",
+    "kirExpiry": "2026-11-15",
+    "name": "Truk CDD Long Mitra Logistik",
+    "vehicleType": "Truk CDD Long Box",
+    "ownership": "Sewa Mitra",
+    "status": "Siap Operasi",
+    "policeNumber": "B 9331 JXQ",
+    "odometerKM": 98000,
+    "tonnageCapacity": 6,
+    "_syncMeta": {
+      "deviceType": "Desktop",
+      "browser": "Chrome",
+      "deviceOS": "macOS",
+      "updatedBy": "Seno Subroto",
+      "updatedAt": "2026-09-13T16:05:47.685Z"
+    },
+    "cbmCapacity": 28
   }
 ];

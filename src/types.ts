@@ -15,7 +15,7 @@ export interface Staff {
   division: Division;
   secondaryDivision?: Division; // Divisi kedua (misal Mulyana/Kharo: Service & Videotron)
   divisions?: Division[]; // Daftar seluruh divisi yang dipegang
-  role: 'Owner' | 'Direktur' | 'Admin' | 'Supervisor' | 'Team Leader' | 'Staff' | 'Gudang' | 'Manager';
+  role: 'Owner' | 'Direktur' | 'Admin' | 'Supervisor' | 'Team Leader' | 'Staff Leader' | 'Staff Admin' | 'Staff' | 'Gudang' | 'Manager';
   level?: number; // Jenjang Tingkat Kompetensi (Level 1 - 8)
   avatar?: string;
   phone?: string;
@@ -63,6 +63,14 @@ export interface VehicleMaster {
   stnkTaxExpiry: string; // YYYY-MM-DD
   kirExpiry: string; // YYYY-MM-DD
   status: 'Siap Operasi' | 'Dalam Perjalanan' | 'Maintenance / Servis';
+  _syncedAt?: string; // Timestamp sinkronisasi Firestore
+  _syncMeta?: {
+    updatedAt: string;
+    updatedBy: string;
+    deviceOS?: string;
+    deviceType?: string;
+    browser?: string;
+  };
 }
 
 export interface ManifestCargoItem {
@@ -164,6 +172,14 @@ export interface LogbookEntry {
   photoUrl?: string; // Foto bukti inspeksi / QC (single/thumbnail)
   photos?: string[]; // Mendukung beberapa foto bukti sekaligus
   _source?: string;
+  _syncedAt?: string; // Timestamp sinkronisasi Firestore
+  _syncMeta?: {
+    updatedAt: string;
+    updatedBy: string;
+    deviceOS?: string;
+    deviceType?: string;
+    browser?: string;
+  };
 }
 
 export interface DailyReport {
@@ -177,6 +193,7 @@ export interface DailyReport {
   photos?: string[]; // Mendukung beberapa foto dokumentasi
   status: 'Draft' | 'Submitted';
   _source?: string;
+  _syncedAt?: string; // Timestamp sinkronisasi Firestore
   _syncMeta?: {
     updatedAt: string;
     updatedBy: string;
@@ -195,10 +212,13 @@ export interface Finding {
   targetDate: string;
   status: 'Open' | 'Close';
   dateCreated: string;
+  date?: string; // Alias / field alternatif dari Firestore sync
+  updatedAt?: string; // Timestamp update terakhir dari Firestore
   division?: Division;
   approvedBy?: string;
   approvedAt?: string;
   _source?: string;
+  _syncedAt?: string; // Timestamp sinkronisasi Firestore
   _syncMeta?: {
     updatedAt: string;
     updatedBy: string;
@@ -289,6 +309,8 @@ export interface DailyTask {
   dueDate?: string;
   createdAt: string;
   createdBy: string;
+  photoUrl?: string;
+  photos?: string[];
 }
 
 export type FreelanceSpecialization = 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Rigging' | 'Genset / Power' | 'Gudang / Helper' | 'Driver' | 'Service / Teknisi' | 'Umum';

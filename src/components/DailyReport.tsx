@@ -9,6 +9,7 @@ import { STAFF_LIST, getMasterStaffList } from '../data';
 import { FileText, Plus, Calendar, User, Briefcase, CheckCircle2, Clipboard, Image as ImageIcon, Trash2, Search, Send, AlertOctagon, Eye, X, Upload } from 'lucide-react';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { isStaffInDivision, getStaffDivisions } from '../utils/kpiCalculator';
+import { compressImageFile } from '../utils/imageUtils';
 
 interface DailyReportProps {
   reports: DailyReportType[];
@@ -68,7 +69,7 @@ export default function DailyReport({
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<'Draft' | 'Submitted'>('Submitted');
   const [photoUrl, setPhotoUrl] = useState('');
-  const [uploadOption, setUploadOption] = useState<'file' | 'preset' | 'none'>('preset');
+  const [uploadOption, setUploadOption] = useState<'file' | 'preset' | 'none'>('file');
   const [customFileBase64, setCustomFileBase64] = useState('');
   const [customFilesBase64, setCustomFilesBase64] = useState<string[]>([]);
   const [previewModalImg, setPreviewModalImg] = useState<string | null>(null);
@@ -83,24 +84,18 @@ export default function DailyReport({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDivision, setFilterDivision] = useState<string>(isManagement ? 'All' : currentUser.division);
 
-  // Handle Photo Upload Conversion (Multiple files supported)
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Photo Upload Conversion (Multiple files supported with automatic lightweight compression)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const fileArray = Array.from(files) as File[];
-      const readPromises = fileArray.map((file: File) => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            resolve(reader.result as string);
-          };
-          reader.readAsDataURL(file);
-        });
-      });
-
-      Promise.all(readPromises).then(newImages => {
+      try {
+        const compressedPromises = fileArray.map((file: File) => compressImageFile(file, 1200, 1200, 0.75));
+        const newImages = await Promise.all(compressedPromises);
         setCustomFilesBase64(prev => [...prev, ...newImages]);
-      });
+      } catch (err) {
+        console.error('Error compressing uploaded photos:', err);
+      }
     }
     e.target.value = '';
   };
@@ -163,7 +158,7 @@ export default function DailyReport({
                         r.notes.toLowerCase().includes(searchTerm.toLowerCase());
     const matchDivision = isManagement 
       ? (filterDivision === 'All' || r.division === filterDivision || (isDualStaffName(r.staffName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
-      : (userDivisions.includes(r.division) || isDualStaffName(r.staffName));
+      : (userDivisions.includes(r.division) || r.staffName === currentUser.name || (isDualStaffName(r.staffName) && (userDivisions.includes('Videotron') || userDivisions.includes('Service'))));
     return matchSearch && matchDivision;
   }).sort((a, b) => b.id.localeCompare(a.id, undefined, { numeric: true }));
 
@@ -207,38 +202,43 @@ export default function DailyReport({
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                 Nama Staff / Teknisi
               </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <select
-                  value={staffName}
-                  onChange={(e) => {
-                    setStaffName(e.target.value);
-                    const selected = staffList.find(s => s.name === e.target.value);
-                    if (selected) {
-                      setDivision(selected.division);
-                    }
-                  }}
-                  className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-700 bg-slate-50/50"
-                  required
-                >
-                  {staffList.filter(
-                    (staff) =>
-                      isManagement ||
-                      staff.division === currentUser.division ||
-                      staff.id === currentUser.id
-                  ).map(staff => (
-                    <option key={staff.id} value={staff.name}>
-                      {staff.name} {staff.nickname && staff.nickname.toLowerCase() !== staff.name.toLowerCase() ? `(${staff.nickname})` : ''} - {staff.division}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {isManagement ? (
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <select
+                    value={staffName}
+                    onChange={(e) => {
+                      setStaffName(e.target.value);
+                      const selected = staffList.find(s => s.name === e.target.value);
+                      if (selected) {
+                        setDivision(selected.division);
+                      }
+                    }}
+                    className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-700 bg-slate-50/50"
+                    required
+                  >
+                    {staffList.map(staff => (
+                      <option key={staff.id} value={staff.name}>
+                        {staff.name} {staff.nickname && staff.nickname.toLowerCase() !== staff.name.toLowerCase() ? `(${staff.nickname})` : ''} - {staff.division}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+                  <span className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{currentUser.name} ({currentUser.division})</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal px-1.5 py-0.5 bg-slate-200/70 rounded">Terkunci</span>
+                </div>
+              )}
             </div>
 
             {/* Divisi */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                Divisi Kerja
+                Divisi Kerja (Lintas Divisi)
               </label>
               <div className="relative">
                 <Briefcase className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -248,29 +248,14 @@ export default function DailyReport({
                   className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-700 bg-slate-50/50"
                   required
                 >
-                  {isManagement ? (
-                    <>
-                      <option value="Audio">Audio (Sound)</option>
-                      <option value="Lighting">Lighting</option>
-                      <option value="Videotron">Videotron</option>
-                      <option value="Multimedia">Multimedia</option>
-                      <option value="Gudang">Gudang</option>
-                      <option value="Admin">Admin / Management</option>
-                      <option value="Service">Service (Perbaikan)</option>
-                    </>
-                  ) : userDivisions.length > 1 ? (
-                    <>
-                      {userDivisions.map(d => (
-                        <option key={d} value={d}>
-                          {d === 'Audio' ? 'Audio (Sound)' : d === 'Videotron' ? 'Videotron (LED / Videotron)' : d === 'Service' ? 'Service (Perbaikan)' : d}
-                        </option>
-                      ))}
-                    </>
-                  ) : (
-                    <option value={currentUser.division}>
-                      {currentUser.division === 'Audio' ? 'Audio (Sound)' : currentUser.division}
-                    </option>
-                  )}
+                  <option value="Audio">Audio (Sound)</option>
+                  <option value="Lighting">Lighting</option>
+                  <option value="Videotron">Videotron</option>
+                  <option value="Multimedia">Multimedia</option>
+                  <option value="Gudang">Gudang</option>
+                  <option value="Admin">Admin / Management</option>
+                  <option value="Service">Service (Perbaikan)</option>
+                  <option value="Umum">Umum (Lintas Divisi)</option>
                 </select>
               </div>
             </div>

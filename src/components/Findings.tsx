@@ -591,10 +591,6 @@ export default function Findings({
                     onChange={(e) => {
                       const selectedName = e.target.value;
                       setPic(selectedName);
-                      const matchedStaff = staffList.find(s => s.name === selectedName);
-                      if (matchedStaff) {
-                        setFindingDivision(matchedStaff.division);
-                      }
                     }}
                     className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50/50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     required
