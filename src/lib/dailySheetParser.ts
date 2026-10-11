@@ -297,9 +297,9 @@ export function parseDailySheet(rows: SheetRow[]): ParsedEntry[] {
         continue;
       }
 
-      // Pecah crew jika ada multi-crew dalam 1 sel (baris baru, koma, dsb)
+      // Pecah crew jika ada multi-crew dalam 1 sel (baris baru, koma, ampersand, kata 'dan', dsb)
       const rawCrewParts = rawCrew
-        .split(/[\n\r,;/]+/)
+        .split(/[\n\r,;/&]+|(?:\s+dan\s+)/i)
         .map((p) => p.trim())
         .filter(Boolean);
 
@@ -364,7 +364,7 @@ export const OFFICIAL_GSHEET_TABS: Record<string, { label: string; gid: string }
   '2026-07': { label: 'Juli 2026', gid: '2099865640' },
   '2026-08': { label: 'Agustus 2026', gid: '1894783738' },
   '2026-09': { label: 'September 2026', gid: '1869844599' },
-  '2026-10': { label: 'Oktober 2026', gid: '938476420' },
+  '2026-10': { label: 'Oktober 2026', gid: '1340328886' },
   '2026-11': { label: 'November 2026', gid: '1463883290' },
   '2026-12': { label: 'Desember 2026', gid: '646140708' },
 };

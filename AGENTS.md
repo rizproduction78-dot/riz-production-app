@@ -146,9 +146,9 @@ Semua agen yang beroperasi wajib mengadopsi standar kinerja berikut:
 Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terbaru berikut:
 
 1. **Sumber Referensi Resmi & GID Aktif:**
-   - URL Google Sheet Resmi: `https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=938476420#gid=938476420`
+   - URL Google Sheet Resmi: `https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=1340328886#gid=1340328886`
    - Spreadsheet ID: `1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA`
-   - GID Tab Aktif Oktober 2026: `938476420`
+   - GID Tab Aktif Oktober 2026: `1340328886`
 
 2. **Aturan Sinkronisasi Non-Destruktif (Safe Merge Protocol):**
    - Engine `agent_google_sheet_sync.ts` **dilarang keras** menghapus atau mengganti `CANONICAL_FIRESTORE_FINDINGS` dan `CANONICAL_FIRESTORE_WORK_ORDERS` menjadi array kosong (`[]`).
@@ -201,7 +201,7 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
       - Juli 2026: GID `2099865640` (Month: `2026-07`)
       - Agustus 2026: GID `1894783738` (Month: `2026-08`)
       - September 2026: GID `1869844599` (Month: `2026-09`)
-      - Oktober 2026: GID `938476420` (Month: `2026-10`)
+      - Oktober 2026: GID `1340328886` (Month: `2026-10`)
       - November 2026: GID `1463883290` (Month: `2026-11`)
       - Desember 2026: GID `646140708` (Month: `2026-12`)
     - **Normalisasi Dinamis Header (Wajib):** Pada tab bulan Mei s/d Agustus, kolom A kosong atau berisi nomor urut sehingga kolom Tanggal bergeser ke indeks 1 atau 2. Agen dan parser WAJIB menggunakan `extractNormalizedDailySheetRows` dari `src/lib/dailySheetParser.ts` untuk mendeteksi posisi `Tanggal` secara dinamis, bukan mengasumsikan kolom 0.
@@ -212,3 +212,10 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
       - Dilarang menampilkan 100% kesehatan aset jika divisi tersebut belum pernah melakukan inspeksi pada periode bersangkutan (tampilkan `N/A (Belum Ada Cek)`).
       - Dilarang membuat tombol stempel interaktif fiktif ("✔ APPROVED") di luar alur pengesahan dokumen riil. Lembar pengesahan wajib mencantumkan nama dan jabatan struktural resmi yang valid.
       - Dilarang mengisi textarea catatan manajemen dengan teks otomatis (*boilerplate generator*). Teks catatan harus berasal murni dari input manual pengguna/manajemen.
+
+11. **Protokol Logika Perangkingan & Produktivitas Staf (Anti-Inversi Nilai KPI):**
+    - **Akar Masalah Inversi:** Pada bulan berjalan, target absensi dan laporan tidak boleh diambil dari shift template mentah per individu yang menyebabkan staf part-time/1-shift mendapat target 1 (lalu memperoleh skor 100% dengan 1 laporan), sementara staf inhouse/full-time mendapat target 7 (lalu memperoleh skor 43% meskipun telah menyumbang 3 laporan & 24 jam kerja).
+    - **Patokan Proporsional Operasional:** Target absensi (`attendanceTarget`), laporan harian (`reportTarget`), dan QC (`qcTarget`) pada bulan berjalan dipatok secara dinamis berbasis performa operasional tertinggi tim riil (`maxTeamReports` dan `maxTeamQcs`).
+    - **Monotonik & Logis:** Staf dengan kontribusi riil lebih tinggi (3 laporan, 2 QC, 24 jam) WAJIB mendapatkan skor KPI lebih tinggi dan berada pada peringkat lebih atas dibandingkan staf dengan kontribusi lebih rendah (2 laporan/16 jam, atau 1 laporan/8 jam).
+    - **Urutan Resmi Tabel & Top Performer:** Tabel Produktivitas Staf dan widget Top Performer diurutkan secara konsisten: Total KPI (%) Descending -> Kehadiran Riil Descending -> Daily Report Descending -> QC Checklist Descending -> WO Descending.
+

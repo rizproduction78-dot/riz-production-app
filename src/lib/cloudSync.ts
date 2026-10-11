@@ -19,6 +19,7 @@ import { db } from './firebase';
 import { normalizeStaffMaster, STAFF_LIST } from '../data';
 import { isStaffMatch } from '../utils/kpiCalculator';
 import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
+import { saveSupabaseDoc, deleteSupabaseDoc, pushCollectionToSupabase } from './supabaseSync';
 
 export interface DeviceOSInfo {
   os: 'Windows' | 'macOS' | 'iOS' | 'Android' | 'Linux' | 'Unknown';
@@ -1061,6 +1062,9 @@ export async function saveCloudDoc(
     });
   }
 
+  // Sinkronisasi ganda ke Supabase jika terkonfigurasi (tanpa memblokir UI)
+  saveSupabaseDoc(collectionName, docId, cleanData).catch(() => {});
+
   // Auto-update ke Google Sheet di latar belakang secara otomatis (tanpa menunggu perintah user)
   triggerAutoSyncToGoogleSheet(1500);
 }
@@ -1144,6 +1148,9 @@ export async function deleteCloudDoc(
     });
   }
 
+  // Hapus juga di Supabase jika terkonfigurasi
+  deleteSupabaseDoc(collectionName, primaryId || docId).catch(() => {});
+
   // Auto-update ke Google Sheet di latar belakang secara otomatis
   triggerAutoSyncToGoogleSheet(1500);
 }
@@ -1217,6 +1224,9 @@ export async function pushCollectionToCloud<T = any>(
 
       await batch.commit();
     }
+
+    // Push juga ke Supabase jika terkonfigurasi (tanpa memblokir UI)
+    pushCollectionToSupabase(collectionName, items as any).catch(() => {});
 
     if (!skipStatusUpdate) {
       updateSyncStatus({

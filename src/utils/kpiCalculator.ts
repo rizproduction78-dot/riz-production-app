@@ -412,14 +412,29 @@ export function calculateStaffKpi(
 
   const attendanceCount = staffDates.size;
 
+  // Evaluasi patokan operasional untuk bulan berjalan vs bulan lampau
+  const targetReports = dailyReports.filter(r => !r.date || r.date.startsWith(targetMonthKey));
+  const targetLogs = logbookEntries.filter(e => !e.date || e.date.startsWith(targetMonthKey));
+
+  // Hitung volume output tertinggi dari staf aktif dalam batch data untuk patokan proporsional
+  const staffReportCounts = new Map<string, number>();
+  targetReports.forEach(r => {
+    const sName = (r.staffName || '').trim();
+    if (sName) staffReportCounts.set(sName, (staffReportCounts.get(sName) || 0) + 1);
+  });
+  const maxTeamReports = staffReportCounts.size > 0 ? Math.max(...staffReportCounts.values()) : 1;
+
+  const staffQcCounts = new Map<string, number>();
+  targetLogs.forEach(e => {
+    const sName = (e.staffName || '').trim();
+    if (sName) staffQcCounts.set(sName, (staffQcCounts.get(sName) || 0) + 1);
+  });
+  const maxTeamQcs = staffQcCounts.size > 0 ? Math.max(...staffQcCounts.values()) : 1;
+
   let attendanceTarget = 0;
   if (isCurrentRunningMonth) {
-    // Pada bulan berjalan, target dihitung proporsional terhadap jadwal kerja dinas yang sudah berjalan s/d hari ini
-    if (scheduledWorkingDaysToDate > 0) {
-      attendanceTarget = scheduledWorkingDaysToDate;
-    } else {
-      attendanceTarget = attendanceCount > 0 ? attendanceCount : 1;
-    }
+    // Pada bulan berjalan, target absensi dipatok secara adil berdasarkan output operasional tertinggi staf berjalan
+    attendanceTarget = Math.max(1, maxTeamReports);
   } else if (isFutureMonth) {
     attendanceTarget = 0;
   } else {
@@ -497,7 +512,7 @@ export function calculateStaffKpi(
   ).length;
 
   const combinedProductivityCount = reportsCount + completedTaskCount;
-  const reportTarget = Math.max(1, attendanceTarget);
+  const reportTarget = isCurrentRunningMonth ? Math.max(1, maxTeamReports) : Math.max(1, attendanceTarget);
   const reportScore = Math.min(100, Math.round((combinedProductivityCount / reportTarget) * 100));
 
   // ─────────────────────────────────────────────────────────────
@@ -505,7 +520,7 @@ export function calculateStaffKpi(
   // ─────────────────────────────────────────────────────────────
   const qcCount = logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length;
   const isSpecialistNonQC = staff.division === 'Admin';
-  const qcTarget = Math.max(1, attendanceTarget);
+  const qcTarget = isCurrentRunningMonth ? Math.max(1, maxTeamQcs) : Math.max(1, attendanceTarget);
   const rawQcScore = Math.min(100, Math.round((qcCount / qcTarget) * 100));
   const qcScore = isSpecialistNonQC ? reportScore : rawQcScore;
 

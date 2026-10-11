@@ -24,7 +24,7 @@ import { parseDailySheet, SheetRow, extractNormalizedDailySheetRows, OFFICIAL_GS
 import Papa from 'papaparse';
 
 export const DEFAULT_SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
-export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=938476420#gid=938476420';
+export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=1340328886#gid=1340328886';
 export const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxwCU17QZZ_1Z-9Wd2rznC15gIX25xydANyPNWbdyRrrRZzDVAYn9BETiCKAc7f7QUp0w/exec';
 
 export const GOOGLE_SHEET_WEBHOOK_KEY = 'riz_google_sheet_webhook_url';
@@ -1098,8 +1098,8 @@ export async function pullDailyLogFromGviz(
         (row.c || []).map((cell: any) => String(cell?.f || cell?.v || ''))
       );
     } else {
-      // Fallback pipeline: fetch direct CSV export
-      const csvUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/export?format=csv&gid=${gid}`;
+      // Fallback pipeline: fetch direct CSV export via gviz endpoint
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
       const csvRes = await fetch(csvUrl, { cache: 'no-store' });
       if (csvRes.ok) {
         const csvText = await csvRes.text();

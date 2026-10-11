@@ -2,15 +2,15 @@ import fs from 'fs';
 import path from 'path';
 import Papa from 'papaparse';
 import { fileURLToPath } from 'url';
-import { parseDailySheet, SheetRow } from '../src/lib/dailySheetParser';
+import { parseDailySheet, SheetRow, extractNormalizedDailySheetRows } from '../src/lib/dailySheetParser';
 import { DailyReport, LogbookEntry } from '../src/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
-const GID = '938476420';
-const URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${GID}`;
+const GID = '1340328886';
+const URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}`;
 
 console.log('================================================================');
 console.log('    AGENT: GOOGLE SHEET R.A.G SYNC ENGINE (CSV FETCH)           ');
@@ -40,57 +40,29 @@ async function runAgent() {
       return;
     }
     
-    // Find the actual start of the data by looking for 'Tanggal'
-    let startIndex = 0;
-    for (let i = 0; i < rows.length; i++) {
-      if (rows[i][0] && rows[i][0].trim() === 'Tanggal') {
-        startIndex = i;
-        break;
-      }
-    }
-    
-    const headers = ['Tanggal', 'Crew', 'SOUND', 'LIGHTING', 'LED', 'MULTIMEDIA', 'REMARK'];
-    
-    // Data starts 2 rows after the 'Tanggal' row (skipping the sub-headers)
-    const dataRows = rows.slice(startIndex + 2).filter(row => row.some(cell => cell.trim() !== ''));
-
-    console.log(`[AGENT] Ditemukan ${dataRows.length} baris data valid. Mem-format ulang ke Markdown...`);
+    const sheetRows: SheetRow[] = extractNormalizedDailySheetRows(rows);
+    console.log(`[AGENT] Ditemukan ${sheetRows.length} baris data ternormalisasi. Mem-format ulang ke Markdown...`);
     
     let mdContent = '<!-- markdownlint-disable -->\n';
     mdContent += '# DATA SINKRONISASI GOOGLE SHEET (OFFICIAL)\n\n';
     
-    // Write headers
+    const headers = ['Tanggal', 'Crew', 'SOUND', 'LIGHTING', 'LED', 'MULTIMEDIA', 'REMARK'];
     mdContent += '| ' + headers.join(' | ') + ' |\n';
     mdContent += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
     
-    dataRows.forEach((row) => {
-      // Ensure row has exact same number of columns as headers (7)
-      const paddedRow = row.slice(0, 7);
-      while (paddedRow.length < 7) {
-        paddedRow.push('');
-      }
-      const sanitizedRow = paddedRow.map(cell => cell.replace(/\n/g, '<br>').replace(/\|/g, '&#124;'));
+    sheetRows.forEach((r) => {
+      const sanitizedRow = r.cells.map(cell => cell.replace(/\n/g, '<br>').replace(/\|/g, '&#124;'));
       mdContent += '| ' + sanitizedRow.join(' | ') + ' |\n';
     });
     
-    const mdPath = path.join(__dirname, '../official_data.md');
+    const mdPath = path.join(__dirname, '../official_data_synced.md');
     fs.writeFileSync(mdPath, mdContent);
-    console.log(`[AGENT] Data berhasil di-dump ke: official_data.md`);
+    console.log(`[AGENT] Data berhasil di-dump ke: official_data_synced.md`);
 
     // ==========================================
     // PHASE 2: PARSE VIA DAILY_SHEET_PARSER (T6)
     // ==========================================
     console.log(`[AGENT] Mem-parsing data baris menggunakan dailySheetParser bersama...`);
-    
-    const sheetRows: SheetRow[] = dataRows.map((row, idx) => {
-      const paddedRow = row.slice(0, 7);
-      while (paddedRow.length < 7) paddedRow.push('');
-      return {
-        rowNumber: idx + 6,
-        cells: paddedRow
-      };
-    });
-
     const parsedEntries = parseDailySheet(sheetRows);
     console.log(`[AGENT] Total parsed entries: ${parsedEntries.length}`);
 

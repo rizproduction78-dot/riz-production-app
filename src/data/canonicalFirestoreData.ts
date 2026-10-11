@@ -3,7 +3,7 @@ import { DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
 /**
  * DATA KANONIKAL RESMI CLOUD FIRESTORE & GOOGLE SHEET PT. RIZ PRODUCTION MULTI KREASI
  * Disinkronkan langsung dari Cloud Firestore (wh-logbook-2026).
- * Total: 246 Daily Reports | 213 Logbook Entries | 45 Findings | 15 Work Orders
+ * Total: 256 Daily Reports | 221 Logbook Entries | 47 Findings | 16 Work Orders
  */
 
 export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
@@ -4070,47 +4070,47 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261001-staff-irvan-6",
+    "id": "rep-20261001-staff-irvan-4",
     "date": "2026-10-01",
     "staffName": "Muhamad Irvan",
     "division": "Videotron",
     "activity": "- Cek kabel lan",
-    "notes": "",
+    "notes": "Aman",
     "status": "Submitted",
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261001-staff-ayong-7",
+    "id": "rep-20261001-staff-ayong-5",
     "date": "2026-10-01",
     "staffName": "Ayong Sumarsih",
     "division": "Videotron",
     "activity": "- Bersiin Prosesor dan cek kelengkapan kabel Di Processor\n- Nyuci pemberat",
-    "notes": "",
+    "notes": "Sudah\nSudah",
     "status": "Submitted",
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261002-staff-mulyana-9",
+    "id": "rep-20261002-staff-mulyana-7",
     "date": "2026-10-02",
     "staffName": "Mulyana",
     "division": "Videotron",
     "activity": "1. repair 3 kabinet ic warna  + ganti dead pixel 2 kabinet clear\n2. cek 11 modul kabinet\n- 2 modul ilang jalur ic\n- 3 modul ilang jalur pixel\n- 3 modul kena ic warna\n- 1 modul arus konslet\n3. copot ic buat kanibal\n4. sortir masking",
-    "notes": "",
+    "notes": "Aman\nBeres\nPerbaikan\nPerbaikan\nPerbaikan\nPerbaikan\nSudah\nSudah",
     "status": "Submitted",
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261002-staff-unyin-17",
+    "id": "rep-20261002-staff-unyin-15",
     "date": "2026-10-02",
     "staffName": "Wahyudin",
     "division": "Audio",
     "activity": "inventory\nstand speaker 22pcs\nstand mic lama 44pcs\nstand mic baru 20pcs\nstand kick pendek 5pcs\nstand mic pendek 4pcs\nstand boox 22pcs\nstand key singel 4pcs\nstand key soubel 3pcs\nstand gtr lama isi 3 2pcs\nstand gtr singel 4pcs\nstand gtr baru isi 3 1pcs isi 3pcs\nmarking mic sm58 57 condensor c1000\nmarking mic drum\ntakel 2ton 2pcs\ntakel 1ton 8pcs\nsetrap takel panjang 10pcs pendek 2pcs",
-    "notes": "",
+    "notes": "Ada\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nSudah\nSudah\nAman\nAman\nAda",
     "status": "Submitted",
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261002-staff-irvan-34",
+    "id": "rep-20261002-staff-irvan-32",
     "date": "2026-10-02",
     "staffName": "Muhamad Irvan",
     "division": "Videotron",
@@ -4120,7 +4120,7 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261002-staff-ayong-35",
+    "id": "rep-20261002-staff-ayong-33",
     "date": "2026-10-02",
     "staffName": "Ayong Sumarsih",
     "division": "Videotron",
@@ -4130,7 +4130,7 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261002-staff-dedi-36",
+    "id": "rep-20261002-staff-dedi-34",
     "date": "2026-10-02",
     "staffName": "Dedi Agus Wigiantoro",
     "division": "Videotron",
@@ -4140,7 +4140,7 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261003-staff-heri-37",
+    "id": "rep-20261003-staff-heri-35",
     "date": "2026-10-03",
     "staffName": "Heri",
     "division": "Lighting",
@@ -4150,17 +4150,17 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261003-staff-mulyana-45",
+    "id": "rep-20261003-staff-mulyana-43",
     "date": "2026-10-03",
     "staffName": "Mulyana",
     "division": "Videotron",
     "activity": "- repair 1 kabinet ganti ic warna + ganti dead pixel\n- repair modul 1 clear ganti ic warna",
-    "notes": "1 modul pcb bengkok",
+    "notes": "1 modul pcb bengkok\nAman 1",
     "status": "Submitted",
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261004-staff-ramdani-47",
+    "id": "rep-20261004-staff-ramdani-45",
     "date": "2026-10-04",
     "staffName": "Ramdani",
     "division": "Audio",
@@ -4170,22 +4170,122 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261004-staff-unyin-48",
+    "id": "rep-20261004-staff-unyin-46",
     "date": "2026-10-04",
     "staffName": "Wahyudin",
     "division": "Audio",
     "activity": "cleaning up  16 speaker monitor db , LVX 2 unit",
-    "notes": "",
+    "notes": "KOndisi Baik",
     "status": "Submitted",
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261004-staff-heri-49",
+    "id": "rep-20261004-staff-heri-47",
     "date": "2026-10-04",
     "staffName": "Heri",
     "division": "Lighting",
     "activity": "Cleaning All Beam 450 24 Unit (No. 1 - 24)",
     "notes": "Normal Semua",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261005-staff-iwan-48",
+    "date": "2026-10-05",
+    "staffName": "Iwan Kurniawan",
+    "division": "Audio",
+    "activity": "cleaning up monitor ART 312,ART 315",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261005-staff-ramdani-48",
+    "date": "2026-10-05",
+    "staffName": "Ramdani",
+    "division": "Audio",
+    "activity": "cleaning up monitor ART 312,ART 315",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261006-staff-rahmat-49",
+    "date": "2026-10-06",
+    "staffName": "Muhamad Rahmat",
+    "division": "Audio",
+    "activity": "cek unit AVANDA210",
+    "notes": "-semua unit AVANDA210 kondisi normaL",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261006-staff-yudish-50",
+    "date": "2026-10-06",
+    "staffName": "Yudishtira Purnama A",
+    "division": "Audio",
+    "activity": "cek unit AVANDA210",
+    "notes": "Aman",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261006-staff-suryana-51",
+    "date": "2026-10-06",
+    "staffName": "Suryana",
+    "division": "Audio",
+    "activity": "cek unit AVANDA210",
+    "notes": "Kondisi Baik",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261007-staff-ayong-52",
+    "date": "2026-10-07",
+    "staffName": "Ayong Sumarsih",
+    "division": "Videotron",
+    "activity": "Sortir led 5 box",
+    "notes": "-3 box kondisi baik no. 02, 12, 27",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261007-staff-dedi-53",
+    "date": "2026-10-07",
+    "staffName": "Dedi Agus Wigiantoro",
+    "division": "Videotron",
+    "activity": "Sortir led 5 box",
+    "notes": "-Box no. 03 full service dead pixel, box no. 25 5 kabinet dead pixel",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261008-staff-mulyana-54",
+    "date": "2026-10-08",
+    "staffName": "Mulyana",
+    "division": "Videotron",
+    "activity": "repair 4 kabinet led\n- 1 kabinet ganti ic warna\n- 1 kabinet ngacing\n- 2 kabinet ganti jalur",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261008-staff-heri-58",
+    "date": "2026-10-08",
+    "staffName": "Heri",
+    "division": "Lighting",
+    "activity": "Ganti Pompa Smoke No.1",
+    "notes": "- Kondisi Sudah Normal (OKE)",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261009-staff-irvan-59",
+    "date": "2026-10-09",
+    "staffName": "Muhamad Irvan",
+    "division": "Videotron",
+    "activity": "Cek hanging bar gantung",
+    "notes": "- Kondisi Baik",
     "status": "Submitted",
     "_source": "google_sheet"
   }
@@ -9574,73 +9674,145 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "log-gsheet-20261001-staff-irvan-6",
+    "id": "log-rep-20261001-staff-irvan-4",
     "date": "2026-10-01",
     "division": "Videotron",
     "staffName": "Muhamad Irvan",
     "activity": "- Cek kabel lan",
     "result": "OK",
-    "followUp": "Pengecekan kabel LAN selesai kondisi baik",
+    "followUp": "Aman",
     "status": "Close",
-    "verification": "Supervisor Operasional",
+    "verification": "Auto-Synced",
     "checklists": {
-      "Kabel LAN": {
+      "- Cek kabel lan": {
         "status": "OK",
-        "notes": "Cek kabel lan kondisi baik"
+        "notes": "Aman"
       }
     },
     "_source": "google_sheet"
   },
   {
-    "id": "log-gsheet-20261001-staff-ayong-7",
+    "id": "log-rep-20261001-staff-ayong-5",
     "date": "2026-10-01",
     "division": "Videotron",
     "staffName": "Ayong Sumarsih",
-    "activity": "- Bersiin Prosesor dan cek kelengkapan kabel Di Processor",
+    "activity": "- Bersiin Prosesor dan cek kelengkapan kabel Di Processor\n- Nyuci pemberat",
     "result": "OK",
-    "followUp": "Pembersihan prosesor dan kelengkapan kabel di processor selesai",
+    "followUp": "Sudah\nSudah",
     "status": "Close",
-    "verification": "Supervisor Operasional",
+    "verification": "Auto-Synced",
     "checklists": {
-      "Processor & Kabel": {
+      "- Bersiin Prosesor dan cek kelengkapan k": {
         "status": "OK",
-        "notes": "Kondisi lengkap dan bersih"
+        "notes": "Sudah\nSudah"
       }
     },
     "_source": "google_sheet"
   },
   {
-    "id": "log-gsheet-20261002-staff-mulyana-9",
+    "id": "log-rep-20261002-staff-mulyana-7",
     "date": "2026-10-02",
     "division": "Videotron",
     "staffName": "Mulyana",
-    "activity": "cek 11 modul kabinet",
+    "activity": "1. repair 3 kabinet ic warna  + ganti dead pixel 2 kabinet clear\n2. cek 11 modul kabinet\n- 2 modul ilang jalur ic\n- 3 modul ilang jalur pixel\n- 3 modul kena ic warna\n- 1 modul arus konslet\n3. copot ic buat kanibal\n4. sortir masking",
     "result": "NG",
-    "followUp": "2 modul hilang jalur IC, 3 modul hilang jalur pixel, 3 modul kena IC warna, 1 modul arus konslet",
+    "followUp": "Aman\nBeres\nPerbaikan\nPerbaikan\nPerbaikan\nPerbaikan\nSudah\nSudah",
     "status": "Open",
-    "verification": "Supervisor Operasional",
+    "verification": "Auto-Synced",
     "checklists": {
-      "11 Modul Kabinet": {
+      "1. repair 3 kabinet ic warna  + ganti de": {
         "status": "NG",
-        "notes": "2 modul hilang jalur IC, 3 modul hilang jalur pixel, 3 modul kena IC warna, 1 modul arus konslet"
+        "notes": "Aman\nBeres\nPerbaikan\nPerbaikan\nPerbaikan\nPerbaikan\nSudah\nSudah"
       }
     },
     "_source": "google_sheet"
   },
   {
-    "id": "log-gsheet-20261003-staff-heri-37",
+    "id": "log-rep-20261003-staff-heri-35",
     "date": "2026-10-03",
     "division": "Lighting",
     "staffName": "Heri",
-    "activity": "Cek Unit Tripot",
-    "result": "NG",
-    "followUp": "Tripot Centurion A-B normal, Tripot Lama C-F normal, Tripot Custom G tidak lengkap",
-    "status": "Open",
-    "verification": "Supervisor Operasional",
+    "activity": "Cek Unit Tripot\n- A , Tripot Centurion\n- B , Tripot Centurion\n- C , Tripot Lama (Berat)\n- D , Tripot Lama\n- E , Tripot Lama ( Tipis Enteng )\n- F , Tripot Lama ( Tipis Enteng )\n- G , Tripot Custom",
+    "result": "OK",
+    "followUp": "Normal\nNormal\nNormal\nNormal\nNormal\nNormal\nKeadaan tidak komplite",
+    "status": "Close",
+    "verification": "Auto-Synced",
     "checklists": {
-      "Unit Tripot (A-G)": {
-        "status": "NG",
-        "notes": "A s/d F normal, G Custom keadaan tidak komplit"
+      "Cek Unit Tripot\n- A , Tripot Centurion\n-": {
+        "status": "OK",
+        "notes": "Normal\nNormal\nNormal\nNormal\nNormal\nNormal\nKeadaan tidak komplite"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261006-staff-rahmat-49",
+    "date": "2026-10-06",
+    "division": "Audio",
+    "staffName": "Muhamad Rahmat",
+    "activity": "cek unit AVANDA210",
+    "result": "OK",
+    "followUp": "-semua unit AVANDA210 kondisi normaL",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "cek unit AVANDA210": {
+        "status": "OK",
+        "notes": "-semua unit AVANDA210 kondisi normaL"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261006-staff-yudish-50",
+    "date": "2026-10-06",
+    "division": "Audio",
+    "staffName": "Yudishtira Purnama A",
+    "activity": "cek unit AVANDA210",
+    "result": "OK",
+    "followUp": "Aman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "cek unit AVANDA210": {
+        "status": "OK",
+        "notes": "Aman"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261006-staff-suryana-51",
+    "date": "2026-10-06",
+    "division": "Audio",
+    "staffName": "Suryana",
+    "activity": "cek unit AVANDA210",
+    "result": "OK",
+    "followUp": "Kondisi Baik",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "cek unit AVANDA210": {
+        "status": "OK",
+        "notes": "Kondisi Baik"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261009-staff-irvan-59",
+    "date": "2026-10-09",
+    "division": "Videotron",
+    "staffName": "Muhamad Irvan",
+    "activity": "Cek hanging bar gantung",
+    "result": "OK",
+    "followUp": "- Kondisi Baik",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "Cek hanging bar gantung": {
+        "status": "OK",
+        "notes": "- Kondisi Baik"
       }
     },
     "_source": "google_sheet"

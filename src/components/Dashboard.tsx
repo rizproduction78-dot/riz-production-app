@@ -279,8 +279,16 @@ export default function Dashboard({
 
   // Filter staf yang bertugas sesuai data referensi Google Sheet dan memiliki aktivitas riil
   const activeStaffProductivityData = React.useMemo(() => {
-    return activeStaff
-      .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0);
+    return [...activeStaff]
+      .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0)
+      .sort((a, b) => {
+        if (b.kpi !== a.kpi) return b.kpi - a.kpi;
+        if ((b.attendanceCount || 0) !== (a.attendanceCount || 0)) return (b.attendanceCount || 0) - (a.attendanceCount || 0);
+        if (b.reports !== a.reports) return (b.reports || 0) - (a.reports || 0);
+        if (b.qcs !== a.qcs) return (b.qcs || 0) - (a.qcs || 0);
+        if (b.wos !== a.wos) return (b.wos || 0) - (a.wos || 0);
+        return 0;
+      });
   }, [activeStaff]);
 
   // Grade distributions dynamically calculated from real active data
@@ -291,10 +299,18 @@ export default function Dashboard({
 
   // Top Performer Bulan Ini: Selalu dihitung dari akumulasi bulanan resmi Google Sheet (1-10 Top Performer)
   const topPerformers = React.useMemo(() => {
-    return monthlyStaffKpis
+    return [...monthlyStaffKpis]
       .filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0 || s.attendanceCount > 0)
+      .sort((a, b) => {
+        if (b.kpi !== a.kpi) return b.kpi - a.kpi;
+        if ((b.attendanceCount || 0) !== (a.attendanceCount || 0)) return (b.attendanceCount || 0) - (a.attendanceCount || 0);
+        if (b.reports !== a.reports) return (b.reports || 0) - (a.reports || 0);
+        if (b.qcs !== a.qcs) return (b.qcs || 0) - (a.qcs || 0);
+        if (b.wos !== a.wos) return (b.wos || 0) - (a.wos || 0);
+        return 0;
+      })
       .slice(0, 10);
-  }, [monthlyStaffKpis, dailyReports, logbookEntries]);
+  }, [monthlyStaffKpis]);
 
   // 100% Dynamic Division Metrics
   const divisionListConfig = [

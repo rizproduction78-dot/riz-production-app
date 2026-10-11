@@ -2,6 +2,13 @@
   "mcpServers": {
     "google-cloud": {
       "serverUrl": "https://cloud.google.com"
+    },
+    "github": {
+      "command": "github-mcp-server",
+      "args": ["stdio"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<your-token>"
+      }
     }
   }
 }
