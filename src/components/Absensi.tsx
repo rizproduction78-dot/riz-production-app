@@ -887,8 +887,18 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
 
             {/* Attendance Log History */}
             <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4">
-              <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider border-b pb-2">
-                HISTORI LOG ABSENSI TERBARU
+              <div className="flex items-center justify-between border-b pb-2">
+                <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">
+                  HISTORI LOG ABSENSI TERBARU
+                </div>
+                <a
+                  href={OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold transition-colors"
+                >
+                  Drive Bukti Foto ↗
+                </a>
               </div>
 
               <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
