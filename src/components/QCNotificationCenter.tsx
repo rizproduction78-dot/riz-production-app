@@ -26,7 +26,8 @@ import {
   Activity,
   Package,
   Sparkles,
-  ArrowUpRight
+  ArrowUpRight,
+  RefreshCw
 } from 'lucide-react';
 import {
   DailyReport,
@@ -52,6 +53,8 @@ export interface QCNotificationCenterProps {
   activities?: UserActivity[];
   lastSyncTime?: string | Date | null;
   onNavigateTab?: (tabId: string) => void;
+  onSyncSheet?: () => void;
+  isSyncingSheet?: boolean;
   buttonClassName?: string;
   isMobileHeader?: boolean;
   activeMonth?: string;
@@ -120,6 +123,8 @@ export default function QCNotificationCenter({
   activities = [],
   lastSyncTime,
   onNavigateTab,
+  onSyncSheet,
+  isSyncingSheet = false,
   buttonClassName = '',
   isMobileHeader = false,
   activeMonth = 'all'
@@ -166,23 +171,23 @@ export default function QCNotificationCenter({
   }, [isOpen]);
 
   // Ekstraksi timestamp yang aman dan presisi
-  const parseSafeTimestamp = (dateStr?: string, idStr?: string): number => {
+  const parseSafeTimestamp = (dateStr?: string, timeStr?: string, idStr?: string): number => {
     if (!dateStr) return Date.now();
     
-    // Coba ekstrak timestamp numerik dari ID jika format id-timestamp
-    if (idStr && idStr.includes('-')) {
-      const parts = idStr.split('-');
-      const last = parts[parts.length - 1];
-      const parsedNum = parseInt(last, 10);
-      if (!isNaN(parsedNum) && parsedNum > 1500000000000) {
-        return parsedNum;
-      }
+    // Format ISO lengkap dengan T
+    if (dateStr.includes('T')) {
+      const parsedIso = new Date(dateStr).getTime();
+      if (!isNaN(parsedIso)) return parsedIso;
     }
 
-    // Format ISO atau YYYY-MM-DD
-    const isoDate = new Date(dateStr.length === 10 ? `${dateStr}T12:00:00+07:00` : dateStr);
-    const timeVal = isoDate.getTime();
-    return isNaN(timeVal) ? Date.now() : timeVal;
+    const cleanDate = dateStr.slice(0, 10);
+    const cleanTime = timeStr && /^\d{1,2}:\d{2}/.test(timeStr) ? timeStr : '12:00';
+    const isoCombined = `${cleanDate}T${cleanTime.length === 5 ? cleanTime + ':00' : cleanTime}+07:00`;
+    const combinedVal = new Date(isoCombined).getTime();
+    if (!isNaN(combinedVal)) return combinedVal;
+
+    const baseVal = new Date(cleanDate).getTime();
+    return isNaN(baseVal) ? Date.now() : baseVal;
   };
 
   // Menggabungkan HANYA 4 SUMBER INPUT OPERASIONAL RESMI:
@@ -194,7 +199,19 @@ export default function QCNotificationCenter({
   const notifications = useMemo(() => {
     const list: NotificationItem[] = [];
     const seenIds = new Set<string>();
+    const seenContentKeys = new Set<string>();
     const filterMonth = activeMonth && activeMonth !== 'all' ? activeMonth : null;
+
+    // Helper deduplikasi konten identik (misal logbook entry kembar dari daily report yang sama)
+    const checkIsDuplicate = (date: string, staff: string, act: string) => {
+      const normDate = String(date || '').slice(0, 10);
+      const normStaff = String(staff || '').toLowerCase().trim();
+      const normAct = String(act || '').toLowerCase().trim().replace(/\s+/g, ' ');
+      const key = `${normDate}_${normStaff}_${normAct}`;
+      if (seenContentKeys.has(key)) return true;
+      seenContentKeys.add(key);
+      return false;
+    };
 
     // 1. INPUT DAILY TASK
     dailyTasks.forEach(task => {
@@ -205,16 +222,24 @@ export default function QCNotificationCenter({
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
+      const dateVal = task.createdAt ? task.createdAt.split('T')[0] : new Date().toISOString().split('T')[0];
+      const timeVal = task.createdAt && task.createdAt.includes('T') ? task.createdAt.split('T')[1].slice(0, 5) : undefined;
+      const staffVal = task.assignedName || task.assignedTo || 'Tim Lapangan';
+      const actVal = `${task.description || task.title}${task.dueDate ? ` • Target: ${task.dueDate}` : ''} [Status: ${task.status}]`;
+
+      if (checkIsDuplicate(dateVal, staffVal, task.title)) return;
+
       list.push({
         id,
-        date: task.createdAt ? task.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
-        staffName: task.assignedName || task.assignedTo || 'Tim Lapangan',
+        date: dateVal,
+        time: timeVal,
+        staffName: staffVal,
         division: task.division || 'Umum',
         category: 'Daily Task',
         title: `Input Daily Task: ${task.title}`,
-        activity: `${task.description || task.title}${task.dueDate ? ` • Target: ${task.dueDate}` : ''} [Status: ${task.status}]`,
+        activity: actVal,
         qcResult: task.status === 'Done' ? 'OK' : 'INFO',
-        timestamp: parseSafeTimestamp(task.createdAt, task.id),
+        timestamp: parseSafeTimestamp(task.createdAt, timeVal, task.id),
         source: 'Daily Task Kanban',
         targetTab: 'log_task'
       });
@@ -228,6 +253,9 @@ export default function QCNotificationCenter({
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
+      const staffVal = rep.staffName || 'Staff';
+      if (checkIsDuplicate(rep.date, staffVal, rep.activity)) return;
+
       const lowerAct = String(rep.activity).toLowerCase();
       const lowerNotes = String(rep.notes || '').toLowerCase();
       const isKendala = STRICT_FINDING_TERMS.some(t => lowerAct.includes(t) || lowerNotes.includes(t));
@@ -235,14 +263,14 @@ export default function QCNotificationCenter({
       list.push({
         id,
         date: rep.date,
-        staffName: rep.staffName || 'Staff',
+        staffName: staffVal,
         division: rep.division || 'Umum',
         category: 'Daily Log',
-        title: `Daily Log: ${rep.staffName}`,
+        title: `Daily Log: ${staffVal}`,
         activity: rep.activity,
         notes: rep.notes && rep.notes !== '-' ? rep.notes : undefined,
         qcResult: isKendala ? 'NG' : 'OK',
-        timestamp: parseSafeTimestamp(rep.date, rep.id),
+        timestamp: parseSafeTimestamp(rep.date, undefined, rep.id),
         source: rep._source === 'google_sheet' ? 'Google Sheet Sync' : 'Input Aplikasi',
         targetTab: 'log_task'
       });
@@ -255,18 +283,22 @@ export default function QCNotificationCenter({
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
+      const staffVal = log.staffName || 'Teknisi QC';
+      if (checkIsDuplicate(log.date, staffVal, log.activity)) return;
+
       const isNg = log.result === 'NG';
       list.push({
         id,
         date: log.date,
-        staffName: log.staffName || 'Teknisi QC',
+        time: log.time,
+        staffName: staffVal,
         division: log.division || 'Umum',
         category: 'Daily Log',
         title: `Daily Log QC ${log.division} (${log.result})`,
         activity: log.activity,
         notes: log.followUp && log.followUp !== '-' ? log.followUp : undefined,
         qcResult: isNg ? 'NG' : 'OK',
-        timestamp: parseSafeTimestamp(log.date, log.id),
+        timestamp: parseSafeTimestamp(log.date, log.time, log.id),
         source: 'Form QC Onhouse',
         targetTab: 'log_task'
       });
@@ -280,17 +312,21 @@ export default function QCNotificationCenter({
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
+      const dateVal = f.dateCreated || new Date().toISOString().split('T')[0];
+      const staffVal = f.pic || 'Teknisi';
+      if (checkIsDuplicate(dateVal, staffVal, f.issue)) return;
+
       list.push({
         id,
-        date: f.dateCreated || new Date().toISOString().split('T')[0],
-        staffName: f.pic || 'Teknisi',
+        date: dateVal,
+        staffName: staffVal,
         division: f.division || 'Semua Divisi',
         category: 'Temuan Unit Bermasalah',
         title: `Temuan Unit: ${f.equipment} (${f.division || 'Umum'})`,
         activity: `${f.issue}${f.targetDate ? ` • Target: ${f.targetDate}` : ''} [Status: ${f.status}]`,
         notes: f.priority ? `Prioritas: ${f.priority}` : undefined,
         qcResult: 'NG',
-        timestamp: parseSafeTimestamp(f.dateCreated, f.id),
+        timestamp: parseSafeTimestamp(dateVal, undefined, f.id),
         source: 'Log Temuan Kerusakan',
         targetTab: 'findings'
       });
@@ -308,25 +344,49 @@ export default function QCNotificationCenter({
       const actionLabel = isReceived ? 'Unit Diterima' : 'Unit Dikeluarkan';
       const title = `${actionLabel} Gudang: ${log.itemName}`;
       const activity = `[${log.type}] ${log.qty || 1} unit ${log.itemName} • PIC: ${log.pic || 'Gudang'}${log.notes ? ` • Catatan: ${log.notes}` : ''}`;
+      const dateVal = log.date || new Date().toISOString().split('T')[0];
+      const staffVal = log.pic || 'Staff Gudang';
+
+      if (checkIsDuplicate(dateVal, staffVal, activity)) return;
 
       list.push({
         id,
-        date: log.date || new Date().toISOString().split('T')[0],
-        staffName: log.pic || 'Staff Gudang',
+        date: dateVal,
+        staffName: staffVal,
         division: 'Gudang',
         category: 'Mutasi Unit Gudang',
         title,
         activity,
         notes: log.notes && log.notes !== '-' ? log.notes : undefined,
         qcResult: isReceived ? 'OK' : 'INFO',
-        timestamp: parseSafeTimestamp(log.date, log.id),
+        timestamp: parseSafeTimestamp(dateVal, undefined, log.id),
         source: 'Manajemen Logistik Gudang',
         targetTab: 'gudang'
       });
     });
 
-    // Urutkan dari data terbaru ke data terlama (Descending timestamp)
-    return list.sort((a, b) => b.timestamp - a.timestamp);
+    // Urutkan daftar secara mutlak dari TANGGAL MASUK TERBARU (Descending YYYY-MM-DD)
+    return list.sort((a, b) => {
+      // 1. Tanggal (YYYY-MM-DD) terbaru paling atas
+      const dateA = String(a.date || '').slice(0, 10);
+      const dateB = String(b.date || '').slice(0, 10);
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+
+      // 2. Jika tanggal sama, jam/waktu (HH:mm) terbaru paling atas
+      if (a.time && b.time && a.time !== b.time) {
+        return String(b.time).localeCompare(String(a.time));
+      }
+
+      // 3. Jika tanggal sama, timestamp numerik terbaru paling atas
+      if (b.timestamp !== a.timestamp) {
+        return b.timestamp - a.timestamp;
+      }
+
+      // 4. Stable sort
+      return String(b.id || '').localeCompare(String(a.id || ''));
+    });
   }, [dailyReports, logbookEntries, findings, dailyTasks, warehouseLogs, activeMonth]);
 
   // Deteksi penambahan data input secara live dalam sesi aktif untuk memicu Toast
@@ -592,6 +652,21 @@ export default function QCNotificationCenter({
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {onSyncSheet && (
+                    <button
+                      type="button"
+                      onClick={onSyncSheet}
+                      disabled={isSyncingSheet}
+                      className={`px-2 py-1 rounded-md text-[10px] font-bold text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 flex items-center gap-1 transition-colors cursor-pointer ${
+                        isSyncingSheet ? 'opacity-70 cursor-not-allowed animate-pulse' : ''
+                      }`}
+                      title="Tarik & sinkronkan data terbaru dari Google Sheet"
+                    >
+                      <RefreshCw className={`w-3 h-3 text-emerald-300 ${isSyncingSheet ? 'animate-spin' : ''}`} />
+                      <span className="hidden sm:inline">{isSyncingSheet ? 'Menarik...' : 'Sync Sheet'}</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={handleMarkAllRead}
                     className="px-2 py-1 text-[10px] font-bold text-blue-300 hover:text-white hover:bg-slate-800 rounded transition-colors flex items-center gap-1 cursor-pointer"
@@ -794,8 +869,8 @@ export default function QCNotificationCenter({
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10px] font-mono text-slate-400 font-semibold">
-                                {item.time || item.date}
+                              <span className="text-[10px] font-mono text-slate-500 font-bold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                {item.date}{item.time && item.time !== item.date ? ` • ${item.time}` : ''}
                               </span>
                               <span
                                 className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${

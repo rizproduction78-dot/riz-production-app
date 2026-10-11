@@ -172,6 +172,7 @@ export interface QCDivisionReport {
 export interface LogbookEntry {
   id: string;
   date: string;
+  time?: string;
   division: Division;
   staffName: string;
   activity: string; // e.g., "Cleaning / Check / Test"

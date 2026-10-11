@@ -1660,6 +1660,8 @@ export default function App() {
             dailyTasks={dailyTasks}
             warehouseLogs={warehouseLogs}
             onNavigateTab={setActiveTab}
+            onSyncSheet={() => handleSyncDailyLogFromSheet()}
+            isSyncingSheet={isSyncingSheet}
             lastSyncTime={syncStatus.lastSyncedAt}
             isMobileHeader={true}
             activeMonth={activeMonth}
@@ -1827,6 +1829,8 @@ export default function App() {
               dailyTasks={dailyTasks}
               warehouseLogs={warehouseLogs}
               onNavigateTab={setActiveTab}
+              onSyncSheet={() => handleSyncDailyLogFromSheet()}
+              isSyncingSheet={isSyncingSheet}
               lastSyncTime={syncStatus.lastSyncedAt}
               activeMonth={activeMonth}
             />
