@@ -9,6 +9,15 @@ export const OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL = "https://drive.google.c
 export const OFFICIAL_GOOGLE_DRIVE_FOLDER_ID = "1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h";
 export const OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL = "https://drive.google.com/drive/folders/1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h";
 
+// Alamat Resmi & Koordinat GPS Kantor / Gudang PT. Riz Production Multi Kreasi
+export const OFFICIAL_COMPANY_ADDRESS = "Jl. Alternatif Jl. Tugu Wates No.78, RT.02/RW.13, Kedungbadak, Tanah Sareal, Kota Bogor, Jawa Barat 16164";
+export const OFFICIAL_COMPANY_PLUS_CODE = "CRR3+82 Kedungbadak, Bogor City, West Java";
+export const OFFICIAL_COMPANY_GPS_LAT = -6.55919;
+export const OFFICIAL_COMPANY_GPS_LNG = 106.80256;
+export const OFFICIAL_COMPANY_GPS_COORDINATES = "Lat: -6.55919, Lng: 106.80256";
+export const OFFICIAL_COMPANY_LOCATION_FULL = "Jl. Alternatif Jl. Tugu Wates No.78, RT.02/RW.13, Kedungbadak, Tanah Sareal, Kota Bogor, Jawa Barat 16164 (CRR3+82 Kedungbadak, Bogor City, West Java)";
+export const OFFICIAL_COMPANY_GOOGLE_MAPS_URL = "https://www.google.com/maps/search/?api=1&query=-6.55919,106.80256";
+
 export interface Staff {
   id: string;
   name: string;

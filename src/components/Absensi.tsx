@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Staff, AttendanceLog, WorkSchedule, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL, OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL } from '../types';
+import { 
+  Staff, 
+  AttendanceLog, 
+  WorkSchedule, 
+  OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL, 
+  OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL,
+  OFFICIAL_COMPANY_ADDRESS,
+  OFFICIAL_COMPANY_PLUS_CODE,
+  OFFICIAL_COMPANY_GPS_COORDINATES,
+  OFFICIAL_COMPANY_GOOGLE_MAPS_URL
+} from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import {
   SHIFT_LEGEND,
@@ -378,10 +388,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
     }
   }, [electricalCompetencies]);
 
-  // Handle Real GPS detection
+  // Handle Real GPS detection & Fallback to HQ
   const handleDetectGPS = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation tidak didukung oleh browser Anda.');
+      setGpsSimulated(`${OFFICIAL_COMPANY_GPS_COORDINATES} (${OFFICIAL_COMPANY_PLUS_CODE})`);
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -390,9 +400,14 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
         setGpsSimulated(`Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`);
       },
       (error) => {
-        alert('Gagal mendapatkan lokasi GPS. Pastikan izin lokasi diberikan.');
+        // Fallback to official HQ Bogor coordinates
+        setGpsSimulated(`${OFFICIAL_COMPANY_GPS_COORDINATES} (${OFFICIAL_COMPANY_PLUS_CODE})`);
       }
     );
+  };
+
+  const handleSetHqGPS = () => {
+    setGpsSimulated(`${OFFICIAL_COMPANY_GPS_COORDINATES} (${OFFICIAL_COMPANY_PLUS_CODE})`);
   };
 
   // Handle Real File Input for Camera
@@ -493,7 +508,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
         ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' 
         : photoSimulated,
       checkInGps: isTeamLeader 
-        ? 'Office - HQ (Bypass Team Leader)' 
+        ? `${OFFICIAL_COMPANY_GPS_COORDINATES} (Office HQ - ${OFFICIAL_COMPANY_PLUS_CODE})` 
         : gpsSimulated,
       status: customStatus === 'Hadir' ? 'Hadir' : customStatus,
       isLate,
@@ -536,7 +551,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
         ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' 
         : photoSimulated,
       checkOutGps: isTeamLeader 
-        ? 'Office - HQ (Bypass Team Leader)' 
+        ? `${OFFICIAL_COMPANY_GPS_COORDINATES} (Office HQ - ${OFFICIAL_COMPANY_PLUS_CODE})` 
         : gpsSimulated
     };
 
@@ -772,37 +787,78 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                         {/* GPS LOCATION SIMULATOR */}
                         <div className="p-4 border border-slate-200 rounded-lg space-y-3 bg-slate-50/50">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                               <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-                              Koordinat GPS Lokasi
+                              Koordinat GPS Lokasi Absensi
                             </span>
                             {gpsSimulated && (
-                              <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-mono">Tersinkron</span>
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold">Tersinkron</span>
                             )}
                           </div>
 
-                          {gpsSimulated ? (
-                            <div className="p-2 bg-indigo-50/50 border border-indigo-100 rounded-lg text-xs space-y-1">
-                              <div className="font-semibold text-indigo-900">GPS Terdeteksi:</div>
-                              <div className="text-[11px] text-slate-600 font-mono leading-tight">{gpsSimulated}</div>
-                              <button
-                                type="button"
-                                onClick={() => setGpsSimulated('')}
-                                className="text-[10px] text-indigo-600 underline font-semibold hover:text-indigo-800"
+                          {/* Titik Acuan Resmi Kantor/Gudang */}
+                          <div className="p-2.5 bg-white border border-slate-200 rounded-lg text-xs space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-slate-800 text-[11px] flex items-center gap-1">
+                                🏢 Titik Acuan Kantor & Gudang (HQ):
+                              </span>
+                              <a
+                                href={OFFICIAL_COMPANY_GOOGLE_MAPS_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold underline"
                               >
-                                Reset Koordinat
-                              </button>
+                                Google Maps ↗
+                              </a>
+                            </div>
+                            <div className="text-[10px] text-slate-600 leading-tight">
+                              {OFFICIAL_COMPANY_ADDRESS}
+                            </div>
+                            <div className="text-[10px] text-indigo-700 font-mono font-bold">
+                              Plus Code: {OFFICIAL_COMPANY_PLUS_CODE} | {OFFICIAL_COMPANY_GPS_COORDINATES}
+                            </div>
+                          </div>
+
+                          {gpsSimulated ? (
+                            <div className="p-2.5 bg-indigo-50/70 border border-indigo-200 rounded-lg text-xs space-y-1">
+                              <div className="font-semibold text-indigo-900">GPS Terdeteksi / Terpilih:</div>
+                              <div className="text-[11px] text-slate-800 font-mono font-bold leading-tight">{gpsSimulated}</div>
+                              <div className="flex items-center gap-3 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setGpsSimulated('')}
+                                  className="text-[10px] text-rose-600 underline font-semibold hover:text-rose-800 cursor-pointer"
+                                >
+                                  Reset Koordinat
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleSetHqGPS}
+                                  className="text-[10px] text-indigo-600 underline font-semibold hover:text-indigo-800 cursor-pointer"
+                                >
+                                  Set Titik HQ Bogor
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <div className="border border-slate-200 rounded-lg p-3 bg-white text-center space-y-2">
                               <span className="text-xs text-slate-400 block">Koordinat GPS belum diambil</span>
-                              <button
-                                type="button"
-                                onClick={handleDetectGPS}
-                                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded cursor-pointer transition-colors"
-                              >
-                                Dapatkan Lokasi GPS
-                              </button>
+                              <div className="flex flex-wrap items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={handleDetectGPS}
+                                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded cursor-pointer transition-colors shadow-2xs"
+                                >
+                                  Dapatkan Lokasi GPS
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleSetHqGPS}
+                                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-semibold rounded cursor-pointer transition-colors"
+                                >
+                                  Gunakan Titik HQ Bogor
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>

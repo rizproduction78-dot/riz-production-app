@@ -234,6 +234,14 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
     - **Folder ID:** `1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h`
     - **Aturan Operasional:** Seluruh verifikasi foto selfie absensi kehadiran (Check In), absensi pulang (Check Out), bukti dokumentasi kehadiran lapangan, dan log absensi personil wajib tertaut secara permanen ke folder resmi ini. Tautan akses langsung wajib selalu tersedia di komponen Absensi Mandiri, form input foto selfie, dan histori log absensi.
 
+15. **Komit Mutlak: Alamat Resmi & Koordinat GPS Kantor / Gudang Operasional:**
+    - **Alamat Resmi:** `Jl. Alternatif Jl. Tugu Wates No.78, RT.02/RW.13, Kedungbadak, Tanah Sareal, Kota Bogor, Jawa Barat 16164`
+    - **Google Plus Code:** `CRR3+82 Kedungbadak, Bogor City, West Java` (Kode Penuh: `6P58CRR3+82`)
+    - **Koordinat GPS Resmi:** Latitude `-6.55919`, Longitude `106.80256` (`Lat: -6.55919, Lng: 106.80256`)
+    - **Tautan Google Maps:** `https://www.google.com/maps/search/?api=1&query=-6.55919,106.80256`
+    - **Penerapan Sistem:** Menjadi basis acuan tunggal titik lokasi kantor/workshop (HQ) untuk validasi absensi (Check In / Check Out), informasi geolokasi logbook, serta kop dokumen resmi cetak (print headers) di seluruh modul aplikasi.
+
+
 
 
 
