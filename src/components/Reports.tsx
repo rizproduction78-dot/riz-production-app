@@ -327,8 +327,33 @@ export default function Reports({
     return () => unsubSchedule();
   }, [activeMonth]);
 
+  // Helper pencocokan divisi jadwal (SOUND/LED/GUDANG/ADMIN) dengan label resmi
+  const isScheduleDivisionMatch = (schDiv: string, targetKey: string): boolean => {
+    const s = (schDiv || '').trim().toLowerCase();
+    const t = (targetKey || '').trim().toLowerCase();
+    if (s === t) return true;
+    if ((t === 'audio' || t === 'sound') && (s === 'audio' || s === 'sound')) return true;
+    if ((t === 'videotron' || t === 'led') && (s === 'videotron' || s === 'led')) return true;
+    if ((t === 'gudang' || t === 'warehouse') && (s === 'gudang' || s === 'warehouse')) return true;
+    if ((t === 'admin' || t === 'administrasi') && (s === 'admin' || s === 'administrasi')) return true;
+    if ((t === 'service' || t === 'perbaikan') && (s === 'service' || s === 'perbaikan')) return true;
+    return false;
+  };
+
+  // Deduplikasi jadwal staff untuk mencegah penggandaan data dari cloud snapshot
+  const uniqueScheduleRows = React.useMemo(() => {
+    const seen = new Set<string>();
+    const source = monthlyScheduleData.length > 0 ? monthlyScheduleData : (getScheduleByKey(activeMonth)?.rows || []);
+    return source.filter(row => {
+      const key = (row.name || '').trim().toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [monthlyScheduleData, activeMonth]);
+
   const divisionAttendanceStats = reportAttendanceDivisions.map(div => {
-    const staffInDiv = monthlyScheduleData.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
+    const staffInDiv = uniqueScheduleRows.filter(s => isScheduleDivisionMatch(s.division, div.key));
     let hadirCount = 0;
     let terlambatCount = 0;
     let izinCount = 0;
@@ -336,7 +361,24 @@ export default function Reports({
     let alphaCount = 0;
 
     staffInDiv.forEach(s => {
-      Object.values(s.shifts || {}).forEach(shift => {
+      const shifts = s.shifts || {};
+      let relevantShifts: string[] = [];
+
+      if (reportType === 'Harian') {
+        const dayStr = String(parseInt(targetDate.split('-')[2] || '1', 10));
+        if (shifts[dayStr]) relevantShifts.push(shifts[dayStr]);
+      } else if (reportType === 'Mingguan') {
+        const startDay = parseInt(targetStartDate.split('-')[2] || '1', 10);
+        const endDay = parseInt(targetEndDate.split('-')[2] || '31', 10);
+        for (let d = startDay; d <= endDay; d++) {
+          if (shifts[String(d)]) relevantShifts.push(shifts[String(d)]);
+        }
+      } else {
+        // Bulanan: seluruh hari dalam bulan berjalan
+        relevantShifts = Object.values(shifts);
+      }
+
+      relevantShifts.forEach(shift => {
         const up = (String(shift || '')).toUpperCase();
         if (['P', 'MD', 'M', 'PM', 'MASUK'].includes(up)) {
           hadirCount++;
@@ -350,7 +392,14 @@ export default function Reports({
       });
     });
 
-    const divLogs = rawAttendanceLogs.filter(l => l.division?.toLowerCase() === div.key.toLowerCase());
+    const divLogs = rawAttendanceLogs.filter(l => {
+      if (!isScheduleDivisionMatch(l.division || '', div.key)) return false;
+      if (reportType === 'Harian') return l.date === targetDate;
+      if (reportType === 'Mingguan') return l.date >= targetStartDate && l.date <= targetEndDate;
+      if (reportType === 'Bulanan') return l.date?.startsWith(targetMonth);
+      return true;
+    });
+
     divLogs.forEach(l => {
       if (l.isLate) terlambatCount++;
       else if (l.status === 'Izin') izinCount++;
@@ -360,6 +409,7 @@ export default function Reports({
 
     return {
       label: div.label,
+      key: div.key,
       hadir: hadirCount,
       terlambat: terlambatCount,
       izin: izinCount,
@@ -676,12 +726,14 @@ export default function Reports({
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Jenis Aktivitas</div>
                   <div className="text-lg font-bold text-slate-800 mt-0.5">
-                    {new Set(dailyReports.map(r => r.activity).filter(Boolean)).size} Aktivitas
+                    {new Set(activeDailyReports.map(r => r.activity).filter(Boolean)).size} Aktivitas
                   </div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Hari Kerja</div>
-                  <div className="text-lg font-bold text-slate-800 mt-0.5">30 Hari</div>
+                  <div className="text-lg font-bold text-slate-800 mt-0.5">
+                    {new Set(activeDailyReports.map(r => r.date).filter(Boolean)).size || (reportType === 'Harian' ? 1 : reportType === 'Mingguan' ? 7 : 30)} Hari
+                  </div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total Staff Aktif</div>
@@ -698,7 +750,7 @@ export default function Reports({
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Total PM</div>
                   <div className="text-lg font-bold text-slate-800 mt-0.5">
-                    {schedules.filter(s => s.type === 'Preventive').length + workOrders.filter(w => w.title.toLowerCase().includes('pm')).length} Kegiatan
+                    {totalPM} Kegiatan
                   </div>
                 </div>
                 <div className="bg-white p-3 border border-slate-200 rounded">
@@ -708,7 +760,7 @@ export default function Reports({
                 <div className="bg-white p-3 border border-slate-200 rounded">
                   <div className="text-slate-400 text-[10px] uppercase font-bold">Kelulusan QC</div>
                   <div className="text-lg font-bold text-emerald-600 mt-0.5">
-                    {totalCheckedItems > 0 ? Math.round((totalOkItems / totalCheckedItems) * 100) : 100}%
+                    {activeLogbookEntries.length > 0 ? Math.round((activeLogbookEntries.filter(e => e.result === 'OK').length / activeLogbookEntries.length) * 100) : 100}%
                   </div>
                 </div>
               </div>
@@ -734,7 +786,7 @@ export default function Reports({
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
                   {divisionAttendanceStats.map((d, idx) => (
-                    <tr key={idx}>
+                    <tr key={idx} className="hover:bg-slate-50">
                       <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">{d.label}</td>
                       <td className="p-2 border-r border-slate-300 text-center font-bold text-emerald-600">{d.hadir}</td>
                       <td className="p-2 border-r border-slate-300 text-center text-amber-600 font-bold">{d.terlambat}</td>
@@ -744,13 +796,23 @@ export default function Reports({
                     </tr>
                   ))}
                 </tbody>
+                <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-400 font-mono">
+                  <tr>
+                    <td className="p-2 border-r border-slate-300 font-sans text-slate-900">Total Akumulasi</td>
+                    <td className="p-2 border-r border-slate-300 text-center text-emerald-700">{totalHadirAll}</td>
+                    <td className="p-2 border-r border-slate-300 text-center text-amber-700">{totalTerlambatAll}</td>
+                    <td className="p-2 border-r border-slate-300 text-center text-slate-600">{divisionAttendanceStats.reduce((a, b) => a + b.izin, 0)}</td>
+                    <td className="p-2 border-r border-slate-300 text-center text-indigo-600">{divisionAttendanceStats.reduce((a, b) => a + b.sakit, 0)}</td>
+                    <td className="p-2 border-r border-slate-300 text-center text-rose-700">{divisionAttendanceStats.reduce((a, b) => a + b.alpha, 0)}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
 
             <div className="bg-white rounded border-l-4 border-l-indigo-600 border-y border-r border-slate-300 p-3 shadow-2xs page-break-inside-avoid">
               <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">2. KEHADIRAN STAFF</div>
               <div className="mt-2 text-xs text-slate-700 leading-relaxed font-sans">
-                Kehadiran staf bulan {targetMonth} tercatat dan terverifikasi sesuai jadwal dinas. Bobot penilaian kehadiran pada KPI adalah <strong>15%</strong>. Detail kehadiran masing-masing staf dapat dilihat pada tabel KPI Utama di bawah.
+                Kehadiran staf periode {reportType === 'Harian' ? targetDate : reportType === 'Mingguan' ? `${targetStartDate} s/d ${targetEndDate}` : targetMonth} tercatat dan terverifikasi sesuai jadwal dinas resmi. Bobot penilaian kehadiran pada KPI adalah <strong>15%</strong>. Detail kehadiran masing-masing staf dapat dilihat pada tabel KPI Utama di bawah.
               </div>
             </div>
           </div>
@@ -765,53 +827,32 @@ export default function Reports({
                     <th className="p-2 border-r border-slate-300">Divisi</th>
                     <th className="p-2 border-r border-slate-300 text-center">Daily Report</th>
                     <th className="p-2 border-r border-slate-300 text-center">QC</th>
-                    <th className="p-2 text-center">Maintenance</th>
+                    <th className="p-2 text-center">Maintenance (WO)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono">
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Sound</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Audio').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Audio').length}</td>
-                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('audio') || f.issue.toLowerCase().includes('audio')).length}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Lighting</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Lighting').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Lighting').length}</td>
-                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('light') || f.issue.toLowerCase().includes('light')).length}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Videotron</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Videotron').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Videotron').length}</td>
-                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('video') || f.equipment.toLowerCase().includes('led')).length}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Multimedia</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Multimedia').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Multimedia').length}</td>
-                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('multi') || f.issue.toLowerCase().includes('multi')).length}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Gudang (Warehouse)</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Gudang').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Gudang').length}</td>
-                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('gudang')).length}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Administrasi</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Admin').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Admin').length}</td>
-                    <td className="p-2 text-center">{activeFindings.filter(f => f.equipment.toLowerCase().includes('admin')).length}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">Divisi Service (Perbaikan)</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeDailyReports.filter(r=>r.division==='Service').length}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">{activeLogbookEntries.filter(e=>e.division==='Service').length}</td>
-                    <td className="p-2 text-center">{activeFindings.filter(f => f.status === 'Close').length}</td>
-                  </tr>
+                  {reportDivisions.map((div, idx) => {
+                    const drCount = activeDailyReports.filter(r => r.division === div.key || (div.key === 'Audio' && r.division === 'Sound')).length;
+                    const qcCount = activeLogbookEntries.filter(e => e.division === div.key || (div.key === 'Audio' && e.division === 'Sound')).length;
+                    const woCount = activeWorkOrders.filter(w => w.division === div.key || (div.key === 'Audio' && w.division === 'Sound')).length;
+                    return (
+                      <tr key={idx} className="hover:bg-slate-50">
+                        <td className="p-2 border-r border-slate-300 font-sans font-bold text-slate-800">{div.name}</td>
+                        <td className="p-2 border-r border-slate-300 text-center font-bold text-indigo-700">{drCount}</td>
+                        <td className="p-2 border-r border-slate-300 text-center font-bold text-emerald-700">{qcCount}</td>
+                        <td className="p-2 text-center text-slate-700">{woCount}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
+                <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-400 font-mono">
+                  <tr>
+                    <td className="p-2 border-r border-slate-300 font-sans text-slate-900">Total Akumulasi</td>
+                    <td className="p-2 border-r border-slate-300 text-center text-indigo-800 font-bold">{activeDailyReports.length}</td>
+                    <td className="p-2 border-r border-slate-300 text-center text-emerald-800 font-bold">{activeLogbookEntries.length}</td>
+                    <td className="p-2 text-center text-slate-900 font-bold">{activeWorkOrders.length}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
             <div className="p-3 border border-slate-200 bg-slate-50/30 rounded text-xs space-y-1">
@@ -819,26 +860,26 @@ export default function Reports({
               <div className="grid grid-cols-4 gap-2 text-center text-[11px] pt-1 font-mono">
                 <div className="bg-white p-2 border rounded">
                   <strong>Minggu 1 (1-7)</strong>
-                  <div className="text-indigo-600">
-                    {dailyReports.length > 0 ? Math.round((dailyReports.filter(r => { const d = parseInt(r.date.split('-')[2] || '1', 10); return d >= 1 && d <= 7; }).length / dailyReports.length) * 100) : 0}% Beban
+                  <div className="text-indigo-600 font-bold">
+                    {activeDailyReports.length > 0 ? Math.round((activeDailyReports.filter(r => { const d = parseInt(r.date?.split('-')[2] || '1', 10); return d >= 1 && d <= 7; }).length / activeDailyReports.length) * 100) : 0}% Beban
                   </div>
                 </div>
                 <div className="bg-white p-2 border rounded">
                   <strong>Minggu 2 (8-14)</strong>
-                  <div className="text-indigo-600">
-                    {dailyReports.length > 0 ? Math.round((dailyReports.filter(r => { const d = parseInt(r.date.split('-')[2] || '1', 10); return d >= 8 && d <= 14; }).length / dailyReports.length) * 100) : 0}% Beban
+                  <div className="text-indigo-600 font-bold">
+                    {activeDailyReports.length > 0 ? Math.round((activeDailyReports.filter(r => { const d = parseInt(r.date?.split('-')[2] || '1', 10); return d >= 8 && d <= 14; }).length / activeDailyReports.length) * 100) : 0}% Beban
                   </div>
                 </div>
                 <div className="bg-white p-2 border rounded">
                   <strong>Minggu 3 (15-21)</strong>
-                  <div className="text-indigo-600">
-                    {dailyReports.length > 0 ? Math.round((dailyReports.filter(r => { const d = parseInt(r.date.split('-')[2] || '1', 10); return d >= 15 && d <= 21; }).length / dailyReports.length) * 100) : 0}% Beban
+                  <div className="text-indigo-600 font-bold">
+                    {activeDailyReports.length > 0 ? Math.round((activeDailyReports.filter(r => { const d = parseInt(r.date?.split('-')[2] || '1', 10); return d >= 15 && d <= 21; }).length / activeDailyReports.length) * 100) : 0}% Beban
                   </div>
                 </div>
                 <div className="bg-white p-2 border rounded">
                   <strong>Minggu 4 (22-30)</strong>
-                  <div className="text-indigo-600">
-                    {dailyReports.length > 0 ? Math.round((dailyReports.filter(r => { const d = parseInt(r.date.split('-')[2] || '1', 10); return d >= 22; }).length / dailyReports.length) * 100) : 0}% Beban
+                  <div className="text-indigo-600 font-bold">
+                    {activeDailyReports.length > 0 ? Math.round((activeDailyReports.filter(r => { const d = parseInt(r.date?.split('-')[2] || '1', 10); return d >= 22; }).length / activeDailyReports.length) * 100) : 0}% Beban
                   </div>
                 </div>
               </div>

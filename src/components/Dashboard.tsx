@@ -557,8 +557,32 @@ export default function Dashboard({
     );
   }, [staffList, activeDailyReports, activeLogbookEntries, activeFindings, activeWorkOrders, activeDailyTasks, monthlyScheduleData, activeMonth]);
 
+  // Helper pencocokan divisi jadwal dengan divisi standar
+  const isScheduleDivisionMatch = (schDiv: string, targetKey: string): boolean => {
+    const s = (schDiv || '').trim().toLowerCase();
+    const t = (targetKey || '').trim().toLowerCase();
+    if (s === t) return true;
+    if ((t === 'audio' || t === 'sound') && (s === 'audio' || s === 'sound')) return true;
+    if ((t === 'videotron' || t === 'led') && (s === 'videotron' || s === 'led')) return true;
+    if ((t === 'gudang' || t === 'warehouse') && (s === 'gudang' || s === 'warehouse')) return true;
+    if ((t === 'admin' || t === 'administrasi') && (s === 'admin' || s === 'administrasi')) return true;
+    if ((t === 'service' || t === 'perbaikan') && (s === 'service' || s === 'perbaikan')) return true;
+    return false;
+  };
+
+  const uniqueScheduleRows = React.useMemo(() => {
+    const seen = new Set<string>();
+    const source = monthlyScheduleData.length > 0 ? monthlyScheduleData : (getScheduleByKey(activeMonth)?.rows || []);
+    return source.filter(row => {
+      const key = (row.name || '').trim().toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [monthlyScheduleData, activeMonth]);
+
   const divisionAttendanceStats = divisionsAttendanceList.map(div => {
-    const staffInDiv = monthlyScheduleData.filter(s => s.division.toLowerCase() === div.key.toLowerCase());
+    const staffInDiv = uniqueScheduleRows.filter(s => isScheduleDivisionMatch(s.division, div.key));
     let hadirCount = 0;
     let terlambatCount = 0;
     let izinCount = 0;
@@ -566,7 +590,27 @@ export default function Dashboard({
     let alphaCount = 0;
 
     staffInDiv.forEach(s => {
-      Object.values(s.shifts || {}).forEach(shift => {
+      const shifts = s.shifts || {};
+      let relevantShifts: string[] = [];
+
+      if (activeTab === 'harian') {
+        const dayStr = String(parseInt(today.split('-')[2] || '1', 10));
+        if (shifts[dayStr]) relevantShifts.push(shifts[dayStr]);
+      } else if (activeTab === 'daily_report') {
+        const dayStr = String(parseInt(targetDate.split('-')[2] || '1', 10));
+        if (shifts[dayStr]) relevantShifts.push(shifts[dayStr]);
+      } else if (activeTab === 'weekly_report') {
+        const startDay = parseInt(targetStartDate.split('-')[2] || '1', 10);
+        const endDay = parseInt(targetEndDate.split('-')[2] || '31', 10);
+        for (let d = startDay; d <= endDay; d++) {
+          if (shifts[String(d)]) relevantShifts.push(shifts[String(d)]);
+        }
+      } else {
+        // monthly_report & graphic_view
+        relevantShifts = Object.values(shifts);
+      }
+
+      relevantShifts.forEach(shift => {
         const up = (String(shift || '')).toUpperCase();
         if (['P', 'MD', 'M', 'PM', 'MASUK'].includes(up)) {
           hadirCount++;
@@ -580,7 +624,15 @@ export default function Dashboard({
       });
     });
 
-    const divLogs = rawAttendanceLogs.filter(l => l.division?.toLowerCase() === div.key.toLowerCase());
+    const divLogs = rawAttendanceLogs.filter(l => {
+      if (!isScheduleDivisionMatch(l.division || '', div.key)) return false;
+      if (activeTab === 'harian') return l.date === today;
+      if (activeTab === 'daily_report') return l.date === targetDate;
+      if (activeTab === 'weekly_report') return l.date >= targetStartDate && l.date <= targetEndDate;
+      if (activeTab === 'monthly_report' || activeTab === 'graphic_view') return l.date?.startsWith(activeMonth);
+      return true;
+    });
+
     divLogs.forEach(l => {
       if (l.isLate) terlambatCount++;
       else if (l.status === 'Izin') izinCount++;
