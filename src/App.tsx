@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Staff, LogbookEntry, DailyReport as DailyReportType, Finding, Asset, WorkOrder, MaintenanceSchedule, UserActivity, DailyTask, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL } from './types';
+import { Staff, LogbookEntry, DailyReport as DailyReportType, Finding, Asset, WorkOrder, MaintenanceSchedule, UserActivity, DailyTask, AttendanceLog, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL } from './types';
 import {
   STAFF_LIST,
   getMasterStaffList,
@@ -35,6 +35,7 @@ import Gudang from './components/Gudang';
 import CareerCompetencyModule from './components/CareerCompetencyModule';
 import EmployeePerformanceModule from './components/EmployeePerformanceModule';
 import AdminPanel from './components/AdminPanel';
+import QCNotificationCenter from './components/QCNotificationCenter';
 
 import {
   LayoutDashboard,
@@ -611,6 +612,15 @@ export default function App() {
     ];
   });
 
+  const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('riz_attendance_logs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // Google Sheet Daily Log Pull State
   const [isSyncingSheet, setIsSyncingSheet] = useState<boolean>(false);
   const [lastSheetPull, setLastSheetPull] = useState<string | null>(() => getDailyLogLastPull());
@@ -684,6 +694,13 @@ export default function App() {
       []
     );
 
+    const unsubAttendance = subscribeCloudCollection<AttendanceLog>(
+      'attendance_logs',
+      'riz_attendance_logs',
+      setAttendanceLogs,
+      []
+    );
+
     return () => {
       unsubStatus();
       unsubLogbook();
@@ -694,6 +711,7 @@ export default function App() {
       unsubWO();
       unsubSchedules();
       unsubActivities();
+      unsubAttendance();
     };
   }, []);
 
@@ -1581,7 +1599,21 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
+          {/* Bell Notification Icon Mobile */}
+          <QCNotificationCenter
+            dailyReports={dailyReports}
+            logbookEntries={logbookEntries}
+            findings={findings}
+            dailyTasks={dailyTasks}
+            workOrders={workOrders}
+            attendanceLogs={attendanceLogs}
+            activities={activities}
+            onNavigateTab={setActiveTab}
+            lastSyncTime={syncStatus.lastSyncedAt}
+            isMobileHeader={true}
+          />
+
           <span className="text-[11px] font-mono text-[#94a3b8] font-bold bg-[#1e293b] px-2 py-0.5 rounded border border-slate-700">
             {currentUser.name}
           </span>
@@ -1736,6 +1768,19 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Bell Notification Icon Desktop */}
+            <QCNotificationCenter
+              dailyReports={dailyReports}
+              logbookEntries={logbookEntries}
+              findings={findings}
+              dailyTasks={dailyTasks}
+              workOrders={workOrders}
+              attendanceLogs={attendanceLogs}
+              activities={activities}
+              onNavigateTab={setActiveTab}
+              lastSyncTime={syncStatus.lastSyncedAt}
+            />
+
             {/* Global Period Selector - Terkoordinasi ke seluruh modul & side panel */}
             <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-xs">
               <Calendar className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
