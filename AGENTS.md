@@ -249,3 +249,8 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
       4. **Unit Yang Dikeluarkan dan Diterima Oleh Divisi Gudang / Warehouse** (Log mutasi serah terima barang gudang: Masuk, Keluar, Loading, Unloading).
     - Seluruh log di luar 4 sumber ini (seperti log absensi mandiri, audit log aktivitas user umum, dan proses sinkronisasi server background) DILARANG dimunculkan pada Pusat Notifikasi.
     - Tab filter di dalam panel notifikasi wajib strictly berisikan: `Semua`, `Daily Task`, `Daily Log`, `Temuan Unit Bermasalah`, dan `Mutasi Unit Gudang`.
+
+17. **Komit Mutlak: Folder Resmi Google Drive Data Staff & Freelance:**
+    - **URL Folder Resmi:** `https://drive.google.com/drive/folders/1hBGpse_uG9bbeMNqc0qdbMydLTt0uDuq`
+    - **Folder ID:** `1hBGpse_uG9bbeMNqc0qdbMydLTt0uDuq`
+    - **Fungsi:** Tempat penyimpanan, backup cadangan, ekspor, dan penarikan/impor data resmi seluruh master personil: Data Staf Karyawan Tetap dan Database Kru Freelance & Mitra PT. Riz Production Multi Kreasi. Tautan akses langsung dan opsi simpan/tarik data wajib selalu tersedia pada modul Master Personel (Admin Panel).

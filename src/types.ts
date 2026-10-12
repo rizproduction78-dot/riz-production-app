@@ -9,6 +9,10 @@ export const OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL = "https://drive.google.c
 export const OFFICIAL_GOOGLE_DRIVE_FOLDER_ID = "1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h";
 export const OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL = "https://drive.google.com/drive/folders/1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h";
 
+// Folder Resmi Google Drive Data Staff & Freelance PT. Riz Production Multi Kreasi
+export const OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_URL = "https://drive.google.com/drive/folders/1hBGpse_uG9bbeMNqc0qdbMydLTt0uDuq";
+export const OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID = "1hBGpse_uG9bbeMNqc0qdbMydLTt0uDuq";
+
 // Alamat Resmi & Koordinat GPS Kantor / Gudang PT. Riz Production Multi Kreasi
 export const OFFICIAL_COMPANY_ADDRESS = "Jl. Alternatif Jl. Tugu Wates No.78, RT.02/RW.13, Kedungbadak, Tanah Sareal, Kota Bogor, Jawa Barat 16164";
 export const OFFICIAL_COMPANY_PLUS_CODE = "CRR3+82 Kedungbadak, Bogor City, West Java";

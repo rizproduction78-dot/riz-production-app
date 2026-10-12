@@ -7,9 +7,35 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Staff, Division, QCItem, Finding, WorkOrder, MaintenanceSchedule, Asset, VehicleMaster, FleetAssignment, FreelanceWorker, FleetDriver, FreelanceSpecialization, DailyReport, LogbookEntry } from '../types';
+import { 
+  Staff, 
+  Division, 
+  QCItem, 
+  Finding, 
+  WorkOrder, 
+  MaintenanceSchedule, 
+  Asset, 
+  VehicleMaster, 
+  FleetAssignment, 
+  FreelanceWorker, 
+  FleetDriver, 
+  FreelanceSpecialization, 
+  DailyReport, 
+  LogbookEntry,
+  OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_URL,
+  OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID
+} from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, getMasterStaffList, getMasterFreelanceList } from '../data';
 import { getScheduleByKey, StaffScheduleRow, getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
+import {
+  exportStaffToJson,
+  exportStaffToCsv,
+  exportFreelanceToJson,
+  exportFreelanceToCsv,
+  exportAllPersonnelToJson,
+  parsePersonnelImportFile,
+  PersonnelImportResult
+} from '../utils/personnelDriveSync';
 import {
   Users,
   CheckSquare,
@@ -620,6 +646,135 @@ export default function AdminPanel({
       } catch (e) {
         console.warn('[Freelance] Background delete error:', e);
       }
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // 1C. GOOGLE DRIVE MASTER PERSONEL (STAF & FREELANCE) SYNC STATE
+  // ─────────────────────────────────────────────────────────────
+  const [showDrivePersonnelModal, setShowDrivePersonnelModal] = useState(false);
+  const [driveModalTab, setDriveModalTab] = useState<'export' | 'import'>('export');
+  const [importPreview, setImportPreview] = useState<PersonnelImportResult | null>(null);
+  const [importFileName, setImportFileName] = useState('');
+  const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
+  const [importingInProgress, setImportingInProgress] = useState(false);
+  const [importFeedback, setImportFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportFileName(file.name);
+    setImportFeedback(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (!content) return;
+      const res = parsePersonnelImportFile(content, file.name);
+      setImportPreview(res);
+      if (!res.success && res.errors.length > 0) {
+        setImportFeedback({
+          type: 'error',
+          message: res.errors.join(' | ')
+        });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleExecuteImport = async () => {
+    if (!importPreview || !importPreview.success) return;
+    setImportingInProgress(true);
+    setImportFeedback(null);
+
+    try {
+      let updatedStaff = [...staffList];
+      let updatedFreelance = [...freelanceList];
+      let staffChanged = false;
+      let freelanceChanged = false;
+
+      // 1. Process Staff Records
+      if (importPreview.staffRecords.length > 0) {
+        staffChanged = true;
+        if (importMode === 'replace') {
+          updatedStaff = importPreview.staffRecords;
+        } else {
+          const existingMap = new Map(updatedStaff.map(s => [s.id, s]));
+          const nameMap = new Map(updatedStaff.map(s => [s.name.toLowerCase().trim(), s.id]));
+
+          for (const newS of importPreview.staffRecords) {
+            const matchedId = existingMap.has(newS.id)
+              ? newS.id
+              : nameMap.get(newS.name.toLowerCase().trim());
+
+            if (matchedId && existingMap.has(matchedId)) {
+              const old = existingMap.get(matchedId)!;
+              existingMap.set(matchedId, { ...old, ...newS, id: old.id });
+            } else {
+              existingMap.set(newS.id, newS);
+            }
+          }
+          updatedStaff = Array.from(existingMap.values());
+        }
+        await saveStaffList(updatedStaff);
+      }
+
+      // 2. Process Freelance Records
+      if (importPreview.freelanceRecords.length > 0) {
+        freelanceChanged = true;
+        if (importMode === 'replace') {
+          updatedFreelance = importPreview.freelanceRecords;
+        } else {
+          const existingMap = new Map(updatedFreelance.map(f => [f.id, f]));
+          const nameMap = new Map(updatedFreelance.map(f => [f.name.toLowerCase().trim(), f.id]));
+
+          for (const newF of importPreview.freelanceRecords) {
+            const matchedId = existingMap.has(newF.id)
+              ? newF.id
+              : nameMap.get(newF.name.toLowerCase().trim());
+
+            if (matchedId && existingMap.has(matchedId)) {
+              const old = existingMap.get(matchedId)!;
+              existingMap.set(matchedId, { ...old, ...newF, id: old.id });
+            } else {
+              existingMap.set(newF.id, newF);
+            }
+          }
+          updatedFreelance = Array.from(existingMap.values());
+        }
+        await saveFreelanceList(updatedFreelance);
+      }
+
+      const totalMsg = [
+        staffChanged ? `${importPreview.staffRecords.length} Staf Karyawan` : null,
+        freelanceChanged ? `${importPreview.freelanceRecords.length} Kru Freelance` : null
+      ].filter(Boolean).join(' dan ');
+
+      onLogActivity(
+        currentUser.name,
+        currentUser.role,
+        `Menarik & memperbarui data master dari Google Drive (${totalMsg}) via file ${importFileName}`
+      );
+
+      setImportFeedback({
+        type: 'success',
+        message: `Berhasil mengimpor & memperbarui ${totalMsg}! Data telah tersimpan di sistem & cloud.`
+      });
+
+      setTimeout(() => {
+        setImportPreview(null);
+        setImportFileName('');
+        setShowDrivePersonnelModal(false);
+      }, 1800);
+    } catch (err: any) {
+      setImportFeedback({
+        type: 'error',
+        message: `Gagal mengimpor data: ${err?.message || 'Terjadi kesalahan sistem'}`
+      });
+    } finally {
+      setImportingInProgress(false);
     }
   };
 
@@ -1680,6 +1835,68 @@ export default function AdminPanel({
       {/* ───────────────────────────────────────────────────────────── */}
       {activeTab === 'staff' && (
         <div className="space-y-4">
+          {/* BANNER RESMI GOOGLE DRIVE MASTER PERSONEL (STAF & FREELANCE) */}
+          <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 p-4 rounded-2xl border border-indigo-800/60 shadow-md text-white flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-400/30">
+                  <Database className="w-4 h-4" />
+                </span>
+                <h3 className="font-extrabold text-sm text-white tracking-wide">
+                  Penyimpanan Resmi Google Drive — Database Personel & Kru
+                </h3>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-semibold">
+                  Tersinkronisasi
+                </span>
+              </div>
+              <p className="text-xs text-indigo-200/80 font-medium">
+                Penyimpanan cadangan, ekspor, dan penarikan data resmi seluruh Staf Karyawan Tetap & Database Kru Freelance.
+                <span className="ml-1 text-slate-400 font-mono text-[11px]">Folder ID: {OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID}</span>
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600/80 hover:bg-indigo-600 border border-indigo-400/40 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                title="Buka Folder Google Drive Resmi Personel"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka Folder Drive ↗</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDriveModalTab('export');
+                  setImportPreview(null);
+                  setImportFeedback(null);
+                  setShowDrivePersonnelModal(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Simpan ke Drive (Ekspor)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDriveModalTab('import');
+                  setImportPreview(null);
+                  setImportFeedback(null);
+                  setShowDrivePersonnelModal(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Tarik dari Drive (Impor)</span>
+              </button>
+            </div>
+          </div>
+
           {/* Sub Navigation Staf vs Freelance */}
           <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
@@ -3783,6 +4000,420 @@ export default function AdminPanel({
                 <span>Unduh File Backup JSON</span>
               </button>
             </div>
+
+            <div className="bg-white p-6 rounded-2xl border border-indigo-200 shadow-xs space-y-4">
+              <div className="flex items-center gap-2 text-indigo-600">
+                <Database className="w-5 h-5" />
+                <h2 className="text-base font-extrabold text-slate-900">Google Drive — Master Personel & Kru</h2>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                Penyimpanan resmi Google Drive untuk Data Staf Karyawan Tetap & Database Kru Freelance / Mitra. Cadangkan atau tarik data langsung.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Buka Folder Drive ↗</span>
+                </a>
+                <button
+                  onClick={() => {
+                    setDriveModalTab('export');
+                    setImportPreview(null);
+                    setImportFeedback(null);
+                    setShowDrivePersonnelModal(true);
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Simpan ke Drive</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setDriveModalTab('import');
+                    setImportPreview(null);
+                    setImportFeedback(null);
+                    setShowDrivePersonnelModal(true);
+                  }}
+                  className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Tarik dari Drive</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* MODAL GOOGLE DRIVE MASTER PERSONEL (SIMPAN & TARIK DATA)      */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {showDrivePersonnelModal && (
+        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 max-h-[92vh] overflow-y-auto">
+            {/* Header Modal */}
+            <div className="flex justify-between items-start pb-4 border-b border-slate-100">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <Database className="w-5 h-5" />
+                  </span>
+                  <h3 className="font-extrabold text-slate-900 text-base">
+                    Google Drive — Master Personel & Kru Freelance
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">
+                  Folder Penyimpanan Resmi PT. Riz Production Multi Kreasi
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowDrivePersonnelModal(false);
+                  setImportPreview(null);
+                  setImportFeedback(null);
+                }} 
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Folder Info Box */}
+            <div className="p-3.5 bg-indigo-50/70 border border-indigo-200/80 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="space-y-0.5">
+                <div className="font-bold text-indigo-950 flex items-center gap-1.5">
+                  <span>Folder Resmi Google Drive:</span>
+                  <span className="font-mono text-[11px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-semibold">
+                    {OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID}
+                  </span>
+                </div>
+                <div className="text-slate-600 truncate max-w-md">
+                  {OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_URL}
+                </div>
+              </div>
+              <a
+                href={OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs transition-all shadow-xs"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka Folder Drive ↗</span>
+              </a>
+            </div>
+
+            {/* Sub-Tab Nav: Simpan (Ekspor) vs Tarik (Impor) */}
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setDriveModalTab('export');
+                  setImportFeedback(null);
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  driveModalTab === 'export' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Download className="w-4 h-4" />
+                <span>1. Simpan Data ke Drive (Ekspor)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDriveModalTab('import');
+                  setImportFeedback(null);
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  driveModalTab === 'import' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Upload className="w-4 h-4" />
+                <span>2. Tarik Data dari Drive (Impor)</span>
+              </button>
+            </div>
+
+            {/* TAB 1: SIMPAN (EKSPOR) */}
+            {driveModalTab === 'export' && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Pilih format data yang ingin Anda unduh, lalu unggah file hasil unduhan ke folder Google Drive resmi di atas untuk pencadangan aman.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Ekspor Staf Karyawan */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-indigo-600" />
+                        <h4 className="font-bold text-slate-900 text-xs">Staf Karyawan Tetap</h4>
+                      </div>
+                      <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full">
+                        {staffList.length} Staf
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                      Ekspor data 22 staf inhouse lengkap dengan ID, nama asli, divisi, jabatan, dan level kompetensi.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportStaffToCsv(staffList);
+                          onLogActivity(currentUser.name, currentUser.role, 'Mengekspor data Staf Karyawan Tetap ke format CSV');
+                        }}
+                        className="flex-1 py-1.5 px-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Format CSV</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportStaffToJson(staffList);
+                          onLogActivity(currentUser.name, currentUser.role, 'Mengekspor data Staf Karyawan Tetap ke format JSON');
+                        }}
+                        className="flex-1 py-1.5 px-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Format JSON</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Ekspor Kru Freelance */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-amber-500" />
+                        <h4 className="font-bold text-slate-900 text-xs">Database Kru Freelance</h4>
+                      </div>
+                      <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">
+                        {freelanceList.length} Kru
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                      Ekspor data master kru freelance lengkap dengan spesialisasi, rate harian, no rekening, dan kontak.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportFreelanceToCsv(freelanceList);
+                          onLogActivity(currentUser.name, currentUser.role, 'Mengekspor database Kru Freelance ke format CSV');
+                        }}
+                        className="flex-1 py-1.5 px-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                      >
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Format CSV</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportFreelanceToJson(freelanceList);
+                          onLogActivity(currentUser.name, currentUser.role, 'Mengekspor database Kru Freelance ke format JSON');
+                        }}
+                        className="flex-1 py-1.5 px-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Format JSON</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ekspor Cadangan Lengkap Gabungan */}
+                <div className="p-4 bg-indigo-50/50 border border-indigo-200 rounded-xl flex items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <h4 className="font-extrabold text-xs text-indigo-950 flex items-center gap-1.5">
+                      <Database className="w-4 h-4 text-indigo-600" />
+                      <span>Cadangan Lengkap Master Personel (Gabungan Staf + Freelance)</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-600 font-medium">
+                      Paket cadangan JSON tunggal terenkapsulasi penuh memuat {staffList.length} Staf dan {freelanceList.length} Freelance.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportAllPersonnelToJson(staffList, freelanceList);
+                      onLogActivity(currentUser.name, currentUser.role, 'Mengekspor cadangan lengkap Master Personel ke JSON');
+                    }}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 shadow-xs"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Unduh Cadangan Lengkap</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: TARIK (IMPOR) */}
+            {driveModalTab === 'import' && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Tarik atau unggah file data (<span className="font-mono text-slate-800 font-bold">.json</span> atau <span className="font-mono text-slate-800 font-bold">.csv</span>) yang telah Anda unduh dari folder Google Drive resmi. Sistem akan memvalidasi dan mempratinjau data sebelum disimpan.
+                </p>
+
+                {/* File Upload Zone */}
+                <div className="p-6 border-2 border-dashed border-slate-300 hover:border-indigo-400 bg-slate-50 hover:bg-indigo-50/20 rounded-2xl text-center space-y-2 transition-all">
+                  <Upload className="w-8 h-8 text-indigo-500 mx-auto mb-1" />
+                  <div className="text-xs font-bold text-slate-800">
+                    Pilih atau Drag File Data dari Google Drive
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Mendukung file format CSV atau JSON (Staf Karyawan Tetap & Kru Freelance)
+                  </p>
+                  <label className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-xs mt-2">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Pilih File (.json / .csv)</span>
+                    <input
+                      type="file"
+                      accept=".json,.csv,text/csv,application/json"
+                      onChange={handleImportFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                  {importFileName && (
+                    <div className="text-[11px] text-indigo-700 font-mono font-semibold pt-1">
+                      File terpilih: {importFileName}
+                    </div>
+                  )}
+                </div>
+
+                {/* Feedback Message */}
+                {importFeedback && (
+                  <div className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                    importFeedback.type === 'success' 
+                      ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' 
+                      : 'bg-rose-50 border border-rose-200 text-rose-800'
+                  }`}>
+                    {importFeedback.type === 'success' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    )}
+                    <span>{importFeedback.message}</span>
+                  </div>
+                )}
+
+                {/* Import Preview Result */}
+                {importPreview && importPreview.success && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                      <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>Pratinjau Data Terdeteksi</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {importPreview.summary.staffCount > 0 && (
+                          <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full">
+                            {importPreview.summary.staffCount} Staf
+                          </span>
+                        )}
+                        {importPreview.summary.freelanceCount > 0 && (
+                          <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">
+                            {importPreview.summary.freelanceCount} Freelance
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Mode Impor */}
+                    <div className="space-y-1.5 pt-1">
+                      <label className="text-[11px] font-bold text-slate-700 block">Metode Penerapan Data:</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <label className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-start gap-2 transition-all ${
+                          importMode === 'merge' ? 'bg-indigo-50 border-indigo-300 text-indigo-900 font-bold' : 'bg-white border-slate-200 text-slate-600'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="importMode"
+                            checked={importMode === 'merge'}
+                            onChange={() => setImportMode('merge')}
+                            className="mt-0.5"
+                          />
+                          <div>
+                            <div className="font-bold">Gabungkan & Perbarui (Merge)</div>
+                            <div className="text-[10px] font-normal text-slate-500">Perbarui data yang cocok dan tambahkan yang baru (Aman).</div>
+                          </div>
+                        </label>
+
+                        <label className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-start gap-2 transition-all ${
+                          importMode === 'replace' ? 'bg-amber-50 border-amber-300 text-amber-900 font-bold' : 'bg-white border-slate-200 text-slate-600'
+                        }`}>
+                          <input
+                            type="radio"
+                            name="importMode"
+                            checked={importMode === 'replace'}
+                            onChange={() => setImportMode('replace')}
+                            className="mt-0.5"
+                          />
+                          <div>
+                            <div className="font-bold">Timpa Seluruh Data (Replace)</div>
+                            <div className="text-[10px] font-normal text-slate-500">Ganti seluruh daftar dengan data dari file impor.</div>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Sample Records List */}
+                    <div className="space-y-1 pt-1">
+                      <div className="text-[11px] font-bold text-slate-700">Sampel Data Terbaca:</div>
+                      <div className="max-h-28 overflow-y-auto space-y-1 bg-white p-2 rounded-xl border border-slate-200 text-[11px]">
+                        {importPreview.staffRecords.slice(0, 3).map((s, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-slate-700 py-0.5 border-b border-slate-100 last:border-0">
+                            <span className="font-semibold">👤 {s.name} ({s.division} - {s.role})</span>
+                            <span className="text-slate-400 font-mono text-[10px]">{s.id}</span>
+                          </div>
+                        ))}
+                        {importPreview.freelanceRecords.slice(0, 3).map((f, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-slate-700 py-0.5 border-b border-slate-100 last:border-0">
+                            <span className="font-semibold">⚡ {f.name} ({f.specialization} - {f.roleTitle})</span>
+                            <span className="text-slate-400 font-mono text-[10px]">{f.id}</span>
+                          </div>
+                        ))}
+                        {(importPreview.summary.staffCount + importPreview.summary.freelanceCount > 6) && (
+                          <div className="text-center text-slate-400 text-[10px] pt-1">
+                            ... dan {importPreview.summary.staffCount + importPreview.summary.freelanceCount - 6} data lainnya
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tombol Eksekusi Impor */}
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImportPreview(null);
+                          setImportFileName('');
+                        }}
+                        className="px-3.5 py-2 text-slate-600 hover:text-slate-800 text-xs font-semibold cursor-pointer"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        disabled={importingInProgress}
+                        onClick={handleExecuteImport}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                      >
+                        {importingInProgress ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        )}
+                        <span>Terapkan & Simpan Data ke Sistem</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
