@@ -211,6 +211,7 @@ export default function QCNotificationCenter({
 
   const knownItemIdsRef = useRef<Set<string>>(new Set<string>());
   const isInitialLoadRef = useRef<boolean>(true);
+  const mountTimeRef = useRef<number>(Date.now());
 
   // Sinkronisasi antar-tab & antar-instance (Desktop & Mobile Header)
   useEffect(() => {
@@ -503,10 +504,14 @@ export default function QCNotificationCenter({
   useEffect(() => {
     if (notifications.length === 0) return;
 
-    // Saat inisialisasi pertama: daftarkan seluruh ID notifikasi yang sudah ada tanpa memicu popup toast
-    if (isInitialLoadRef.current) {
+    // Grace period inisialisasi: dalam 4 detik pertama sejak komponen di-mount,
+    // daftarkan seluruh ID tanpa memicu popup toast untuk mencegah popup palsu dari data historis/async fetch
+    const isSettling = Date.now() - mountTimeRef.current < 4000;
+    if (isInitialLoadRef.current || isSettling) {
       notifications.forEach(n => knownItemIdsRef.current.add(n.id));
-      isInitialLoadRef.current = false;
+      if (!isSettling) {
+        isInitialLoadRef.current = false;
+      }
       return;
     }
 
@@ -515,10 +520,17 @@ export default function QCNotificationCenter({
     if (freshNewItems.length > 0) {
       freshNewItems.forEach(n => knownItemIdsRef.current.add(n.id));
 
-      // Cari kandidat yang belum pernah di-dismiss dan belum pernah dibaca
-      const toastCandidate = freshNewItems.find(
-        n => !dismissedToastIds.has(n.id) && !readIds.has(n.id)
-      );
+      // Cari kandidat yang belum pernah di-dismiss, belum pernah dibaca,
+      // bukan dokumen berkala armada (yang tampil di banner/drawer),
+      // dan timestamp-nya baru (kurang dari 60 detik lalu)
+      const toastCandidate = freshNewItems.find(n => {
+        if (n.id.startsWith('veh-doc-')) return false;
+        if (dismissedToastIds.has(n.id)) return false;
+        if (readIds.has(n.id)) return false;
+        if (lastReadTimestamp > 0 && n.timestamp <= lastReadTimestamp) return false;
+        const isRecent = Math.abs(Date.now() - n.timestamp) < 60_000;
+        return isRecent;
+      });
 
       if (toastCandidate && !isMobileHeader) {
         setLiveToast(toastCandidate);
@@ -535,7 +547,7 @@ export default function QCNotificationCenter({
         return () => clearTimeout(timer);
       }
     }
-  }, [notifications, isMobileHeader, dismissedToastIds, readIds]);
+  }, [notifications, isMobileHeader, dismissedToastIds, readIds, lastReadTimestamp]);
 
   // Cek apakah notifikasi berstatus belum dibaca
   const isItemUnread = (item: NotificationItem): boolean => {
@@ -662,15 +674,14 @@ export default function QCNotificationCenter({
       saveStoredReadIds(next);
       return next;
     });
-    if (liveToast) {
-      setDismissedToastIds(prev => {
-        const next = new Set(prev);
-        next.add(liveToast.id);
-        saveStoredDismissedToastIds(next);
-        return next;
-      });
-      setLiveToast(null);
-    }
+    setDismissedToastIds(prev => {
+      const next = new Set(prev);
+      notifications.forEach(n => next.add(n.id));
+      if (liveToast) next.add(liveToast.id);
+      saveStoredDismissedToastIds(next);
+      return next;
+    });
+    setLiveToast(null);
     window.dispatchEvent(new CustomEvent('riz-notification-sync'));
   };
 
@@ -692,15 +703,14 @@ export default function QCNotificationCenter({
       saveStoredReadIds(next);
       return next;
     });
-    if (liveToast) {
-      setDismissedToastIds(prev => {
-        const next = new Set(prev);
-        next.add(liveToast.id);
-        saveStoredDismissedToastIds(next);
-        return next;
-      });
-      setLiveToast(null);
-    }
+    setDismissedToastIds(prev => {
+      const next = new Set(prev);
+      notifications.forEach(n => next.add(n.id));
+      if (liveToast) next.add(liveToast.id);
+      saveStoredDismissedToastIds(next);
+      return next;
+    });
+    setLiveToast(null);
     window.dispatchEvent(new CustomEvent('riz-notification-sync'));
   };
 
@@ -709,6 +719,12 @@ export default function QCNotificationCenter({
       const next = new Set(prev);
       next.add(item.id);
       saveStoredReadIds(next);
+      return next;
+    });
+    setDismissedToastIds(prev => {
+      const next = new Set(prev);
+      next.add(item.id);
+      saveStoredDismissedToastIds(next);
       return next;
     });
     window.dispatchEvent(new CustomEvent('riz-notification-sync'));
