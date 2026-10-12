@@ -231,12 +231,13 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
   });
 
   const [localWorkOrders, setLocalWorkOrders] = useState<any[]>(() => {
-    const saved = localStorage.getItem('riz_work_orders');
+    const saved = localStorage.getItem('riz_work_orders_v2') || localStorage.getItem('riz_work_orders');
     if (saved) {
       try {
         const parsed: any[] = JSON.parse(saved);
         const cleaned = parsed.filter(w => !['wo-1', 'wo-2', 'wo-3', 'wo-4'].includes(w.id));
         if (cleaned.length !== parsed.length) {
+          localStorage.setItem('riz_work_orders_v2', JSON.stringify(cleaned));
           localStorage.setItem('riz_work_orders', JSON.stringify(cleaned));
         }
         return cleaned;
@@ -2037,7 +2038,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
 
         const saveWorkOrdersState = (updated: any[]) => {
           setLocalWorkOrders(updated);
-          localStorage.setItem('riz_work_orders', JSON.stringify(updated));
+          try {
+            localStorage.setItem('riz_work_orders_v2', JSON.stringify(updated));
+            localStorage.setItem('riz_work_orders', JSON.stringify(updated));
+          } catch (e) {}
           window.dispatchEvent(new Event('storage'));
         };
 

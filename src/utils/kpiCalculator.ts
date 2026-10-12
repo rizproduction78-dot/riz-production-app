@@ -501,7 +501,7 @@ export function calculateStaffKpi(
   let realTasks: DailyTask[] = dailyTasksOverride || [];
   if (!dailyTasksOverride && typeof window !== 'undefined') {
     try {
-      const saved = localStorage.getItem('riz_daily_tasks');
+      const saved = localStorage.getItem('riz_daily_tasks_v2') || localStorage.getItem('riz_daily_tasks');
       if (saved) realTasks = JSON.parse(saved);
     } catch (e) {}
   }
@@ -531,7 +531,7 @@ export function calculateStaffKpi(
   let realWOs: WorkOrder[] = workOrdersOverride || [];
   if (!workOrdersOverride && typeof window !== 'undefined') {
     try {
-      const saved = localStorage.getItem('riz_work_orders');
+      const saved = localStorage.getItem('riz_work_orders_v2') || localStorage.getItem('riz_work_orders');
       if (saved) realWOs = JSON.parse(saved);
     } catch (e) {}
   }

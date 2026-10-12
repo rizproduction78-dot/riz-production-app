@@ -134,7 +134,7 @@ export default function LogTaskModule({
 
   // Tasks state (synced with local storage & cloud broadcast)
   const [tasks, setTasks] = useState<DailyTask[]>(() => {
-    const saved = localStorage.getItem('riz_daily_tasks');
+    const saved = localStorage.getItem('riz_daily_tasks_v2') || localStorage.getItem('riz_daily_tasks');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -329,7 +329,7 @@ export default function LogTaskModule({
   useEffect(() => {
     const unsub = subscribeCloudCollection<DailyTask>(
       'daily_tasks',
-      'riz_daily_tasks',
+      'riz_daily_tasks_v2',
       (cloudList) => {
         if (cloudList && cloudList.length > 0) {
           setTasks(cloudList);
@@ -344,7 +344,10 @@ export default function LogTaskModule({
 
   // Save to local storage whenever tasks change
   useEffect(() => {
-    localStorage.setItem('riz_daily_tasks', JSON.stringify(tasks));
+    try {
+      localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(tasks));
+      localStorage.setItem('riz_daily_tasks', JSON.stringify(tasks));
+    } catch (e) {}
     if (onUpdateTasks) onUpdateTasks(tasks);
   }, [tasks]);
 
@@ -396,7 +399,13 @@ export default function LogTaskModule({
         photos: taskPhotos.length > 0 ? taskPhotos : undefined,
         photoUrl: taskPhotos[0] || undefined
       };
-      setTasks(prev => prev.map(t => t.id === editingTask.id ? updated : t));
+      const nextTasks = tasks.map(t => t.id === editingTask.id ? updated : t);
+      setTasks(nextTasks);
+      try {
+        localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(nextTasks));
+        localStorage.setItem('riz_daily_tasks', JSON.stringify(nextTasks));
+      } catch (e) {}
+      if (onUpdateTasks) onUpdateTasks(nextTasks);
       saveCloudDoc('daily_tasks', editingTask.id, updated, currentUser.name);
       onLogActivity(currentUser.name, currentUser.role, `Memperbarui daily task "${taskTitle}"`);
     } else {
@@ -414,7 +423,13 @@ export default function LogTaskModule({
         photos: taskPhotos.length > 0 ? taskPhotos : undefined,
         photoUrl: taskPhotos[0] || undefined
       };
-      setTasks(prev => [newTask, ...prev]);
+      const nextTasks = [newTask, ...tasks];
+      setTasks(nextTasks);
+      try {
+        localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(nextTasks));
+        localStorage.setItem('riz_daily_tasks', JSON.stringify(nextTasks));
+      } catch (e) {}
+      if (onUpdateTasks) onUpdateTasks(nextTasks);
       saveCloudDoc('daily_tasks', newTask.id, newTask, currentUser.name);
       onLogActivity(currentUser.name, currentUser.role, `Menambahkan daily task baru "${taskTitle}" [${effectiveTaskDivision}]`);
     }
@@ -423,14 +438,20 @@ export default function LogTaskModule({
   };
 
   const handleUpdateStatus = async (taskId: string, newStatus: 'Pending' | 'In Progress' | 'Done') => {
-    setTasks(prev => prev.map(t => {
+    const nextTasks = tasks.map(t => {
       if (t.id === taskId) {
         const updated = { ...t, status: newStatus };
         saveCloudDoc('daily_tasks', taskId, updated, currentUser.name);
         return updated;
       }
       return t;
-    }));
+    });
+    setTasks(nextTasks);
+    try {
+      localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(nextTasks));
+      localStorage.setItem('riz_daily_tasks', JSON.stringify(nextTasks));
+    } catch (e) {}
+    if (onUpdateTasks) onUpdateTasks(nextTasks);
     const target = tasks.find(t => t.id === taskId);
     if (target) {
       onLogActivity(currentUser.name, currentUser.role, `Ubah status task "${target.title}" jadi ${newStatus}`);
@@ -445,7 +466,13 @@ export default function LogTaskModule({
       return;
     }
     if (!confirm('Hapus task ini?')) return;
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+    const nextTasks = tasks.filter(t => t.id !== taskId);
+    setTasks(nextTasks);
+    try {
+      localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(nextTasks));
+      localStorage.setItem('riz_daily_tasks', JSON.stringify(nextTasks));
+    } catch (e) {}
+    if (onUpdateTasks) onUpdateTasks(nextTasks);
     deleteCloudDoc('daily_tasks', taskId);
     onLogActivity(currentUser.name, currentUser.role, `Menghapus task id ${taskId}`);
   };

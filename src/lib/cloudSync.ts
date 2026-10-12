@@ -7,7 +7,7 @@
  * Powered by Unified Local Storage, BroadcastChannel, Supabase, and Google Sheets Synchronization.
  */
 
-import { normalizeStaffMaster, STAFF_LIST } from '../data';
+import { normalizeStaffMaster, STAFF_LIST, getMasterStaffList } from '../data';
 import { isStaffMatch } from '../utils/kpiCalculator';
 import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
 import { saveSupabaseDoc, deleteSupabaseDoc, pushCollectionToSupabase } from './supabaseSync';
@@ -179,12 +179,12 @@ export async function flushPendingQueue(): Promise<number> {
 // 5. REGISTRY OF ALL 19 MODULES FOR MULTI-DEVICE SYNC
 // ─────────────────────────────────────────────────────────────
 export const ALL_SYNC_COLLECTIONS = [
-  { name: 'logbook_entries', key: 'riz_logbook_entries', label: 'Logbook Entries' },
-  { name: 'daily_reports', key: 'riz_daily_reports', label: 'Laporan Harian' },
-  { name: 'daily_tasks', key: 'riz_daily_tasks', label: 'Daily Task & Checklist' },
-  { name: 'findings', key: 'riz_findings', label: 'Temuan QC' },
+  { name: 'logbook_entries', key: 'riz_logbook_entries_v2', label: 'Logbook Entries' },
+  { name: 'daily_reports', key: 'riz_daily_reports_v2', label: 'Laporan Harian' },
+  { name: 'daily_tasks', key: 'riz_daily_tasks_v2', label: 'Daily Task & Checklist' },
+  { name: 'findings', key: 'riz_findings_v2', label: 'Temuan QC' },
   { name: 'assets', key: 'riz_assets', label: 'Master Aset' },
-  { name: 'work_orders', key: 'riz_work_orders', label: 'Work Orders' },
+  { name: 'work_orders', key: 'riz_work_orders_v2', label: 'Work Orders' },
   { name: 'maintenance_schedules', key: 'riz_schedules', label: 'Jadwal Pemeliharaan' },
   { name: 'activities', key: 'riz_activities', label: 'Audit Log Aktivitas' },
   { name: 'master_staff', key: 'riz_master_staff_list', label: 'Master Staf Karyawan' },
@@ -355,22 +355,27 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       return 0;
     });
 
+    const allKnownStaff = typeof window !== 'undefined' ? getMasterStaffList() : STAFF_LIST;
+
     sortedItems.forEach((item: any) => {
       if (!item || !item.date) return;
-      const staffObj = STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
+      const staffObj = allKnownStaff.find(s => isStaffMatch(s, item.staffName)) || STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
-      if (!staffObj) return; // STRICT RULE: Drop hallucinated staff
-      
-      const normActivity = String(item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
-      const semanticKey = `${item.date}_${staffObj.name}_${normActivity}`;
+      const effectiveStaffName = staffObj ? staffObj.name : String(item.staffName || '').trim();
+      if (!effectiveStaffName) return; // Drop entries without staff name
 
-      if (semanticSet.has(semanticKey)) return; // Semantic dedup
-      semanticSet.add(semanticKey);
+      const effectiveDivision = staffObj ? staffObj.division : (item.division || 'Umum');
+      const normActivity = String(item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
+      const isCustomAppId = String(item.id || '').startsWith('dr-');
+      const semanticKey = isCustomAppId ? String(item.id) : `${item.date}_${effectiveStaffName}_${normActivity}`;
+
+      if (!isCustomAppId && semanticSet.has(semanticKey)) return; // Semantic dedup for external/gsheet rows
+      if (!isCustomAppId) semanticSet.add(semanticKey);
 
       const normalizedItem = {
         ...item,
-        staffName: staffObj.name,
-        division: staffObj.division
+        staffName: effectiveStaffName,
+        division: effectiveDivision
       };
       
       // Keep by ID so updates can happen correctly
@@ -395,22 +400,27 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       return 0;
     });
 
+    const allKnownStaff = typeof window !== 'undefined' ? getMasterStaffList() : STAFF_LIST;
+
     sortedItems.forEach((item: any) => {
       if (!item || !item.date) return;
-      const staffObj = STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
+      const staffObj = allKnownStaff.find(s => isStaffMatch(s, item.staffName)) || STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
-      if (!staffObj) return; // STRICT RULE: Drop hallucinated staff
-      
-      const normActivity = String(item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
-      const semanticKey = `${item.date}_${staffObj.name}_${normActivity}`;
+      const effectiveStaffName = staffObj ? staffObj.name : String(item.staffName || '').trim();
+      if (!effectiveStaffName) return; // Drop entries without staff name
 
-      if (semanticSet.has(semanticKey)) return; // Semantic dedup
-      semanticSet.add(semanticKey);
+      const effectiveDivision = staffObj ? staffObj.division : (item.division || 'Umum');
+      const normActivity = String(item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
+      const isCustomAppId = String(item.id || '').startsWith('lg-');
+      const semanticKey = isCustomAppId ? String(item.id) : `${item.date}_${effectiveStaffName}_${normActivity}`;
+
+      if (!isCustomAppId && semanticSet.has(semanticKey)) return; // Semantic dedup for external/gsheet rows
+      if (!isCustomAppId) semanticSet.add(semanticKey);
 
       const normalizedItem = {
         ...item,
-        staffName: staffObj.name,
-        division: staffObj.division
+        staffName: effectiveStaffName,
+        division: effectiveDivision
       };
       
       if (item.id) {
@@ -522,7 +532,13 @@ export function subscribeCloudCollection<T = any>(
     try {
       const deletedIds = getDeletedIds(collectionName);
       let items: T[] = [];
-      const cached = localStorage.getItem(localCacheKey);
+      let cached = localStorage.getItem(localCacheKey);
+      if (!cached) {
+        const altKey = localCacheKey.endsWith('_v2')
+          ? localCacheKey.replace(/_v2$/, '')
+          : `${localCacheKey}_v2`;
+        cached = localStorage.getItem(altKey);
+      }
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
@@ -720,28 +736,40 @@ export async function saveCloudDoc(
   try {
     const reg = ALL_SYNC_COLLECTIONS.find(c => c.name === collectionName);
     if (reg && typeof window !== 'undefined') {
-      const cached = localStorage.getItem(reg.key);
-      let list: any[] = [];
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed)) list = parsed;
-        } catch (e) {}
-      }
-      const existingIdx = list.findIndex(item => String(item?.id || item?.no || '') === String(docId));
-      if (existingIdx >= 0) {
-        list[existingIdx] = { ...list[existingIdx], ...cleanData };
+      const keysToUpdate = [reg.key];
+      if (reg.key.endsWith('_v2')) {
+        keysToUpdate.push(reg.key.replace(/_v2$/, ''));
       } else {
-        list.unshift(cleanData);
+        keysToUpdate.push(`${reg.key}_v2`);
       }
-      localStorage.setItem(reg.key, JSON.stringify(list));
+
+      keysToUpdate.forEach(k => {
+        try {
+          const cached = localStorage.getItem(k);
+          let list: any[] = [];
+          if (cached) {
+            try {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed)) list = parsed;
+            } catch (e) {}
+          }
+          const existingIdx = list.findIndex(item => String(item?.id || item?.no || '') === String(docId));
+          if (existingIdx >= 0) {
+            list[existingIdx] = { ...list[existingIdx], ...cleanData };
+          } else {
+            list.unshift(cleanData);
+          }
+          localStorage.setItem(k, JSON.stringify(list));
+        } catch (e) {}
+      });
+
       if (syncBroadcastChannel) {
         try {
           syncBroadcastChannel.postMessage({
             type: 'COLLECTION_SYNCED',
             collectionName,
             localCacheKey: reg.key,
-            count: list.length
+            count: 1
           });
         } catch (e) {}
       }
@@ -789,33 +817,49 @@ export async function deleteCloudDoc(
   try {
     const reg = ALL_SYNC_COLLECTIONS.find(c => c.name === collectionName);
     if (reg && typeof window !== 'undefined') {
-      const cached = localStorage.getItem(reg.key);
-      if (cached) {
+      const keysToUpdate = [reg.key];
+      if (reg.key.endsWith('_v2')) {
+        keysToUpdate.push(reg.key.replace(/_v2$/, ''));
+      } else {
+        keysToUpdate.push(`${reg.key}_v2`);
+      }
+
+      keysToUpdate.forEach(k => {
         try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed)) {
-            const filtered = parsed.filter(item => {
-              const itId = String(item?.id || item?.no || '').trim();
-              const itName = String(item?.name || item?.fullName || '').trim().toLowerCase();
-              if (primaryId && itId === primaryId) return false;
-              if (extra) {
-                if (itId === extra) return false;
-                if (itName === extra.toLowerCase()) return false;
-              }
-              return true;
-            });
-            localStorage.setItem(reg.key, JSON.stringify(filtered));
-            if (syncBroadcastChannel) {
-              syncBroadcastChannel.postMessage({
-                type: 'COLLECTION_SYNCED',
-                collectionName,
-                localCacheKey: reg.key,
-                count: filtered.length
+          const cached = localStorage.getItem(k);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed)) {
+              const filtered = parsed.filter(item => {
+                const itId = String(item?.id || item?.no || '').trim();
+                const itName = String(item?.name || item?.fullName || '').trim().toLowerCase();
+                if (primaryId && itId === primaryId) return false;
+                if (extra) {
+                  if (itId === extra) return false;
+                  if (itName === extra.toLowerCase()) return false;
+                }
+                return true;
               });
+              localStorage.setItem(k, JSON.stringify(filtered));
             }
           }
         } catch (e) {}
+      });
+
+      if (syncBroadcastChannel) {
+        try {
+          syncBroadcastChannel.postMessage({
+            type: 'COLLECTION_SYNCED',
+            collectionName,
+            localCacheKey: reg.key
+          });
+        } catch (e) {}
       }
+      try {
+        window.dispatchEvent(new CustomEvent('riz_collection_updated', {
+          detail: { collectionName, docId: primaryId }
+        }));
+      } catch (e) {}
     }
   } catch (e) {
     console.warn(`[Sync] Failed to purge deleted doc from local cache for ${collectionName}:`, e);
@@ -846,7 +890,18 @@ export async function pushCollectionToCloud<T = any>(
   const reg = ALL_SYNC_COLLECTIONS.find(c => c.name === collectionName);
   if (reg && typeof window !== 'undefined') {
     try {
-      localStorage.setItem(reg.key, JSON.stringify(items));
+      const keysToUpdate = [reg.key];
+      if (reg.key.endsWith('_v2')) {
+        keysToUpdate.push(reg.key.replace(/_v2$/, ''));
+      } else {
+        keysToUpdate.push(`${reg.key}_v2`);
+      }
+      keysToUpdate.forEach(k => {
+        try {
+          localStorage.setItem(k, JSON.stringify(items));
+        } catch (e) {}
+      });
+
       if (syncBroadcastChannel) {
         syncBroadcastChannel.postMessage({
           type: 'COLLECTION_SYNCED',
@@ -855,6 +910,11 @@ export async function pushCollectionToCloud<T = any>(
           count: items.length
         });
       }
+      try {
+        window.dispatchEvent(new CustomEvent('riz_collection_updated', {
+          detail: { collectionName }
+        }));
+      } catch (e) {}
     } catch (e) {}
   }
 

@@ -1027,7 +1027,12 @@ export default function App() {
         isDuplicate = true;
         return prev;
       }
-      return [newEntry, ...prev];
+      const next = [newEntry, ...prev];
+      try {
+        localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(next));
+        localStorage.setItem('riz_logbook_entries', JSON.stringify(next));
+      } catch (e) {}
+      return next;
     });
     
     setTimeout(() => {
@@ -1051,7 +1056,12 @@ export default function App() {
         isDuplicate = true;
         return prev;
       }
-      return [newRep, ...prev];
+      const next = [newRep, ...prev];
+      try {
+        localStorage.setItem('riz_daily_reports_v2', JSON.stringify(next));
+        localStorage.setItem('riz_daily_reports', JSON.stringify(next));
+      } catch (e) {}
+      return next;
     });
 
     setTimeout(() => {
@@ -1065,7 +1075,14 @@ export default function App() {
   };
 
   const handleDeleteReport = (id: string) => {
-    setDailyReports(prev => prev.filter(r => r.id !== id));
+    setDailyReports(prev => {
+      const next = prev.filter(r => r.id !== id);
+      try {
+        localStorage.setItem('riz_daily_reports_v2', JSON.stringify(next));
+        localStorage.setItem('riz_daily_reports', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
     deleteCloudDoc('daily_reports', id);
   };
 
@@ -1092,6 +1109,7 @@ export default function App() {
       const next = [newFinding, ...prev];
       try {
         localStorage.setItem('riz_findings_v2', JSON.stringify(next));
+        localStorage.setItem('riz_findings', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1138,13 +1156,21 @@ export default function App() {
       });
       try {
         localStorage.setItem('riz_findings_v2', JSON.stringify(next));
+        localStorage.setItem('riz_findings', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
   };
 
   const handleDeleteFinding = (id: string) => {
-    setFindings(prev => prev.filter(f => f.id !== id));
+    setFindings(prev => {
+      const next = prev.filter(f => f.id !== id);
+      try {
+        localStorage.setItem('riz_findings_v2', JSON.stringify(next));
+        localStorage.setItem('riz_findings', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
     deleteCloudDoc('findings', id);
   };
 
@@ -1362,6 +1388,7 @@ export default function App() {
       const next = [newWO, ...prev];
       try {
         localStorage.setItem('riz_work_orders_v2', JSON.stringify(next));
+        localStorage.setItem('riz_work_orders', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1393,6 +1420,7 @@ export default function App() {
       });
       try {
         localStorage.setItem('riz_work_orders_v2', JSON.stringify(next));
+        localStorage.setItem('riz_work_orders', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1417,6 +1445,7 @@ export default function App() {
       });
       try {
         localStorage.setItem('riz_work_orders_v2', JSON.stringify(next));
+        localStorage.setItem('riz_work_orders', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -1483,13 +1512,21 @@ export default function App() {
       });
       try {
         localStorage.setItem('riz_work_orders_v2', JSON.stringify(next));
+        localStorage.setItem('riz_work_orders', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
   };
 
   const handleDeleteWorkOrder = (id: string) => {
-    setWorkOrders(prev => prev.filter(w => w.id !== id));
+    setWorkOrders(prev => {
+      const next = prev.filter(w => w.id !== id);
+      try {
+        localStorage.setItem('riz_work_orders_v2', JSON.stringify(next));
+        localStorage.setItem('riz_work_orders', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
     deleteCloudDoc('work_orders', id);
   };
 
