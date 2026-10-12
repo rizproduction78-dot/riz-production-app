@@ -868,7 +868,7 @@ export const SHEET_GIDS: Record<string, string> = {
   '2026-07': '2099865640',  // JULI 2026
   '2026-08': '1894783738',  // AGUSTUS 2026
   '2026-09': '1869844599',  // SEPTEMBER 2026 (Official GID terverifikasi)
-  '2026-10': '938476420',   // OKTOBER 2026 (Official GID tab aktif)
+  '2026-10': '1340328886',  // OKTOBER 2026 (Official GID tab aktif)
   '2026-11': '1463883290',  // NOVEMBER 2026
   '2026-12': '646140708',   // DESEMBER 2026
 };
@@ -878,7 +878,7 @@ export const SHEET_GID_OKTOBER_2026   = SHEET_GIDS['2026-10'];
 export const SHEET_GID_HISTORICAL     = SHEET_GIDS['2026-05'];
 
 export function getGidForMonth(monthKey: string): string {
-  return SHEET_GIDS[monthKey] || SHEET_GIDS['2026-10'] || '938476420';
+  return SHEET_GIDS[monthKey] || SHEET_GIDS['2026-10'] || '1340328886';
 }
 
 /** Key localStorage untuk timestamp terakhir pull daily log */
@@ -1123,10 +1123,34 @@ export async function pullDailyLogFromGviz(
     const sheetRows: SheetRow[] = extractNormalizedDailySheetRows(rawCellMatrix);
     const parsedEntries = parseDailySheet(sheetRows);
 
+    const cachedReportsRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('riz_daily_reports_v2') : null;
+    const cachedReportsMap = new Map<string, any>();
+    if (cachedReportsRaw) {
+      try {
+        const parsed = JSON.parse(cachedReportsRaw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((r: any) => { if (r?.id) cachedReportsMap.set(r.id, r); });
+        }
+      } catch {}
+    }
+
     for (const entry of parsedEntries) {
-      // 1. Simpan Daily Report
-      if (!existingReportIds.has(entry.id)) {
+      // 1. Simpan Daily Report: Baru atau jika ada perubahan teks di Google Sheet
+      const existing = cachedReportsMap.get(entry.id);
+      const isNew = !existingReportIds.has(entry.id) && !existing;
+      const isModified = Boolean(
+        existing && (
+          (existing.activity || '').trim() !== (entry.activity || '').trim() ||
+          (existing.notes || '').trim() !== (entry.notes || '').trim() ||
+          (existing.division || '') !== (entry.division || '') ||
+          (existing.staffName || '') !== (entry.staffName || '') ||
+          (existing.date || '') !== (entry.date || '')
+        )
+      );
+
+      if (isNew || isModified) {
         const reportDoc = {
+          ...(existing || {}),
           id: entry.id,
           date: entry.date,
           staffName: entry.staffName,

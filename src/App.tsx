@@ -852,7 +852,6 @@ export default function App() {
         async (id, docData) => {
           const { getDeletedIds } = await import('./lib/cloudSync');
           if (getDeletedIds('daily_reports').has(id)) return;
-          if (existingIds.has(id)) return;
 
           saveCloudDoc('daily_reports', id, docData).catch(e => console.error('[Sheet Sync] report save error:', e));
           newReportDocs.push(docData);
@@ -880,41 +879,57 @@ export default function App() {
         async (id, docData) => {
           const { getDeletedIds } = await import('./lib/cloudSync');
           if (getDeletedIds('logbook_entries').has(id)) return;
-          if (existingIds.has(id)) return;
 
           saveCloudDoc('logbook_entries', id, docData).catch(e => console.error('[Sheet Sync] logbook save error:', e));
           newLogDocs.push(docData);
         }
       );
 
-      // Update state lokal LANGSUNG secara reaktif
+      // Update state lokal LANGSUNG secara reaktif (Upsert: tambah baru atau timpa data yang diedit di Sheet)
       if (newReportDocs.length > 0) {
         setDailyReports(prev => {
-          const existingIdsSet = new Set(prev.map(r => r.id));
-          const trulyNew = newReportDocs.filter(d => !existingIdsSet.has(d.id));
-          // Simpan ke localStorage
-          const merged = [...trulyNew, ...prev];
+          const map = new Map<string, any>();
+          prev.forEach(r => { if (r?.id) map.set(r.id, r); });
+          newReportDocs.forEach(d => {
+            const existing = map.get(d.id);
+            map.set(d.id, existing ? { ...existing, ...d } : d);
+          });
+          const merged = Array.from(map.values());
           try { localStorage.setItem('riz_daily_reports_v2', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
         });
       }
       if (newLogDocs.length > 0) {
         setLogbookEntries(prev => {
-          const existingIdsSet = new Set(prev.map(l => l.id));
-          const trulyNew = newLogDocs.filter(d => !existingIdsSet.has(d.id));
-          const merged = [...trulyNew, ...prev];
+          const map = new Map<string, any>();
+          prev.forEach(l => { if (l?.id) map.set(l.id, l); });
+          newLogDocs.forEach(d => {
+            const existing = map.get(d.id);
+            map.set(d.id, existing ? { ...existing, ...d } : d);
+          });
+          const merged = Array.from(map.values());
           try { localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
         });
       }
       if (newFindingDocs.length > 0) {
         setFindings(prev => {
-          const existingIdsSet = new Set(prev.map(f => f.id));
-          const trulyNew = newFindingDocs.filter(d => !existingIdsSet.has(d.id));
-          const merged = normalizeCollectionItems('findings', [...trulyNew, ...prev]);
+          const map = new Map<string, any>();
+          prev.forEach(f => { if (f?.id) map.set(f.id, f); });
+          newFindingDocs.forEach(d => {
+            const existing = map.get(d.id);
+            map.set(d.id, existing ? { ...existing, ...d, status: existing.status || d.status } : d);
+          });
+          const merged = normalizeCollectionItems('findings', Array.from(map.values()));
           try { localStorage.setItem('riz_findings_v2', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
         });
+      }
+
+      if (newReportDocs.length > 0 || newLogDocs.length > 0 || newFindingDocs.length > 0) {
+        try {
+          window.dispatchEvent(new CustomEvent('riz_local_data_updated', { detail: { source: 'google_sheet_sync' } }));
+        } catch (_e) {}
       }
 
       setSheetPullMessage({ text: result.message, type: result.success ? 'success' : 'error' });
@@ -949,11 +964,11 @@ export default function App() {
     const AUTO_SYNC_INTERVAL_MS = 30 * 1000; // 30 detik (agar data selalu segar dan cepat)
     let lastPullTime = Date.now();
 
-    // 1. Jalankan sekali saat startup (setelah 2.5 detik)
+    // 1. Jalankan sekali saat startup (setelah 500ms)
     const startupTimer = setTimeout(() => {
       syncHandlerRef.current();
       lastPullTime = Date.now();
-    }, 2500);
+    }, 500);
 
     // 2. Kemudian ulangi setiap 3 menit
     const interval = setInterval(() => {

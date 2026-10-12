@@ -3634,7 +3634,7 @@ export default function AdminPanel({
               </div>
               <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-mono uppercase block">Tab Aktif</span>
-                <span className="font-bold text-white block">Oktober 2026 (gid=938476420)</span>
+                <span className="font-bold text-white block">Oktober 2026 (gid=1340328886)</span>
               </div>
               <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-mono uppercase block">Terakhir Pull</span>
