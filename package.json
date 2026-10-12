@@ -10,7 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test": "npx tsx scripts/verify_system.ts",
-    "test:all": "npx tsx scripts/verify_system.ts && npx tsx scripts/test_cross_division_integrity.ts && npx tsx scripts/test_kpi_comprehensive.ts && npx tsx scripts/test_vector_engine.ts && npx tsx scripts/test_orchestrator_agentic.ts && npx tsx scripts/verify_continuous_timeline.ts && npx tsx scripts/test_daily_sheet_parser.ts && npx tsx scripts/test_operational_processor.ts && npx tsx scripts/test_personnel_drive_sync.ts && npx tsx scripts/test_input_auto_sync.ts && npm run build",
+    "test:all": "npx tsx scripts/verify_system.ts && npx tsx scripts/test_cross_division_integrity.ts && npx tsx scripts/test_kpi_comprehensive.ts && npx tsx scripts/test_vector_engine.ts && npx tsx scripts/test_orchestrator_agentic.ts && npx tsx scripts/verify_continuous_timeline.ts && npx tsx scripts/test_daily_sheet_parser.ts && npx tsx scripts/test_operational_processor.ts && npx tsx scripts/test_personnel_drive_sync.ts && npx tsx scripts/test_input_auto_sync.ts && npx tsx scripts/test_notification_center_fix.ts && npx tsx scripts/test_vehicle_expiry_alerts.ts && npm run build",
     "sync:gsheet": "npx tsx scripts/agent_google_sheet_sync.ts"
   },
   "dependencies": {

@@ -48,6 +48,7 @@ import {
   Phone
 } from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc, pushCollectionToCloud, deleteCloudDoc } from '../lib/cloudSync';
+import { checkVehicleDocExpiry, getVehicleExpiryAlerts } from '../utils/vehicleExpiryAlerts';
 
 interface GudangProps {
   currentUser: Staff;
@@ -1907,52 +1908,143 @@ export default function Gudang({
           {/* SECTION 2: DATA MASTER INVENTARIS ARMADA KENDARAAN */}
           {fleetSection === 'vehicles' && (
             <div className="space-y-4">
+              {/* BANNER NOTIFIKASI PEMBERITAHUAN MASA BERLAKU STNK & KIR (H-30 HARI & KADALUARSA) */}
+              {(() => {
+                const alerts = getVehicleExpiryAlerts(vehicles);
+                if (alerts.length === 0) return null;
+                return (
+                  <div className="bg-gradient-to-r from-amber-50 to-rose-50 border border-amber-300 rounded-2xl p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400 text-amber-700 flex items-center justify-center shrink-0">
+                          <AlertTriangle className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900">
+                            Pemberitahuan Masa Berlaku Surat Armada ({alerts.length} Dokumen Perlu Tindakan)
+                          </h4>
+                          <p className="text-[11px] text-slate-600">
+                            Notifikasi aktif 1 bulan sebelum tanggal masa berlaku berakhir. Masa berlaku STNK: 1 Tahun • KIR: 6 Bulan.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {alerts.map(alert => {
+                        const isExp = alert.status === 'expired';
+                        return (
+                          <div
+                            key={alert.id}
+                            className={`p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 ${
+                              isExp
+                                ? 'bg-rose-100/70 border-rose-300 text-rose-900'
+                                : 'bg-amber-100/70 border-amber-300 text-amber-900'
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 font-bold font-mono text-[11px]">
+                                <span>{alert.policeNumber}</span>
+                                <span className="text-[10px] px-1 py-0.2 rounded bg-white/70 border border-current font-sans">
+                                  {alert.docType} ({alert.validityPeriod})
+                                </span>
+                              </div>
+                              <div className="text-[10px] truncate opacity-90">{alert.vehicleName}</div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase font-mono ${
+                                isExp ? 'bg-rose-600 text-white' : 'bg-amber-600 text-white'
+                              }`}>
+                                {isExp ? `Kadaluarsa ${Math.abs(alert.daysRemaining)}h` : `Sisa ${alert.daysRemaining} hari`}
+                              </span>
+                              <div className="text-[9px] font-mono opacity-80 mt-0.5">{alert.expiryDate}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {vehicles.filter(v => v && (v.name || v.policeNumber)).map((v) => (
-                  <div key={v.id || v.policeNumber} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className={`text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded ${
-                          (v.ownership || 'Internal') === 'Internal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                        }`}>
-                          {v.ownership || 'Internal'}
+                {vehicles.filter(v => v && (v.name || v.policeNumber)).map((v) => {
+                  const stnkCheck = checkVehicleDocExpiry(v.stnkTaxExpiry, 'STNK');
+                  const kirCheck = checkVehicleDocExpiry(v.kirExpiry, 'KIR');
+
+                  return (
+                    <div key={v.id || v.policeNumber} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className={`text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded ${
+                            (v.ownership || 'Internal') === 'Internal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {v.ownership || 'Internal'}
+                          </span>
+                          <h3 className="font-extrabold text-slate-900 text-sm mt-1">{v.name || 'Unit Armada'}</h3>
+                        </div>
+                        <span className="font-mono text-xs font-black bg-slate-100 text-slate-800 px-2.5 py-1 rounded-lg border border-slate-200">
+                          {v.policeNumber || '-'}
                         </span>
-                        <h3 className="font-extrabold text-slate-900 text-sm mt-1">{v.name || 'Unit Armada'}</h3>
                       </div>
-                      <span className="font-mono text-xs font-black bg-slate-100 text-slate-800 px-2.5 py-1 rounded-lg border border-slate-200">
-                        {v.policeNumber || '-'}
-                      </span>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100 font-sans">
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Kapasitas Tonase</span>
-                        <span className="font-bold text-slate-800">{v.tonnageCapacity ?? 0} Ton</span>
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100 font-sans">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Kapasitas Tonase</span>
+                          <span className="font-bold text-slate-800">{v.tonnageCapacity ?? 0} Ton</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Kubikasi (CBM)</span>
+                          <span className="font-bold text-slate-800">{v.cbmCapacity ?? 0} m³</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Odometer KM</span>
+                          <span className="font-mono font-bold text-slate-800">{(Number(v.odometerKM) || 0).toLocaleString('id-ID')} KM</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Status Unit</span>
+                          <span className="font-bold text-emerald-700">{v.status || 'Siap Operasi'}</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Kubikasi (CBM)</span>
-                        <span className="font-bold text-slate-800">{v.cbmCapacity ?? 0} m³</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Odometer KM</span>
-                        <span className="font-mono font-bold text-slate-800">{(Number(v.odometerKM) || 0).toLocaleString('id-ID')} KM</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Status Unit</span>
-                        <span className="font-bold text-emerald-700">{v.status || 'Siap Operasi'}</span>
-                      </div>
-                    </div>
 
-                    <div className="text-[11px] space-y-1 pt-2 border-t border-slate-100 font-mono">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Pajak STNK:</span>
-                        <span className="font-bold text-slate-800">{v.stnkTaxExpiry || '-'}</span>
+                      <div className="text-[11px] space-y-2 pt-2 border-t border-slate-100 font-mono">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="text-slate-500">Pajak STNK:</span>
+                            <span className="text-[9px] text-slate-400 ml-1 font-sans">(1 Thn)</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-800">{v.stnkTaxExpiry || '-'}</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-sans ${
+                              stnkCheck.status === 'expired'
+                                ? 'bg-rose-100 text-rose-700 border border-rose-300'
+                                : stnkCheck.status === 'warning_30d'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : 'bg-emerald-50 text-emerald-700'
+                            }`}>
+                              {stnkCheck.formattedBadge}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="text-slate-500">Uji KIR Dishub:</span>
+                            <span className="text-[9px] text-slate-400 ml-1 font-sans">(6 Bln)</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-800">{v.kirExpiry || '-'}</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-sans ${
+                              kirCheck.status === 'expired'
+                                ? 'bg-rose-100 text-rose-700 border border-rose-300'
+                                : kirCheck.status === 'warning_30d'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : 'bg-emerald-50 text-emerald-700'
+                            }`}>
+                              {kirCheck.formattedBadge}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Uji KIR Dishub:</span>
-                        <span className="font-bold text-slate-800">{v.kirExpiry || '-'}</span>
-                      </div>
-                    </div>
 
                     <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                       <button
@@ -1973,7 +2065,8 @@ export default function Gudang({
                       </button>
                     </div>
                   </div>
-                ))}
+                );
+              })}
               </div>
               {vehicles.filter(v => v && (v.name || v.policeNumber)).length === 0 && (
                 <div className="p-8 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">
@@ -2769,22 +2862,28 @@ export default function Gudang({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Jatuh Tempo Pajak STNK</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Jatuh Tempo Pajak STNK <span className="text-[10px] text-blue-600 font-semibold">(1 Tahun)</span>
+                  </label>
                   <input
                     type="date"
                     value={vehicleFormData.stnkTaxExpiry}
                     onChange={(e) => setVehicleFormData({ ...vehicleFormData, stnkTaxExpiry: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono"
                   />
+                  <p className="text-[9px] text-slate-400 mt-1 font-mono">Pemberitahuan aktif 1 bulan sebelum jatuh tempo</p>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Jatuh Tempo Uji KIR</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Jatuh Tempo Uji KIR Dishub <span className="text-[10px] text-indigo-600 font-semibold">(6 Bulan)</span>
+                  </label>
                   <input
                     type="date"
                     value={vehicleFormData.kirExpiry}
                     onChange={(e) => setVehicleFormData({ ...vehicleFormData, kirExpiry: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono"
                   />
+                  <p className="text-[9px] text-slate-400 mt-1 font-mono">Pemberitahuan aktif 1 bulan sebelum jatuh tempo</p>
                 </div>
               </div>
 

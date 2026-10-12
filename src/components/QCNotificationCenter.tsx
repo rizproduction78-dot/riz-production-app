@@ -38,9 +38,12 @@ import {
   AttendanceLog,
   UserActivity,
   WarehouseLog,
+  VehicleMaster,
   OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL,
   OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL
 } from '../types';
+import { getVehicleExpiryAlerts } from '../utils/vehicleExpiryAlerts';
+import { INITIAL_VEHICLES } from '../data';
 
 export interface QCNotificationCenterProps {
   dailyReports?: DailyReport[];
@@ -51,6 +54,7 @@ export interface QCNotificationCenterProps {
   workOrders?: WorkOrder[];
   attendanceLogs?: AttendanceLog[];
   activities?: UserActivity[];
+  vehicles?: VehicleMaster[];
   lastSyncTime?: string | Date | null;
   onNavigateTab?: (tabId: string) => void;
   onSyncSheet?: () => void;
@@ -160,6 +164,7 @@ export default function QCNotificationCenter({
   workOrders = [],
   attendanceLogs = [],
   activities = [],
+  vehicles = [],
   lastSyncTime,
   onNavigateTab,
   onSyncSheet,
@@ -175,6 +180,23 @@ export default function QCNotificationCenter({
   const [searchQuery, setSearchQuery] = useState('');
   const [liveToast, setLiveToast] = useState<NotificationItem | null>(null);
   const [displayLimit, setDisplayLimit] = useState<number>(50);
+
+  // Sumber armada kendaraan aktif
+  const effectiveVehicles = useMemo<VehicleMaster[]>(() => {
+    if (Array.isArray(vehicles) && vehicles.length > 0) return vehicles;
+    try {
+      const saved = localStorage.getItem('riz_master_vehicles');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const flat = parsed.flatMap((item: any) => (item && Array.isArray(item.list)) ? item.list : [item]);
+          const valid = flat.filter((v: any) => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
+          if (valid.length > 0) return valid as VehicleMaster[];
+        }
+      }
+    } catch {}
+    return INITIAL_VEHICLES;
+  }, [vehicles]);
 
   const [readIds, setReadIds] = useState<Set<string>>(() => getStoredReadIds());
   const [dismissedToastIds, setDismissedToastIds] = useState<Set<string>>(() => getStoredDismissedToastIds());
@@ -426,6 +448,33 @@ export default function QCNotificationCenter({
       });
     });
 
+    // 5. PEMBERITAHUAN JATUH TEMPO STNK (1 TAHUN) & KIR (6 BULAN) ARMADA GUDANG (H-30 HARI & KADALUARSA)
+    const vehicleAlerts = getVehicleExpiryAlerts(effectiveVehicles);
+    vehicleAlerts.forEach(alert => {
+      const alertId = `veh-doc-${alert.vehicleId}-${alert.docType}-${alert.expiryDate}`;
+      if (seenIds.has(alertId)) return;
+      seenIds.add(alertId);
+
+      const dateVal = alert.expiryDate ? alert.expiryDate.slice(0, 10) : new Date().toISOString().split('T')[0];
+      // Jika filter bulan aktif dipilih, tampilkan jika jatuh tempo di bulan tersebut atau jika sudah kadaluarsa
+      if (filterMonth && !dateVal.startsWith(filterMonth) && alert.status !== 'expired') return;
+
+      list.push({
+        id: alertId,
+        date: dateVal,
+        staffName: 'Divisi Gudang / Logistik',
+        division: 'Gudang',
+        category: 'Temuan Unit Bermasalah',
+        title: `Pemberitahuan ${alert.docType}: ${alert.policeNumber} (${alert.vehicleName})`,
+        activity: alert.message,
+        notes: `Masa Berlaku: ${alert.validityPeriod} • Status: ${alert.status === 'expired' ? 'KADALUARSA' : 'H-1 BULAN SEBELUM BERAKHIR'}`,
+        qcResult: 'NG',
+        timestamp: parseSafeTimestamp(dateVal, undefined, alertId),
+        source: 'Legalitas Dokumen Armada Gudang',
+        targetTab: 'gudang'
+      });
+    });
+
     // Urutkan daftar secara mutlak dari TANGGAL MASUK TERBARU (Descending YYYY-MM-DD)
     return list.sort((a, b) => {
       // 1. Tanggal (YYYY-MM-DD) terbaru paling atas
@@ -448,7 +497,7 @@ export default function QCNotificationCenter({
       // 4. Stable sort
       return String(b.id || '').localeCompare(String(a.id || ''));
     });
-  }, [dailyReports, logbookEntries, findings, dailyTasks, warehouseLogs, activeMonth]);
+  }, [dailyReports, logbookEntries, findings, dailyTasks, warehouseLogs, activeMonth, effectiveVehicles]);
 
   // Deteksi penambahan data input secara live dalam sesi aktif untuk memicu Toast
   useEffect(() => {

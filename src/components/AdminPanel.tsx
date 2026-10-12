@@ -36,6 +36,7 @@ import {
   parsePersonnelImportFile,
   PersonnelImportResult
 } from '../utils/personnelDriveSync';
+import { checkVehicleDocExpiry, getVehicleExpiryAlerts } from '../utils/vehicleExpiryAlerts';
 import {
   Users,
   CheckSquare,
@@ -3000,72 +3001,152 @@ export default function AdminPanel({
 
           {/* SUB-VIEW 1: MASTER UNIT ARMADA TABLE */}
           {kendaraanSubTab === 'vehicles' && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse font-sans">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
-                      <th className="p-3.5">Nama Armada & Plat</th>
-                      <th className="p-3.5">Kepemilikan</th>
-                      <th className="p-3.5">Kapasitas Muat</th>
-                      <th className="p-3.5">Odometer KM</th>
-                      <th className="p-3.5">Legalitas & KIR</th>
-                      <th className="p-3.5">Status Unit</th>
-                      <th className="p-3.5 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {vehicles
-                      .filter(v => v && ((v.name || '').toLowerCase().includes(vehicleSearch.toLowerCase()) || (v.policeNumber || '').toLowerCase().includes(vehicleSearch.toLowerCase())))
-                      .map((v) => (
-                        <tr key={v.id || v.policeNumber} className="hover:bg-slate-50/60">
-                          <td className="p-3.5">
-                            <div className="font-bold text-slate-900">{v.name || 'Unit Armada'}</div>
-                            <span className="font-mono text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-700">
-                              {v.policeNumber || '-'}
+            <div className="space-y-3">
+              {/* BANNER PERINGATAN JATUH TEMPO STNK & KIR (H-30 HARI & KADALUARSA) */}
+              {(() => {
+                const alerts = getVehicleExpiryAlerts(vehicles);
+                if (alerts.length === 0) return null;
+                return (
+                  <div className="bg-gradient-to-r from-amber-50 to-rose-50 border border-amber-300 rounded-2xl p-4 shadow-xs space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400 text-amber-700 flex items-center justify-center shrink-0">
+                        <AlertTriangle className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900">
+                          Peringatan Masa Berlaku Surat Armada ({alerts.length} Dokumen Perlu Tindakan)
+                        </h4>
+                        <p className="text-[11px] text-slate-600">
+                          Notifikasi otomatis aktif 1 bulan sebelum tanggal masa berlaku berakhir. Masa berlaku STNK: 1 Tahun • KIR: 6 Bulan.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {alerts.map(alert => {
+                        const isExp = alert.status === 'expired';
+                        return (
+                          <div
+                            key={alert.id}
+                            className={`px-2.5 py-1.5 rounded-lg border text-xs flex items-center gap-2 ${
+                              isExp
+                                ? 'bg-rose-100/80 border-rose-300 text-rose-900'
+                                : 'bg-amber-100/80 border-amber-300 text-amber-900'
+                            }`}
+                          >
+                            <span className="font-mono font-bold">{alert.policeNumber}</span>
+                            <span className="text-[10px] px-1 py-0.2 rounded bg-white/70 font-sans">
+                              {alert.docType} ({alert.validityPeriod})
                             </span>
-                          </td>
-                          <td className="p-3.5">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              (v.ownership || 'Internal') === 'Internal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase font-mono ${
+                              isExp ? 'bg-rose-600 text-white' : 'bg-amber-600 text-white'
                             }`}>
-                              {v.ownership || 'Internal'}
+                              {isExp ? `Kadaluarsa ${Math.abs(alert.daysRemaining)}h` : `Sisa ${alert.daysRemaining}h`}
                             </span>
-                          </td>
-                          <td className="p-3.5 font-mono">
-                            <div><strong>{v.tonnageCapacity ?? 0}</strong> Ton</div>
-                            <div className="text-[10px] text-slate-400"><strong>{v.cbmCapacity ?? 0}</strong> CBM (m³)</div>
-                          </td>
-                          <td className="p-3.5 font-mono font-bold text-slate-800">
-                            {(Number(v.odometerKM) || 0).toLocaleString('id-ID')} KM
-                          </td>
-                          <td className="p-3.5 text-[11px] font-mono">
-                            <div>STNK: <span className="font-bold">{v.stnkTaxExpiry || '-'}</span></div>
-                            <div className="text-slate-500">KIR: <span className="font-bold text-slate-700">{v.kirExpiry || '-'}</span></div>
-                          </td>
-                          <td className="p-3.5">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                              {v.status || 'Siap Operasi'}
-                            </span>
-                          </td>
-                          <td className="p-3.5 text-right space-x-1">
-                            <button
-                              onClick={() => handleOpenEditVehicle(v)}
-                              className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors cursor-pointer"
-                              title="Edit Data Armada"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteVehicle(v.id)}
-                              className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
-                              title="Hapus Unit Armada"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse font-sans">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
+                        <th className="p-3.5">Nama Armada & Plat</th>
+                        <th className="p-3.5">Kepemilikan</th>
+                        <th className="p-3.5">Kapasitas Muat</th>
+                        <th className="p-3.5">Odometer KM</th>
+                        <th className="p-3.5">Legalitas & KIR</th>
+                        <th className="p-3.5">Status Unit</th>
+                        <th className="p-3.5 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {vehicles
+                        .filter(v => v && ((v.name || '').toLowerCase().includes(vehicleSearch.toLowerCase()) || (v.policeNumber || '').toLowerCase().includes(vehicleSearch.toLowerCase())))
+                        .map((v) => {
+                          const stnkCheck = checkVehicleDocExpiry(v.stnkTaxExpiry, 'STNK');
+                          const kirCheck = checkVehicleDocExpiry(v.kirExpiry, 'KIR');
+
+                          return (
+                            <tr key={v.id || v.policeNumber} className="hover:bg-slate-50/60">
+                              <td className="p-3.5">
+                                <div className="font-bold text-slate-900">{v.name || 'Unit Armada'}</div>
+                                <span className="font-mono text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                                  {v.policeNumber || '-'}
+                                </span>
+                              </td>
+                              <td className="p-3.5">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  (v.ownership || 'Internal') === 'Internal' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                                }`}>
+                                  {v.ownership || 'Internal'}
+                                </span>
+                              </td>
+                              <td className="p-3.5 font-mono">
+                                <div><strong>{v.tonnageCapacity ?? 0}</strong> Ton</div>
+                                <div className="text-[10px] text-slate-400"><strong>{v.cbmCapacity ?? 0}</strong> CBM (m³)</div>
+                              </td>
+                              <td className="p-3.5 font-mono font-bold text-slate-800">
+                                {(Number(v.odometerKM) || 0).toLocaleString('id-ID')} KM
+                              </td>
+                              <td className="p-3.5 text-[11px] font-mono">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-slate-500 font-sans text-[10px]">STNK (1 Thn):</span>
+                                    <span className="font-bold">{v.stnkTaxExpiry || '-'}</span>
+                                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-sans ${
+                                      stnkCheck.status === 'expired'
+                                        ? 'bg-rose-100 text-rose-700 border border-rose-300'
+                                        : stnkCheck.status === 'warning_30d'
+                                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                        : 'bg-emerald-50 text-emerald-700'
+                                    }`}>
+                                      {stnkCheck.formattedBadge}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-slate-500 font-sans text-[10px]">KIR (6 Bln):</span>
+                                    <span className="font-bold text-slate-700">{v.kirExpiry || '-'}</span>
+                                    <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-sans ${
+                                      kirCheck.status === 'expired'
+                                        ? 'bg-rose-100 text-rose-700 border border-rose-300'
+                                        : kirCheck.status === 'warning_30d'
+                                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                        : 'bg-emerald-50 text-emerald-700'
+                                    }`}>
+                                      {kirCheck.formattedBadge}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-3.5">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                  {v.status || 'Siap Operasi'}
+                                </span>
+                              </td>
+                              <td className="p-3.5 text-right space-x-1">
+                                <button
+                                  onClick={() => handleOpenEditVehicle(v)}
+                                  className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                                  title="Edit Data Armada"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteVehicle(v.id)}
+                                  className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                                  title="Hapus Unit Armada"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                     {vehicles.filter(v => v && ((v.name || '').toLowerCase().includes(vehicleSearch.toLowerCase()) || (v.policeNumber || '').toLowerCase().includes(vehicleSearch.toLowerCase()))).length === 0 && (
                       <tr>
                         <td colSpan={7} className="p-8 text-center text-slate-400">
@@ -3077,7 +3158,8 @@ export default function AdminPanel({
                 </table>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
           {/* SUB-VIEW 2: MASTER DRIVER ARMADA TABLE */}
           {kendaraanSubTab === 'drivers' && (
@@ -5264,22 +5346,28 @@ export default function AdminPanel({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Jatuh Tempo Pajak STNK</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Jatuh Tempo Pajak STNK <span className="text-[10px] text-blue-600 font-semibold">(1 Tahun)</span>
+                  </label>
                   <input
                     type="date"
                     value={vehicleFormData.stnkTaxExpiry}
                     onChange={(e) => setVehicleFormData({ ...vehicleFormData, stnkTaxExpiry: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono"
                   />
+                  <p className="text-[9px] text-slate-400 mt-1 font-mono">Pemberitahuan aktif 1 bulan sebelum jatuh tempo</p>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Jatuh Tempo Uji KIR</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Jatuh Tempo Uji KIR Dishub <span className="text-[10px] text-indigo-600 font-semibold">(6 Bulan)</span>
+                  </label>
                   <input
                     type="date"
                     value={vehicleFormData.kirExpiry}
                     onChange={(e) => setVehicleFormData({ ...vehicleFormData, kirExpiry: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono"
                   />
+                  <p className="text-[9px] text-slate-400 mt-1 font-mono">Pemberitahuan aktif 1 bulan sebelum jatuh tempo</p>
                 </div>
               </div>
 
