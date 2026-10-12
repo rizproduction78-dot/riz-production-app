@@ -60,7 +60,46 @@ export interface QCNotificationCenterProps {
   activeMonth?: string;
 }
 
-const READ_STORAGE_KEY = 'riz_notification_center_last_read_v2';
+const READ_STORAGE_KEY = 'riz_notification_center_last_read_v3';
+const READ_STORAGE_KEY_LEGACY = 'riz_notification_center_last_read_v2';
+const READ_IDS_STORAGE_KEY = 'riz_notification_read_ids_v3';
+const DISMISSED_TOASTS_KEY = 'riz_notification_dismissed_toast_ids_v3';
+
+const getStoredReadIds = (): Set<string> => {
+  try {
+    const saved = localStorage.getItem(READ_IDS_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch {}
+  return new Set<string>();
+};
+
+const saveStoredReadIds = (ids: Set<string>) => {
+  try {
+    const arr = Array.from(ids).slice(-2000);
+    localStorage.setItem(READ_IDS_STORAGE_KEY, JSON.stringify(arr));
+  } catch {}
+};
+
+const getStoredDismissedToastIds = (): Set<string> => {
+  try {
+    const saved = localStorage.getItem(DISMISSED_TOASTS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch {}
+  return new Set<string>();
+};
+
+const saveStoredDismissedToastIds = (ids: Set<string>) => {
+  try {
+    const arr = Array.from(ids).slice(-2000);
+    localStorage.setItem(DISMISSED_TOASTS_KEY, JSON.stringify(arr));
+  } catch {}
+};
 
 export type NotificationCategory =
   | 'Semua'
@@ -137,16 +176,38 @@ export default function QCNotificationCenter({
   const [liveToast, setLiveToast] = useState<NotificationItem | null>(null);
   const [displayLimit, setDisplayLimit] = useState<number>(50);
 
+  const [readIds, setReadIds] = useState<Set<string>>(() => getStoredReadIds());
+  const [dismissedToastIds, setDismissedToastIds] = useState<Set<string>>(() => getStoredDismissedToastIds());
   const [lastReadTimestamp, setLastReadTimestamp] = useState<number>(() => {
     try {
-      const saved = localStorage.getItem(READ_STORAGE_KEY);
+      const saved = localStorage.getItem(READ_STORAGE_KEY) || localStorage.getItem(READ_STORAGE_KEY_LEGACY);
       return saved ? parseInt(saved, 10) : 0;
     } catch {
       return 0;
     }
   });
 
-  const previousCountRef = useRef<number>(0);
+  const knownItemIdsRef = useRef<Set<string>>(new Set<string>());
+  const isInitialLoadRef = useRef<boolean>(true);
+
+  // Sinkronisasi antar-tab & antar-instance (Desktop & Mobile Header)
+  useEffect(() => {
+    const syncFromStorage = () => {
+      try {
+        const savedRead = localStorage.getItem(READ_STORAGE_KEY) || localStorage.getItem(READ_STORAGE_KEY_LEGACY);
+        if (savedRead) setLastReadTimestamp(parseInt(savedRead, 10));
+        setReadIds(getStoredReadIds());
+        setDismissedToastIds(getStoredDismissedToastIds());
+      } catch {}
+    };
+
+    window.addEventListener('storage', syncFromStorage);
+    window.addEventListener('riz-notification-sync', syncFromStorage);
+    return () => {
+      window.removeEventListener('storage', syncFromStorage);
+      window.removeEventListener('riz-notification-sync', syncFromStorage);
+    };
+  }, []);
 
   // Reset display limit saat filter berubah
   useEffect(() => {
@@ -391,27 +452,57 @@ export default function QCNotificationCenter({
 
   // Deteksi penambahan data input secara live dalam sesi aktif untuk memicu Toast
   useEffect(() => {
-    if (notifications.length > previousCountRef.current && previousCountRef.current > 0) {
-      const newestItem = notifications[0];
-      if (newestItem) {
-        setLiveToast(newestItem);
+    if (notifications.length === 0) return;
+
+    // Saat inisialisasi pertama: daftarkan seluruh ID notifikasi yang sudah ada tanpa memicu popup toast
+    if (isInitialLoadRef.current) {
+      notifications.forEach(n => knownItemIdsRef.current.add(n.id));
+      isInitialLoadRef.current = false;
+      return;
+    }
+
+    // Hanya cari item yang benar-benar baru masuk ke sesi aktif (belum pernah tercatat di knownItemIdsRef)
+    const freshNewItems = notifications.filter(n => !knownItemIdsRef.current.has(n.id));
+    if (freshNewItems.length > 0) {
+      freshNewItems.forEach(n => knownItemIdsRef.current.add(n.id));
+
+      // Cari kandidat yang belum pernah di-dismiss dan belum pernah dibaca
+      const toastCandidate = freshNewItems.find(
+        n => !dismissedToastIds.has(n.id) && !readIds.has(n.id)
+      );
+
+      if (toastCandidate && !isMobileHeader) {
+        setLiveToast(toastCandidate);
         const timer = setTimeout(() => {
           setLiveToast(null);
+          // Simpan ke dismissed agar tidak pernah memicu toast lagi
+          setDismissedToastIds(prev => {
+            const next = new Set(prev);
+            next.add(toastCandidate.id);
+            saveStoredDismissedToastIds(next);
+            return next;
+          });
         }, 4500);
         return () => clearTimeout(timer);
       }
     }
-    previousCountRef.current = notifications.length;
-  }, [notifications]);
+  }, [notifications, isMobileHeader, dismissedToastIds, readIds]);
+
+  // Cek apakah notifikasi berstatus belum dibaca
+  const isItemUnread = (item: NotificationItem): boolean => {
+    if (readIds.has(item.id)) return false;
+    if (lastReadTimestamp > 0 && item.timestamp <= lastReadTimestamp) return false;
+    return true;
+  };
 
   // Hitung jumlah notifikasi belum dibaca
   const unreadCount = useMemo(() => {
-    if (lastReadTimestamp === 0) {
-      // Default pertama kali buka: tampilkan indikator data terbaru (maks 15 item)
+    if (lastReadTimestamp === 0 && readIds.size === 0) {
+      // Default pertama kali buka: tampilkan indikator data terbaru (maks 12 item)
       return Math.min(notifications.length, 12);
     }
-    return notifications.filter(n => n.timestamp > lastReadTimestamp).length;
-  }, [notifications, lastReadTimestamp]);
+    return notifications.filter(n => isItemUnread(n)).length;
+  }, [notifications, lastReadTimestamp, readIds]);
 
   // Total kendala global
   const totalKendalaGlobal = useMemo(() => {
@@ -455,17 +546,83 @@ export default function QCNotificationCenter({
     });
   }, [notifications, selectedDivision, selectedCategory, statusFilter, searchQuery]);
 
+  const handleDismissToast = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (liveToast) {
+      const toastId = liveToast.id;
+      setDismissedToastIds(prev => {
+        const next = new Set(prev);
+        next.add(toastId);
+        saveStoredDismissedToastIds(next);
+        return next;
+      });
+      setReadIds(prev => {
+        const next = new Set(prev);
+        next.add(toastId);
+        saveStoredReadIds(next);
+        return next;
+      });
+      window.dispatchEvent(new CustomEvent('riz-notification-sync'));
+    }
+    setLiveToast(null);
+  };
+
+  const handleClickToast = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (liveToast) {
+      const toastId = liveToast.id;
+      setDismissedToastIds(prev => {
+        const next = new Set(prev);
+        next.add(toastId);
+        saveStoredDismissedToastIds(next);
+        return next;
+      });
+      setReadIds(prev => {
+        const next = new Set(prev);
+        next.add(toastId);
+        saveStoredReadIds(next);
+        return next;
+      });
+      window.dispatchEvent(new CustomEvent('riz-notification-sync'));
+    }
+    setLiveToast(null);
+    handleOpenDrawer();
+  };
+
   const handleOpenDrawer = (e?: React.MouseEvent | React.TouchEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     setIsOpen(true);
-    const now = Date.now();
-    setLastReadTimestamp(now);
+    // Saat drawer dibuka, tandai semua notifikasi saat ini sebagai sudah dibaca
+    const maxTimestamp = notifications.reduce((max, n) => Math.max(max, n.timestamp || 0), Date.now());
+    const newReadTime = Math.max(Date.now(), maxTimestamp) + 1000;
+    setLastReadTimestamp(newReadTime);
     try {
-      localStorage.setItem(READ_STORAGE_KEY, String(now));
+      localStorage.setItem(READ_STORAGE_KEY, String(newReadTime));
+      localStorage.setItem(READ_STORAGE_KEY_LEGACY, String(newReadTime));
     } catch {}
+    setReadIds(prev => {
+      const next = new Set(prev);
+      notifications.forEach(n => next.add(n.id));
+      saveStoredReadIds(next);
+      return next;
+    });
+    if (liveToast) {
+      setDismissedToastIds(prev => {
+        const next = new Set(prev);
+        next.add(liveToast.id);
+        saveStoredDismissedToastIds(next);
+        return next;
+      });
+      setLiveToast(null);
+    }
+    window.dispatchEvent(new CustomEvent('riz-notification-sync'));
   };
 
   const handleMarkAllRead = (e?: React.MouseEvent) => {
@@ -473,14 +630,39 @@ export default function QCNotificationCenter({
       e.preventDefault();
       e.stopPropagation();
     }
-    const now = Date.now();
-    setLastReadTimestamp(now);
+    const maxTimestamp = notifications.reduce((max, n) => Math.max(max, n.timestamp || 0), Date.now());
+    const newReadTime = Math.max(Date.now(), maxTimestamp) + 1000;
+    setLastReadTimestamp(newReadTime);
     try {
-      localStorage.setItem(READ_STORAGE_KEY, String(now));
+      localStorage.setItem(READ_STORAGE_KEY, String(newReadTime));
+      localStorage.setItem(READ_STORAGE_KEY_LEGACY, String(newReadTime));
     } catch {}
+    setReadIds(prev => {
+      const next = new Set(prev);
+      notifications.forEach(n => next.add(n.id));
+      saveStoredReadIds(next);
+      return next;
+    });
+    if (liveToast) {
+      setDismissedToastIds(prev => {
+        const next = new Set(prev);
+        next.add(liveToast.id);
+        saveStoredDismissedToastIds(next);
+        return next;
+      });
+      setLiveToast(null);
+    }
+    window.dispatchEvent(new CustomEvent('riz-notification-sync'));
   };
 
   const handleItemClick = (item: NotificationItem) => {
+    setReadIds(prev => {
+      const next = new Set(prev);
+      next.add(item.id);
+      saveStoredReadIds(next);
+      return next;
+    });
+    window.dispatchEvent(new CustomEvent('riz-notification-sync'));
     if (onNavigateTab && item.targetTab) {
       onNavigateTab(item.targetTab);
       setIsOpen(false);
@@ -563,14 +745,9 @@ export default function QCNotificationCenter({
       {/* ────────────────────────────────────────────────────────── */}
       {/* 2. REAL-TIME LIVE TOAST NOTIFICATION (Pop-up Singkat)       */}
       {/* ────────────────────────────────────────────────────────── */}
-      {liveToast && typeof document !== 'undefined' && createPortal(
+      {liveToast && !isMobileHeader && typeof document !== 'undefined' && createPortal(
         <div 
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setLiveToast(null);
-            handleOpenDrawer();
-          }}
+          onClick={handleClickToast}
           className="fixed top-4 right-4 z-[99999] bg-slate-900/95 backdrop-blur-md text-white p-3 px-4 rounded-xl shadow-2xl border border-indigo-500/50 flex items-center gap-3 cursor-pointer max-w-sm hover:border-indigo-400 transition-all select-none"
         >
           <div className="w-9 h-9 rounded-lg bg-indigo-600/40 border border-indigo-400/50 flex items-center justify-center text-indigo-300 shrink-0 pointer-events-none">
@@ -589,10 +766,7 @@ export default function QCNotificationCenter({
           </div>
           <button 
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setLiveToast(null);
-            }}
+            onClick={handleDismissToast}
             className="text-slate-400 hover:text-white p-1 rounded cursor-pointer"
             title="Tutup Notifikasi"
           >
