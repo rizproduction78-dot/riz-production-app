@@ -658,19 +658,19 @@ export default function Dashboard({
           <h1 className="text-lg font-bold text-slate-900 tracking-tight">Navigasi Dashboard</h1>
           <p className="text-[11px] text-slate-500">Pilih tampilan dashboard harian atau semua jenis pelaporan operasi (Harian, Mingguan, Bulanan)</p>
         </div>
-        <div className="flex flex-wrap bg-slate-100 p-1 rounded-lg w-full md:w-auto gap-1">
+        <div className="flex items-center overflow-x-auto no-scrollbar touch-scroll bg-slate-100 p-1 rounded-lg w-full md:w-auto gap-1 max-w-full">
           <button
             onClick={() => setActiveTab('harian')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              activeTab === 'harian' ? 'bg-white text-slate-900' : 'text-slate-500 hover:text-slate-900'
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+              activeTab === 'harian' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Ringkasan Harian
           </button>
           <button
             onClick={() => setActiveTab('graphic_view')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'graphic_view' ? 'bg-indigo-600 text-white font-extrabold' : 'text-slate-500 hover:text-slate-900'
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              activeTab === 'graphic_view' ? 'bg-indigo-600 text-white font-extrabold shadow-xs' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <PieChart className="w-3.5 h-3.5" />
@@ -678,24 +678,24 @@ export default function Dashboard({
           </button>
           <button
             onClick={() => setActiveTab('daily_report')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              activeTab === 'daily_report' ? 'bg-white text-indigo-700 font-extrabold' : 'text-slate-500 hover:text-slate-900'
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+              activeTab === 'daily_report' ? 'bg-white text-indigo-700 font-extrabold shadow-xs' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Daily Operation Report
           </button>
           <button
             onClick={() => setActiveTab('weekly_report')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              activeTab === 'weekly_report' ? 'bg-white text-indigo-700 font-extrabold' : 'text-slate-500 hover:text-slate-900'
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+              activeTab === 'weekly_report' ? 'bg-white text-indigo-700 font-extrabold shadow-xs' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Weekly Operation Report
           </button>
           <button
             onClick={() => setActiveTab('monthly_report')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-              activeTab === 'monthly_report' ? 'bg-white text-indigo-700 font-extrabold' : 'text-slate-500 hover:text-slate-900'
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+              activeTab === 'monthly_report' ? 'bg-white text-indigo-700 font-extrabold shadow-xs' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Monthly Operation Report
@@ -778,7 +778,7 @@ export default function Dashboard({
                   Lihat Semua
                 </button>
               </div>
-              <div className="flex-1 overflow-x-auto">
+              <div className="flex-1 overflow-x-auto touch-scroll">
                 <table className="w-full text-left text-[13px] border-collapse">
                   <thead>
                     <tr className="bg-[#f1f5f9] text-[#475569] border-b border-slate-200 font-semibold">
@@ -1222,7 +1222,7 @@ export default function Dashboard({
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Table */}
-              <div className="lg:col-span-2 overflow-x-auto border border-slate-200 rounded-xl">
+              <div className="lg:col-span-2 overflow-x-auto touch-scroll border border-slate-200 rounded-xl">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -1272,7 +1272,7 @@ export default function Dashboard({
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Table */}
-              <div className="lg:col-span-2 overflow-x-auto border border-slate-100 rounded-xl">
+              <div className="lg:col-span-2 overflow-x-auto touch-scroll border border-slate-100 rounded-xl">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -1417,7 +1417,7 @@ export default function Dashboard({
                   )}
                 </div>
 
-                <div className="overflow-x-auto border border-slate-200 rounded-xl max-h-[520px] overflow-y-auto">
+                <div className="overflow-x-auto touch-scroll border border-slate-200 rounded-xl max-h-[520px] overflow-y-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px] sticky top-0 z-10">
@@ -1616,7 +1616,7 @@ export default function Dashboard({
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Table */}
-              <div className="lg:col-span-2 overflow-x-auto border border-slate-100 rounded-xl">
+              <div className="lg:col-span-2 overflow-x-auto touch-scroll border border-slate-100 rounded-xl">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -1692,7 +1692,7 @@ export default function Dashboard({
               <h2 className="text-base font-extrabold text-slate-900 uppercase tracking-tight">TOP 10 PERALATAN PALING SERING BERMASALAH</h2>
             </div>
 
-            <div className="overflow-x-auto border border-slate-100 rounded-xl">
+            <div className="overflow-x-auto touch-scroll border border-slate-100 rounded-xl">
               <table className="w-full text-left text-xs border-collapse font-mono">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">

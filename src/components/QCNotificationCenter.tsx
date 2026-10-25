@@ -241,16 +241,19 @@ export default function QCNotificationCenter({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') setIsOpen(false);
       };
       window.addEventListener('keydown', handleKeyDown);
       return () => {
         document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
         window.removeEventListener('keydown', handleKeyDown);
       };
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
   }, [isOpen]);
 
@@ -538,7 +541,7 @@ export default function QCNotificationCenter({
           setLiveToast(null);
           // Simpan ke dismissed agar tidak pernah memicu toast lagi
           setDismissedToastIds(prev => {
-            const next = new Set(prev);
+            const next = new Set<string>(prev);
             next.add(toastCandidate.id);
             saveStoredDismissedToastIds(next);
             return next;
@@ -615,13 +618,13 @@ export default function QCNotificationCenter({
     if (liveToast) {
       const toastId = liveToast.id;
       setDismissedToastIds(prev => {
-        const next = new Set(prev);
+        const next = new Set<string>(prev);
         next.add(toastId);
         saveStoredDismissedToastIds(next);
         return next;
       });
       setReadIds(prev => {
-        const next = new Set(prev);
+        const next = new Set<string>(prev);
         next.add(toastId);
         saveStoredReadIds(next);
         return next;
@@ -637,13 +640,13 @@ export default function QCNotificationCenter({
     if (liveToast) {
       const toastId = liveToast.id;
       setDismissedToastIds(prev => {
-        const next = new Set(prev);
+        const next = new Set<string>(prev);
         next.add(toastId);
         saveStoredDismissedToastIds(next);
         return next;
       });
       setReadIds(prev => {
-        const next = new Set(prev);
+        const next = new Set<string>(prev);
         next.add(toastId);
         saveStoredReadIds(next);
         return next;
@@ -669,13 +672,13 @@ export default function QCNotificationCenter({
       localStorage.setItem(READ_STORAGE_KEY_LEGACY, String(newReadTime));
     } catch {}
     setReadIds(prev => {
-      const next = new Set(prev);
+      const next = new Set<string>(prev);
       notifications.forEach(n => next.add(n.id));
       saveStoredReadIds(next);
       return next;
     });
     setDismissedToastIds(prev => {
-      const next = new Set(prev);
+      const next = new Set<string>(prev);
       notifications.forEach(n => next.add(n.id));
       if (liveToast) next.add(liveToast.id);
       saveStoredDismissedToastIds(next);
@@ -698,13 +701,13 @@ export default function QCNotificationCenter({
       localStorage.setItem(READ_STORAGE_KEY_LEGACY, String(newReadTime));
     } catch {}
     setReadIds(prev => {
-      const next = new Set(prev);
+      const next = new Set<string>(prev);
       notifications.forEach(n => next.add(n.id));
       saveStoredReadIds(next);
       return next;
     });
     setDismissedToastIds(prev => {
-      const next = new Set(prev);
+      const next = new Set<string>(prev);
       notifications.forEach(n => next.add(n.id));
       if (liveToast) next.add(liveToast.id);
       saveStoredDismissedToastIds(next);
@@ -716,13 +719,13 @@ export default function QCNotificationCenter({
 
   const handleItemClick = (item: NotificationItem) => {
     setReadIds(prev => {
-      const next = new Set(prev);
+      const next = new Set<string>(prev);
       next.add(item.id);
       saveStoredReadIds(next);
       return next;
     });
     setDismissedToastIds(prev => {
-      const next = new Set(prev);
+      const next = new Set<string>(prev);
       next.add(item.id);
       saveStoredDismissedToastIds(next);
       return next;
@@ -813,7 +816,7 @@ export default function QCNotificationCenter({
       {liveToast && !isMobileHeader && typeof document !== 'undefined' && createPortal(
         <div 
           onClick={handleClickToast}
-          className="fixed top-4 right-4 z-[99999] bg-slate-900/95 backdrop-blur-md text-white p-3 px-4 rounded-xl shadow-2xl border border-indigo-500/50 flex items-center gap-3 cursor-pointer max-w-sm hover:border-indigo-400 transition-all select-none"
+          className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-[99999] bg-slate-900/95 backdrop-blur-md text-white p-3 px-4 rounded-xl shadow-2xl border border-indigo-500/50 flex items-center gap-3 cursor-pointer max-w-full sm:max-w-sm hover:border-indigo-400 transition-all select-none"
         >
           <div className="w-9 h-9 rounded-lg bg-indigo-600/40 border border-indigo-400/50 flex items-center justify-center text-indigo-300 shrink-0 pointer-events-none">
             <Bell className="w-4 h-4 animate-bounce" />
@@ -865,7 +868,7 @@ export default function QCNotificationCenter({
 
           {/* Full-Height Drawer Panel */}
           <div
-            className="relative z-10 w-full sm:max-w-lg md:max-w-xl bg-white shadow-2xl flex flex-col border-l border-slate-200 overflow-hidden h-full max-h-screen"
+            className="relative z-10 w-full sm:max-w-lg md:max-w-xl bg-white shadow-2xl flex flex-col border-l border-slate-200 overflow-hidden h-full max-h-screen pt-[max(env(safe-area-inset-top),0px)] pb-[max(env(safe-area-inset-bottom),0px)]"
             onClick={e => e.stopPropagation()}
           >
             {/* Top Header */}

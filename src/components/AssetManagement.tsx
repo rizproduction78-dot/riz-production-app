@@ -185,11 +185,11 @@ export default function AssetManagement({
 
       {/* Sub-Tabs: Daftar Aset Aktif vs Sumber Resmi & Katalog Peralatan */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
-        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl text-xs font-bold w-fit">
+        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl text-xs font-bold overflow-x-auto no-scrollbar touch-scroll max-w-full">
           <button
             type="button"
             onClick={() => setAssetViewTab('inventory')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               assetViewTab === 'inventory'
                 ? 'bg-white text-indigo-700 shadow-sm font-black'
                 : 'text-slate-600 hover:text-slate-900'
@@ -201,7 +201,7 @@ export default function AssetManagement({
           <button
             type="button"
             onClick={() => setAssetViewTab('official_catalog')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               assetViewTab === 'official_catalog'
                 ? 'bg-emerald-600 text-white shadow-sm font-black'
                 : 'text-slate-600 hover:text-slate-900'
@@ -687,7 +687,7 @@ export default function AssetManagement({
             </div>
 
             {/* Catalog Table */}
-            <div className="overflow-x-auto border border-slate-200 rounded-xl">
+            <div className="overflow-x-auto touch-scroll border border-slate-200 rounded-xl">
               <table className="min-w-full divide-y divide-slate-200 text-xs">
                 <thead className="bg-slate-50 text-slate-700 font-bold uppercase text-[10px] tracking-wider font-mono">
                   <tr>

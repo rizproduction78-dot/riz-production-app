@@ -23,30 +23,67 @@
   background: #94a3b8;
 }
 
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
 /* Mobile iOS & Android Safe Area & Touch Optimizations */
-html, body {
+html {
   -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: visible;
+  overflow-y: visible;
 }
 
 /* Safe area padding utilities for iOS notch & modern Android gestures */
 .safe-top {
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: max(env(safe-area-inset-top, 0px), 0px);
 }
 .safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
 }
 .safe-left {
-  padding-left: env(safe-area-inset-left, 0px);
+  padding-left: max(env(safe-area-inset-left, 0px), 0px);
 }
 .safe-right {
-  padding-right: env(safe-area-inset-right, 0px);
+  padding-right: max(env(safe-area-inset-right, 0px), 0px);
+}
+
+/* Hide scrollbar while preserving touch swipe */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* Smooth touch scrolling */
 .touch-scroll {
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+/* Prevent unwanted automatic zoom on iOS Safari when focusing input/select/textarea on mobile */
+@media screen and (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 @media print {

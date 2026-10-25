@@ -490,10 +490,10 @@ export default function Findings({
 
       {/* Sub-Tabs Selector */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-        <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl text-xs font-bold">
+        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl text-xs font-bold overflow-x-auto no-scrollbar touch-scroll max-w-full">
           <button
             onClick={() => setActiveSubTab('findings')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeSubTab === 'findings' ? 'bg-white text-indigo-700 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -502,7 +502,7 @@ export default function Findings({
           </button>
           <button
             onClick={() => setActiveSubTab('work_orders')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeSubTab === 'work_orders' ? 'bg-white text-blue-700 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -512,15 +512,15 @@ export default function Findings({
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-2 text-xs w-full md:w-auto">
+          <div className="relative flex-1 md:flex-none">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder={activeSubTab === 'findings' ? "Cari alat, masalah, PIC..." : "Cari tiket WO, PIC, divisi..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none w-48 md:w-56"
+              className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none w-full md:w-56"
             />
           </div>
 
@@ -1242,8 +1242,8 @@ export default function Findings({
       {/* MODAL: DETAIL LOG KERJA WORK ORDER                         */}
       {/* ────────────────────────────────────────────────────────── */}
       {selectedWODetail && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-5 max-h-[90dvh] overflow-y-auto animate-in fade-in zoom-in duration-200">
             <div className="flex items-start justify-between pb-3 border-b border-slate-100">
               <div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-blue-100 text-blue-800">

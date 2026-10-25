@@ -330,7 +330,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference (100% authentic multi-month tabulation)
-  const REF_SYNC_KEY = 'riz_ref_synced_v60_all_lists_descending_dates_fixed';
+  const REF_SYNC_KEY = 'riz_ref_synced_v62_october_exact_gsheet_unified';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     // Reset local caches to exact authentic reference dataset
     localStorage.setItem('riz_findings_v2', JSON.stringify(INITIAL_FINDINGS));
@@ -495,11 +495,11 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const map = new Map(baseLogs.map(l => [l.id, l]));
           parsed.forEach((l: LogbookEntry) => map.set(l.id, l));
-          return Array.from(map.values());
+          return normalizeCollectionItems('logbook_entries', Array.from(map.values()));
         }
       } catch (e) {}
     }
-    return baseLogs;
+    return normalizeCollectionItems('logbook_entries', baseLogs);
   });
 
   const [dailyReports, setDailyReports] = useState<DailyReportType[]>(() => {
@@ -511,11 +511,11 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const map = new Map(baseReports.map(r => [r.id, r]));
           parsed.forEach((r: DailyReportType) => map.set(r.id, r));
-          return Array.from(map.values());
+          return normalizeCollectionItems('daily_reports', Array.from(map.values()));
         }
       } catch (e) {}
     }
-    return baseReports;
+    return normalizeCollectionItems('daily_reports', baseReports);
   });
 
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>(() => {
@@ -894,7 +894,7 @@ export default function App() {
             const existing = map.get(d.id);
             map.set(d.id, existing ? { ...existing, ...d } : d);
           });
-          const merged = Array.from(map.values());
+          const merged = normalizeCollectionItems('daily_reports', Array.from(map.values()));
           try { localStorage.setItem('riz_daily_reports_v2', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
         });
@@ -907,7 +907,7 @@ export default function App() {
             const existing = map.get(d.id);
             map.set(d.id, existing ? { ...existing, ...d } : d);
           });
-          const merged = Array.from(map.values());
+          const merged = normalizeCollectionItems('logbook_entries', Array.from(map.values()));
           try { localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
         });
@@ -1714,7 +1714,7 @@ export default function App() {
       </aside>
 
       {/* Mobile Top Header - Hidden on Print */}
-      <header className="no-print md:hidden bg-[#0f172a] text-white flex items-center justify-between p-4 sticky top-0 z-50 shadow-md border-b border-[#1e293b]">
+      <header className="no-print md:hidden bg-[#0f172a] text-white flex items-center justify-between px-3.5 py-2.5 pt-[max(env(safe-area-inset-top),0.75rem)] sticky top-0 z-50 shadow-md border-b border-[#1e293b]">
         <div className="flex items-center gap-2">
           <div className="font-extrabold text-sm tracking-tight flex items-center gap-1.5">
             <span>RIZ-PRO</span>
@@ -1760,10 +1760,10 @@ export default function App() {
       )}
       
       {/* Slide-out Drawer */}
-      <div className={`no-print md:hidden fixed inset-y-0 left-0 w-[280px] bg-[#0f172a] text-slate-300 z-50 flex flex-col shadow-2xl transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`no-print md:hidden fixed inset-y-0 left-0 w-[290px] max-w-[85vw] bg-[#0f172a] text-slate-300 z-50 flex flex-col shadow-2xl transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         
         {/* Drawer Header */}
-        <div className="flex-none p-4 border-b border-[#1e293b] bg-[#0c1322] flex items-center justify-between">
+        <div className="flex-none px-4 py-3.5 pt-[max(env(safe-area-inset-top),1rem)] border-b border-[#1e293b] bg-[#0c1322] flex items-center justify-between">
           <div className="font-extrabold text-sm tracking-tight flex items-center gap-1.5">
             <span className="text-white">RIZ-PRO</span>
             <span className="bg-blue-600 text-white text-[9px] font-mono px-1.5 py-0.5 rounded font-bold">LOG</span>
@@ -1777,7 +1777,7 @@ export default function App() {
         </div>
 
         {/* Drawer Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar touch-scroll">
           {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
             <button
               onClick={() => {
@@ -1827,7 +1827,7 @@ export default function App() {
         </div>
 
         {/* Drawer Footer */}
-        <div className="flex-none p-4 border-t border-[#1e293b] bg-[#0c1322] space-y-2">
+        <div className="flex-none p-4 pb-[max(env(safe-area-inset-bottom),1rem)] border-t border-[#1e293b] bg-[#0c1322] space-y-2">
           <div className="flex items-center gap-3 p-3 bg-slate-900 rounded-xl border border-slate-800 shadow-inner mb-3">
             <div className="w-8 h-8 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-400 font-bold border border-blue-500/20 shrink-0">
               {currentUser.name.charAt(0).toUpperCase()}
@@ -1861,12 +1861,12 @@ export default function App() {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto max-w-full font-sans">
+      <main className="flex-1 min-w-0 p-2.5 sm:p-4 md:p-8 pb-[max(env(safe-area-inset-bottom),2rem)] max-w-full font-sans">
         
         {/* Real-time Cloud Auto-Sync Header Status Bar */}
-        <div className="no-print mb-6 bg-white/95 backdrop-blur-xs p-3 px-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="relative flex h-2.5 w-2.5">
+        <div className="no-print mb-4 sm:mb-6 bg-white/95 backdrop-blur-xs p-2.5 sm:p-3 sm:px-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                 syncStatus.isOnline ? 'bg-emerald-400' : 'bg-rose-400'
               }`}></span>
@@ -1874,12 +1874,12 @@ export default function App() {
                 syncStatus.isOnline ? 'bg-emerald-500' : 'bg-rose-500'
               }`}></span>
             </span>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-slate-800">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-800">
                 {syncStatus.isOnline ? 'Penyimpanan Terpadu: Auto-Sync Aktif' : 'Mode Offline (Penyimpanan Lokal)'}
               </span>
               {syncStatus.pendingQueueCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[9px] sm:text-[10px] font-bold">
                   {syncStatus.pendingQueueCount} antrean menunggu sync
                 </span>
               )}
@@ -1891,7 +1891,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 flex-wrap">
             {/* Bell Notification Icon Desktop */}
             <QCNotificationCenter
               dailyReports={dailyReports}
@@ -1907,7 +1907,7 @@ export default function App() {
             />
 
             {/* Global Period Selector - Terkoordinasi ke seluruh modul & side panel */}
-            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-xs">
+            <div className="flex items-center gap-1.5 bg-white px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg border border-slate-200 shadow-xs">
               <Calendar className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">Periode:</span>
               <select
@@ -1929,7 +1929,7 @@ export default function App() {
             {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
               <button
                 onClick={handleInstallPWA}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 title={isIOSDevice ? "Panduan Pasang di iPhone/iPad" : "Install PWA ke HP / Komputer"}
               >
                 <Smartphone className="w-3.5 h-3.5" />
@@ -1939,11 +1939,12 @@ export default function App() {
             <button
               onClick={handleManualSync}
               disabled={syncStatus.isSyncing}
-              className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+              className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
               title="Klik untuk menyinkronkan data seketika"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${syncStatus.isSyncing ? 'animate-spin' : ''}`} />
-              <span>{syncStatus.isSyncing ? 'Menyinkronkan...' : 'Auto-Sync Sekarang'}</span>
+              <span className="hidden xs:inline">{syncStatus.isSyncing ? 'Menyinkronkan...' : 'Auto-Sync Sekarang'}</span>
+              <span className="xs:hidden">{syncStatus.isSyncing ? 'Sync...' : 'Sync'}</span>
             </button>
           </div>
         </div>

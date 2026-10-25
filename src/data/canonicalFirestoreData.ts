@@ -3,7 +3,7 @@ import { DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
 /**
  * DATA KANONIKAL RESMI CLOUD FIRESTORE & GOOGLE SHEET PT. RIZ PRODUCTION MULTI KREASI
  * Disinkronkan langsung dari Cloud Firestore (wh-logbook-2026).
- * Total: 256 Daily Reports | 221 Logbook Entries | 47 Findings | 16 Work Orders
+ * Total: 284 Daily Reports | 231 Logbook Entries | 47 Findings | 16 Work Orders
  */
 
 export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
@@ -4105,7 +4105,7 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "staffName": "Wahyudin",
     "division": "Audio",
     "activity": "inventory\nstand speaker 22pcs\nstand mic lama 44pcs\nstand mic baru 20pcs\nstand kick pendek 5pcs\nstand mic pendek 4pcs\nstand boox 22pcs\nstand key singel 4pcs\nstand key soubel 3pcs\nstand gtr lama isi 3 2pcs\nstand gtr singel 4pcs\nstand gtr baru isi 3 1pcs isi 3pcs\nmarking mic sm58 57 condensor c1000\nmarking mic drum\ntakel 2ton 2pcs\ntakel 1ton 8pcs\nsetrap takel panjang 10pcs pendek 2pcs",
-    "notes": "Ada\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nSudah\nSudah\nAman\nAman\nAda",
+    "notes": "On progress\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nSudah\nSudah\nAman\nAman\nAda",
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4195,7 +4195,7 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "staffName": "Iwan Kurniawan",
     "division": "Audio",
     "activity": "cleaning up monitor ART 312,ART 315",
-    "notes": "",
+    "notes": "Kondisi Bersih",
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4205,7 +4205,7 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "staffName": "Ramdani",
     "division": "Audio",
     "activity": "cleaning up monitor ART 312,ART 315",
-    "notes": "",
+    "notes": "Kondisi Bersih",
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4260,17 +4260,87 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261008-staff-mulyana-54",
-    "date": "2026-10-08",
-    "staffName": "Mulyana",
-    "division": "Videotron",
-    "activity": "repair 4 kabinet led\n- 1 kabinet ganti ic warna\n- 1 kabinet ngacing\n- 2 kabinet ganti jalur",
+    "id": "rep-20261007-staff-iwan-54",
+    "date": "2026-10-07",
+    "staffName": "Iwan Kurniawan",
+    "division": "Audio",
+    "activity": "- Cek Sub KLA No.3 Update Service",
+    "notes": "Kondisi Aman",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261007-staff-unyin-55",
+    "date": "2026-10-07",
+    "staffName": "Wahyudin",
+    "division": "Audio",
+    "activity": "- Cleaning Semua keyboard RD",
+    "notes": "Kondisi Bersih",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261007-staff-suryana-56",
+    "date": "2026-10-07",
+    "staffName": "Suryana",
+    "division": "Audio",
+    "activity": "- Marking label Ulang Nomor Mic Satuan dan Mic drum set",
+    "notes": "Beres",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261007-staff-ramdani-57",
+    "date": "2026-10-07",
+    "staffName": "Ramdani",
+    "division": "Audio",
+    "activity": "- Cek Kondisi Console Midas HD",
+    "notes": "Kondisi Aman dan Normal",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261007-staff-yudish-58",
+    "date": "2026-10-07",
+    "staffName": "Yudishtira Purnama A",
+    "division": "Audio",
+    "activity": "- Sortir Beberapa kabel XLR Dan Akai Serta kabel Power",
+    "notes": "Aman",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261007-staff-taufik-59",
+    "date": "2026-10-07",
+    "staffName": "Taufik Diana",
+    "division": "Audio",
+    "activity": "- Mencatat Serial NUmber Mic dan Receiver Sennheiser EWD",
+    "notes": "Selesai",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261007-staff-mulyadi-60",
+    "date": "2026-10-07",
+    "staffName": "Mulyadi",
+    "division": "Multimedia",
+    "activity": "- Bantu Team Sound",
     "notes": "",
     "status": "Submitted",
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261008-staff-heri-58",
+    "id": "rep-20261008-staff-mulyana-61",
+    "date": "2026-10-08",
+    "staffName": "Mulyana",
+    "division": "Videotron",
+    "activity": "repair 4 kabinet led\n- 1 kabinet ganti ic warna\n- 1 kabinet ngacing\n- 2 kabinet ganti jalur",
+    "notes": "Done\nDone\nDone\nDone",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261008-staff-heri-65",
     "date": "2026-10-08",
     "staffName": "Heri",
     "division": "Lighting",
@@ -4280,12 +4350,222 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261009-staff-irvan-59",
+    "id": "rep-20261009-staff-irvan-66",
     "date": "2026-10-09",
     "staffName": "Muhamad Irvan",
     "division": "Videotron",
     "activity": "Cek hanging bar gantung",
     "notes": "- Kondisi Baik",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261009-staff-dedi-67",
+    "date": "2026-10-09",
+    "staffName": "Dedi Agus Wigiantoro",
+    "division": "Videotron",
+    "activity": "cek Hangging Bar",
+    "notes": "Aman",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261010-staff-mulyana-68",
+    "date": "2026-10-10",
+    "staffName": "Mulyana",
+    "division": "Videotron",
+    "activity": "1. repair 12 kabinet\n- 10 kabinet ganti dead pixel\n- 1 kabinet ngacing\n- 1 kabinet ganti jalur\n2. cek all servisan\n- 1 box 4 kabinet on progres\n- 2 box rusak berat",
+    "notes": "Beres\nBeres\nBeres\nBeres\nOn progress\nOn progress\n- Kerusakan Ganti IC Warna, Ilang Jalur, GantiKonektor output sama ngacing",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261010-staff-taufik-75",
+    "date": "2026-10-10",
+    "staffName": "Taufik Diana",
+    "division": "Audio",
+    "activity": "- Service Headset 2 Unit",
+    "notes": "Beres",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261010-staff-iwan-76",
+    "date": "2026-10-10",
+    "staffName": "Iwan Kurniawan",
+    "division": "Audio",
+    "activity": "- Pencatatan Serial NUmber\n- Membersihkan Kamar mandi bawah\n- Service kabel Legran 1 Unit",
+    "notes": "Haedset G3 3 Unit, IEM G4 4 Unit, IEM Mipro 1 Unit\nBersih\nBeres\nNote : G3 Yang isi 4 SN nya rusak gabisa input",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261011-staff-mulyadi-80",
+    "date": "2026-10-11",
+    "staffName": "Mulyadi",
+    "division": "Multimedia",
+    "activity": "Update Inventory\n- Tripod, Godox, Kabel HDMI\n- Kabel SDI, Perleng, Stand Godox\n- Klip GS, Matador Tv, TV 43\", TV 50\"\n-Kabel LAN, Belajar Ruting PTZ",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261012-staff-ayong-85",
+    "date": "2026-10-12",
+    "staffName": "Ayong Sumarsih",
+    "division": "Videotron",
+    "activity": "- Vacum bagian dalam box led dari pecahan silica gel",
+    "notes": "8 box di bersihkan bagian dalam nya",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261012-staff-dedi-86",
+    "date": "2026-10-12",
+    "staffName": "Dedi Agus Wigiantoro",
+    "division": "Videotron",
+    "activity": "- Membersihkan 2 stand box led cube",
+    "notes": "2 stand cube bersih",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261012-staff-mulyana-87",
+    "date": "2026-10-12",
+    "staffName": "Mulyana",
+    "division": "Videotron",
+    "activity": "1. service 9 kabinet led\n- 8 kabinet gamti dead pixel\n- 1 kabinet ngacing",
+    "notes": "Done\nDone\nDone",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261012-staff-rahmat-90",
+    "date": "2026-10-12",
+    "staffName": "Muhamad Rahmat",
+    "division": "Audio",
+    "activity": "-update firmware m32 live 2unit,m32R 1unit,midas HD 2unit",
+    "notes": "-setelah di updadate firmware terkonecting dgn normal",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261012-staff-ramdani-91",
+    "date": "2026-10-12",
+    "staffName": "Ramdani",
+    "division": "Audio",
+    "activity": "-cleaning drum YAMAHA TC1,TAMA SC",
+    "notes": "-drum dlm kondisi bersih",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261012-staff-mulyadi-92",
+    "date": "2026-10-12",
+    "staffName": "Mulyadi",
+    "division": "Multimedia",
+    "activity": "- Inventory Alat Streaming\n- Pembuatan Storytelling",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261013-staff-mulyana-94",
+    "date": "2026-10-13",
+    "staffName": "Mulyana",
+    "division": "Videotron",
+    "activity": "1. servise 6 kabinet led\n- 1 kabinet ganti jalur\n- 5 kabinet gamti dead pixel",
+    "notes": "",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261014-unknown-97",
+    "date": "2026-10-14",
+    "staffName": "- Endin",
+    "division": "Lighting",
+    "activity": "- Ganti Lampu Beam No.10",
+    "notes": "- Sudah Normal lagi beam No.10",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261014-staff-mulyana-98",
+    "date": "2026-10-14",
+    "staffName": "Mulyana",
+    "division": "Videotron",
+    "activity": "1. servise 7 kabinet led\n- 1 kabinet ngacing\n-1 kabinet ganti ic warna\n- 5 kabinet ganti dead pixel\n2. cek 50 meter led strip",
+    "notes": "1 box status masih servise berat\n1 rol (5m) led strip status error",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261019-staff-heri-103",
+    "date": "2026-10-19",
+    "staffName": "Heri",
+    "division": "Lighting",
+    "activity": "Bersih2 ALL Parled 47 Unit\nBenerin Link 1 Unit\nBenerin Kabel 4x2.5 Bekas Event St Regist\nRapih Rapih Kabel & Tempat Lighting",
+    "notes": "- Kondisi Bersih\n- Sudah Oke\n- Sudah Oke\n- Kondisi Rapih",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261019-staff-rahmat-107",
+    "date": "2026-10-19",
+    "staffName": "Muhamad Rahmat",
+    "division": "Audio",
+    "activity": "maintenace sub/avanda210",
+    "notes": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261019-staff-taufik-108",
+    "date": "2026-10-19",
+    "staffName": "Taufik Diana",
+    "division": "Audio",
+    "activity": "maintenace sub/avanda210",
+    "notes": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261019-unknown-109",
+    "date": "2026-10-19",
+    "staffName": "butotng",
+    "division": "Audio",
+    "activity": "maintenace sub/avanda210",
+    "notes": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261019-staff-ramdani-110",
+    "date": "2026-10-19",
+    "staffName": "Ramdani",
+    "division": "Audio",
+    "activity": "maintenace sub/avanda210",
+    "notes": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261019-staff-unyin-111",
+    "date": "2026-10-19",
+    "staffName": "Wahyudin",
+    "division": "Audio",
+    "activity": "maintenace sub/avanda210",
+    "notes": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261023-staff-heri-112",
+    "date": "2026-10-23",
+    "staffName": "Heri",
+    "division": "Lighting",
+    "activity": "Prepare Barang Barang Event",
+    "notes": "",
     "status": "Submitted",
     "_source": "google_sheet"
   }
@@ -9800,7 +10080,43 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "log-rep-20261009-staff-irvan-59",
+    "id": "log-rep-20261007-staff-iwan-54",
+    "date": "2026-10-07",
+    "division": "Audio",
+    "staffName": "Iwan Kurniawan",
+    "activity": "- Cek Sub KLA No.3 Update Service",
+    "result": "OK",
+    "followUp": "Kondisi Aman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "- Cek Sub KLA No.3 Update Service": {
+        "status": "OK",
+        "notes": "Kondisi Aman"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261007-staff-ramdani-57",
+    "date": "2026-10-07",
+    "division": "Audio",
+    "staffName": "Ramdani",
+    "activity": "- Cek Kondisi Console Midas HD",
+    "result": "OK",
+    "followUp": "Kondisi Aman dan Normal",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "- Cek Kondisi Console Midas HD": {
+        "status": "OK",
+        "notes": "Kondisi Aman dan Normal"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261009-staff-irvan-66",
     "date": "2026-10-09",
     "division": "Videotron",
     "staffName": "Muhamad Irvan",
@@ -9813,6 +10129,150 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
       "Cek hanging bar gantung": {
         "status": "OK",
         "notes": "- Kondisi Baik"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261009-staff-dedi-67",
+    "date": "2026-10-09",
+    "division": "Videotron",
+    "staffName": "Dedi Agus Wigiantoro",
+    "activity": "cek Hangging Bar",
+    "result": "OK",
+    "followUp": "Aman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "cek Hangging Bar": {
+        "status": "OK",
+        "notes": "Aman"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261010-staff-mulyana-68",
+    "date": "2026-10-10",
+    "division": "Videotron",
+    "staffName": "Mulyana",
+    "activity": "1. repair 12 kabinet\n- 10 kabinet ganti dead pixel\n- 1 kabinet ngacing\n- 1 kabinet ganti jalur\n2. cek all servisan\n- 1 box 4 kabinet on progres\n- 2 box rusak berat",
+    "result": "NG",
+    "followUp": "Beres\nBeres\nBeres\nBeres\nOn progress\nOn progress\n- Kerusakan Ganti IC Warna, Ilang Jalur, GantiKonektor output sama ngacing",
+    "status": "Open",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "1. repair 12 kabinet\n- 10 kabinet ganti ": {
+        "status": "NG",
+        "notes": "Beres\nBeres\nBeres\nBeres\nOn progress\nOn progress\n- Kerusakan Ganti IC Warna, Ilang Jalur, GantiKonektor output sama ngacing"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261014-staff-mulyana-98",
+    "date": "2026-10-14",
+    "division": "Videotron",
+    "staffName": "Mulyana",
+    "activity": "1. servise 7 kabinet led\n- 1 kabinet ngacing\n-1 kabinet ganti ic warna\n- 5 kabinet ganti dead pixel\n2. cek 50 meter led strip",
+    "result": "NG",
+    "followUp": "1 box status masih servise berat\n1 rol (5m) led strip status error",
+    "status": "Open",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "1. servise 7 kabinet led\n- 1 kabinet nga": {
+        "status": "NG",
+        "notes": "1 box status masih servise berat\n1 rol (5m) led strip status error"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261019-staff-rahmat-107",
+    "date": "2026-10-19",
+    "division": "Audio",
+    "staffName": "Muhamad Rahmat",
+    "activity": "maintenace sub/avanda210",
+    "result": "OK",
+    "followUp": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "maintenace sub/avanda210": {
+        "status": "OK",
+        "notes": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261019-staff-taufik-108",
+    "date": "2026-10-19",
+    "division": "Audio",
+    "staffName": "Taufik Diana",
+    "activity": "maintenace sub/avanda210",
+    "result": "OK",
+    "followUp": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "maintenace sub/avanda210": {
+        "status": "OK",
+        "notes": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261019-unknown-109",
+    "date": "2026-10-19",
+    "division": "Audio",
+    "staffName": "butotng",
+    "activity": "maintenace sub/avanda210",
+    "result": "OK",
+    "followUp": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "maintenace sub/avanda210": {
+        "status": "OK",
+        "notes": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261019-staff-ramdani-110",
+    "date": "2026-10-19",
+    "division": "Audio",
+    "staffName": "Ramdani",
+    "activity": "maintenace sub/avanda210",
+    "result": "OK",
+    "followUp": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "maintenace sub/avanda210": {
+        "status": "OK",
+        "notes": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261019-staff-unyin-111",
+    "date": "2026-10-19",
+    "division": "Audio",
+    "staffName": "Wahyudin",
+    "activity": "maintenace sub/avanda210",
+    "result": "OK",
+    "followUp": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "maintenace sub/avanda210": {
+        "status": "OK",
+        "notes": "memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
       }
     },
     "_source": "google_sheet"

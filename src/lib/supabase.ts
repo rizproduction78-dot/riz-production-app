@@ -22,8 +22,12 @@ const getEnvVar = (key: string): string => {
   return '';
 };
 
-const supabaseUrl = getEnvVar('VITE_SUPABASE_URL').trim();
-const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY').trim();
+// Default production credentials for PT. Riz Production Supabase Cloud
+const DEFAULT_SUPABASE_URL = 'https://bthncgakjzgxvadgyirk.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_MZATJsoDYMXYVMGVq3FnZQ_igKNHcwb';
+
+const supabaseUrl = (getEnvVar('VITE_SUPABASE_URL') || DEFAULT_SUPABASE_URL).trim();
+const supabaseAnonKey = (getEnvVar('VITE_SUPABASE_ANON_KEY') || DEFAULT_SUPABASE_ANON_KEY).trim();
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&

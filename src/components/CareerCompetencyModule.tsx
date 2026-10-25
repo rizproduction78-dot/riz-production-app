@@ -485,10 +485,10 @@ export default function CareerCompetencyModule({
       {/* 2. MAIN SUB-TAB NAVIGATION BAR                             */}
       {/* ────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl text-xs font-bold w-fit">
+        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl text-xs font-bold overflow-x-auto no-scrollbar touch-scroll max-w-full">
           <button
             onClick={() => setActiveSubTab('matrix')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeSubTab === 'matrix'
                 ? 'bg-white text-indigo-700 shadow-sm font-black'
                 : 'text-slate-600 hover:text-slate-900'
@@ -499,7 +499,7 @@ export default function CareerCompetencyModule({
           </button>
           <button
             onClick={() => setActiveSubTab('passport')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeSubTab === 'passport'
                 ? 'bg-white text-indigo-700 shadow-sm font-black'
                 : 'text-slate-600 hover:text-slate-900'
@@ -526,8 +526,8 @@ export default function CareerCompetencyModule({
       {activeSubTab === 'matrix' && (
         <div className="space-y-6">
           {/* Division Switcher Buttons */}
-          <div className="flex flex-wrap items-center gap-2 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
-            <span className="text-xs font-bold text-slate-500 uppercase px-2 flex items-center gap-1">
+          <div className="flex items-center gap-2 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs overflow-x-auto no-scrollbar touch-scroll max-w-full">
+            <span className="text-xs font-bold text-slate-500 uppercase px-2 flex items-center gap-1 shrink-0 whitespace-nowrap">
               <Compass className="w-3.5 h-3.5" />
               <span>Pilih Divisi:</span>
             </span>
@@ -549,7 +549,7 @@ export default function CareerCompetencyModule({
                     setActiveMatrixDivision(div.id as any);
                     setSelectedMatrixLevel(null);
                   }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                     isSelected
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
                       : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/80'
@@ -596,7 +596,7 @@ export default function CareerCompetencyModule({
               <TrendingUp className="w-4 h-4 text-indigo-600" />
               <span>Jalur Jenjang Karir Divisi {activeMatrixDivision}:</span>
             </div>
-            <div className="overflow-x-auto pb-2">
+            <div className="overflow-x-auto touch-scroll pb-2">
               <div className="flex items-center gap-2 min-w-max">
                 {currentMatrixData.jenjangKarier.map((step, idx) => (
                   <React.Fragment key={idx}>
@@ -865,7 +865,7 @@ export default function CareerCompetencyModule({
             </div>
 
             {/* Horizontal Pipeline Steps */}
-            <div className="overflow-x-auto pb-4 pt-2 scrollbar-thin">
+            <div className="overflow-x-auto touch-scroll pb-4 pt-2 scrollbar-thin">
               <div className="flex items-stretch gap-2 min-w-[1150px]">
                 {PIPELINE_STAGES.map((stg, idx) => {
                   const isCurrent = activeRecord.currentStageId === stg.id;

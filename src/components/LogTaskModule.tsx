@@ -714,10 +714,10 @@ export default function LogTaskModule({
       {/* Navigation Sub-Tabs & Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         {/* Tabs */}
-        <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-xl text-xs font-bold">
+        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl text-xs font-bold overflow-x-auto no-scrollbar touch-scroll max-w-full">
           <button
             onClick={() => setSubTab('kanban')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               subTab === 'kanban' ? 'bg-white text-blue-600 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -726,7 +726,7 @@ export default function LogTaskModule({
           </button>
           <button
             onClick={() => setSubTab('qc_checklist')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               subTab === 'qc_checklist' ? 'bg-white text-emerald-700 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -735,7 +735,7 @@ export default function LogTaskModule({
           </button>
           <button
             onClick={() => setSubTab('logbook')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               subTab === 'logbook' ? 'bg-white text-blue-600 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -744,7 +744,7 @@ export default function LogTaskModule({
           </button>
           <button
             onClick={() => setSubTab('rekap')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               subTab === 'rekap' ? 'bg-white text-blue-600 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -754,15 +754,15 @@ export default function LogTaskModule({
         </div>
 
         {/* Global Filter Bar */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-2 text-xs w-full md:w-auto">
+          <div className="relative flex-1 md:flex-none">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Cari task / staff..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none w-44 md:w-56"
+              className="pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none w-full md:w-56"
             />
           </div>
 
@@ -1806,7 +1806,7 @@ export default function LogTaskModule({
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <div className="overflow-x-auto touch-scroll border border-slate-200 rounded-xl">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase tracking-wider">
                 <tr>
@@ -1872,8 +1872,8 @@ export default function LogTaskModule({
       {/* MODAL: CREATE / EDIT TASK                                  */}
       {/* ────────────────────────────────────────────────────────── */}
       {showTaskModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in duration-150">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2.5 sm:p-4">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-bold text-sm text-slate-800">
                 {editingTask ? 'Edit Daily Task' : 'Tambah Daily Task Baru'}
@@ -2144,8 +2144,8 @@ export default function LogTaskModule({
       {/* MODAL: LEMBAR CHECKLIST QC LENGKAP (DETAIL LOG)           */}
       {/* ────────────────────────────────────────────────────────── */}
       {selectedQCEntry && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in duration-200 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-start justify-between pb-3 border-b border-slate-100">
               <div>
                 <div className="flex items-center gap-2">

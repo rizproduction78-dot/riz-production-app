@@ -10,7 +10,14 @@
 import { normalizeStaffMaster, STAFF_LIST, getMasterStaffList } from '../data';
 import { isStaffMatch } from '../utils/kpiCalculator';
 import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
-import { saveSupabaseDoc, deleteSupabaseDoc, pushCollectionToSupabase } from './supabaseSync';
+import {
+  saveSupabaseDoc,
+  deleteSupabaseDoc,
+  pushCollectionToSupabase,
+  pullCollectionFromSupabase,
+  pullAllCollectionsFromSupabase,
+  initSupabaseRealtimeChannel
+} from './supabaseSync';
 
 export interface DeviceOSInfo {
   os: 'Windows' | 'macOS' | 'iOS' | 'Android' | 'Linux' | 'Unknown';
@@ -359,6 +366,10 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
 
     sortedItems.forEach((item: any) => {
       if (!item || !item.date) return;
+      // Filter out temporary test IDs
+      const rawId = String(item.id || '');
+      if (rawId.startsWith('dr-test') || rawId.startsWith('test-')) return;
+
       const staffObj = allKnownStaff.find(s => isStaffMatch(s, item.staffName)) || STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
       const effectiveStaffName = staffObj ? staffObj.name : String(item.staffName || '').trim();
@@ -366,8 +377,8 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
 
       const effectiveDivision = staffObj ? staffObj.division : (item.division || 'Umum');
       const normActivity = String(item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
-      const isCustomAppId = String(item.id || '').startsWith('dr-');
-      const semanticKey = isCustomAppId ? String(item.id) : `${item.date}_${effectiveStaffName}_${normActivity}`;
+      const isCustomAppId = rawId.startsWith('dr-') && !rawId.startsWith('dr-test');
+      const semanticKey = isCustomAppId ? rawId : `${item.date}_${effectiveStaffName}_${normActivity}`;
 
       if (!isCustomAppId && semanticSet.has(semanticKey)) return; // Semantic dedup for external/gsheet rows
       if (!isCustomAppId) semanticSet.add(semanticKey);
@@ -404,15 +415,19 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
 
     sortedItems.forEach((item: any) => {
       if (!item || !item.date) return;
+      // Filter out temporary test IDs
+      const rawId = String(item.id || '');
+      if (rawId.startsWith('lg-test') || rawId.startsWith('test-')) return;
+
       const staffObj = allKnownStaff.find(s => isStaffMatch(s, item.staffName)) || STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
       const effectiveStaffName = staffObj ? staffObj.name : String(item.staffName || '').trim();
       if (!effectiveStaffName) return; // Drop entries without staff name
 
       const effectiveDivision = staffObj ? staffObj.division : (item.division || 'Umum');
-      const normActivity = String(item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
-      const isCustomAppId = String(item.id || '').startsWith('lg-');
-      const semanticKey = isCustomAppId ? String(item.id) : `${item.date}_${effectiveStaffName}_${normActivity}`;
+      const normActivity = String(item.equipment || item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
+      const isCustomAppId = rawId.startsWith('lg-') && !rawId.startsWith('lg-test');
+      const semanticKey = isCustomAppId ? rawId : `${item.date}_${effectiveStaffName}_${normActivity}`;
 
       if (!isCustomAppId && semanticSet.has(semanticKey)) return; // Semantic dedup for external/gsheet rows
       if (!isCustomAppId) semanticSet.add(semanticKey);
@@ -649,6 +664,12 @@ export function subscribeCloudCollection<T = any>(
         } catch {}
       }
 
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem(localCacheKey, JSON.stringify(items));
+        } catch {}
+      }
+
       onData(items);
 
       updateSyncStatus({
@@ -667,6 +688,17 @@ export function subscribeCloudCollection<T = any>(
 
   // Immediate initial load
   loadAndEmit();
+
+  // Async cloud sync: hydrate newest records from Supabase in background
+  if (typeof window !== 'undefined' && navigator.onLine) {
+    pullCollectionFromSupabase(collectionName)
+      .then((pulled) => {
+        if (Array.isArray(pulled) && pulled.length > 0) {
+          loadAndEmit();
+        }
+      })
+      .catch(() => {});
+  }
 
   const handleStorage = (e: StorageEvent) => {
     if (e.key === localCacheKey || !e.key) {
@@ -946,6 +978,9 @@ export async function forceSyncAllModules(updaterName?: string): Promise<{ succe
     // Step 2: Trigger Google Sheet Auto-Sync
     triggerAutoSyncToGoogleSheet(0);
 
+    // Step 3: Pull newest data from Supabase Cloud
+    await pullAllCollectionsFromSupabase();
+
     let totalSynced = 0;
     for (const item of ALL_SYNC_COLLECTIONS) {
       const cached = localStorage.getItem(item.key);
@@ -992,6 +1027,18 @@ export function initAutoSyncEngine() {
   if (typeof window === 'undefined' || autoSyncInitialized) return;
   autoSyncInitialized = true;
 
+  // Initialize Supabase Cloud Realtime listener for cross-device updates (phones, localhost, Vercel)
+  try {
+    initSupabaseRealtimeChannel((collection) => {
+      updateSyncStatus({
+        lastSyncedAt: new Date(),
+        lastSyncMessage: `⚡ Data '${collection}' diperbarui secara real-time dari perangkat lain`
+      });
+    });
+  } catch (e) {
+    console.warn('[Sync] Realtime channel init warning:', e);
+  }
+
   const triggerResync = (reason: string) => {
     if (navigator.onLine) {
       updateSyncStatus({
@@ -999,6 +1046,7 @@ export function initAutoSyncEngine() {
         lastSyncMessage: `🔄 Auto-Sync aktif (${reason})...`
       });
       flushPendingQueue();
+      pullAllCollectionsFromSupabase().catch(() => {});
     }
   };
 
@@ -1073,6 +1121,7 @@ export function initAutoSyncEngine() {
   if (navigator.onLine) {
     setTimeout(() => {
       flushPendingQueue();
+      pullAllCollectionsFromSupabase().catch(() => {});
     }, 1500);
   }
 }

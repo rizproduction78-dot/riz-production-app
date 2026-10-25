@@ -999,7 +999,7 @@ function parseIndonesianDate(dateStr: string): string | null {
 }
 
 /** Check if remark text indicates a finding/issue */
-function isFindingRemark(remark: string): boolean {
+export function isFindingRemark(remark: string): boolean {
   if (!remark || !remark.trim()) return false;
   const lower = remark.toLowerCase();
   

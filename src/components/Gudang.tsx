@@ -901,10 +901,10 @@ export default function Gudang({
         </div>
 
         {/* Action Toggle Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-lg self-start">
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg self-start overflow-x-auto no-scrollbar touch-scroll max-w-full">
           <button
             onClick={() => setWarehouseSubTab('logs')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               warehouseSubTab === 'logs' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
             }`}
           >
@@ -917,7 +917,7 @@ export default function Gudang({
               setScanMessage('');
               setScannedAsset(null);
             }}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               warehouseSubTab === 'scanner' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
             }`}
           >
@@ -930,7 +930,7 @@ export default function Gudang({
                 setWarehouseSubTab('armada_governance');
                 if (onNavigateTab) onNavigateTab('armada');
               }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 warehouseSubTab === 'armada_governance' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
               }`}
             >
@@ -1171,7 +1171,7 @@ export default function Gudang({
 
               {/* Logs History Table */}
               <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto touch-scroll">
                   <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
                     <thead className="bg-slate-50 text-slate-500 uppercase font-mono font-bold text-[10px]">
                       <tr>
@@ -1761,7 +1761,7 @@ export default function Gudang({
           {fleetSection === 'trips' && (
             <div className="space-y-4">
               <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto touch-scroll">
                   <table className="w-full text-left text-xs border-collapse font-sans">
                     <thead>
                       <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -2105,7 +2105,7 @@ export default function Gudang({
               </div>
 
               <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto touch-scroll">
                   <table className="w-full text-left text-xs border-collapse font-sans">
                     <thead>
                       <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -2244,7 +2244,7 @@ export default function Gudang({
               </div>
 
               <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto touch-scroll">
                   <table className="w-full text-left text-xs border-collapse font-sans">
                     <thead>
                       <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -2292,8 +2292,8 @@ export default function Gudang({
 
       {/* MODAL 1: TERBITKAN SPJ, MANIFEST MUATAN LOGISTIK & RAB (CACA) */}
       {showNewFleetModal && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-2xl w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">Penerbitan SPJ, Manifest Muatan & RAB</h3>
@@ -2633,8 +2633,8 @@ export default function Gudang({
 
       {/* MODAL 2: INSPEKSI KELAIKAN 7-ITEM P2H (AGUS) */}
       {showP2HModal && selectedFleet && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">Pemeriksaan Pra-Harian (P2H)</h3>
@@ -2707,8 +2707,8 @@ export default function Gudang({
 
       {/* MODAL 3: OTORISASI & APPROVAL ANGGARAN (FAHRUL) */}
       {showApprovalModal && selectedFleet && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">Otorisasi & Persetujuan Penugasan</h3>
@@ -2778,8 +2778,8 @@ export default function Gudang({
 
       {/* MODAL 4: TAMBAH / EDIT MASTER UNIT ARMADA */}
       {showVehicleModal && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">{selectedVehicle ? 'Edit Data Unit Armada' : 'Tambah Unit Armada Baru'}</h3>
@@ -2909,8 +2909,8 @@ export default function Gudang({
 
       {/* MODAL 5: DOKUMEN RESMI CETAK SPJ & MANIFEST LOGISTIK (PDF PREVIEW & PRINT) */}
       {showSPJPrintModal && selectedFleet && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8 space-y-6 text-slate-900 my-8">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-3xl w-full p-4 sm:p-8 space-y-6 text-slate-900 my-auto max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-4 border-b-2 border-slate-900">
               <div className="flex items-center gap-4">
                 <img src="/logo.png" alt="RIZ-PRODUCTION Logo" className="h-16 w-auto object-contain print:h-14" />
@@ -3036,8 +3036,8 @@ export default function Gudang({
 
       {/* MODAL 6: REKAPITULASI BIAYA LOGISTIK MINGGUAN / BULANAN (PDF PREVIEW & PRINT) */}
       {showCostRecapModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8 space-y-6 text-slate-900 my-8">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-3xl w-full p-4 sm:p-8 space-y-6 text-slate-900 my-auto max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-4 border-b-2 border-slate-900">
               <div className="flex items-center gap-4">
                 <img src="/logo.png" alt="RIZ-PRODUCTION Logo" className="h-16 w-auto object-contain print:h-14" />
@@ -3142,8 +3142,8 @@ export default function Gudang({
 
       {/* MODAL 7: TAMBAH / EDIT DRIVER MASTER ARMADA (GUDANG / LOGISTIK) */}
       {(showAddDriverModal || (showEditDriverModal && selectedDriver)) && (
-        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-slate-200">
+        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto border border-slate-200">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">

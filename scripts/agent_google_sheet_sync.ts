@@ -3,6 +3,7 @@ import path from 'path';
 import Papa from 'papaparse';
 import { fileURLToPath } from 'url';
 import { parseDailySheet, SheetRow, extractNormalizedDailySheetRows } from '../src/lib/dailySheetParser';
+import { isFindingRemark } from '../src/lib/googleSheetSync';
 import { DailyReport, LogbookEntry } from '../src/types';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -80,7 +81,7 @@ async function runAgent() {
     const logbookEntries: LogbookEntry[] = parsedEntries
       .filter((e) => e.isQc)
       .map((e) => {
-        const isNg = /harus service|service|rusak|kendala|masalah|error|mati|tidak berfungsi|ganti|perbaikan|repair|tidak ok|ng|perlu/i.test(e.notes);
+        const isNg = isFindingRemark(e.notes);
         return {
           id: `log-${e.id}`,
           date: e.date,

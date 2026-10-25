@@ -1727,10 +1727,10 @@ export default function AdminPanel({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="bg-indigo-600 text-white p-2 rounded-xl shadow-xs">
+            <span className="bg-indigo-600 text-white p-2 rounded-xl shadow-xs shrink-0">
               <Sliders className="w-5 h-5" />
             </span>
             <div>
@@ -1741,10 +1741,10 @@ export default function AdminPanel({
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200 overflow-x-auto no-scrollbar touch-scroll max-w-full w-full xl:w-auto">
           <button
             onClick={() => setActiveTab('staff')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'staff' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -1753,7 +1753,7 @@ export default function AdminPanel({
           </button>
           <button
             onClick={() => setActiveTab('findings_wo')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'findings_wo' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -1762,7 +1762,7 @@ export default function AdminPanel({
           </button>
           <button
             onClick={() => setActiveTab('maintenance')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'maintenance' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -1771,7 +1771,7 @@ export default function AdminPanel({
           </button>
           <button
             onClick={() => setActiveTab('gudang')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'gudang' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -1780,7 +1780,7 @@ export default function AdminPanel({
           </button>
           <button
             onClick={() => setActiveTab('kendaraan')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'kendaraan' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -1789,7 +1789,7 @@ export default function AdminPanel({
           </button>
           <button
             onClick={() => setActiveTab('qc_checklist')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'qc_checklist' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -1798,7 +1798,7 @@ export default function AdminPanel({
           </button>
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'schedule' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -1807,7 +1807,7 @@ export default function AdminPanel({
           </button>
           <button
             onClick={() => setActiveTab('database')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'database' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -1816,7 +1816,7 @@ export default function AdminPanel({
           </button>
           <button
             onClick={() => setActiveTab('password_approvals')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'password_approvals' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -1899,11 +1899,11 @@ export default function AdminPanel({
           </div>
 
           {/* Sub Navigation Staf vs Freelance */}
-          <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+          <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar touch-scroll max-w-full">
               <button
                 onClick={() => setPersonnelSubTab('permanent')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   personnelSubTab === 'permanent' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -1912,7 +1912,7 @@ export default function AdminPanel({
               </button>
               <button
                 onClick={() => setPersonnelSubTab('freelance')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   personnelSubTab === 'freelance' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -1922,7 +1922,7 @@ export default function AdminPanel({
             </div>
 
             {personnelSubTab === 'permanent' ? (
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 <div className="relative flex-1 sm:w-72">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
@@ -1933,29 +1933,31 @@ export default function AdminPanel({
                     className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
                   />
                 </div>
-                <select
-                  value={staffSortBy}
-                  onChange={(e) => setStaffSortBy(e.target.value as any)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
-                  title="Urutan Master Staf"
-                >
-                  <option value="hierarchy">👑 Hierarki Jabatan & Level</option>
-                  <option value="division">🏢 Berdasarkan Divisi</option>
-                  <option value="name">🔤 Nama (A - Z)</option>
-                </select>
-                <button
-                  onClick={() => {
-                    setStaffFormData({ name: '', division: 'Audio', role: 'Staff', phone: '', email: '', avatar: '' });
-                    setShowAddStaffModal(true);
-                  }}
-                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Tambah Staf Baru</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={staffSortBy}
+                    onChange={(e) => setStaffSortBy(e.target.value as any)}
+                    className="flex-1 sm:flex-initial bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
+                    title="Urutan Master Staf"
+                  >
+                    <option value="hierarchy">👑 Hierarki Jabatan & Level</option>
+                    <option value="division">🏢 Berdasarkan Divisi</option>
+                    <option value="name">🔤 Nama (A - Z)</option>
+                  </select>
+                  <button
+                    onClick={() => {
+                      setStaffFormData({ name: '', division: 'Audio', role: 'Staff', phone: '', email: '', avatar: '' });
+                      setShowAddStaffModal(true);
+                    }}
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah Staf Baru</span>
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto flex-wrap">
                 <div className="relative flex-1 sm:w-64">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
@@ -1966,33 +1968,35 @@ export default function AdminPanel({
                     className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
                   />
                 </div>
-                <select
-                  value={freelanceSpecFilter}
-                  onChange={(e) => setFreelanceSpecFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
-                >
-                  <option value="ALL">Semua Spesialisasi</option>
-                  <option value="Audio">Audio / Sound</option>
-                  <option value="Lighting">Lighting</option>
-                  <option value="Videotron">Videotron</option>
-                  <option value="Multimedia">Multimedia</option>
-                  <option value="Rigging">Rigging</option>
-                  <option value="Genset / Power">Genset / Power</option>
-                  <option value="Gudang / Helper">Gudang / Helper</option>
-                  <option value="Driver">Driver Lapangan</option>
-                  <option value="Service / Teknisi">Service / Teknisi</option>
-                  <option value="Umum">Umum</option>
-                </select>
-                <select
-                  value={freelanceStatusFilter}
-                  onChange={(e) => setFreelanceStatusFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
-                >
-                  <option value="ALL">Semua Status</option>
-                  <option value="Aktif">Aktif</option>
-                  <option value="Standby">Standby</option>
-                  <option value="Nonaktif">Nonaktif</option>
-                </select>
+                <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+                  <select
+                    value={freelanceSpecFilter}
+                    onChange={(e) => setFreelanceSpecFilter(e.target.value)}
+                    className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
+                  >
+                    <option value="ALL">Semua Spesialisasi</option>
+                    <option value="Audio">Audio / Sound</option>
+                    <option value="Lighting">Lighting</option>
+                    <option value="Videotron">Videotron</option>
+                    <option value="Multimedia">Multimedia</option>
+                    <option value="Rigging">Rigging</option>
+                    <option value="Genset / Power">Genset / Power</option>
+                    <option value="Gudang / Helper">Gudang / Helper</option>
+                    <option value="Driver">Driver Lapangan</option>
+                    <option value="Service / Teknisi">Service / Teknisi</option>
+                    <option value="Umum">Umum</option>
+                  </select>
+                  <select
+                    value={freelanceStatusFilter}
+                    onChange={(e) => setFreelanceStatusFilter(e.target.value)}
+                    className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
+                  >
+                    <option value="ALL">Semua Status</option>
+                    <option value="Aktif">Aktif</option>
+                    <option value="Standby">Standby</option>
+                    <option value="Nonaktif">Nonaktif</option>
+                  </select>
+                </div>
                 <button
                   onClick={() => {
                     setFreelanceFormData({
@@ -2014,7 +2018,7 @@ export default function AdminPanel({
                     });
                     setShowAddFreelanceModal(true);
                   }}
-                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                  className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Input Freelance Baru</span>
@@ -2026,7 +2030,7 @@ export default function AdminPanel({
           {/* VIEW 1: STAF KARYAWAN TETAP */}
           {personnelSubTab === 'permanent' && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto touch-scroll">
                 <table className="w-full text-left text-xs border-collapse font-sans">
                   <thead>
                     <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -2268,11 +2272,11 @@ export default function AdminPanel({
                 </div>
 
                 {/* Division Fast Tabs / Pills */}
-                <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+                <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200 overflow-x-auto no-scrollbar touch-scroll max-w-full">
                   <button
                     type="button"
                     onClick={() => setFreelanceSpecFilter('ALL')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       freelanceSpecFilter === 'ALL'
                         ? 'bg-white text-slate-900 shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -2284,7 +2288,7 @@ export default function AdminPanel({
                   <button
                     type="button"
                     onClick={() => setFreelanceSpecFilter('Audio')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       freelanceSpecFilter === 'Audio'
                         ? 'bg-indigo-600 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -2296,7 +2300,7 @@ export default function AdminPanel({
                   <button
                     type="button"
                     onClick={() => setFreelanceSpecFilter('Multimedia')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       freelanceSpecFilter === 'Multimedia'
                         ? 'bg-sky-600 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -2308,7 +2312,7 @@ export default function AdminPanel({
                   <button
                     type="button"
                     onClick={() => setFreelanceSpecFilter('Lighting')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       freelanceSpecFilter === 'Lighting'
                         ? 'bg-amber-600 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -2320,7 +2324,7 @@ export default function AdminPanel({
                   <button
                     type="button"
                     onClick={() => setFreelanceSpecFilter('Videotron')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       freelanceSpecFilter === 'Videotron'
                         ? 'bg-emerald-600 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -2332,7 +2336,7 @@ export default function AdminPanel({
                   <button
                     type="button"
                     onClick={() => setFreelanceSpecFilter('Driver')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       freelanceSpecFilter === 'Driver'
                         ? 'bg-orange-600 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -2344,7 +2348,7 @@ export default function AdminPanel({
                   <button
                     type="button"
                     onClick={() => setFreelanceSpecFilter('Umum')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       freelanceSpecFilter === 'Umum'
                         ? 'bg-slate-700 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
@@ -2357,7 +2361,7 @@ export default function AdminPanel({
 
                 {/* Freelance Table */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto touch-scroll">
                     <table className="w-full text-left text-xs border-collapse font-sans">
                       <thead>
                         <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -2499,7 +2503,7 @@ export default function AdminPanel({
       {/* ───────────────────────────────────────────────────────────── */}
       {activeTab === 'findings_wo' && (
         <div className="space-y-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
             <div className="relative flex-1 sm:w-72">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
@@ -2523,7 +2527,7 @@ export default function AdminPanel({
                 });
                 setShowAddFindingModal(true);
               }}
-              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+              className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>Tambah Temuan QC Baru</span>
@@ -2531,7 +2535,7 @@ export default function AdminPanel({
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto touch-scroll">
               <table className="w-full text-left text-xs border-collapse font-sans">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -2603,7 +2607,7 @@ export default function AdminPanel({
       {/* ───────────────────────────────────────────────────────────── */}
       {activeTab === 'maintenance' && (
         <div className="space-y-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
             <div className="relative flex-1 sm:w-72">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
@@ -2632,7 +2636,7 @@ export default function AdminPanel({
                 });
                 setShowAddScheduleModal(true);
               }}
-              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+              className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>Tambah Jadwal Maintenance</span>
@@ -2640,7 +2644,7 @@ export default function AdminPanel({
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto touch-scroll">
               <table className="w-full text-left text-xs border-collapse font-sans">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -2715,7 +2719,7 @@ export default function AdminPanel({
       {/* ───────────────────────────────────────────────────────────── */}
       {activeTab === 'gudang' && (
         <div className="space-y-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
             <div className="relative flex-1 sm:w-72">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
@@ -2740,7 +2744,7 @@ export default function AdminPanel({
                 });
                 setShowAddAssetModal(true);
               }}
-              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+              className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>Tambah Aset Gudang Baru</span>
@@ -2748,7 +2752,7 @@ export default function AdminPanel({
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto touch-scroll">
               <table className="w-full text-left text-xs border-collapse font-sans">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -2822,11 +2826,11 @@ export default function AdminPanel({
       {activeTab === 'kendaraan' && (
         <div className="space-y-6">
           {/* Sub Navigation */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar touch-scroll max-w-full">
               <button
                 onClick={() => setKendaraanSubTab('vehicles')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                   kendaraanSubTab === 'vehicles' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -2835,7 +2839,7 @@ export default function AdminPanel({
               </button>
               <button
                 onClick={() => setKendaraanSubTab('drivers')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                   kendaraanSubTab === 'drivers' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -2844,7 +2848,7 @@ export default function AdminPanel({
               </button>
               <button
                 onClick={() => setKendaraanSubTab('trips')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                   kendaraanSubTab === 'trips' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -2854,15 +2858,15 @@ export default function AdminPanel({
             </div>
 
             {kendaraanSubTab === 'vehicles' && (
-              <div className="flex items-center gap-2">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-48">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     placeholder="Cari armada / plat..."
                     value={vehicleSearch}
                     onChange={(e) => setVehicleSearch(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-48"
+                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
                 <button
@@ -2882,7 +2886,7 @@ export default function AdminPanel({
                     });
                     setShowAddVehicleModal(true);
                   }}
-                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                  className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Tambah Unit Armada</span>
@@ -2891,38 +2895,40 @@ export default function AdminPanel({
             )}
 
             {kendaraanSubTab === 'drivers' && (
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto flex-wrap">
+                <div className="relative flex-1 sm:w-44">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     placeholder="Cari driver / SIM / WA..."
                     value={driverSearch}
                     onChange={(e) => setDriverSearch(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44"
+                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
-                <select
-                  value={driverTypeFilter}
-                  onChange={(e) => setDriverTypeFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
-                >
-                  <option value="ALL">Semua Tipe Driver</option>
-                  <option value="Internal">Driver Internal PT RIZ</option>
-                  <option value="Mitra Vendor">Driver Mitra Vendor</option>
-                  <option value="Freelance Driver">Freelance Driver</option>
-                </select>
-                <select
-                  value={driverStatusFilter}
-                  onChange={(e) => setDriverStatusFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
-                >
-                  <option value="ALL">Semua Status</option>
-                  <option value="Siap Jalan">Siap Jalan</option>
-                  <option value="On Trip">On Trip</option>
-                  <option value="Off / Libur">Off / Libur</option>
-                  <option value="Nonaktif">Nonaktif</option>
-                </select>
+                <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+                  <select
+                    value={driverTypeFilter}
+                    onChange={(e) => setDriverTypeFilter(e.target.value)}
+                    className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
+                  >
+                    <option value="ALL">Semua Tipe Driver</option>
+                    <option value="Internal">Driver Internal PT RIZ</option>
+                    <option value="Mitra Vendor">Driver Mitra Vendor</option>
+                    <option value="Freelance Driver">Freelance Driver</option>
+                  </select>
+                  <select
+                    value={driverStatusFilter}
+                    onChange={(e) => setDriverStatusFilter(e.target.value)}
+                    className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none"
+                  >
+                    <option value="ALL">Semua Status</option>
+                    <option value="Siap Jalan">Siap Jalan</option>
+                    <option value="On Trip">On Trip</option>
+                    <option value="Off / Libur">Off / Libur</option>
+                    <option value="Nonaktif">Nonaktif</option>
+                  </select>
+                </div>
                 <button
                   onClick={() => {
                     setDriverFormData({
@@ -2940,7 +2946,7 @@ export default function AdminPanel({
                     });
                     setShowAddDriverModal(true);
                   }}
-                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                  className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Input Driver Baru</span>
@@ -2949,15 +2955,15 @@ export default function AdminPanel({
             )}
 
             {kendaraanSubTab === 'trips' && (
-              <div className="flex items-center gap-2">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-48">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     placeholder="Cari SPJ / event / driver..."
                     value={fleetSearch}
                     onChange={(e) => setFleetSearch(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-48"
+                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
                 <button
@@ -2990,7 +2996,7 @@ export default function AdminPanel({
                     });
                     setShowAddFleetModal(true);
                   }}
-                  className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                  className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Terbitkan / Tambah SPJ</span>
@@ -3051,7 +3057,7 @@ export default function AdminPanel({
               })()}
 
               <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto touch-scroll">
                   <table className="w-full text-left text-xs border-collapse font-sans">
                     <thead>
                       <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -3192,7 +3198,7 @@ export default function AdminPanel({
 
               {/* Driver Table */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto touch-scroll">
                   <table className="w-full text-left text-xs border-collapse font-sans">
                     <thead>
                       <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -3324,7 +3330,7 @@ export default function AdminPanel({
           {/* SUB-VIEW 3: JADWAL & PENUGASAN SPJ TABLE */}
           {kendaraanSubTab === 'trips' && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto touch-scroll">
                 <table className="w-full text-left text-xs border-collapse font-sans">
                   <thead>
                     <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -3567,7 +3573,7 @@ export default function AdminPanel({
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-x-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-x-auto touch-scroll">
             <table className="w-full text-left text-xs border-collapse font-mono">
               <thead>
                 <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-bold text-[10px]">
@@ -3633,7 +3639,7 @@ export default function AdminPanel({
           </div>
           
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto touch-scroll">
               <table className="w-full text-left border-collapse whitespace-nowrap">
                 <thead>
                   <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
@@ -4135,8 +4141,8 @@ export default function AdminPanel({
       {/* MODAL GOOGLE DRIVE MASTER PERSONEL (SIMPAN & TARIK DATA)      */}
       {/* ───────────────────────────────────────────────────────────── */}
       {showDrivePersonnelModal && (
-        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-4 sm:p-6 space-y-5 max-h-[90dvh] overflow-y-auto">
             {/* Header Modal */}
             <div className="flex justify-between items-start pb-4 border-b border-slate-100">
               <div className="space-y-1">
@@ -4504,8 +4510,8 @@ export default function AdminPanel({
       {/* MODAL EDIT / TAMBAH STAF                                      */}
       {/* ───────────────────────────────────────────────────────────── */}
       {showAddStaffModal && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-slate-900 text-base">Tambah Staf Karyawan Baru</h3>
               <button onClick={() => setShowAddStaffModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
@@ -4661,8 +4667,8 @@ export default function AdminPanel({
       )}
 
       {showEditStaffModal && activeStaffForEdit && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-slate-900 text-base">Ubah / Edit Data Staf (V2)</h3>
               <button onClick={() => setShowEditStaffModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
@@ -4837,8 +4843,8 @@ export default function AdminPanel({
       {/* MODAL EDIT / TAMBAH TEMUAN QC                                 */}
       {/* ───────────────────────────────────────────────────────────── */}
       {(showAddFindingModal || (showEditFindingModal && activeFindingForEdit)) && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-slate-900 text-base">
                 {showAddFindingModal ? 'Tambah Temuan QC Baru' : 'Ubah / Edit Temuan QC'}
@@ -4954,8 +4960,8 @@ export default function AdminPanel({
       {/* MODAL EDIT / TAMBAH MAINTENANCE                               */}
       {/* ───────────────────────────────────────────────────────────── */}
       {(showAddScheduleModal || (showEditScheduleModal && activeScheduleForEdit)) && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-slate-900 text-base">
                 {showAddScheduleModal ? 'Tambah Jadwal Pemeliharaan' : 'Ubah / Edit Jadwal Maintenance'}
@@ -5120,8 +5126,8 @@ export default function AdminPanel({
       {/* MODAL EDIT / TAMBAH ASET GUDANG                               */}
       {/* ───────────────────────────────────────────────────────────── */}
       {(showAddAssetModal || (showEditAssetModal && activeAssetForEdit)) && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <h3 className="font-extrabold text-slate-900 text-base">
                 {showAddAssetModal ? 'Tambah Aset Gudang Baru' : 'Ubah / Edit Aset Gudang'}
@@ -5253,8 +5259,8 @@ export default function AdminPanel({
 
       {/* MODAL MASTER VEHICLE: TAMBAH / EDIT ARMADA */}
       {(showAddVehicleModal || showEditVehicleModal) && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">
@@ -5411,8 +5417,8 @@ export default function AdminPanel({
 
       {/* MODAL FLEET ASSIGNMENT: TAMBAH / EDIT SPJ & ANGGARAN */}
       {(showAddFleetModal || showEditFleetModal) && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">
@@ -5669,8 +5675,8 @@ export default function AdminPanel({
       {/* MODAL MASTER FREELANCE: TAMBAH / EDIT KRU FREELANCE          */}
       {/* ───────────────────────────────────────────────────────────── */}
       {(showAddFreelanceModal || (showEditFreelanceModal && activeFreelanceForEdit)) && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">
@@ -5933,8 +5939,8 @@ export default function AdminPanel({
       {/* MODAL MASTER DRIVER: TAMBAH / EDIT DRIVER ARMADA             */}
       {/* ───────────────────────────────────────────────────────────── */}
       {(showAddDriverModal || (showEditDriverModal && activeDriverForEdit)) && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">
@@ -6110,8 +6116,8 @@ export default function AdminPanel({
 
       {/* MODAL 8: GOOGLE APPS SCRIPT CODE VIEWER & COPY */}
       {showScriptModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 text-white rounded-2xl border border-slate-700 shadow-2xl max-w-3xl w-full p-6 space-y-4 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
+          <div className="bg-slate-900 text-white rounded-xl sm:rounded-2xl border border-slate-700 shadow-2xl max-w-3xl w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] flex flex-col">
             <div className="flex justify-between items-center pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5 text-emerald-400" />

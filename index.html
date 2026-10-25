@@ -22,15 +22,24 @@
   <body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-500 selection:text-white">
     <div id="root"></div>
     <script>
+      // Clear legacy service worker registrations and Cache Storage
+      // to ensure mobile devices (Android/iOS) always pull the latest assets from Vercel and localhost
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          let hasUnregistered = false;
-          for(let registration of registrations) {
-            registration.unregister();
+          var hasUnregistered = false;
+          for (var i = 0; i < registrations.length; i++) {
+            registrations[i].unregister();
             hasUnregistered = true;
           }
-          if (hasUnregistered && !window.location.search.includes('cleared=1')) {
-            window.location.href = window.location.pathname + '?cleared=1';
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              for (var j = 0; j < names.length; j++) {
+                caches.delete(names[j]);
+              }
+              if (hasUnregistered && !window.location.search.includes('v_updated=')) {
+                window.location.replace(window.location.pathname + '?v_updated=' + Date.now());
+              }
+            });
           }
         });
       }
