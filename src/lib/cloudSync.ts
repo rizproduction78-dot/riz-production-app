@@ -764,6 +764,8 @@ export async function saveCloudDoc(
     }
   };
 
+  let mergedDocForSupabase = cleanData;
+
   // 1. Immediately update localStorage cache so refresh never reverts
   try {
     const reg = ALL_SYNC_COLLECTIONS.find(c => c.name === collectionName);
@@ -788,6 +790,7 @@ export async function saveCloudDoc(
           const existingIdx = list.findIndex(item => String(item?.id || item?.no || '') === String(docId));
           if (existingIdx >= 0) {
             list[existingIdx] = { ...list[existingIdx], ...cleanData };
+            mergedDocForSupabase = list[existingIdx];
           } else {
             list.unshift(cleanData);
           }
@@ -820,8 +823,12 @@ export async function saveCloudDoc(
     lastSyncedAt: new Date()
   });
 
-  // Sinkronisasi ganda ke Supabase jika terkonfigurasi (tanpa memblokir UI)
-  saveSupabaseDoc(collectionName, docId, cleanData).catch(() => {});
+  // Sinkronisasi ganda ke Supabase jika terkonfigurasi
+  try {
+    await saveSupabaseDoc(collectionName, docId, mergedDocForSupabase);
+  } catch (err) {
+    console.warn(`[Sync] Supabase save error for ${collectionName}:`, err);
+  }
 
   // Auto-update ke Google Sheet di latar belakang secara otomatis (tanpa menunggu perintah user)
   triggerAutoSyncToGoogleSheet(1500);

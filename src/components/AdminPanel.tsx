@@ -102,7 +102,8 @@ import {
   pullDataFromGoogleSheet,
   getGoogleSheetLastSync,
   GOOGLE_APPS_SCRIPT_TEMPLATE,
-  SHEET_GID_OKTOBER_2026
+  SHEET_GID_OKTOBER_2026,
+  getGidForMonth
 } from '../lib/googleSheetSync';
 import { workspaceManager, AppWorkspace } from '../lib/workspaceConfig';
 
@@ -131,6 +132,8 @@ interface AdminPanelProps {
   isSyncingSheet?: boolean;
   lastSheetPull?: string | null;
   sheetPullMessage?: { text: string; type: 'success' | 'error' | 'info' } | null;
+  activeMonth?: string;
+  onActiveMonthChange?: (monthKey: string) => void;
 }
 
 export default function AdminPanel({
@@ -157,7 +160,9 @@ export default function AdminPanel({
   onSyncDailyLogFromSheet,
   isSyncingSheet = false,
   lastSheetPull = null,
-  sheetPullMessage = null
+  sheetPullMessage = null,
+  activeMonth: propActiveMonth,
+  onActiveMonthChange
 }: AdminPanelProps) {
   // Navigation Sub-tabs
   const [activeTab, setActiveTab] = useState<'staff' | 'findings_wo' | 'maintenance' | 'gudang' | 'kendaraan' | 'qc_checklist' | 'schedule' | 'database' | 'password_approvals'>('staff');
@@ -165,10 +170,23 @@ export default function AdminPanel({
   // ─────────────────────────────────────────────────────────────
   // ACTIVE MONTH STATE (Multi-Bulan)
   // ─────────────────────────────────────────────────────────────
-  const [activeMonth, setActiveMonth] = useState<string>(getActiveMonthKey);
+  const resolvedInitialMonth = propActiveMonth && propActiveMonth !== 'all' ? propActiveMonth : getActiveMonthKey();
+  const [activeMonth, setActiveMonthState] = useState<string>(resolvedInitialMonth);
+
+  const setActiveMonth = (monthKey: string) => {
+    setActiveMonthState(monthKey);
+    onActiveMonthChange?.(monthKey);
+  };
+
+  useEffect(() => {
+    if (propActiveMonth && propActiveMonth !== 'all' && propActiveMonth !== activeMonth) {
+      setActiveMonthState(propActiveMonth);
+    }
+  }, [propActiveMonth]);
+
   const [scheduleData, setScheduleData] = useState<StaffScheduleRow[]>(() => {
     try {
-      const key = getActiveMonthKey();
+      const key = resolvedInitialMonth;
       const saved = localStorage.getItem(`riz_schedule_${key}`);
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -228,7 +246,8 @@ export default function AdminPanel({
     level: 2,
     phone: '',
     email: '',
-    avatar: ''
+    avatar: '',
+    password: ''
   });
 
   const saveStaffList = async (updated: Staff[], actionDoc?: { type: 'save' | 'delete', id: string, doc?: Staff }) => {
@@ -351,7 +370,8 @@ export default function AdminPanel({
       level: staff.level || (staff.division === 'Audio' && (staff.id === '8' || staff.nickname === 'Emboh' || staff.name === 'Mboh') ? 5 : (staff.id === '9' || staff.id === '14' || staff.name === 'Unyim' || staff.name === 'Buluk') ? 4 : 2),
       phone: staff.phone || '',
       email: staff.email || '',
-      avatar: staff.avatar || ''
+      avatar: staff.avatar || '',
+      password: staff.password || ''
     });
     setShowEditStaffModal(true);
   };
@@ -379,7 +399,8 @@ export default function AdminPanel({
           level: Number(staffFormData.level || s.level || 2),
           phone: staffFormData.phone?.trim() || '',
           email: staffFormData.email?.trim() || '',
-          avatar: staffFormData.avatar || s.avatar || ''
+          avatar: staffFormData.avatar || s.avatar || '',
+          ...(staffFormData.password?.trim() ? { password: staffFormData.password.trim(), passwordRequest: '' } : {})
         };
         return updatedStaffObj;
       }
@@ -423,10 +444,7 @@ export default function AdminPanel({
       };
 
       // 1. Simpan ke penyimpanan master_staff
-      await saveCloudDoc('master_staff', targetStaff.id, {
-        password: 'riz123',
-        passwordRequest: ''
-      }, currentUser.name);
+      await saveCloudDoc('master_staff', targetStaff.id, updatedStaff, currentUser.name);
 
       // 2. Perbarui state lokal dan localStorage
       setStaffList(prev => {
@@ -3591,7 +3609,7 @@ export default function AdminPanel({
                   <tr key={s.no} className="hover:bg-slate-50/50">
                     <td className="p-3 font-sans font-bold text-slate-900 sticky left-0 bg-white z-10">{s.name}</td>
                     <td className="p-3 font-sans text-slate-500">{s.division}</td>
-                    {Array.from({ length: 30 }, (_, i) => {
+                    {Array.from({ length: ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonth)?.totalDays || 30 }, (_, i) => {
                       const day = i + 1;
                       const shift = s.shifts?.[day] || '-';
                       return (
@@ -3666,23 +3684,32 @@ export default function AdminPanel({
                           <div className="text-[11px] font-medium text-slate-600">{staff.division} - {staff.role}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-mono text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded inline-block">
-                            {staff.passwordRequest}
-                          </div>
+                          {staff.passwordRequest === 'RESET_REQUEST_DEFAULT' ? (
+                            <span className="text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[11px] font-bold">
+                              Permintaan Reset Default
+                            </span>
+                          ) : (
+                            <div className="font-mono text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded inline-block">
+                              {staff.passwordRequest}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={async () => {
                                 try {
-                                  const updatedStaff = { ...staff, password: staff.passwordRequest, passwordRequest: '' };
-                                  await saveCloudDoc('master_staff', staff.id, { password: staff.passwordRequest, passwordRequest: '' });
+                                  const isResetReq = staff.passwordRequest === 'RESET_REQUEST_DEFAULT';
+                                  const newPw = isResetReq ? 'riz123' : (staff.passwordRequest || 'riz123');
+                                  const updatedStaff: Staff = { ...staff, password: newPw, passwordRequest: '' };
+                                  await saveCloudDoc('master_staff', staff.id, updatedStaff, currentUser.name);
                                   setStaffList(prev => {
                                     const next = prev.map(s => s.id === staff.id ? updatedStaff : s);
                                     try { localStorage.setItem('riz_master_staff_list', JSON.stringify(next)); } catch {}
                                     return next;
                                   });
-                                  alert(`Password baru untuk ${staff.name} berhasil disetujui dan aktif!`);
+                                  onLogActivity(currentUser.name, currentUser.role, `Menyetujui password baru untuk ${staff.name} (${newPw === 'riz123' ? 'default riz123' : 'password kustom'})`);
+                                  alert(`Password baru untuk ${staff.name} berhasil disetujui dan aktif! Staf dapat langsung masuk menggunakan password tersebut.`);
                                 } catch(e) {
                                   console.error(e);
                                   alert('Gagal menyetujui password. Periksa koneksi data.');
@@ -3695,8 +3722,8 @@ export default function AdminPanel({
                             <button
                               onClick={async () => {
                                 try {
-                                  const updatedStaff = { ...staff, passwordRequest: '' };
-                                  await saveCloudDoc('master_staff', staff.id, { passwordRequest: '' });
+                                  const updatedStaff: Staff = { ...staff, passwordRequest: '' };
+                                  await saveCloudDoc('master_staff', staff.id, updatedStaff, currentUser.name);
                                   setStaffList(prev => {
                                     const next = prev.map(s => s.id === staff.id ? updatedStaff : s);
                                     try { localStorage.setItem('riz_master_staff_list', JSON.stringify(next)); } catch {}
@@ -3921,13 +3948,13 @@ export default function AdminPanel({
                 </div>
               </div>
               <a
-                href={DEFAULT_SPREADSHEET_URL}
+                href={`https://docs.google.com/spreadsheets/d/${DEFAULT_SPREADSHEET_ID}/edit?gid=${getGidForMonth(activeMonth)}#gid=${getGidForMonth(activeMonth)}`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 rounded-xl text-xs font-bold text-blue-200 transition-all cursor-pointer shrink-0"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span>Buka Sheet Oktober 2026</span>
+                <span>Buka Sheet {ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonth)?.label || 'November 2026'}</span>
               </a>
             </div>
 
@@ -3939,7 +3966,7 @@ export default function AdminPanel({
               </div>
               <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-mono uppercase block">Tab Aktif</span>
-                <span className="font-bold text-white block">Oktober 2026 (gid=1340328886)</span>
+                <span className="font-bold text-white block">{ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonth)?.label || 'November 2026'} (gid={getGidForMonth(activeMonth)})</span>
               </div>
               <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-mono uppercase block">Terakhir Pull</span>
@@ -3954,7 +3981,7 @@ export default function AdminPanel({
             {/* Pull action buttons */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
-                onClick={() => onSyncDailyLogFromSheet?.(SHEET_GID_OKTOBER_2026)}
+                onClick={() => onSyncDailyLogFromSheet?.(getGidForMonth(activeMonth))}
                 disabled={isSyncingSheet}
                 className="p-3.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 rounded-xl text-left transition-all cursor-pointer disabled:opacity-40 flex items-center gap-3"
               >
@@ -3963,9 +3990,9 @@ export default function AdminPanel({
                 </div>
                 <div>
                   <div className="font-extrabold text-xs text-white">
-                    {isSyncingSheet ? 'Sedang Mengambil Data...' : '🔄 Sync Daily Log Oktober 2026'}
+                    {isSyncingSheet ? 'Sedang Mengambil Data...' : `🔄 Sync Daily Log ${ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonth)?.label || 'November 2026'}`}
                   </div>
-                  <div className="text-[10px] text-blue-200/70">Baca sheet aktif Okt 2026 → impor ke Daily Reports & Temuan QC</div>
+                  <div className="text-[10px] text-blue-200/70">Baca sheet aktif {ALL_MONTHLY_SCHEDULES.find(s => s.key === activeMonth)?.labelShort || 'Nov 2026'} → impor ke Daily Reports & Temuan QC</div>
                 </div>
               </button>
 
@@ -4803,6 +4830,28 @@ export default function AdminPanel({
                     />
                   </div>
                 </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 block">Password Akun Staf</label>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    Saat ini: {activeStaffForEdit?.password || 'riz123'}
+                  </span>
+                </div>
+                <div className="relative">
+                  <Key className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Ketik password baru jika ingin mengubah"
+                    value={staffFormData.password || ''}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, password: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400">
+                  Admin dapat langsung menyetel atau mengubah password staf sesuai keinginan atau permintaan staf.
+                </p>
               </div>
             </div>
 

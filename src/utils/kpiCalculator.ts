@@ -54,6 +54,8 @@ export interface StaffKpiResult {
   // 4. Produktivitas / Daily Task (TETAP ADA)
   reports: number;
   reportsCount: number;
+  completedTasksCount?: number;
+  combinedProductivityCount?: number;
   reportScore: number;
   
   // 5. Quality / QC Checklist (TETAP ADA)
@@ -508,7 +510,7 @@ export function calculateStaffKpi(
   const completedTaskCount = realTasks.filter(
     t => (isStaffMatch(staff, t.assignedName) || (t.assignedTo === staff.id)) &&
          t.status === 'Done' &&
-         (!t.dueDate || t.dueDate.startsWith(targetMonthKey) || !t.createdAt || t.createdAt.startsWith(targetMonthKey))
+         ((t.dueDate && t.dueDate.startsWith(targetMonthKey)) || (!t.dueDate && t.createdAt && t.createdAt.startsWith(targetMonthKey)))
   ).length;
 
   const combinedProductivityCount = reportsCount + completedTaskCount;
@@ -527,7 +529,11 @@ export function calculateStaffKpi(
   // ─────────────────────────────────────────────────────────────
   // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Bobot 10%: Penanganan Temuan Kerusakan & WO)
   // ─────────────────────────────────────────────────────────────
-  const staffFindings = findings.filter(f => isStaffMatch(staff, f.pic));
+  const staffFindings = findings.filter(f => {
+    if (!isStaffMatch(staff, f.pic)) return false;
+    const fDate = f.dateCreated || f.date || f.targetDate || '';
+    return !fDate || fDate.startsWith(targetMonthKey);
+  });
   let realWOs: WorkOrder[] = workOrdersOverride || [];
   if (!workOrdersOverride && typeof window !== 'undefined') {
     try {
@@ -535,7 +541,11 @@ export function calculateStaffKpi(
       if (saved) realWOs = JSON.parse(saved);
     } catch (e) {}
   }
-  const staffWOs = realWOs.filter(w => isStaffMatch(staff, w.pic) && (!w.dateCreated || w.dateCreated.startsWith(targetMonthKey)));
+  const staffWOs = realWOs.filter(w => {
+    if (!isStaffMatch(staff, w.pic)) return false;
+    const wDate = w.dateCreated || (w as any).date || w.deadline || '';
+    return !wDate || wDate.startsWith(targetMonthKey);
+  });
 
   const totalAssigned = staffFindings.length + staffWOs.length;
   const closedCount = staffFindings.filter(f => f.status === 'Close').length + staffWOs.filter(w => w.status === 'Completed' || w.progress === 100).length;

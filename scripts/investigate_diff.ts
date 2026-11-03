@@ -66,7 +66,7 @@ async function main() {
   const totalRepSheet = activeSheetOnly.reduce((acc, s) => acc + s.reports, 0);
   const totalQcSheet = activeSheetOnly.reduce((acc, s) => acc + s.qcs, 0);
   const totalAttSheet = activeSheetOnly.reduce((acc, s) => acc + s.attendanceCount, 0);
-  const totalHoursSheet = activeSheetOnly.reduce((acc, s) => acc + s.workHours, 0);
+  const totalHoursSheet = activeSheetOnly.reduce((acc, s) => acc + s.hours, 0);
   const avgKpiSheet = Math.round(activeSheetOnly.reduce((acc, s) => acc + s.kpi, 0) / (activeSheetOnly.length || 1));
 
   console.log('\n--- 1. KPI WITH SHEET ONLY ---');

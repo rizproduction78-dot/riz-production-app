@@ -24,7 +24,7 @@ import { parseDailySheet, SheetRow, extractNormalizedDailySheetRows, OFFICIAL_GS
 import Papa from 'papaparse';
 
 export const DEFAULT_SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
-export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=1340328886#gid=1340328886';
+export const DEFAULT_SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=7916507#gid=7916507';
 export const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxwCU17QZZ_1Z-9Wd2rznC15gIX25xydANyPNWbdyRrrRZzDVAYn9BETiCKAc7f7QUp0w/exec';
 
 export const GOOGLE_SHEET_WEBHOOK_KEY = 'riz_google_sheet_webhook_url';
@@ -868,17 +868,25 @@ export const SHEET_GIDS: Record<string, string> = {
   '2026-07': '2099865640',  // JULI 2026
   '2026-08': '1894783738',  // AGUSTUS 2026
   '2026-09': '1869844599',  // SEPTEMBER 2026 (Official GID terverifikasi)
-  '2026-10': '1340328886',  // OKTOBER 2026 (Official GID tab aktif)
-  '2026-11': '1463883290',  // NOVEMBER 2026
-  '2026-12': '646140708',   // DESEMBER 2026
+  '2026-10': '1340328886',  // OKTOBER 2026 (Official GID terverifikasi)
+  '2026-11': '7916507',     // NOVEMBER 2026 (Official GID terverifikasi)
+  '2026-12': '368237370',   // DESEMBER 2026 (Official GID terverifikasi)
 };
 
 export const SHEET_GID_SEPTEMBER_2026 = SHEET_GIDS['2026-09'];
 export const SHEET_GID_OKTOBER_2026   = SHEET_GIDS['2026-10'];
+export const SHEET_GID_NOVEMBER_2026  = SHEET_GIDS['2026-11'];
+export const SHEET_GID_DESEMBER_2026  = SHEET_GIDS['2026-12'];
 export const SHEET_GID_HISTORICAL     = SHEET_GIDS['2026-05'];
 
 export function getGidForMonth(monthKey: string): string {
-  return SHEET_GIDS[monthKey] || SHEET_GIDS['2026-10'] || '1340328886';
+  if (monthKey && SHEET_GIDS[monthKey]) return SHEET_GIDS[monthKey];
+  const activeKey = getActiveMonthKey();
+  return SHEET_GIDS[activeKey] || SHEET_GIDS['2026-11'] || '7916507';
+}
+
+export function getMonthKeyForGid(gid: string): string | undefined {
+  return Object.entries(SHEET_GIDS).find(([, g]) => g === gid)?.[0];
 }
 
 /** Key localStorage untuk timestamp terakhir pull daily log */
@@ -1121,7 +1129,8 @@ export async function pullDailyLogFromGviz(
 
     // Gunakan normalisasi dinamis kolom (otomatis mendeteksi posisi header Tanggal, Crew, dsb)
     const sheetRows: SheetRow[] = extractNormalizedDailySheetRows(rawCellMatrix);
-    const parsedEntries = parseDailySheet(sheetRows);
+    const fallbackMonthKey = getMonthKeyForGid(gid);
+    const parsedEntries = parseDailySheet(sheetRows, fallbackMonthKey);
 
     const cachedReportsRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('riz_daily_reports_v2') : null;
     const cachedReportsMap = new Map<string, any>();

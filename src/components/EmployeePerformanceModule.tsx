@@ -38,7 +38,7 @@ import {
 
 import { calculateStaffKpi, calculateAllStaffKpis, isStaffMatch, KPI_SPREADSHEET_SOURCE_URL } from '../utils/kpiCalculator';
 import { subscribeCloudCollection } from '../lib/cloudSync';
-import { getActiveMonthKey, getScheduleByKey } from '../data/staffSchedules';
+import { getActiveMonthKey, getScheduleByKey, formatMonthLabel } from '../data/staffSchedules';
 import { ELECTRICAL_COMPETENCIES } from './Absensi';
 
 interface EmployeePerformanceModuleProps {
@@ -89,6 +89,8 @@ export default function EmployeePerformanceModule({
   }, []);
 
   const labelFromMonthKey: Record<string, string> = {
+    '2026-12': 'Desember 2026',
+    '2026-11': 'November 2026',
     '2026-10': 'Oktober 2026',
     '2026-09': 'September 2026',
     '2026-08': 'Agustus 2026',
@@ -100,6 +102,8 @@ export default function EmployeePerformanceModule({
   };
 
   const monthKeyFromLabel: Record<string, string> = {
+    'Desember 2026': '2026-12',
+    'November 2026': '2026-11',
     'Oktober 2026': '2026-10',
     'September 2026': '2026-09',
     'Agustus 2026': '2026-08',
@@ -111,12 +115,12 @@ export default function EmployeePerformanceModule({
   };
 
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
-    return (activeMonth && labelFromMonthKey[activeMonth]) || 'Oktober 2026';
+    return (activeMonth && (labelFromMonthKey[activeMonth] || formatMonthLabel(activeMonth))) || 'November 2026';
   });
 
   useEffect(() => {
-    if (activeMonth && labelFromMonthKey[activeMonth]) {
-      setSelectedMonth(labelFromMonthKey[activeMonth]);
+    if (activeMonth) {
+      setSelectedMonth(labelFromMonthKey[activeMonth] || formatMonthLabel(activeMonth));
     }
   }, [activeMonth]);
 
@@ -132,11 +136,11 @@ export default function EmployeePerformanceModule({
 
   // Real dynamic KPI scores, filtered by evalMonthKey
   const isAllPeriod = evalMonthKey === 'all';
-  const monthlyDailyReports = dailyReports.filter(r => isAllPeriod || r.date.startsWith(evalMonthKey));
-  const monthlyLogbookEntries = logbookEntries.filter(e => isAllPeriod || e.date.startsWith(evalMonthKey));
-  const monthlyFindings = findings.filter(f => isAllPeriod || f.dateCreated.startsWith(evalMonthKey) || (f.targetDate && f.targetDate.startsWith(evalMonthKey)));
-  const monthlyWorkOrders = workOrders.filter(w => isAllPeriod || w.dateCreated.startsWith(evalMonthKey) || (w as any).date?.startsWith(evalMonthKey) || w.deadline.startsWith(evalMonthKey));
-  const monthlyDailyTasks = dailyTasks.filter(t => isAllPeriod || t.createdAt.startsWith(evalMonthKey) || t.dueDate.startsWith(evalMonthKey));
+  const monthlyDailyReports = dailyReports.filter(r => isAllPeriod || r.date?.startsWith(evalMonthKey));
+  const monthlyLogbookEntries = logbookEntries.filter(e => isAllPeriod || e.date?.startsWith(evalMonthKey));
+  const monthlyFindings = findings.filter(f => isAllPeriod || f.dateCreated?.startsWith(evalMonthKey) || (f as any).date?.startsWith(evalMonthKey) || f.targetDate?.startsWith(evalMonthKey));
+  const monthlyWorkOrders = workOrders.filter(w => isAllPeriod || w.dateCreated?.startsWith(evalMonthKey) || (w as any).date?.startsWith(evalMonthKey) || w.deadline?.startsWith(evalMonthKey));
+  const monthlyDailyTasks = dailyTasks.filter(t => isAllPeriod || t.createdAt?.startsWith(evalMonthKey) || t.dueDate?.startsWith(evalMonthKey));
 
   const allStaffKpis = calculateAllStaffKpis(
     masterStaffList, 
@@ -270,13 +274,15 @@ export default function EmployeePerformanceModule({
     { label: 'Agu', key: '2026-08' },
     { label: 'Sep', key: '2026-09' },
     { label: 'Okt', key: '2026-10' },
+    { label: 'Nov', key: '2026-11' },
+    { label: 'Des', key: '2026-12' },
   ];
   const trendData = trendMonths.map(tm => {
-    const mReps = dailyReports.filter(r => r.date.startsWith(tm.key));
-    const mLogs = logbookEntries.filter(e => e.date.startsWith(tm.key));
-    const mFind = findings.filter(f => f.dateCreated?.startsWith(tm.key));
-    const mWOs = workOrders.filter(w => w.dateCreated?.startsWith(tm.key));
-    const mTasks = dailyTasks.filter(t => t.createdAt?.startsWith(tm.key));
+    const mReps = dailyReports.filter(r => r.date?.startsWith(tm.key));
+    const mLogs = logbookEntries.filter(e => e.date?.startsWith(tm.key));
+    const mFind = findings.filter(f => f.dateCreated?.startsWith(tm.key) || (f as any).date?.startsWith(tm.key) || f.targetDate?.startsWith(tm.key));
+    const mWOs = workOrders.filter(w => w.dateCreated?.startsWith(tm.key) || (w as any).date?.startsWith(tm.key) || w.deadline?.startsWith(tm.key));
+    const mTasks = dailyTasks.filter(t => t.createdAt?.startsWith(tm.key) || t.dueDate?.startsWith(tm.key));
     if (mReps.length === 0 && mLogs.length === 0) {
       return { month: tm.label, score: 0 };
     }
@@ -396,6 +402,8 @@ export default function EmployeePerformanceModule({
               onChange={(e) => handleMonthSelect(e.target.value)}
               className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer"
             >
+              <option value="Desember 2026">Desember 2026</option>
+              <option value="November 2026">November 2026</option>
               <option value="Oktober 2026">Oktober 2026</option>
               <option value="September 2026">September 2026</option>
               <option value="Agustus 2026">Agustus 2026</option>

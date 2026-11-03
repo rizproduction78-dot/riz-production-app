@@ -1,6 +1,8 @@
 <!-- markdownlint-disable -->
 # DATA SINKRONISASI GOOGLE SHEET (OFFICIAL)
 
+## Oktober 2026 (GID: 1340328886)
+
 | Tanggal | Crew | SOUND | LIGHTING | LED | MULTIMEDIA | REMARK |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 Oktober 2026 | - Irfan |  |  | - Cek kabel lan |  | Aman |
@@ -65,16 +67,20 @@
 |  |  |  |  | - 1 kabinet ngacing |  | Done |
 |  |  |  |  | - 2 kabinet ganti jalur |  | Done |
 |  | - Heri |  | Ganti Pompa Smoke No.1 |  |  | - Kondisi Sudah Normal (OKE) |
-| 09 Oktober 2026 | - Irfan |  |  | Cek hanging bar gantung |  | - Kondisi Baik |
+| 09 Oktober 2026 |  |  |  |  |  |  |
+|  | - Irfan |  |  | Cek hanging bar gantung |  | - Kondisi Baik |
 |  | - Wigi |  |  | cek Hangging Bar |  | Aman |
-| 10 oktober 2026 | - Kharo |  |  | 1. repair 12 kabinet |  | Beres |
+|  | - Kharo |  |  | 1. repair 12 kabinet |  | Beres |
 |  |  |  |  | - 10 kabinet ganti dead pixel |  | Beres |
 |  |  |  |  | - 1 kabinet ngacing |  | Beres |
 |  |  |  |  | - 1 kabinet ganti jalur |  | Beres |
 |  |  |  |  | 2. cek all servisan |  | On progress |
 |  |  |  |  | - 1 box 4 kabinet on progres |  | On progress |
 |  |  |  |  | - 2 box rusak berat |  | - Kerusakan Ganti IC Warna, Ilang Jalur, GantiKonektor output sama ngacing |
-|  | - Opik | - Service Headset 2 Unit |  |  |  | Beres |
+|  | dani | * Melanjutkan pencatatan serial number all WHM - EAR monitor<br>* Mengecek dan memastikan kelengkapan WHM <br>* Membersihkan dan merking ulang nomor mic |  |  |  |  |
+|  | mboh |  |  |  |  |  |
+|  | Yudis |  |  |  |  |  |
+| 10 Oktober 2026 | - Opik | - Service Headset 2 Unit |  |  |  | Beres |
 |  | -Butonk | - Pencatatan Serial NUmber |  |  |  | Haedset G3 3 Unit, IEM G4 4 Unit, IEM Mipro 1 Unit |
 |  |  | - Membersihkan Kamar mandi bawah |  |  |  | Bersih |
 |  |  | - Service kabel Legran 1 Unit |  |  |  | Beres |
@@ -96,19 +102,53 @@
 | 13 Oktober 2026 | - Kharo |  |  | 1. servise 6 kabinet led |  |  |
 |  |  |  |  | - 1 kabinet ganti jalur |  |  |
 |  |  |  |  | - 5 kabinet gamti dead pixel |  |  |
-| 14 Oktober 2026 | - Endin |  | - Ganti Lampu Beam No.10 |  |  | - Sudah Normal lagi beam No.10 |
-| 14 oktober 2026 | kharo |  |  | 1. servise 7 kabinet led |  | 1 box status masih servise berat |
+| 14 oktober 2026 | - Endin |  | - Ganti Lampu Beam No.10 |  |  | - Sudah Normal lagi beam No.10 |
+|  | kharo |  |  | 1. servise 7 kabinet led |  | 1 box status masih servise berat |
 |  |  |  |  | - 1 kabinet ngacing |  | 1 rol (5m) led strip status error |
 |  |  |  |  | -1 kabinet ganti ic warna |  |  |
 |  |  |  |  | - 5 kabinet ganti dead pixel |  |  |
 |  |  |  |  | 2. cek 50 meter led strip |  |  |
-| 19 Oktober 2026 | - Heri |  | Bersih2 ALL Parled 47 Unit |  |  | - Kondisi Bersih |
+| 19 oktober 2026 | - Heri |  | Bersih2 ALL Parled 47 Unit |  |  | - Kondisi Bersih |
 |  |  |  | Benerin Link 1 Unit |  |  | - Sudah Oke |
 |  |  |  | Benerin Kabel 4x2.5 Bekas Event St Regist |  |  | - Sudah Oke |
 |  |  |  | Rapih Rapih Kabel & Tempat Lighting |  |  | - Kondisi Rapih |
-| 19 oktober 2026 | mboh | maintenace sub/avanda210 |  |  |  | memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman |
-|  | opik | maintenace sub/avanda210 |  |  |  | memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman |
-|  | butotng | maintenace sub/avanda210 |  |  |  | memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman |
-|  | dani | maintenace sub/avanda210 |  |  |  | memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman |
-|  | unying | maintenace sub/avanda210 |  |  |  | memebersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman |
-| 23 OKTOBER 2026 | - Heri |  | Prepare Barang Barang Event |  |  |  |
+|  | mboh | maintenace sub/avanda210 |  |  |  | membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman |
+|  | opik | maintenace sub/avanda210 |  |  |  | membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman |
+|  | butong | maintenace sub/avanda210 |  |  |  | membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman |
+|  | dani | maintenace sub/avanda210 |  |  |  | membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman |
+|  | unying | maintenace sub/avanda210 |  |  |  | membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman |
+| 20 Oktober 2026 | Opik | touch up Dan cek SUB KLA |  |  |  |  |
+|  | Dani |  |  |  |  |  |
+|  | Yudis |  |  |  |  |  |
+|  | butong |  |  |  |  |  |
+| 23 Oktober 2026 | - Heri |  | Prepare Barang Barang Event |  |  | Aman |
+| 25 Oktober 2026 | - Heri |  | Beres Beres Barang dan Area Gudang |  |  | - Rapih |
+|  |  |  | Pengembalian Alat Bekas Pakai Sewa (Alpha & SWL) |  |  |  |
+| 26 oktober 2026 | unying | cek unit monitor DB18 |  |  |  | -DB NO18 twiter mati |
+|  | butong | cek unit monitor DB15 |  |  |  | -DB NO15 twitwe kecil/lemah |
+|  | mboh | cek unit monitor LVX15 |  |  |  | -mesin mati /dalam penegecekan mang damri |
+|  | - Heri |  | Cek unit & Cleaning All Hazer |  |  | Kondisi Oke Semua |
+| 27 Oktober 2026 | - Heri |  | Training Sound Yamaha |  |  |  |
+
+## November 2026 (GID: 7916507)
+
+| Tanggal | Crew | SOUND | LIGHTING | LED | MULTIMEDIA | REMARK |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 November 2026 | - Kharo |  |  | - cek & servise 12 roll led strip |  | - Bagus |
+|  |  |  |  | - buat dudukan power suplly led strip |  | - Done |
+| 2 November 2026 | - Unyim | bersih" dl 32 |  |  |  | CEK NYALA AMAN |
+|  |  | no 1 |  |  |  | OK |
+|  |  | no 2 |  |  |  | OK |
+|  |  | no 3 |  |  |  | OK |
+|  |  | no 4 |  |  |  | OK |
+|  |  | mixer HD |  |  |  | OK |
+| 2 November 2026 | mboh | -cleaning dl251 |  |  |  | -BERSIH |
+|  |  | -cleaning marani mir4801 |  |  |  | -BERSIH |
+|  |  | -cek all kabel LAN |  |  |  | -ALL terkonectsi dgn  baik |
+|  |  | -cleaning mixer HD967 |  |  |  | -BERSIH |
+
+## Desember 2026 (GID: 368237370)
+
+| Tanggal | Crew | SOUND | LIGHTING | LED | MULTIMEDIA | REMARK |
+| --- | --- | --- | --- | --- | --- | --- |
+

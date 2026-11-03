@@ -44,6 +44,7 @@ import {
 } from '../types';
 import { getVehicleExpiryAlerts } from '../utils/vehicleExpiryAlerts';
 import { INITIAL_VEHICLES } from '../data';
+import { formatMonthLabel } from '../data/staffSchedules';
 
 export interface QCNotificationCenterProps {
   dailyReports?: DailyReport[];
@@ -884,7 +885,7 @@ export default function QCNotificationCenter({
                         Pusat Notifikasi Operasional
                       </h2>
                       <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[8px] font-mono font-bold uppercase tracking-wider shrink-0">
-                        {activeMonth && activeMonth !== 'all' ? (activeMonth === '2026-10' ? 'Oktober 2026' : activeMonth === '2026-09' ? 'September 2026' : activeMonth) : 'Semua Periode'}
+                        {activeMonth && activeMonth !== 'all' ? formatMonthLabel(activeMonth) : 'Semua Periode'}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-400 truncate mt-0.5">

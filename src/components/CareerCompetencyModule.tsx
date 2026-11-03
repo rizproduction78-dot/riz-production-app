@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { calculateStaffKpi } from '../utils/kpiCalculator';
 import { saveCloudDoc, subscribeCloudCollection } from '../lib/cloudSync';
+import { getActiveMonthKey, getScheduleByKey } from '../data/staffSchedules';
 
 interface CareerCompetencyModuleProps {
   currentUser: Staff;
@@ -101,7 +102,8 @@ export default function CareerCompetencyModule({
   logbookEntries = [],
   findings = [],
   workOrders = [],
-  dailyTasks = []
+  dailyTasks = [],
+  activeMonth = getActiveMonthKey()
 }: CareerCompetencyModuleProps) {
   // Check user role privileges
   const isManagement = Boolean(
@@ -292,16 +294,23 @@ export default function CareerCompetencyModule({
   const isLeadership = isManagement || currentUser.role === 'Team Leader';
   const effectiveSelectedStaffId = isLeadership ? selectedStaffId : currentUser.id;
   const activeStaff = isLeadership ? (staffList.find(s => s.id === effectiveSelectedStaffId) || currentUser) : currentUser;
+  const isAllMonths = activeMonth === 'all';
+  const filteredReports = dailyReports.filter(r => isAllMonths || r.date?.startsWith(activeMonth));
+  const filteredLogs = logbookEntries.filter(e => isAllMonths || e.date?.startsWith(activeMonth));
+  const filteredFindings = findings.filter(f => isAllMonths || f.dateCreated?.startsWith(activeMonth));
+  const filteredWOs = workOrders.filter(w => isAllMonths || w.dateCreated?.startsWith(activeMonth));
+  const filteredTasks = dailyTasks.filter(t => isAllMonths || t.createdAt?.startsWith(activeMonth));
   const activeStaffKpi = calculateStaffKpi(
     activeStaff,
-    dailyReports,
-    logbookEntries,
-    findings,
+    filteredReports,
+    filteredLogs,
+    filteredFindings,
     undefined,
     undefined,
-    undefined,
-    workOrders,
-    dailyTasks
+    getScheduleByKey(activeMonth)?.rows,
+    filteredWOs,
+    filteredTasks,
+    activeMonth
   );
   const activeRecord = careerRecords[activeStaff.id] || {
     staffId: activeStaff.id,

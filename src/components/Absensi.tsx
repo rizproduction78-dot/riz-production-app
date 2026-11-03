@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Staff, 
-  AttendanceLog, 
-  WorkSchedule, 
-  OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL, 
+import {
+  Staff,
+  AttendanceLog,
+  WorkSchedule,
+  OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL,
   OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL,
   OFFICIAL_COMPANY_ADDRESS,
   OFFICIAL_COMPANY_PLUS_CODE,
@@ -15,6 +15,7 @@ import {
   SHIFT_LEGEND,
   SCHEDULE_NOTE,
   StaffScheduleRow,
+  ALL_MONTHLY_SCHEDULES,
   getScheduleByKey,
   generateMonthDays,
   getActiveMonthKey
@@ -162,7 +163,7 @@ export const QUIZ_QUESTIONS = [
 
 export const getInitialCompetencyData = () => {
   const data: { [staffId: string]: { [compKey: string]: { verified: boolean; verifiedBy?: string; dateVerified?: string } } } = {};
-  
+
   // RESET TOTAL SEMUA STAFF KE 0% (BELUM LULUS / UNVERIFIED)
   getMasterStaffList().forEach(staff => {
     data[staff.id] = {
@@ -187,7 +188,45 @@ interface AbsensiProps {
   scheduleData?: StaffScheduleRow[];
 }
 
-export default function Absensi({ currentUser, onLogActivity, forceSubTab, activeMonth = getActiveMonthKey(), onActiveMonthChange, scheduleData = [] }: AbsensiProps) {
+export default function Absensi({ currentUser, onLogActivity, forceSubTab, activeMonth: propActiveMonth = getActiveMonthKey(), onActiveMonthChange, scheduleData: propScheduleData }: AbsensiProps) {
+  const activeMonth = propActiveMonth === 'all' ? getActiveMonthKey() : propActiveMonth;
+  const [scheduleData, setScheduleData] = useState<StaffScheduleRow[]>(() => {
+    if (propScheduleData && propScheduleData.length > 0) return propScheduleData;
+    try {
+      const saved = localStorage.getItem(`riz_schedule_${activeMonth}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) { }
+    return getScheduleByKey(activeMonth)?.rows || [];
+  });
+
+  useEffect(() => {
+    if (propScheduleData && propScheduleData.length > 0) {
+      setScheduleData(propScheduleData);
+      return;
+    }
+    const fallbackRows = getScheduleByKey(activeMonth)?.rows || [];
+    const unsubSched = subscribeCloudCollection<any>(
+      `schedule_${activeMonth}`,
+      `riz_schedule_${activeMonth}`,
+      (data) => {
+        if (data && data.length > 0) {
+          const flatItems = data.flatMap((item: any) => (item && Array.isArray(item.list) ? item.list : item));
+          const validItems = flatItems.filter((i: any) => i && typeof i === 'object' && i.no);
+          if (validItems.length > 0) {
+            validItems.sort((a: any, b: any) => (a.no || 0) - (b.no || 0));
+            setScheduleData(validItems);
+            return;
+          }
+        }
+        setScheduleData(fallbackRows);
+      },
+      fallbackRows
+    );
+    return () => unsubSched();
+  }, [activeMonth, propScheduleData]);
   // Tabs: 'self' (Check In/Out), 'schedule' (1-31 Scheduling Grid), 'progress' (Kenaikan Status & Kelistrikan), or 'maintenance_dashboard'
   const [activeSubTab, setActiveSubTab] = useState<'self' | 'schedule' | 'progress' | 'maintenance_dashboard'>(
     forceSubTab || 'self'
@@ -251,7 +290,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
   const [maintenanceSearch, setMaintenanceSearch] = useState('');
   const [maintenanceFilterDivision, setMaintenanceFilterDivision] = useState('All');
   const [showAddForm, setShowAddForm] = useState(false);
-  
+
   // Add form fields
   const [newEquipName, setNewEquipName] = useState('');
   const [newEquipCode, setNewEquipCode] = useState('');
@@ -378,6 +417,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
       return row;
     });
 
+    setScheduleData(updated);
     localStorage.setItem(`riz_schedule_${activeMonth}`, JSON.stringify(updated));
     pushCollectionToCloud(`schedule_${activeMonth}`, updated, currentUser.name);
   };
@@ -426,7 +466,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
   // Generate Month Schedule (1-31)
   const handleGenerateMonthSchedule = () => {
     const defaultData: { [staffId: string]: { [day: number]: 'Masuk' | 'Off' | 'Libur' | 'Izin' | 'Sakit' | 'Alpha' } } = {};
-    
+
     staffList.forEach(staff => {
       defaultData[staff.id] = {};
       for (let day = 1; day <= 31; day++) {
@@ -490,7 +530,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
 
     // Determine check-in time
     const checkInTimeStr = simulatedTime || new Date().toTimeString().split(' ')[0].substring(0, 5); // HH:MM
-    
+
     // Calculate lateness (Standard threshold is 08:00 AM)
     const [hours, minutes] = checkInTimeStr.split(':').map(Number);
     const checkInMinutes = hours * 60 + minutes;
@@ -505,11 +545,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
       division: currentUser.division,
       date: todayStr,
       checkInTime: checkInTimeStr,
-      checkInPhoto: isTeamLeader 
-        ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' 
+      checkInPhoto: isTeamLeader
+        ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200'
         : photoSimulated,
-      checkInGps: isTeamLeader 
-        ? `${OFFICIAL_COMPANY_GPS_COORDINATES} (Office HQ - ${OFFICIAL_COMPANY_PLUS_CODE})` 
+      checkInGps: isTeamLeader
+        ? `${OFFICIAL_COMPANY_GPS_COORDINATES} (Office HQ - ${OFFICIAL_COMPANY_PLUS_CODE})`
         : gpsSimulated,
       status: customStatus === 'Hadir' ? 'Hadir' : customStatus,
       isLate,
@@ -519,7 +559,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
     setAttendanceLogs(prev => [newLog, ...prev]);
     saveCloudDoc('attendance_logs', newLog.id, newLog);
     onLogActivity(currentUser.name, currentUser.role, `Berhasil melakukan Check In pada jam ${checkInTimeStr} (${isLate ? 'Terlambat' : 'Tepat Waktu'})`);
-    
+
     // Reset form helper states
     setPhotoSimulated('');
     setGpsSimulated('');
@@ -530,7 +570,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
   const handleCheckOut = (e: React.FormEvent) => {
     e.preventDefault();
     if (!userTodayLog) return;
-    
+
     const isTeamLeader = currentUser.role === 'Team Leader';
     if (!isTeamLeader) {
       if (!photoSimulated) {
@@ -548,11 +588,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
     const updatedLog: AttendanceLog = {
       ...userTodayLog,
       checkOutTime: checkOutTimeStr,
-      checkOutPhoto: isTeamLeader 
-        ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' 
+      checkOutPhoto: isTeamLeader
+        ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200'
         : photoSimulated,
-      checkOutGps: isTeamLeader 
-        ? `${OFFICIAL_COMPANY_GPS_COORDINATES} (Office HQ - ${OFFICIAL_COMPANY_PLUS_CODE})` 
+      checkOutGps: isTeamLeader
+        ? `${OFFICIAL_COMPANY_GPS_COORDINATES} (Office HQ - ${OFFICIAL_COMPANY_PLUS_CODE})`
         : gpsSimulated
     };
 
@@ -560,7 +600,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
     saveCloudDoc('attendance_logs', updatedLog.id, updatedLog);
 
     onLogActivity(currentUser.name, currentUser.role, `Berhasil melakukan Check Out pada jam ${checkOutTimeStr}`);
-    
+
     // Reset form helper states
     setPhotoSimulated('');
     setGpsSimulated('');
@@ -608,20 +648,18 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
             <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg">
               <button
                 onClick={() => setActiveSubTab('self')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                  activeSubTab === 'self' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
-                }`}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${activeSubTab === 'self' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                  }`}
               >
                 Absensi Mandiri
               </button>
-              
+
               {/* Schedule Tab available to Admin, Supervisor and Manager */}
               {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
                 <button
                   onClick={() => setActiveSubTab('schedule')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                    activeSubTab === 'schedule' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${activeSubTab === 'schedule' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                    }`}
                 >
                   Penjadwalan (1-31)
                 </button>
@@ -634,7 +672,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
       {/* VIEW 1: SELF ATTENDANCE */}
       {activeSubTab === 'self' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
+
           {/* Main Action Form for Checking In or Out */}
           <div className="lg:col-span-2 space-y-6">
             {!isWajibAbsen(currentUser.name) ? (
@@ -654,7 +692,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
               </div>
             ) : (
               <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-6">
-                
+
 
 
                 {/* Header Status Card */}
@@ -699,11 +737,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                               key={st}
                               type="button"
                               onClick={() => setCustomStatus(st)}
-                              className={`p-2 border rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
-                                customStatus === st
-                                  ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                              }`}
+                              className={`p-2 border rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${customStatus === st
+                                ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}
                             >
                               {st}
                             </button>
@@ -727,7 +764,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        
+
                         {/* CAMERA SIMULATOR */}
                         <div className="p-4 border border-slate-200 rounded-lg space-y-3 bg-slate-50/50">
                           <div className="flex items-center justify-between">
@@ -740,37 +777,37 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                             )}
                           </div>
 
-                         {photoSimulated ? (
-                          <div className="relative group">
-                            <img src={photoSimulated} alt="Selfie Absen" className="w-full h-32 object-cover rounded-lg shadow-sm border border-slate-200" />
-                            <button
-                              type="button"
-                              onClick={() => setPhotoSimulated('')}
-                              className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                            <a
-                              href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="absolute bottom-2 left-2 right-2 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] py-1 px-2 rounded font-bold text-center hover:bg-slate-900 transition-colors"
-                            >
-                              📁 Folder Bukti Absensi (Drive) ↗
-                            </a>
-                          </div>
-                        ) : (
-                          <div className="h-32 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-500 bg-slate-50 relative overflow-hidden">
+                          {photoSimulated ? (
+                            <div className="relative group">
+                              <img src={photoSimulated} alt="Selfie Absen" className="w-full h-32 object-cover rounded-lg shadow-sm border border-slate-200" />
+                              <button
+                                type="button"
+                                onClick={() => setPhotoSimulated('')}
+                                className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                              <a
+                                href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="absolute bottom-2 left-2 right-2 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] py-1 px-2 rounded font-bold text-center hover:bg-slate-900 transition-colors"
+                              >
+                                📁 Folder Bukti Absensi (Drive) ↗
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="h-32 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-500 bg-slate-50 relative overflow-hidden">
                               <Camera className="w-8 h-8 mb-2 text-slate-300" />
                               <span className="text-xs font-medium">Foto Selfie Area/Wajah</span>
                               <label className="mt-2 text-[11px] text-indigo-600 font-bold hover:underline cursor-pointer">
                                 Buka Kamera / Pilih File
-                                <input 
-                                  type="file" 
-                                  accept="image/*" 
-                                  capture="user" 
-                                  className="hidden" 
-                                  onChange={handlePhotoUpload} 
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  capture="user"
+                                  className="hidden"
+                                  onChange={handlePhotoUpload}
                                 />
                               </label>
                               <a
@@ -781,8 +818,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                               >
                                 📁 Folder Drive Bukti Absensi ↗
                               </a>
-                          </div>
-                        )}
+                            </div>
+                          )}
                         </div>
 
                         {/* GPS LOCATION SIMULATOR */}
@@ -886,11 +923,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                     {/* Submit Button */}
                     <button
                       type="submit"
-                      className={`w-full py-2.5 px-4 rounded-lg text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer ${
-                        !userTodayLog
-                          ? 'bg-emerald-600 hover:bg-emerald-700'
-                          : 'bg-indigo-600 hover:bg-indigo-700'
-                      }`}
+                      className={`w-full py-2.5 px-4 rounded-lg text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer ${!userTodayLog
+                        ? 'bg-emerald-600 hover:bg-emerald-700'
+                        : 'bg-indigo-600 hover:bg-indigo-700'
+                        }`}
                     >
                       {!userTodayLog ? 'KIRIM DATA CHECK IN' : 'KIRIM DATA CHECK OUT'}
                     </button>
@@ -914,13 +950,13 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
 
           {/* Right sidebar: Self Attendance Output Details & Personal Logs */}
           <div className="space-y-6">
-            
+
             {/* Output Details */}
             <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4">
               <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider border-b pb-2">
                 OUTPUT ABSENSI HARI INI
               </div>
-              
+
               {userTodayLog ? (
                 <div className="space-y-4 text-xs">
                   <div>
@@ -987,7 +1023,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                         <span className="font-bold text-slate-700">{log.staffName}</span>
                         <span className="text-[10px] text-slate-400 font-mono">{log.date}</span>
                       </div>
-                      
+
                       <div className="text-[10px] text-slate-400 font-mono">{log.division} Division</div>
 
                       <div className="grid grid-cols-2 gap-1 font-mono text-[10px] text-slate-500">
@@ -1028,18 +1064,17 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
       {/* VIEW 2: ADMIN 1-31 SCHEDULING GRID */}
       {activeSubTab === 'schedule' && (
         <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-6">
-          
+
           {/* Sub-navigation inside Schedule: Mode switcher */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
             <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl text-xs font-bold">
               <button
                 type="button"
                 onClick={() => setScheduleViewMode('official')}
-                className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${
-                  scheduleViewMode === 'official'
-                    ? 'bg-emerald-600 text-white shadow-xs font-black'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${scheduleViewMode === 'official'
+                  ? 'bg-emerald-600 text-white shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <Calendar className="w-4 h-4" />
                 <span>📅 Schedule Resmi Bulanan</span>
@@ -1047,11 +1082,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
               <button
                 type="button"
                 onClick={() => setScheduleViewMode('custom')}
-                className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${
-                  scheduleViewMode === 'custom'
-                    ? 'bg-white text-indigo-600 shadow-xs font-black'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${scheduleViewMode === 'custom'
+                  ? 'bg-white text-indigo-600 shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <Edit className="w-4 h-4" />
                 <span>✏️ Editor Tanggal 1-31 (Custom)</span>
@@ -1104,7 +1138,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
             <div className="space-y-4">
               <div className="flex flex-col md:flex-row gap-3 justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
                 <div className="flex flex-col md:flex-row gap-2 w-full">
-                  <select 
+                  <select
                     value={divisionFilter}
                     onChange={(e) => setDivisionFilter(e.target.value)}
                     className="text-xs p-2 border border-slate-200 rounded font-semibold text-slate-700 outline-none w-full md:w-auto min-w-[200px]"
@@ -1118,21 +1152,20 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                     <option value="MULTIMEDIA">Multimedia</option>
                     <option value="SERVICE">Service</option>
                   </select>
-                  
+
                   {onActiveMonthChange && (
-                    <select 
+                    <select
                       value={activeMonth}
                       onChange={(e) => onActiveMonthChange(e.target.value)}
                       className="text-xs p-2 border border-slate-200 rounded font-semibold text-slate-700 outline-none w-full md:w-auto"
                     >
-                      <option value="2026-09">September 2026</option>
-                      <option value="2026-10">Oktober 2026</option>
-                      <option value="2026-11">November 2026</option>
-                      <option value="2026-12">Desember 2026</option>
+                      {ALL_MONTHLY_SCHEDULES.map(sch => (
+                        <option key={sch.key} value={sch.key}>{sch.label}</option>
+                      ))}
                     </select>
                   )}
                 </div>
-                
+
                 <div className="flex flex-wrap gap-2 text-[9px] w-full justify-end font-semibold text-slate-500">
                   {Object.values(SHIFT_LEGEND).map(sh => (
                     <span key={sh.code} className={`px-1.5 py-0.5 rounded border ${sh.bg} ${sh.border} ${sh.text}`}>
@@ -1156,7 +1189,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                     <tr className="bg-slate-700 text-slate-200 text-[9px] text-center font-bold">
                       {(getScheduleByKey(activeMonth)?.days || generateMonthDays(2026, 9)).map(d => (
                         <th key={d.day} className={`p-1 border border-slate-600 min-w-[28px] ${d.isWeekend ? 'bg-rose-900/40 text-rose-200' : ''}`}>
-                          {d.day}<br/>
+                          {d.day}<br />
                           <span className="text-[8px] font-normal">{d.dayName}</span>
                         </th>
                       ))}
@@ -1166,28 +1199,28 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                     {scheduleData
                       .filter(row => divisionFilter === 'All' || row.division === divisionFilter)
                       .map((row, idx) => (
-                      <tr key={row.no} className="border-b border-slate-200 hover:bg-slate-50 transition-colors text-center font-bold">
-                        <td className="p-1.5 border-r border-slate-200 text-slate-500 sticky left-0 bg-white group-hover:bg-slate-50 z-10">{idx + 1}</td>
-                        <td className="p-1.5 border-r border-slate-200 text-indigo-700 sticky left-8 bg-white group-hover:bg-slate-50 z-10">{row.division}</td>
-                        <td className="p-1.5 border-r border-slate-200 text-slate-800 sticky left-24 bg-white group-hover:bg-slate-50 z-10 uppercase whitespace-nowrap text-left pl-2">
-                          {row.name}
-                        </td>
-                        {(getScheduleByKey(activeMonth)?.days || generateMonthDays(2026, 9)).map(d => {
-                          const shiftCode = row.shifts[d.day] || '-';
-                          const shiftInfo = SHIFT_LEGEND[shiftCode];
-                          return (
-                            <td 
-                              key={d.day} 
-                              className={`p-1 border border-slate-200 text-center ${shiftInfo?.bg || 'bg-white'} ${shiftInfo?.text || 'text-slate-800'} ${d.isWeekend ? 'border-r-rose-200' : ''}`}
-                              title={shiftInfo?.timeRange}
-                              onClick={() => handleToggleShift(row.no, d.day)}
-                            >
-                              {shiftCode}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
+                        <tr key={row.no} className="border-b border-slate-200 hover:bg-slate-50 transition-colors text-center font-bold">
+                          <td className="p-1.5 border-r border-slate-200 text-slate-500 sticky left-0 bg-white group-hover:bg-slate-50 z-10">{idx + 1}</td>
+                          <td className="p-1.5 border-r border-slate-200 text-indigo-700 sticky left-8 bg-white group-hover:bg-slate-50 z-10">{row.division}</td>
+                          <td className="p-1.5 border-r border-slate-200 text-slate-800 sticky left-24 bg-white group-hover:bg-slate-50 z-10 uppercase whitespace-nowrap text-left pl-2">
+                            {row.name}
+                          </td>
+                          {(getScheduleByKey(activeMonth)?.days || generateMonthDays(2026, 9)).map(d => {
+                            const shiftCode = row.shifts[d.day] || '-';
+                            const shiftInfo = SHIFT_LEGEND[shiftCode];
+                            return (
+                              <td
+                                key={d.day}
+                                className={`p-1 border border-slate-200 text-center ${shiftInfo?.bg || 'bg-white'} ${shiftInfo?.text || 'text-slate-800'} ${d.isWeekend ? 'border-r-rose-200' : ''}`}
+                                title={shiftInfo?.timeRange}
+                                onClick={() => handleToggleShift(row.no, d.day)}
+                              >
+                                {shiftCode}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -1258,7 +1291,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                       <tbody className="bg-white divide-y divide-slate-200">
                         {staffList.filter(s => s.name.toLowerCase().includes(scheduleSearch.toLowerCase())).map((staff) => {
                           const staffRowSchedule = schedule.scheduleData[staff.id] || {};
-                          
+
                           return (
                             <tr key={staff.id} className="hover:bg-slate-50/50">
                               <td className="px-3 py-2.5 font-sans font-bold text-slate-800 bg-white sticky left-0 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.05)] border-r">
@@ -1283,10 +1316,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                                       title={`${staff.name} - Tanggal ${day}: ${status}`}
                                     >
                                       {status === 'Masuk' ? 'M' :
-                                       status === 'Off' ? 'O' :
-                                       status === 'Libur' ? 'L' :
-                                       status === 'Izin' ? 'I' :
-                                       status === 'Sakit' ? 'S' : 'A'}
+                                        status === 'Off' ? 'O' :
+                                          status === 'Libur' ? 'L' :
+                                            status === 'Izin' ? 'I' :
+                                              status === 'Sakit' ? 'S' : 'A'}
                                     </button>
                                   </td>
                                 );
@@ -1335,7 +1368,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
           const completedKeys = Object.keys(comps).filter(k => comps[k]?.verified);
           const count = completedKeys.length;
           const pct = Math.round((count / 6) * 100);
-          
+
           let title = 'Junior Apprentice';
           let titleColor = 'text-slate-500 bg-slate-100';
           if (count === 6) {
@@ -1348,7 +1381,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
             title = 'Qualified Assistant';
             titleColor = 'text-amber-700 bg-amber-100 border-amber-200';
           }
-          
+
           return { count, pct, title, titleColor };
         };
 
@@ -1360,13 +1393,13 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
 
         // Apply filters
         const filteredStaff = eligibleStaff.filter(staff => {
-          const matchesSearch = staff.name.toLowerCase().includes(progressSearch.toLowerCase()) || 
-                                staff.role.toLowerCase().includes(progressSearch.toLowerCase());
-          
+          const matchesSearch = staff.name.toLowerCase().includes(progressSearch.toLowerCase()) ||
+            staff.role.toLowerCase().includes(progressSearch.toLowerCase());
+
           // Map 'Sound (Audio)' to 'Audio'
           const filterDiv = progressFilterDivision === 'Sound (Audio)' ? 'Audio' : progressFilterDivision;
           const matchesDiv = progressFilterDivision === 'All' || staff.division === filterDiv;
-          
+
           return matchesSearch && matchesDiv;
         });
 
@@ -1387,7 +1420,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
         const handleToggleCompetency = (staffId: string, compKey: string) => {
           const currentStaff = staffList.find(s => s.id === staffId);
           if (!currentStaff) return;
-          
+
           if (!canVerifyFor(currentStaff)) {
             alert('Akses Ditolak: Anda tidak memiliki wewenang untuk memverifikasi staff divisi ini.');
             return;
@@ -1451,7 +1484,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
 
         return (
           <div className="space-y-6 font-sans">
-            
+
             {/* POLICY OVERVIEW BANNER */}
             <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-6 rounded-xl border border-slate-800 shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 p-8 opacity-10">
@@ -1497,7 +1530,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                   </button>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-11 gap-2.5 items-stretch relative">
                 {[
                   { name: 'Program', desc: 'Regulasi Dasar' },
@@ -1551,7 +1584,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
 
             {/* DIRECTORY GRID AND DETAIL DRAWER */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
+
               {/* FILTERABLE LIST OF EMPLOYEES */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
@@ -1594,7 +1627,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                     filteredStaff.map(staff => {
                       const progress = getStaffProgress(staff.id);
                       const isSelected = selectedStaffId === staff.id;
-                      
+
                       return (
                         <div
                           key={staff.id}
@@ -1603,11 +1636,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                             setQuizActive(false);
                             setQuizCompleted(false);
                           }}
-                          className={`p-4 rounded-xl border text-left cursor-pointer transition-all space-y-3.5 relative ${
-                            isSelected 
-                              ? 'bg-indigo-50/40 border-indigo-500 shadow-sm' 
-                              : 'bg-white border-slate-100 hover:border-slate-300 shadow-sm'
-                          }`}
+                          className={`p-4 rounded-xl border text-left cursor-pointer transition-all space-y-3.5 relative ${isSelected
+                            ? 'bg-indigo-50/40 border-indigo-500 shadow-sm'
+                            : 'bg-white border-slate-100 hover:border-slate-300 shadow-sm'
+                            }`}
                         >
                           {/* Top row */}
                           <div className="flex items-start justify-between">
@@ -1615,13 +1647,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                               <h4 className="font-bold text-slate-900 text-sm leading-tight">{staff.name}</h4>
                               <p className="text-[10px] text-slate-400 font-mono font-medium">{staff.role} • Divisi {staff.division === 'Audio' ? 'Sound (Audio)' : staff.division}</p>
                             </div>
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide border ${
-                              staff.division === 'Audio' ? 'bg-red-50 text-red-700 border-red-200' :
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide border ${staff.division === 'Audio' ? 'bg-red-50 text-red-700 border-red-200' :
                               staff.division === 'Lighting' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                              staff.division === 'Multimedia' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                              staff.division === 'Videotron' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                              'bg-orange-50 text-orange-700 border-orange-200'
-                            }`}>
+                                staff.division === 'Multimedia' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                  staff.division === 'Videotron' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                    'bg-orange-50 text-orange-700 border-orange-200'
+                              }`}>
                               {staff.division === 'Audio' ? 'Sound' : staff.division}
                             </span>
                           </div>
@@ -1636,11 +1667,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                             </div>
                             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                               <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  progress.count === 6 ? 'bg-emerald-500' :
+                                className={`h-full rounded-full transition-all duration-500 ${progress.count === 6 ? 'bg-emerald-500' :
                                   progress.count >= 4 ? 'bg-indigo-500' :
-                                  progress.count >= 2 ? 'bg-amber-500' : 'bg-slate-400'
-                                }`}
+                                    progress.count >= 2 ? 'bg-amber-500' : 'bg-slate-400'
+                                  }`}
                                 style={{ width: `${progress.pct}%` }}
                               ></div>
                             </div>
@@ -1678,7 +1708,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                   </div>
                 ) : (
                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-6 sticky top-6">
-                    
+
                     {/* Drawer Header */}
                     <div className="pb-4 border-b border-slate-100 space-y-2">
                       <div className="flex items-start justify-between">
@@ -1735,7 +1765,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                                 const hasAnswered = quizAnswers.length > quizCurrentIndex;
                                 const isSelected = quizAnswers[quizCurrentIndex] === oIdx;
                                 const isCorrect = QUIZ_QUESTIONS[quizCurrentIndex].correctIndex === oIdx;
-                                
+
                                 let optClass = 'border-slate-200 bg-white hover:border-slate-300';
                                 if (hasAnswered) {
                                   if (isSelected && isCorrect) optClass = 'border-emerald-500 bg-emerald-50/80 text-emerald-950 font-semibold';
@@ -1859,7 +1889,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Metrik Penilaian Kelayakan:</h4>
-                          
+
                           {/* Staff Self Testing Trigger button */}
                           <button
                             onClick={() => {
@@ -1885,29 +1915,26 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                             return (
                               <div
                                 key={comp.key}
-                                className={`p-3 rounded-lg border text-left transition-all flex items-start gap-3 relative ${
-                                  isVerified 
-                                    ? 'bg-emerald-50/40 border-emerald-200' 
-                                    : 'bg-white border-slate-100 hover:border-slate-200'
-                                }`}
+                                className={`p-3 rounded-lg border text-left transition-all flex items-start gap-3 relative ${isVerified
+                                  ? 'bg-emerald-50/40 border-emerald-200'
+                                  : 'bg-white border-slate-100 hover:border-slate-200'
+                                  }`}
                               >
-                                <div className={`p-1.5 rounded-md mt-0.5 ${
-                                  isVerified ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'
-                                }`}>
+                                <div className={`p-1.5 rounded-md mt-0.5 ${isVerified ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'
+                                  }`}>
                                   <Zap className="w-4 h-4" />
                                 </div>
 
                                 <div className="space-y-1.5 flex-1 min-w-0">
                                   <div className="flex items-start justify-between gap-1">
                                     <h5 className="font-bold text-slate-800 text-[11px] leading-snug">{idx + 1}. {comp.title}</h5>
-                                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase ${
-                                      isVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'
-                                    }`}>
+                                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase ${isVerified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'
+                                      }`}>
                                       {isVerified ? 'PASSED' : 'PENDING'}
                                     </span>
                                   </div>
                                   <p className="text-[10px] text-slate-500 leading-relaxed">{comp.desc}</p>
-                                  
+
                                   {isVerified && (
                                     <div className="text-[9px] text-emerald-700 font-mono flex flex-wrap gap-x-2 bg-emerald-50/80 p-1.5 rounded border border-emerald-100">
                                       <span>✅ Approved: <strong className="font-semibold">{compStatus.verifiedBy}</strong></span>
@@ -1921,11 +1948,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                                       <button
                                         type="button"
                                         onClick={() => handleToggleCompetency(selectedStaff.id, comp.key)}
-                                        className={`px-2.5 py-1 text-[9px] font-bold rounded cursor-pointer border flex items-center gap-1.5 transition-all ${
-                                          isVerified 
-                                            ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200' 
-                                            : 'bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700'
-                                        }`}
+                                        className={`px-2.5 py-1 text-[9px] font-bold rounded cursor-pointer border flex items-center gap-1.5 transition-all ${isVerified
+                                          ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                          : 'bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700'
+                                          }`}
                                       >
                                         {isVerified ? (
                                           <>✕ Batalkan Persetujuan</>
@@ -1992,8 +2018,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
           const codeMatch = sch.assetCode.toLowerCase().includes(maintenanceSearch.toLowerCase());
           const notesMatch = (sch.notes || '').toLowerCase().includes(maintenanceSearch.toLowerCase());
           const matchesSearch = nameMatch || codeMatch || notesMatch;
-          
-          const matchesDiv = maintenanceFilterDivision === 'All' || sch.assetCode.toLowerCase().includes(`-${maintenanceFilterDivision.substring(0,3).toLowerCase()}-`);
+
+          const matchesDiv = maintenanceFilterDivision === 'All' || sch.assetCode.toLowerCase().includes(`-${maintenanceFilterDivision.substring(0, 3).toLowerCase()}-`);
 
           const schMonth = getSchMonthKey(sch);
           const matchesMonth = !activeMonth || activeMonth === 'all' || !schMonth || schMonth === activeMonth;
@@ -2006,15 +2032,15 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
           const descMatch = (wo.description || '').toLowerCase().includes(maintenanceSearch.toLowerCase());
           const picMatch = (wo.pic || '').toLowerCase().includes(maintenanceSearch.toLowerCase());
           const matchesSearch = titleMatch || descMatch || picMatch;
-          
-          const matchesDiv = maintenanceFilterDivision === 'All' || 
-                             wo.division === maintenanceFilterDivision ||
-                             (maintenanceFilterDivision === 'Audio' && wo.division === 'Audio') ||
-                             (maintenanceFilterDivision === 'Lighting' && wo.division === 'Lighting') ||
-                             (maintenanceFilterDivision === 'Videotron' && wo.division === 'Videotron') ||
-                             (maintenanceFilterDivision === 'Multimedia' && wo.division === 'Multimedia') ||
-                             (maintenanceFilterDivision === 'Gudang' && wo.division === 'Gudang') ||
-                             (maintenanceFilterDivision === 'Service' && wo.division === 'Service');
+
+          const matchesDiv = maintenanceFilterDivision === 'All' ||
+            wo.division === maintenanceFilterDivision ||
+            (maintenanceFilterDivision === 'Audio' && wo.division === 'Audio') ||
+            (maintenanceFilterDivision === 'Lighting' && wo.division === 'Lighting') ||
+            (maintenanceFilterDivision === 'Videotron' && wo.division === 'Videotron') ||
+            (maintenanceFilterDivision === 'Multimedia' && wo.division === 'Multimedia') ||
+            (maintenanceFilterDivision === 'Gudang' && wo.division === 'Gudang') ||
+            (maintenanceFilterDivision === 'Service' && wo.division === 'Service');
 
           const woMonth = getWoMonthKey(wo);
           const matchesMonth = !activeMonth || activeMonth === 'all' || !woMonth || woMonth === activeMonth;
@@ -2041,7 +2067,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
           try {
             localStorage.setItem('riz_work_orders_v2', JSON.stringify(updated));
             localStorage.setItem('riz_work_orders', JSON.stringify(updated));
-          } catch (e) {}
+          } catch (e) { }
           window.dispatchEvent(new Event('storage'));
         };
 
@@ -2190,7 +2216,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
 
             {/* Addition Form (Inline and Interactive) */}
             {showAddForm && (
-              <form 
+              <form
                 onSubmit={handleAddNewMaintenanceItem}
                 className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4"
               >
@@ -2364,11 +2390,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                     key={div}
                     type="button"
                     onClick={() => setMaintenanceFilterDivision(div)}
-                    className={`px-3 py-1 rounded-full text-[10px] font-extrabold transition-all cursor-pointer ${
-                      maintenanceFilterDivision === div
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
+                    className={`px-3 py-1 rounded-full text-[10px] font-extrabold transition-all cursor-pointer ${maintenanceFilterDivision === div
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
                   >
                     {div === 'All' ? 'SEMUA DIVISI' : div.toUpperCase()}
                   </button>
@@ -2378,7 +2403,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
 
             {/* Three Columns Dashboard Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
+
               {/* COLUMN 1: MAINTENANCE RUTIN (PREVENTIVE) */}
               <div className="space-y-4">
                 <div className="p-3 bg-blue-50/60 border border-blue-100 rounded-lg flex items-center justify-between">
@@ -2402,15 +2427,14 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                       const isDone = sch.status === 'Done';
 
                       return (
-                        <div 
+                        <div
                           key={sch.id}
-                          className={`p-4 rounded-xl border transition-all relative group bg-white ${
-                            isDone 
-                              ? 'border-emerald-100 opacity-70' 
-                              : isOverdue 
-                                ? 'border-rose-200 bg-rose-50/20' 
-                                : 'border-slate-100 hover:border-slate-200'
-                          }`}
+                          className={`p-4 rounded-xl border transition-all relative group bg-white ${isDone
+                            ? 'border-emerald-100 opacity-70'
+                            : isOverdue
+                              ? 'border-rose-200 bg-rose-50/20'
+                              : 'border-slate-100 hover:border-slate-200'
+                            }`}
                         >
                           <div className="flex items-start justify-between gap-1.5 mb-2">
                             <div>
@@ -2419,13 +2443,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                               </span>
                               <h4 className="font-extrabold text-slate-800 text-xs mt-1">{sch.assetName}</h4>
                             </div>
-                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
-                              isDone 
-                                ? 'bg-emerald-100 text-emerald-800' 
-                                : isOverdue 
-                                  ? 'bg-rose-100 text-rose-800' 
-                                  : 'bg-blue-100 text-blue-800'
-                            }`}>
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${isDone
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : isOverdue
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-blue-100 text-blue-800'
+                              }`}>
                               {sch.status}
                             </span>
                           </div>
@@ -2500,13 +2523,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                       const isHigh = wo.priority === 'Tinggi';
 
                       return (
-                        <div 
+                        <div
                           key={wo.id}
-                          className={`p-4 rounded-xl border transition-all relative bg-white ${
-                            isCompleted 
-                              ? 'border-emerald-100 opacity-70' 
-                              : 'border-slate-100 hover:border-slate-200 shadow-xs'
-                          }`}
+                          className={`p-4 rounded-xl border transition-all relative bg-white ${isCompleted
+                            ? 'border-emerald-100 opacity-70'
+                            : 'border-slate-100 hover:border-slate-200 shadow-xs'
+                            }`}
                         >
                           <div className="flex items-start justify-between gap-1.5 mb-1.5">
                             <div>
@@ -2515,13 +2537,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                               </span>
                               <h4 className="font-extrabold text-slate-800 text-xs mt-1">{wo.title}</h4>
                             </div>
-                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
-                              isCompleted 
-                                ? 'bg-emerald-100 text-emerald-800' 
-                                : isHigh 
-                                  ? 'bg-rose-100 text-rose-800' 
-                                  : 'bg-amber-100 text-amber-800'
-                            }`}>
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${isCompleted
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : isHigh
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-amber-100 text-amber-800'
+                              }`}>
                               {wo.status}
                             </span>
                           </div>
@@ -2537,8 +2558,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                               <span className="font-black text-indigo-600">{wo.progress}%</span>
                             </div>
                             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                              <div 
-                                className="bg-indigo-600 h-1.5 rounded-full transition-all duration-300" 
+                              <div
+                                className="bg-indigo-600 h-1.5 rounded-full transition-all duration-300"
                                 style={{ width: `${wo.progress}%` }}
                               ></div>
                             </div>
@@ -2556,9 +2577,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                           </div>
 
                           <div className="flex items-center justify-between gap-2 pt-1">
-                            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8px] font-extrabold uppercase ${
-                              isHigh ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
-                            }`}>
+                            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8px] font-extrabold uppercase ${isHigh ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
+                              }`}>
                               ⚡ Prioritas: {wo.priority}
                             </span>
 
@@ -2623,13 +2643,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                       const isHigh = wo.priority === 'Tinggi';
 
                       return (
-                        <div 
+                        <div
                           key={wo.id}
-                          className={`p-4 rounded-xl border transition-all relative bg-white ${
-                            isCompleted 
-                              ? 'border-emerald-100 opacity-70' 
-                              : 'border-slate-100 hover:border-slate-200 shadow-xs'
-                          }`}
+                          className={`p-4 rounded-xl border transition-all relative bg-white ${isCompleted
+                            ? 'border-emerald-100 opacity-70'
+                            : 'border-slate-100 hover:border-slate-200 shadow-xs'
+                            }`}
                         >
                           <div className="flex items-start justify-between gap-1.5 mb-1.5">
                             <div>
@@ -2638,13 +2657,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                               </span>
                               <h4 className="font-extrabold text-slate-800 text-xs mt-1">{wo.title}</h4>
                             </div>
-                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
-                              isCompleted 
-                                ? 'bg-emerald-100 text-emerald-800' 
-                                : isPending 
-                                  ? 'bg-rose-100 text-rose-800' 
-                                  : 'bg-amber-100 text-amber-800'
-                            }`}>
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${isCompleted
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : isPending
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-amber-100 text-amber-800'
+                              }`}>
                               {wo.status}
                             </span>
                           </div>
@@ -2665,9 +2683,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                           </div>
 
                           <div className="flex items-center justify-between gap-2 pt-1">
-                            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8px] font-extrabold uppercase ${
-                              isHigh ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
-                            }`}>
+                            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[8px] font-extrabold uppercase ${isHigh ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
+                              }`}>
                               ⚡ Prioritas: {wo.priority}
                             </span>
 

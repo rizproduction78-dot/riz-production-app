@@ -18,7 +18,7 @@ import {
   INITIAL_FREELANCE_WORKERS
 } from './data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from './data/september2026Schedule';
-import { getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from './data/staffSchedules';
+import { getActiveMonthKey, ALL_MONTHLY_SCHEDULES, formatMonthLabel } from './data/staffSchedules';
 import { isStaffMatch } from './utils/kpiCalculator';
 
 import LoginScreen from './components/LoginScreen';
@@ -100,10 +100,19 @@ export default function App() {
     return saved && saved !== 'assets' ? saved : 'dashboard';
   });
 
-  // Active Month for multi-month schedule system (Default: Oktober 2026 / 2026-10)
+  // Active Month for multi-month schedule system (Default: Bulan Kalender Aktif)
   const [activeMonth, setActiveMonth] = useState<string>(() => {
+    const currentCalendarMonth = getActiveMonthKey();
+    const lastCalendarMonth = localStorage.getItem('riz_last_calendar_month');
     const saved = localStorage.getItem('riz_active_month');
-    return saved || '2026-10';
+    if (lastCalendarMonth !== currentCalendarMonth) {
+      try {
+        localStorage.setItem('riz_last_calendar_month', currentCalendarMonth);
+        localStorage.setItem('riz_active_month', currentCalendarMonth);
+      } catch (e) {}
+      return currentCalendarMonth;
+    }
+    return saved || currentCalendarMonth;
   });
 
   const handleActiveMonthChange = (monthKey: string) => {
@@ -330,14 +339,27 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference (100% authentic multi-month tabulation)
-  const REF_SYNC_KEY = 'riz_ref_synced_v62_october_exact_gsheet_unified';
+  const REF_SYNC_KEY = 'riz_ref_synced_v64_november_december_multi_month';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
-    // Reset local caches to exact authentic reference dataset
-    localStorage.setItem('riz_findings_v2', JSON.stringify(INITIAL_FINDINGS));
-    localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(INITIAL_DAILY_TASKS));
-    localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(INITIAL_LOGBOOK_ENTRIES));
-    localStorage.setItem('riz_daily_reports_v2', JSON.stringify(INITIAL_DAILY_REPORTS));
-    localStorage.setItem('riz_work_orders_v2', JSON.stringify(INITIAL_WORK_ORDERS));
+    const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        const existing: T[] = raw ? JSON.parse(raw) : [];
+        const map = new Map<string, T>();
+        if (Array.isArray(existing)) {
+          existing.forEach(item => { if (item?.id) map.set(item.id, item); });
+        }
+        canonical.forEach(item => { if (item?.id) map.set(item.id, item); });
+        return Array.from(map.values());
+      } catch {
+        return canonical;
+      }
+    };
+    localStorage.setItem('riz_findings_v2', JSON.stringify(mergeById(INITIAL_FINDINGS, 'riz_findings_v2')));
+    localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(mergeById(INITIAL_DAILY_TASKS, 'riz_daily_tasks_v2')));
+    localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(mergeById(INITIAL_LOGBOOK_ENTRIES, 'riz_logbook_entries_v2')));
+    localStorage.setItem('riz_daily_reports_v2', JSON.stringify(mergeById(INITIAL_DAILY_REPORTS, 'riz_daily_reports_v2')));
+    localStorage.setItem('riz_work_orders_v2', JSON.stringify(mergeById(INITIAL_WORK_ORDERS, 'riz_work_orders_v2')));
     localStorage.setItem('riz_master_staff_list', JSON.stringify(STAFF_LIST));
     localStorage.setItem('riz_freelance_workers', JSON.stringify(INITIAL_FREELANCE_WORKERS));
     ALL_MONTHLY_SCHEDULES.forEach(sch => {
@@ -1553,6 +1575,7 @@ export default function App() {
       <LoginScreen
         onLogin={setCurrentUser}
         onLogActivity={handleLogActivity}
+        staffList={staffList}
       />
     );
   }
@@ -1916,6 +1939,11 @@ export default function App() {
                 className="text-xs font-bold text-indigo-950 bg-transparent focus:outline-none cursor-pointer"
                 title="Pilih periode kerja aktif untuk seluruh panel navigasi"
               >
+                {!['2026-12', '2026-11', '2026-10', '2026-09', '2026-08', '2026-07', '2026-06', '2026-05', 'all'].includes(activeMonth) && (
+                  <option value={activeMonth}>{formatMonthLabel(activeMonth)}</option>
+                )}
+                <option value="2026-12">Desember 2026</option>
+                <option value="2026-11">November 2026</option>
                 <option value="2026-10">Oktober 2026</option>
                 <option value="2026-09">September 2026</option>
                 <option value="2026-08">Agustus 2026</option>
@@ -2082,6 +2110,8 @@ export default function App() {
             isSyncingSheet={isSyncingSheet}
             lastSheetPull={lastSheetPull}
             sheetPullMessage={sheetPullMessage}
+            activeMonth={activeMonth}
+            onActiveMonthChange={handleActiveMonthChange}
           />
         )}
 

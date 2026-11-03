@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { STAFF_LIST, getMasterStaffList, normalizeStaffMaster } from '../data';
 import { Staff } from '../types';
-import { LogIn, Shield, User, Key, ClipboardList, Package, Award, LayoutDashboard, X, Lock } from 'lucide-react';
+import { LogIn, Shield, User, Key, ClipboardList, Package, Award, LayoutDashboard, X, Lock, CheckCircle, RotateCcw, AlertCircle } from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc } from '../lib/cloudSync';
 
 interface LoginScreenProps {
@@ -21,13 +21,18 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
   const [error, setError] = useState('');
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [modalMode, setModalMode] = useState<'change' | 'forgot'>('change');
   const [reqStaffId, setReqStaffId] = useState('');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [reqError, setReqError] = useState('');
   const [reqSuccess, setReqSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [successStaffName, setSuccessStaffName] = useState('');
 
   const [localStaffList, setLocalStaffList] = useState<Staff[]>(() => getMasterStaffList());
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Keep synced with cloud and prop updates
   useEffect(() => {
@@ -53,7 +58,7 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
   const rawStaffList = (propsStaffList && propsStaffList.length > 0) ? propsStaffList : localStaffList;
   const activeStaffList = normalizeStaffMaster(rawStaffList);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStaffId) {
       setError('Silakan pilih nama staff terlebih dahulu.');
@@ -68,52 +73,217 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
 
     // Check against custom password or fallback (case-insensitive & trim whitespace)
     const expectedPassword = staff.password || 'riz123';
-    if (password.trim().toLowerCase() !== expectedPassword.toLowerCase()) {
-      setError('Password salah! Silakan coba lagi.');
+    const inputPassword = password.trim();
+
+    if (inputPassword.toLowerCase() === expectedPassword.toLowerCase()) {
+      onLogActivity(staff.name, `${staff.division} - ${staff.role}`, 'Mencoba login berhasil');
+      onLogin(staff);
       return;
     }
 
-    onLogActivity(staff.name, `${staff.division} - ${staff.role}`, 'Mencoba login berhasil');
-    onLogin(staff);
+    // Fallback real-time ke Supabase jika password lokal tidak cocok
+    // (Menjamin staf yang baru disetujui ganti password langsung bisa login seketika dari perangkat/browser manapun)
+    setIsLoggingIn(true);
+    setError('');
+    try {
+      const { supabase, isSupabaseConfigured } = await import('../lib/supabase');
+      if (isSupabaseConfigured && supabase) {
+        const { data: remoteRow, error: remoteErr } = await supabase
+          .from('master_staff')
+          .select('*')
+          .eq('id', staff.id)
+          .maybeSingle();
+
+        if (remoteRow && !remoteErr) {
+          const remotePw = remoteRow.password || 'riz123';
+          if (inputPassword.toLowerCase() === remotePw.toLowerCase()) {
+            const { formatFromSupabase } = await import('../lib/supabaseSync');
+            const formatted = formatFromSupabase('master_staff', remoteRow) as Staff;
+            const mergedStaff: Staff = { ...staff, ...formatted, password: remotePw };
+
+            // Update cache lokal langsung
+            try {
+              const saved = localStorage.getItem('riz_master_staff_list');
+              let list = saved ? JSON.parse(saved) : [];
+              if (Array.isArray(list)) {
+                const idx = list.findIndex((s: any) => s.id === staff.id);
+                if (idx >= 0) list[idx] = { ...list[idx], ...mergedStaff };
+                else list.unshift(mergedStaff);
+                localStorage.setItem('riz_master_staff_list', JSON.stringify(list));
+              }
+            } catch {}
+
+            setLocalStaffList(prev => prev.map(s => s.id === staff.id ? mergedStaff : s));
+            onLogActivity(staff.name, `${staff.division} - ${staff.role}`, 'Mencoba login berhasil (sinkronisasi cloud)');
+            onLogin(mergedStaff);
+            setIsLoggingIn(false);
+            return;
+          }
+        }
+      }
+    } catch (cloudErr) {
+      console.warn('Real-time password check fallback error:', cloudErr);
+    } finally {
+      setIsLoggingIn(false);
+    }
+
+    setError('Password salah! Silakan coba lagi.');
   };
 
-  const handlePasswordRequest = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setReqError('');
     setReqSuccess(false);
 
-    if (!reqStaffId || !oldPassword || !newPassword) {
-      setReqError('Harap lengkapi semua bidang.');
+    if (!reqStaffId) {
+      setReqError('Silakan pilih nama staff terlebih dahulu.');
       return;
     }
 
     const staff = activeStaffList.find((s) => s.id === reqStaffId);
     if (!staff) {
-      setReqError('Staff tidak ditemukan.');
+      setReqError('Data staff tidak ditemukan.');
       return;
     }
 
-    const expectedPassword = staff.password || 'riz123';
-    if (oldPassword.trim().toLowerCase() !== expectedPassword.toLowerCase()) {
-      setReqError('Password lama salah.');
-      return;
-    }
+    // MODE 1: GANTI PASSWORD LANGSUNG (Verifikasi Password Lama)
+    if (modalMode === 'change') {
+      if (!oldPassword) {
+        setReqError('Silakan masukkan password lama Anda.');
+        return;
+      }
+      if (!newPassword) {
+        setReqError('Silakan masukkan password baru.');
+        return;
+      }
+      if (newPassword.trim().length < 4) {
+        setReqError('Password baru minimal 4 karakter.');
+        return;
+      }
+      if (!confirmPassword) {
+        setReqError('Silakan ulangi password baru pada kolom konfirmasi.');
+        return;
+      }
+      if (newPassword.trim() !== confirmPassword.trim()) {
+        setReqError('Konfirmasi password baru tidak cocok!');
+        return;
+      }
 
-    try {
-      await saveCloudDoc('master_staff', reqStaffId, { passwordRequest: newPassword });
+      const expectedPassword = staff.password || 'riz123';
+      if (oldPassword.trim().toLowerCase() !== expectedPassword.toLowerCase()) {
+        setReqError('Password lama salah! Jika Anda lupa password lama, silakan gunakan opsi "Lupa Password".');
+        return;
+      }
+
+      if (newPassword.trim().toLowerCase() === expectedPassword.toLowerCase()) {
+        setReqError('Password baru tidak boleh sama dengan password saat ini.');
+        return;
+      }
+
       try {
-        const saved = localStorage.getItem('riz_master_staff_list');
-        if (saved) {
-          const list = JSON.parse(saved);
-          const next = list.map((s: any) => s.id === reqStaffId ? { ...s, passwordRequest: newPassword } : s);
-          localStorage.setItem('riz_master_staff_list', JSON.stringify(next));
+        const cleanNewPassword = newPassword.trim();
+        const updatedStaff: Staff = {
+          ...staff,
+          password: cleanNewPassword,
+          passwordRequest: '' // Bersihkan antrean pengajuan lama jika ada
+        };
+
+        // 1. Simpan ke sistem cloud & cache dengan data staf lengkap
+        await saveCloudDoc('master_staff', reqStaffId, updatedStaff, staff.name);
+
+        // 2. Perbarui localStorage secara sinkron
+        try {
+          const saved = localStorage.getItem('riz_master_staff_list');
+          let list = saved ? JSON.parse(saved) : [];
+          if (Array.isArray(list)) {
+            const idx = list.findIndex((s: any) => s.id === reqStaffId);
+            if (idx >= 0) {
+              list[idx] = { ...list[idx], ...updatedStaff };
+            } else {
+              list.unshift(updatedStaff);
+            }
+          } else {
+            list = [updatedStaff];
+          }
+          localStorage.setItem('riz_master_staff_list', JSON.stringify(list));
+        } catch (err) {
+          console.warn('LocalStorage error:', err);
         }
-      } catch {}
-      setReqSuccess(true);
-      setOldPassword('');
-      setNewPassword('');
-    } catch (err) {
-      setReqError('Gagal mengirim pengajuan. Coba lagi.');
+
+        // 3. Perbarui state lokal LoginScreen
+        setLocalStaffList(prev => {
+          const next = prev.map(s => s.id === reqStaffId ? updatedStaff : s);
+          return normalizeStaffMaster(next);
+        });
+
+        // 4. Catat aktivitas audit
+        onLogActivity(staff.name, `${staff.division} - ${staff.role}`, 'Mengganti password akun (langsung aktif)');
+
+        // 5. Pre-fill login screen dengan nama staf & password baru
+        setSelectedStaffId(reqStaffId);
+        setPassword(cleanNewPassword);
+        setError('');
+
+        setSuccessStaffName(staff.name);
+        setSuccessMessage(`Password untuk ${staff.name} berhasil diubah dan langsung aktif! Anda dapat langsung masuk sekarang.`);
+        setReqSuccess(true);
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } catch (err) {
+        console.error('Error updating password:', err);
+        setReqError('Gagal mengubah password. Silakan periksa koneksi internet Anda.');
+      }
+    } 
+    // MODE 2: LUPA PASSWORD / AJUKAN GANTI PASSWORD KE ADMIN
+    else {
+      try {
+        let desiredPw = '';
+        if (newPassword.trim()) {
+          if (newPassword.trim().length < 4) {
+            setReqError('Password baru yang diinginkan minimal 4 karakter.');
+            return;
+          }
+          if (newPassword.trim() !== confirmPassword.trim()) {
+            setReqError('Konfirmasi password baru tidak cocok!');
+            return;
+          }
+          desiredPw = newPassword.trim();
+        }
+
+        const requestValue = desiredPw || 'RESET_REQUEST_DEFAULT';
+        const updatedStaff: Staff = {
+          ...staff,
+          passwordRequest: requestValue
+        };
+
+        await saveCloudDoc('master_staff', reqStaffId, updatedStaff, staff.name);
+
+        try {
+          const saved = localStorage.getItem('riz_master_staff_list');
+          if (saved) {
+            const list = JSON.parse(saved);
+            const next = list.map((s: any) => s.id === reqStaffId ? { ...s, passwordRequest: requestValue } : s);
+            localStorage.setItem('riz_master_staff_list', JSON.stringify(next));
+          }
+        } catch {}
+
+        const logMsg = desiredPw 
+          ? `Mengajukan permohonan ganti password baru ke Admin` 
+          : 'Mengajukan permohonan reset password ke default ke Admin';
+        onLogActivity(staff.name, `${staff.division} - ${staff.role}`, logMsg);
+
+        setSuccessStaffName(staff.name);
+        const successTxt = desiredPw
+          ? `Permohonan ganti password baru untuk ${staff.name} telah dikirim ke Admin. Setelah disetujui di Admin Panel, Anda dapat langsung masuk menggunakan password baru tersebut.`
+          : `Permohonan reset password untuk ${staff.name} telah dikirim ke Admin. Admin (Fahrul / Syalsa / Seno) dapat mengembalikan password Anda ke default (riz123) melalui Admin Panel.`;
+        setSuccessMessage(successTxt);
+        setReqSuccess(true);
+        setNewPassword('');
+        setConfirmPassword('');
+      } catch (err) {
+        setReqError('Gagal mengirim pengajuan reset. Coba lagi.');
+      }
     }
   };
 
@@ -283,21 +453,52 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
             <div>
               <button
                 type="submit"
-                className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm"
+                disabled={isLoggingIn}
+                className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-sm disabled:opacity-75 cursor-pointer"
               >
                 <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                  <LogIn className="h-4 w-4 text-indigo-400 group-hover:text-indigo-300" />
+                  {isLoggingIn ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <LogIn className="h-4 w-4 text-indigo-400 group-hover:text-indigo-300" />
+                  )}
                 </span>
-                Masuk ke Sistem
+                {isLoggingIn ? 'Memverifikasi Cloud...' : 'Masuk ke Sistem'}
               </button>
             </div>
-            <div className="text-center mt-4">
+            <div className="text-center mt-4 flex items-center justify-center gap-3 text-xs">
               <button
                 type="button"
-                onClick={() => setShowPasswordModal(true)}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                onClick={() => {
+                  setModalMode('change');
+                  setReqStaffId(selectedStaffId || '');
+                  setOldPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                  setReqError('');
+                  setReqSuccess(false);
+                  setShowPasswordModal(true);
+                }}
+                className="font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
               >
-                Ajukan Ganti Password
+                Ganti Password
+              </button>
+              <span className="text-slate-300">•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalMode('forgot');
+                  setReqStaffId(selectedStaffId || '');
+                  setOldPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                  setReqError('');
+                  setReqSuccess(false);
+                  setShowPasswordModal(true);
+                }}
+                className="font-medium text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+              >
+                Lupa Password?
               </button>
             </div>
           </form>
@@ -308,92 +509,196 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
         </div>
       </div>
 
-      {/* Password Change Request Modal */}
+      {/* Password Management Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-100">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="font-display font-bold text-slate-800 flex items-center gap-2">
-                <Lock className="w-5 h-5 text-indigo-500" />
-                Ajukan Ganti Password
+              <h3 className="font-display font-bold text-slate-800 flex items-center gap-2 text-sm">
+                <Lock className="w-4 h-4 text-indigo-500" />
+                {modalMode === 'change' ? 'Ganti Password Akun' : 'Lupa Password / Reset'}
               </h3>
               <button
                 type="button"
                 onClick={() => setShowPasswordModal(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Sub-tab navigation */}
+            {!reqSuccess && (
+              <div className="flex border-b border-slate-100 bg-slate-50/60 p-1.5 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalMode('change');
+                    setReqError('');
+                  }}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    modalMode === 'change'
+                      ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/60'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Ganti Password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalMode('forgot');
+                    setReqError('');
+                  }}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    modalMode === 'forgot'
+                      ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/60'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Lupa Password?
+                </button>
+              </div>
+            )}
             
             <div className="p-6">
               {reqSuccess ? (
-                <div className="text-center py-6 space-y-4">
-                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                    <Shield className="w-8 h-8" />
+                <div className="text-center py-4 space-y-4">
+                  <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                    <CheckCircle className="w-7 h-7" />
                   </div>
-                  <h4 className="text-lg font-bold text-slate-800">Pengajuan Berhasil</h4>
-                  <p className="text-sm text-slate-600">
-                    Pengajuan ganti password Anda telah dikirim dan menunggu persetujuan Admin.
+                  <h4 className="text-base font-bold text-slate-800">
+                    {modalMode === 'change' ? 'Password Berhasil Diubah & Aktif!' : 'Permintaan Reset Terkirim!'}
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto">
+                    {successMessage}
                   </p>
                   <button
                     type="button"
-                    onClick={() => setShowPasswordModal(false)}
-                    className="w-full mt-4 bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                    onClick={() => {
+                      setShowPasswordModal(false);
+                      setReqSuccess(false);
+                    }}
+                    className="w-full mt-2 bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer text-xs"
                   >
-                    Tutup
+                    {modalMode === 'change' ? 'Masuk ke Sistem Sekarang' : 'Tutup'}
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handlePasswordRequest} className="space-y-4">
+                <form onSubmit={handlePasswordSubmit} className="space-y-3.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Nama Staff</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Pilih Nama Staf</label>
                     <select
                       value={reqStaffId}
                       onChange={(e) => setReqStaffId(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
                     >
-                      <option value="">-- Pilih Nama --</option>
+                      <option value="">-- Pilih Staf --</option>
                       {activeStaffList.map(s => (
-                        <option key={s.id} value={s.id}>{s.name} ({s.division})</option>
+                        <option key={s.id} value={s.id}>{s.name} ({s.division} - {s.role})</option>
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Password Lama</label>
-                    <input
-                      type="password"
-                      value={oldPassword}
-                      onChange={(e) => setOldPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Password Baru</label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
+
+                  {modalMode === 'change' ? (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Password Lama <span className="text-[10px] text-slate-400 font-normal">(Default: riz123)</span>
+                        </label>
+                        <input
+                          type="password"
+                          placeholder="Masukkan password saat ini"
+                          value={oldPassword}
+                          onChange={(e) => setOldPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Password Baru</label>
+                        <input
+                          type="password"
+                          placeholder="Minimal 4 karakter"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Konfirmasi Password Baru</label>
+                        <input
+                          type="password"
+                          placeholder="Ketik ulang password baru"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-amber-50 border border-amber-200/70 rounded-xl text-amber-900 text-xs space-y-1.5 leading-relaxed">
+                        <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Pengajuan Ganti Password / Reset</span>
+                        </div>
+                        <p className="text-[11px] text-amber-700">
+                          Ketik password baru yang Anda inginkan di bawah agar disetujui Admin, atau kosongkan jika ingin mereset password ke default (<span className="font-mono font-bold">riz123</span>).
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Password Baru yang Diinginkan <span className="text-[10px] text-slate-400 font-normal">(Opsional)</span>
+                        </label>
+                        <input
+                          type="password"
+                          placeholder="Kosongkan jika ingin reset ke riz123"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
+                        />
+                      </div>
+
+                      {newPassword.trim().length > 0 && (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Konfirmasi Password Baru</label>
+                          <input
+                            type="password"
+                            placeholder="Ketik ulang password baru"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {reqError && (
-                    <div className="text-red-600 text-xs bg-red-50 p-2 rounded-lg border border-red-100 font-medium">
-                      {reqError}
+                    <div className="text-red-600 text-xs bg-red-50 p-2.5 rounded-lg border border-red-100 font-medium flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                      <span>{reqError}</span>
                     </div>
                   )}
 
                   <div className="pt-2">
                     <button
                       type="submit"
-                      className="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                      className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer text-xs flex items-center justify-center gap-1.5"
                     >
-                      Ajukan Perubahan
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>
+                        {modalMode === 'change'
+                          ? 'Simpan & Aktifkan Password Baru'
+                          : (newPassword.trim() ? 'Kirim Pengajuan Password ke Admin' : 'Kirim Permintaan Reset ke Default')}
+                      </span>
                     </button>
-                    <p className="text-[11px] text-slate-500 text-center mt-3 font-medium">
-                      Lupa password yang sudah diubah? Silakan hubungi Admin / Fahrul untuk mengembalikan password ke default (<span className="font-mono font-bold text-indigo-600">riz123</span>).
-                    </p>
+                    {modalMode === 'change' && (
+                      <p className="text-[10px] text-slate-400 text-center mt-2.5">
+                        Password baru langsung aktif seketika setelah disimpan tanpa menunggu persetujuan Admin.
+                      </p>
+                    )}
                   </div>
                 </form>
               )}

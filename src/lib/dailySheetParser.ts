@@ -178,20 +178,33 @@ const INDONESIAN_MONTH_MAP: Record<string, string> = {
   'mei': '05', 'may': '05',
   'juni': '06', 'june': '06', 'jun': '06',
   'juli': '07', 'july': '07', 'jul': '07',
-  'agustus': '08', 'august': '08', 'ags': '08', 'aug': '08',
+  'agustus': '08', 'august': '08', 'ags': '08', 'agt': '08', 'aug': '08',
   'september': '09', 'sep': '09', 'sept': '09',
   'oktober': '10', 'october': '10', 'okt': '10', 'oct': '10',
-  'november': '11', 'nov': '11',
+  'november': '11', 'nopember': '11', 'nov': '11', 'nop': '11',
   'desember': '12', 'december': '12', 'des': '12', 'dec': '12',
 };
 
 /**
  * Normalisasi dan parse teks tanggal Indonesia/Inggris menjadi format YYYY-MM-DD.
  */
-export function parseIndonesianDate(raw: string): string | null {
+export function parseIndonesianDate(raw: string, fallbackMonthKey?: string): string | null {
   if (!raw || typeof raw !== 'string') return null;
-  const clean = raw.trim().replace(/^['"\s]+|['"\s]+$/g, '');
+  let clean = raw.trim().replace(/^['"\s]+|['"\s]+$/g, '');
   if (!clean) return null;
+
+  // Cek format Google Visualization Date(YYYY, M, D) dimana M adalah 0-indexed
+  const gvizDateMatch = clean.match(/^Date\(\s*(\d{4})\s*,\s*(\d{1,2})\s*,\s*(\d{1,2})/i);
+  if (gvizDateMatch) {
+    const year = gvizDateMatch[1];
+    const monthNum = parseInt(gvizDateMatch[2], 10) + 1;
+    const month = String(monthNum).padStart(2, '0');
+    const day = gvizDateMatch[3].padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // Hapus awalan nama hari jika ada (e.g., "Senin, 2 November 2026" atau "Minggu - 1 November 2026")
+  clean = clean.replace(/^(senin|selasa|rabu|kamis|jumat|jum'at|sabtu|minggu|ahad|mon|tue|wed|thu|fri|sat|sun)[a-z]*\s*[,/-]?\s*/i, '').trim();
 
   // Cek format ISO YYYY-MM-DD
   const isoMatch = clean.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
@@ -202,12 +215,25 @@ export function parseIndonesianDate(raw: string): string | null {
     return `${year}-${month}-${day}`;
   }
 
-  // Cek format teks: e.g. "1 Oktober 2026", "03 oktober 2026"
-  const textMatch = clean.match(/^(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})/);
+  // Cek format DD/MM/YYYY atau DD-MM-YYYY
+  const dmySlashMatch = clean.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+  if (dmySlashMatch) {
+    const p1 = parseInt(dmySlashMatch[1], 10);
+    const p2 = parseInt(dmySlashMatch[2], 10);
+    const year = dmySlashMatch[3];
+    // Jika p2 <= 12, anggap DD/MM/YYYY; jika p2 > 12 dan p1 <= 12, anggap MM/DD/YYYY
+    const day = (p2 <= 12 ? p1 : p2).toString().padStart(2, '0');
+    const month = (p2 <= 12 ? p2 : p1).toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // Cek format teks: e.g. "1 Oktober 2026", "03 november 2026", "1-2 November 2026", atau "1 November"
+  const textMatch = clean.match(/^(\d{1,2})(?:\s*[-–s/d.]+\s*\d{1,2})?\s+([a-zA-Z]+)(?:\s+(\d{4}))?/);
   if (textMatch) {
     const day = textMatch[1].padStart(2, '0');
     const monthName = textMatch[2].toLowerCase();
-    const year = textMatch[3];
+    const defaultYear = fallbackMonthKey && /^\d{4}/.test(fallbackMonthKey) ? fallbackMonthKey.slice(0, 4) : '2026';
+    const year = textMatch[3] || defaultYear;
     const month = INDONESIAN_MONTH_MAP[monthName];
     if (month) {
       return `${year}-${month}-${day}`;
@@ -248,9 +274,9 @@ export function checkIsQc(text: string): boolean {
  *       teksnya digabung ke activity/notes, BUKAN laporan baru.
  * - R6: QC hanya dihitung untuk kata kunci inspeksi/checklist resmi.
  */
-export function parseDailySheet(rows: SheetRow[]): ParsedEntry[] {
+export function parseDailySheet(rows: SheetRow[], fallbackMonthKey?: string): ParsedEntry[] {
   const entries: ParsedEntry[] = [];
-  let lastDate: string = '';
+  let lastDate: string = fallbackMonthKey && /^\d{4}-\d{2}$/.test(fallbackMonthKey) ? `${fallbackMonthKey}-01` : '';
 
   for (const row of rows) {
     const cells = row.cells || [];
@@ -264,7 +290,7 @@ export function parseDailySheet(rows: SheetRow[]): ParsedEntry[] {
 
     // R3: Tanggal
     if (rawDate) {
-      const parsedDate = parseIndonesianDate(rawDate);
+      const parsedDate = parseIndonesianDate(rawDate, fallbackMonthKey);
       if (parsedDate) {
         lastDate = parsedDate;
       }
@@ -365,8 +391,8 @@ export const OFFICIAL_GSHEET_TABS: Record<string, { label: string; gid: string }
   '2026-08': { label: 'Agustus 2026', gid: '1894783738' },
   '2026-09': { label: 'September 2026', gid: '1869844599' },
   '2026-10': { label: 'Oktober 2026', gid: '1340328886' },
-  '2026-11': { label: 'November 2026', gid: '1463883290' },
-  '2026-12': { label: 'Desember 2026', gid: '646140708' },
+  '2026-11': { label: 'November 2026', gid: '7916507' },
+  '2026-12': { label: 'Desember 2026', gid: '368237370' },
 };
 
 /**
@@ -400,29 +426,43 @@ export function extractNormalizedDailySheetRows(rawRows: string[][]): SheetRow[]
     }));
   }
 
-  // Baris subheader di bawahnya memuat Crew, SOUND, LIGHTING, dsb
+  // Baris header utama dan subheader di bawahnya memuat Crew, SOUND, LIGHTING, dsb
+  const mainHeaderRow = rawRows[headerRowIdx] || [];
   const subHeaderRow = rawRows[headerRowIdx + 1] || [];
-  let colCrew = subHeaderRow.findIndex(cell => String(cell || '').trim().toLowerCase().includes('crew'));
+  const isTwoRowHeader = subHeaderRow.some(cell => {
+    const s = String(cell || '').trim().toLowerCase();
+    return s === 'crew' || s === 'sound' || s.includes('lighting') || s === 'led' || s.includes('multimedia');
+  });
+
+  const findColIdx = (predicate: (s: string) => boolean): number => {
+    if (isTwoRowHeader) {
+      const subIdx = subHeaderRow.findIndex(c => predicate(String(c || '').trim().toLowerCase()));
+      if (subIdx !== -1) return subIdx;
+    }
+    return mainHeaderRow.findIndex(c => predicate(String(c || '').trim().toLowerCase()));
+  };
+
+  let colCrew = findColIdx(s => s.includes('crew'));
   if (colCrew === -1) colCrew = colTanggal + 1;
 
-  let colSound = subHeaderRow.findIndex(cell => String(cell || '').trim().toLowerCase().includes('sound'));
+  let colSound = findColIdx(s => s.includes('sound'));
   if (colSound === -1) colSound = colCrew + 1;
 
-  let colLighting = subHeaderRow.findIndex(cell => String(cell || '').trim().toLowerCase().includes('light'));
+  let colLighting = findColIdx(s => s.includes('light'));
   if (colLighting === -1) colLighting = colSound + 1;
 
-  let colLed = subHeaderRow.findIndex(cell => String(cell || '').trim().toLowerCase().includes('led'));
+  let colLed = findColIdx(s => s.includes('led'));
   if (colLed === -1) colLed = colLighting + 1;
 
-  let colMM = subHeaderRow.findIndex(cell => String(cell || '').trim().toLowerCase().includes('multi'));
+  let colMM = findColIdx(s => s.includes('multi'));
   if (colMM === -1) colMM = colLed + 1;
 
   // Remark / Keterangan bisa berada di baris header atas atau baris subheader
-  let colRemark = rawRows[headerRowIdx].findIndex(cell => {
+  let colRemark = mainHeaderRow.findIndex(cell => {
     const str = String(cell || '').trim().toLowerCase();
     return str.includes('remark') || str.includes('keterangan');
   });
-  if (colRemark === -1) {
+  if (colRemark === -1 && isTwoRowHeader) {
     colRemark = subHeaderRow.findIndex(cell => {
       const str = String(cell || '').trim().toLowerCase();
       return str.includes('remark') || str.includes('keterangan');
@@ -430,8 +470,9 @@ export function extractNormalizedDailySheetRows(rawRows: string[][]): SheetRow[]
   }
   if (colRemark === -1) colRemark = colMM + 1;
 
-  // Data baris operasional dimulai tepat setelah subheader
-  const dataRows = rawRows.slice(headerRowIdx + 2).filter(row => row && row.some(c => String(c || '').trim() !== ''));
+  // Data baris operasional dimulai tepat setelah header/subheader
+  const dataStartOffset = isTwoRowHeader ? 2 : 1;
+  const dataRows = rawRows.slice(headerRowIdx + dataStartOffset).filter(row => row && row.some(c => String(c || '').trim() !== ''));
 
   return dataRows.map((row, idx) => {
     const cells = [
@@ -441,10 +482,11 @@ export function extractNormalizedDailySheetRows(rawRows: string[][]): SheetRow[]
       row[colLighting] ? String(row[colLighting]).trim() : '',
       row[colLed] ? String(row[colLed]).trim() : '',
       row[colMM] ? String(row[colMM]).trim() : '',
-      row[colRemark] ? String(row[colRemark]).trim() : ''
+      row[colRemark] ? String(row[colRemark]).trim() : '',
+      ...(row[colRemark + 1] ? [String(row[colRemark + 1]).trim()] : [])
     ];
     return {
-      rowNumber: idx + headerRowIdx + 3,
+      rowNumber: idx + headerRowIdx + dataStartOffset + 1,
       cells
     };
   });

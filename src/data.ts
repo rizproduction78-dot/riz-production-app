@@ -210,8 +210,41 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
       canonicalStaff.id = 'staff-syalsa';
     }
 
-    // Overwrite or update in staffMap
-    // Overwrite or update in staffMap
+    // Ensure baseStaff canonical properties are preserved if blanked or corrupted
+    const baseStaff = STAFF_LIST.find(def => def.id === canonicalId);
+    if (baseStaff) {
+      canonicalStaff = {
+        ...baseStaff,
+        ...canonicalStaff,
+        id: canonicalId,
+        name: (canonicalStaff.name && canonicalStaff.name.trim().length > 0) ? canonicalStaff.name : baseStaff.name,
+        fullName: (canonicalStaff.fullName && canonicalStaff.fullName.trim().length > 0) ? canonicalStaff.fullName : baseStaff.fullName,
+        nickname: canonicalStaff.nickname || baseStaff.nickname,
+        division: (canonicalStaff.division && canonicalStaff.division !== 'Umum') ? canonicalStaff.division : baseStaff.division,
+        role: (canonicalStaff.role && canonicalStaff.role !== 'Staff') ? canonicalStaff.role : baseStaff.role,
+        level: canonicalStaff.level || baseStaff.level,
+        email: canonicalStaff.email || baseStaff.email,
+        phone: canonicalStaff.phone || baseStaff.phone,
+      };
+    }
+
+    if (staffMap.has(canonicalId)) {
+      const existing = staffMap.get(canonicalId)!;
+      const effectivePassword = (canonicalStaff.password && canonicalStaff.password !== 'riz123')
+        ? canonicalStaff.password
+        : (existing.password || canonicalStaff.password || 'riz123');
+      const effectivePasswordRequest = (canonicalStaff.passwordRequest !== undefined && canonicalStaff.passwordRequest !== null)
+        ? canonicalStaff.passwordRequest
+        : (existing.passwordRequest || '');
+
+      canonicalStaff = {
+        ...existing,
+        ...canonicalStaff,
+        password: effectivePassword,
+        passwordRequest: effectivePasswordRequest,
+      };
+    }
+
     staffMap.set(canonicalId, { ...canonicalStaff, id: canonicalId });
   }
 

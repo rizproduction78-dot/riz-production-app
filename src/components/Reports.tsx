@@ -8,7 +8,7 @@ import { LogbookEntry, DailyReport, Finding, AttendanceLog, Staff, WorkOrder, Ma
 import { FileText, Printer, FileDown, Download, Calendar, Users, CheckSquare, RefreshCw, PenTool } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis, isStaffMatch, isStaffInGoogleSheet, isStaffInDivision } from '../utils/kpiCalculator';
-import { getScheduleByKey, StaffScheduleRow } from '../data/staffSchedules';
+import { getScheduleByKey, StaffScheduleRow, getActiveMonthKey } from '../data/staffSchedules';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { generateOrchestratedReport } from '../lib/ragVectorEngine';
 
@@ -36,7 +36,7 @@ export default function Reports({
   schedules = [],
   currentUser,
   onLogActivity,
-  activeMonth = '2026-10',
+  activeMonth = getActiveMonthKey(),
   onActiveMonthChange,
   onSyncDailyLogFromSheet,
   isSyncingSheet = false,
@@ -61,73 +61,76 @@ export default function Reports({
     return () => unsub();
   }, []);
 
+  const effectiveMonth = activeMonth === 'all' ? getActiveMonthKey() : activeMonth;
   const [reportType, setReportType] = useState<'Harian' | 'Mingguan' | 'Bulanan'>('Harian');
   const [targetMonth, setTargetMonth] = useState(() => {
-    return activeMonth;
+    return effectiveMonth;
   });
 
   // Update targetMonth when activeMonth changes
   useEffect(() => {
-    setTargetMonth(activeMonth);
-  }, [activeMonth]);
+    setTargetMonth(effectiveMonth);
+  }, [effectiveMonth]);
 
-  // Latest date ONLY within activeMonth — prevents cross-month date leakage
+  // Latest date ONLY within effectiveMonth — prevents cross-month date leakage
   // MUST be declared before useState and useEffect that reference it
   const latestDateInActiveMonth = React.useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     const dates = [
-      ...dailyReports.filter(r => r.date && r.date.startsWith(activeMonth)).map(r => r.date),
-      ...logbookEntries.filter(e => e.date && e.date.startsWith(activeMonth)).map(e => e.date)
+      ...dailyReports.filter(r => r.date && r.date.startsWith(effectiveMonth)).map(r => r.date),
+      ...logbookEntries.filter(e => e.date && e.date.startsWith(effectiveMonth)).map(e => e.date)
     ].filter(Boolean).sort();
     if (dates.length > 0) return dates[dates.length - 1];
-    if (today.startsWith(activeMonth)) return today;
-    return `${activeMonth}-01`;
-  }, [dailyReports, logbookEntries, activeMonth]);
+    if (today.startsWith(effectiveMonth)) return today;
+    return `${effectiveMonth}-01`;
+  }, [dailyReports, logbookEntries, effectiveMonth]);
 
   const [targetDate, setTargetDate] = useState(() => latestDateInActiveMonth);
-  const [targetStartDate, setTargetStartDate] = useState(() => `${activeMonth}-01`);
+  const [targetStartDate, setTargetStartDate] = useState(() => `${effectiveMonth}-01`);
   const [targetEndDate, setTargetEndDate] = useState(() => {
     const today = new Date().toISOString().split('T')[0];
-    return today.startsWith(activeMonth) ? today : `${activeMonth}-01`;
+    return today.startsWith(effectiveMonth) ? today : `${effectiveMonth}-01`;
   });
 
-  // Sync date pickers when activeMonth changes — prevents data locking to previous month
+  // Sync date pickers when effectiveMonth changes — prevents data locking to previous month
   useEffect(() => {
     setTargetDate(latestDateInActiveMonth);
-    setTargetStartDate(`${activeMonth}-01`);
+    setTargetStartDate(`${effectiveMonth}-01`);
     const today = new Date().toISOString().split('T')[0];
-    setTargetEndDate(today.startsWith(activeMonth) ? today : `${activeMonth}-01`);
-  }, [activeMonth, latestDateInActiveMonth]);
+    setTargetEndDate(today.startsWith(effectiveMonth) ? today : `${effectiveMonth}-01`);
+  }, [effectiveMonth, latestDateInActiveMonth]);
+
+  const isAllMonths = activeMonth === 'all' && targetMonth === 'all';
 
   // Dynamic filter for active daily reports based on Harian / Mingguan / Bulanan (Urutan Tanggal Terbaru di Atas)
   const activeDailyReports = dailyReports.filter(r => {
     if (reportType === 'Harian') return r.date === targetDate;
-    if (reportType === 'Mingguan') return r.date >= targetStartDate && r.date <= targetEndDate;
-    if (reportType === 'Bulanan') return r.date.startsWith(targetMonth);
+    if (reportType === 'Mingguan') return Boolean(r.date && r.date >= targetStartDate && r.date <= targetEndDate);
+    if (reportType === 'Bulanan') return isAllMonths || Boolean(r.date?.startsWith(targetMonth));
     return true;
   }).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 
   // Filter logbook entries based on report type (Harian vs Mingguan vs Bulanan - Urutan Tanggal Terbaru di Atas)
   const activeLogbookEntries = logbookEntries.filter(e => {
     if (reportType === 'Harian') return e.date === targetDate;
-    if (reportType === 'Mingguan') return e.date >= targetStartDate && e.date <= targetEndDate;
-    if (reportType === 'Bulanan') return e.date.startsWith(targetMonth);
+    if (reportType === 'Mingguan') return Boolean(e.date && e.date >= targetStartDate && e.date <= targetEndDate);
+    if (reportType === 'Bulanan') return isAllMonths || Boolean(e.date?.startsWith(targetMonth));
     return true;
   }).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 
   // Filter findings based on report type (Urutan Tanggal Terbaru di Atas)
   const activeFindings = findings.filter(f => {
-    if (reportType === 'Harian') return f.dateCreated === targetDate || f.targetDate === targetDate;
-    if (reportType === 'Mingguan') return (f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate >= targetStartDate && f.targetDate <= targetEndDate);
-    if (reportType === 'Bulanan') return f.dateCreated?.startsWith(targetMonth) || f.targetDate?.startsWith(targetMonth);
+    if (reportType === 'Harian') return f.dateCreated === targetDate || (f as any).date === targetDate || f.targetDate === targetDate;
+    if (reportType === 'Mingguan') return Boolean((f.dateCreated && f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate && f.targetDate >= targetStartDate && f.targetDate <= targetEndDate));
+    if (reportType === 'Bulanan') return isAllMonths || Boolean(f.dateCreated?.startsWith(targetMonth) || (f as any).date?.startsWith(targetMonth) || f.targetDate?.startsWith(targetMonth));
     return true;
   }).sort((a, b) => String(b.dateCreated || '').localeCompare(String(a.dateCreated || '')));
 
   // P3.1: Filter workOrders by report period (Urutan Tanggal Terbaru di Atas)
   const activeWorkOrders = workOrders.filter(w => {
-    if (reportType === 'Harian') return w.dateCreated === targetDate;
-    if (reportType === 'Mingguan') return w.dateCreated >= targetStartDate && w.dateCreated <= targetEndDate;
-    if (reportType === 'Bulanan') return w.dateCreated?.startsWith(targetMonth);
+    if (reportType === 'Harian') return w.dateCreated === targetDate || (w as any).date === targetDate || w.deadline === targetDate;
+    if (reportType === 'Mingguan') return Boolean((w.dateCreated && w.dateCreated >= targetStartDate && w.dateCreated <= targetEndDate) || (w.deadline && w.deadline >= targetStartDate && w.deadline <= targetEndDate));
+    if (reportType === 'Bulanan') return isAllMonths || Boolean(w.dateCreated?.startsWith(targetMonth) || (w as any).date?.startsWith(targetMonth) || w.deadline?.startsWith(targetMonth));
     return true;
   }).sort((a, b) => String(b.dateCreated || (b as any).date || '').localeCompare(String(a.dateCreated || (a as any).date || '')));
 
@@ -148,7 +151,7 @@ export default function Reports({
   const goodCondition = totalOkItems;
   const needRepair = totalNgItems;
   const solvedRepairs = activeFindings.filter(f => f.status === 'Close').length;
-  const pendingSpareparts = activeFindings.filter(f => f.status === 'Open' && f.issue.toLowerCase().includes('sparepart')).length;
+  const pendingSpareparts = activeFindings.filter(f => f.status === 'Open' && (f.issue || '').toLowerCase().includes('sparepart')).length;
 
   // Dynamic PM metrics for Reports
   const pmFromSchedules = schedules.filter(s => s.type === 'Preventive');
@@ -172,11 +175,12 @@ export default function Reports({
   // NOTE: Selalu gunakan data master (dailyReports, logbookEntries) bukan data filter active, agar KPI tetap berbobot bulanan meskipun sedang melihat report harian/mingguan.
   // Namun, WAJIB memfilter berdasarkan bulan yang dipilih (selectedMonthKey) agar data periode terpilih sinkron
   const selectedMonthKey = reportType === 'Bulanan' ? (targetMonth || activeMonth) : activeMonth;
-  const monthlyDailyReports = dailyReports.filter(r => r.date.startsWith(selectedMonthKey));
-  const monthlyLogbookEntries = logbookEntries.filter(e => e.date.startsWith(selectedMonthKey));
-  const monthlyFindings = findings.filter(f => f.dateCreated.startsWith(selectedMonthKey) || (f.targetDate && f.targetDate.startsWith(selectedMonthKey)));
-  const monthlyWorkOrders = workOrders.filter(w => w.dateCreated.startsWith(selectedMonthKey) || (w as any).date?.startsWith(selectedMonthKey) || w.deadline.startsWith(selectedMonthKey));
-  const monthlyDailyTasks = dailyTasks.filter(t => t.createdAt.startsWith(selectedMonthKey) || t.dueDate.startsWith(selectedMonthKey));
+  const isAllSelected = selectedMonthKey === 'all';
+  const monthlyDailyReports = dailyReports.filter(r => isAllSelected || r.date?.startsWith(selectedMonthKey));
+  const monthlyLogbookEntries = logbookEntries.filter(e => isAllSelected || e.date?.startsWith(selectedMonthKey));
+  const monthlyFindings = findings.filter(f => isAllSelected || f.dateCreated?.startsWith(selectedMonthKey) || (f as any).date?.startsWith(selectedMonthKey) || f.targetDate?.startsWith(selectedMonthKey));
+  const monthlyWorkOrders = workOrders.filter(w => isAllSelected || w.dateCreated?.startsWith(selectedMonthKey) || (w as any).date?.startsWith(selectedMonthKey) || w.deadline?.startsWith(selectedMonthKey));
+  const monthlyDailyTasks = dailyTasks.filter(t => isAllSelected || t.createdAt?.startsWith(selectedMonthKey) || t.dueDate?.startsWith(selectedMonthKey));
 
   const staffKpis = calculateAllStaffKpis(
     staffList,
@@ -364,7 +368,7 @@ export default function Reports({
       if (!dateStr) return false;
       if (reportType === 'Harian') return dateStr === targetDate;
       if (reportType === 'Mingguan') return dateStr >= targetStartDate && dateStr <= targetEndDate;
-      if (reportType === 'Bulanan') return dateStr.startsWith(targetMonth);
+      if (reportType === 'Bulanan') return isAllMonths || dateStr.startsWith(targetMonth);
       return true;
     };
 
@@ -591,7 +595,11 @@ export default function Reports({
               <input
                 type="month"
                 value={targetMonth}
-                onChange={(e) => setTargetMonth(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setTargetMonth(val);
+                  if (val && onActiveMonthChange) onActiveMonthChange(val);
+                }}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-mono"
               />
             </div>
@@ -1183,7 +1191,7 @@ export default function Reports({
                 <strong className="text-slate-800 uppercase text-[10px] font-mono block">Kendala {reportType === 'Harian' ? 'Hari Ini' : reportType === 'Mingguan' ? 'Minggu Ini' : 'Bulan Ini'}:</strong>
                 <p className="text-slate-600 mt-0.5">
                   {activeFindings.length > 0 
-                    ? `Ditemukan ${activeFindings.length} catatan kendala teknis: ${activeFindings.slice(0, 3).map(f => `${f.equipment}: ${f.issue.substring(0, 75)}`).join('. ')}.` 
+                    ? `Ditemukan ${activeFindings.length} catatan kendala teknis: ${activeFindings.slice(0, 3).map(f => `${f.equipment}: ${(f.issue || '').substring(0, 75)}`).join('. ')}.` 
                     : 'Tidak ada kendala operasional yang tercatat.'}
                 </p>
               </div>

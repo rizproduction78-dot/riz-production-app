@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { calculateAllStaffKpis, isStaffInDivision, isStaffMatch, isStaffInGoogleSheet } from '../utils/kpiCalculator';
-import { getScheduleByKey, StaffScheduleRow, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
+import { getScheduleByKey, StaffScheduleRow, ALL_MONTHLY_SCHEDULES, getActiveMonthKey, formatMonthLabel } from '../data/staffSchedules';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { Staff, MaintenanceSchedule } from '../types';
 
@@ -59,7 +59,7 @@ export default function Dashboard({
   schedules = [],
   currentUser,
   onNavigate,
-  activeMonth = '2026-10',
+  activeMonth = getActiveMonthKey(),
   onActiveMonthChange,
   onSyncDailyLogFromSheet,
   isSyncingSheet,
@@ -94,14 +94,25 @@ export default function Dashboard({
     return d.toISOString().split('T')[0];
   });
   const [targetMonth, setTargetMonth] = React.useState(() => {
-    const defaultSch = getScheduleByKey(activeMonth);
-    return defaultSch ? defaultSch.label : 'Oktober 2026';
+    return formatMonthLabel(activeMonth);
   });
 
-  // Update targetMonth when activeMonth changes
+  // Update targetMonth and date pickers when activeMonth changes
   React.useEffect(() => {
-    const defaultSch = getScheduleByKey(activeMonth);
-    if (defaultSch) setTargetMonth(defaultSch.label);
+    setTargetMonth(formatMonthLabel(activeMonth));
+    if (activeMonth && activeMonth !== 'all' && /^\d{4}-\d{2}$/.test(activeMonth)) {
+      const todayIso = new Date().toISOString().split('T')[0];
+      const monthDates = [
+        ...dailyReports.filter(r => r.date && r.date.startsWith(activeMonth)).map(r => r.date),
+        ...logbookEntries.filter(e => e.date && e.date.startsWith(activeMonth)).map(e => e.date)
+      ].filter(Boolean).sort();
+      const latestInMonth = monthDates.length > 0
+        ? monthDates[monthDates.length - 1]
+        : (todayIso.startsWith(activeMonth) ? todayIso : `${activeMonth}-01`);
+      setTargetDate(latestInMonth);
+      setTargetStartDate(`${activeMonth}-01`);
+      setTargetEndDate(latestInMonth);
+    }
   }, [activeMonth]);
 
   // Auto-sync Google Sheet saat Dashboard dimuat (baik di server internal maupun cloud)
@@ -133,27 +144,29 @@ export default function Dashboard({
     dailyReports.filter(r => r.date === today).length + 
     logbookEntries.filter(e => e.date === today).length;
 
+  const isAllMonths = activeMonth === 'all';
+
   // Filtered operational datasets based on chosen report type
   const activeDailyReports = React.useMemo(() => {
     if (activeTab === 'harian') return dailyReports.filter(r => r.date === today);
     if (activeTab === 'daily_report') return dailyReports.filter(r => r.date === targetDate);
-    if (activeTab === 'weekly_report') return dailyReports.filter(r => r.date >= targetStartDate && r.date <= targetEndDate);
-    return dailyReports.filter(r => r.date.startsWith(activeMonth)); // monthly_report & graphic_view
-  }, [dailyReports, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
+    if (activeTab === 'weekly_report') return dailyReports.filter(r => r.date && r.date >= targetStartDate && r.date <= targetEndDate);
+    return dailyReports.filter(r => isAllMonths || r.date?.startsWith(activeMonth)); // monthly_report & graphic_view
+  }, [dailyReports, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, today]);
 
   const activeLogbookEntries = React.useMemo(() => {
     if (activeTab === 'harian') return logbookEntries.filter(e => e.date === today);
     if (activeTab === 'daily_report') return logbookEntries.filter(e => e.date === targetDate);
-    if (activeTab === 'weekly_report') return logbookEntries.filter(e => e.date >= targetStartDate && e.date <= targetEndDate);
-    return logbookEntries.filter(e => e.date.startsWith(activeMonth)); // monthly_report & graphic_view
-  }, [logbookEntries, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
+    if (activeTab === 'weekly_report') return logbookEntries.filter(e => e.date && e.date >= targetStartDate && e.date <= targetEndDate);
+    return logbookEntries.filter(e => isAllMonths || e.date?.startsWith(activeMonth)); // monthly_report & graphic_view
+  }, [logbookEntries, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, today]);
 
   const activeFindings = React.useMemo(() => {
-    if (activeTab === 'harian') return findings.filter(f => f.dateCreated === today || f.targetDate === today);
-    if (activeTab === 'daily_report') return findings.filter(f => f.dateCreated === targetDate || f.targetDate === targetDate);
-    if (activeTab === 'weekly_report') return findings.filter(f => (f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate >= targetStartDate && f.targetDate <= targetEndDate));
-    return findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth))); // monthly_report & graphic_view
-  }, [findings, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
+    if (activeTab === 'harian') return findings.filter(f => f.dateCreated === today || (f as any).date === today || f.targetDate === today);
+    if (activeTab === 'daily_report') return findings.filter(f => f.dateCreated === targetDate || (f as any).date === targetDate || f.targetDate === targetDate);
+    if (activeTab === 'weekly_report') return findings.filter(f => (f.dateCreated && f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate && f.targetDate >= targetStartDate && f.targetDate <= targetEndDate));
+    return findings.filter(f => isAllMonths || f.dateCreated?.startsWith(activeMonth) || (f as any).date?.startsWith(activeMonth) || f.targetDate?.startsWith(activeMonth)); // monthly_report & graphic_view
+  }, [findings, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, today]);
 
   const activeWorkOrders = React.useMemo(() => {
     if (activeTab === 'harian') {
@@ -164,12 +177,12 @@ export default function Dashboard({
     }
     if (activeTab === 'weekly_report') {
       return workOrders.filter(w => 
-        (w.dateCreated >= targetStartDate && w.dateCreated <= targetEndDate) ||
-        (w.deadline >= targetStartDate && w.deadline <= targetEndDate)
+        (w.dateCreated && w.dateCreated >= targetStartDate && w.dateCreated <= targetEndDate) ||
+        (w.deadline && w.deadline >= targetStartDate && w.deadline <= targetEndDate)
       );
     }
-    return workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth)); // monthly_report
-  }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
+    return workOrders.filter(w => isAllMonths || w.dateCreated?.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline?.startsWith(activeMonth)); // monthly_report
+  }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, today]);
 
   const activeDailyTasks = React.useMemo(() => {
     if (activeTab === 'harian') {
@@ -180,12 +193,12 @@ export default function Dashboard({
     }
     if (activeTab === 'weekly_report') {
       return dailyTasks.filter(t => 
-        (t.createdAt >= targetStartDate && t.createdAt <= targetEndDate) ||
-        (t.dueDate >= targetStartDate && t.dueDate <= targetEndDate)
+        (t.createdAt && t.createdAt >= targetStartDate && t.createdAt <= targetEndDate) ||
+        (t.dueDate && t.dueDate >= targetStartDate && t.dueDate <= targetEndDate)
       );
     }
-    return dailyTasks.filter(t => t.createdAt.startsWith(activeMonth) || t.dueDate.startsWith(activeMonth)); // monthly_report
-  }, [dailyTasks, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, today]);
+    return dailyTasks.filter(t => isAllMonths || t.createdAt?.startsWith(activeMonth) || t.dueDate?.startsWith(activeMonth)); // monthly_report
+  }, [dailyTasks, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, today]);
 
   const activeSchedules = React.useMemo(() => {
     if (activeTab === 'harian') {
@@ -256,17 +269,17 @@ export default function Dashboard({
   const monthlyStaffKpis = React.useMemo(() => {
     return calculateAllStaffKpis(
       staffList,
-      dailyReports.filter(r => r.date.startsWith(activeMonth)),
-      logbookEntries.filter(e => e.date.startsWith(activeMonth)),
-      findings.filter(f => f.dateCreated.startsWith(activeMonth) || (f.targetDate && f.targetDate.startsWith(activeMonth))),
+      dailyReports.filter(r => isAllMonths || r.date?.startsWith(activeMonth)),
+      logbookEntries.filter(e => isAllMonths || e.date?.startsWith(activeMonth)),
+      findings.filter(f => isAllMonths || f.dateCreated?.startsWith(activeMonth) || (f as any).date?.startsWith(activeMonth) || f.targetDate?.startsWith(activeMonth)),
       undefined,
       undefined,
       getScheduleByKey(activeMonth)?.rows,
-      workOrders.filter(w => w.dateCreated.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline.startsWith(activeMonth)),
-      dailyTasks.filter(t => t.createdAt.startsWith(activeMonth) || t.dueDate.startsWith(activeMonth)),
+      workOrders.filter(w => isAllMonths || w.dateCreated?.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline?.startsWith(activeMonth)),
+      dailyTasks.filter(t => isAllMonths || (t.dueDate ? t.dueDate?.startsWith(activeMonth) : t.createdAt?.startsWith(activeMonth))),
       activeMonth
     );
-  }, [staffList, dailyReports, logbookEntries, findings, workOrders, dailyTasks, activeMonth]);
+  }, [staffList, dailyReports, logbookEntries, findings, workOrders, dailyTasks, activeMonth, isAllMonths]);
 
   // 2. Active Period Staff KPIs (Always use monthly for consistent grading, regardless of active tab view)
   const staffKpis = React.useMemo(() => {
@@ -594,7 +607,7 @@ export default function Dashboard({
       if (activeTab === 'harian') return dateStr === today;
       if (activeTab === 'daily_report') return dateStr === targetDate;
       if (activeTab === 'weekly_report') return dateStr >= targetStartDate && dateStr <= targetEndDate;
-      if (activeTab === 'monthly_report' || activeTab === 'graphic_view') return dateStr.startsWith(activeMonth);
+      if (activeTab === 'monthly_report' || activeTab === 'graphic_view') return isAllMonths || dateStr.startsWith(activeMonth);
       return true;
     };
 
@@ -1151,16 +1164,16 @@ export default function Dashboard({
                   onChange={(e) => {
                     const newKey = e.target.value;
                     if (onActiveMonthChange) onActiveMonthChange(newKey);
-                    const sch = getScheduleByKey(newKey);
-                    if (sch) setTargetMonth(sch.label);
+                    setTargetMonth(formatMonthLabel(newKey));
                   }}
                   className="bg-white border border-slate-300 text-xs font-bold text-slate-800 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm"
                 >
-                  {ALL_MONTHLY_SCHEDULES.map((sch) => (
+                  {[...ALL_MONTHLY_SCHEDULES].reverse().map((sch) => (
                     <option key={sch.key} value={sch.key}>
                       {sch.label}
                     </option>
                   ))}
+                  <option value="all">Semua Periode</option>
                 </select>
               )}
             </div>

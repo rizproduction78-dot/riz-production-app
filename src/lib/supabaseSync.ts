@@ -5,6 +5,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from './supabase';
+import { STAFF_LIST } from '../data';
 
 // Map collection names to Supabase table names
 const TABLE_MAP: Record<string, string> = {
@@ -49,24 +50,67 @@ function formatForSupabase(collectionName: string, docId: string, data: Record<s
   };
 
   switch (collectionName) {
-    case 'master_staff':
+    case 'master_staff': {
+      const canonical = STAFF_LIST.find(s => s.id === rowId);
+      let existingStaff: any = null;
+      if (typeof window !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('riz_master_staff_list');
+          if (cached) {
+            const list = JSON.parse(cached);
+            if (Array.isArray(list)) {
+              existingStaff = list.find((item: any) => String(item?.id) === String(rowId));
+            }
+          }
+        } catch {}
+      }
+
+      const name = (data.name && String(data.name).trim().length > 0)
+        ? data.name
+        : (existingStaff?.name || canonical?.name || '');
+      const fullName = data.fullName || data.full_name || existingStaff?.fullName || canonical?.fullName || name || null;
+      const nickname = data.nickname || existingStaff?.nickname || canonical?.nickname || null;
+      const division = (data.division && data.division !== 'Umum')
+        ? data.division
+        : (existingStaff?.division || canonical?.division || data.division || 'Umum');
+      const role = (data.role && data.role !== 'Staff')
+        ? data.role
+        : (existingStaff?.role || canonical?.role || data.role || 'Staff');
+      const level = data.level || existingStaff?.level || canonical?.level || 1;
+      const email = data.email || existingStaff?.email || canonical?.email || null;
+      const phone = data.phone || existingStaff?.phone || canonical?.phone || null;
+      const avatar = data.avatar || existingStaff?.avatar || canonical?.avatar || null;
+      const secondaryDivision = data.secondaryDivision || data.secondary_division || existingStaff?.secondaryDivision || canonical?.secondaryDivision || null;
+      const divisions = data.divisions || existingStaff?.divisions || canonical?.divisions || null;
+
+      // Handle password: if undefined in data, preserve existingStaff?.password
+      const password = data.password !== undefined
+        ? (data.password || null)
+        : (existingStaff?.password || null);
+
+      // Handle passwordRequest: if undefined in data, preserve existingStaff?.passwordRequest
+      const passwordRequest = data.passwordRequest !== undefined
+        ? (data.passwordRequest || null)
+        : (existingStaff?.passwordRequest || null);
+
       return {
         id: rowId,
-        name: data.name || '',
-        full_name: data.fullName || null,
-        nickname: data.nickname || null,
-        division: data.division || 'Umum',
-        secondary_division: data.secondaryDivision || null,
-        divisions: data.divisions || null,
-        role: data.role || 'Staff',
-        level: data.level || 1,
-        avatar: data.avatar || null,
-        phone: data.phone || null,
-        email: data.email || null,
-        password: data.password || null,
-        password_request: data.passwordRequest || null,
+        name,
+        full_name: fullName,
+        nickname,
+        division,
+        secondary_division: secondaryDivision,
+        divisions,
+        role,
+        level,
+        avatar,
+        phone,
+        email,
+        password,
+        password_request: passwordRequest,
         updated_at: new Date().toISOString(),
       };
+    }
 
     case 'daily_reports':
       return {
@@ -212,8 +256,8 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         avatar: row.avatar || undefined,
         phone: row.phone || undefined,
         email: row.email || undefined,
-        password: row.password || undefined,
-        passwordRequest: row.password_request || undefined,
+        password: row.password || 'riz123',
+        passwordRequest: row.password_request || '',
         _syncMeta: syncMeta
       };
 
@@ -492,7 +536,7 @@ export async function pullCollectionFromSupabase<T = any>(collectionName: string
                 } else {
                   const localUpdatedAt = local._syncMeta?.updatedAt ? new Date(local._syncMeta.updatedAt).getTime() : 0;
                   const remoteUpdatedAt = remote._syncMeta?.updatedAt ? new Date(remote._syncMeta.updatedAt).getTime() : 0;
-                  if (remoteUpdatedAt >= localUpdatedAt) {
+                  if (collectionName === 'master_staff' || remoteUpdatedAt >= localUpdatedAt) {
                     map.set(id, { ...local, ...remote });
                   }
                 }

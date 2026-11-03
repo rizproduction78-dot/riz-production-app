@@ -20,18 +20,14 @@ import puppeteer from 'puppeteer';
   }
 
   const stats = await page.evaluate(() => {
-    const rows = Array.from(document.querySelectorAll('tr'));
+    const rows = Array.from(document.querySelectorAll('tr')) as HTMLElement[];
     const totalRow = rows.find(r => r.innerText.includes('TOTAL AKUMULASI'));
     
-    const section05Heading = Array.from(document.querySelectorAll('h2')).find(h => h.innerText.includes('STATISTIK QC'));
-    const section05Card = section05Heading ? section05Heading.closest('.space-y-4') : null;
-
-    const section04Heading = Array.from(document.querySelectorAll('h2')).find(h => h.innerText.includes('PRODUKTIVITAS STAFF'));
-    const section04Card = section04Heading ? section04Heading.closest('.space-y-4, .bg-white, .rounded-xl, div') : null;
-    const section04Table = section04Heading ? section04Heading.parentElement?.querySelector('table') || document.querySelectorAll('table')[2] : null;
+    const section05Heading = (Array.from(document.querySelectorAll('h2')) as HTMLElement[]).find(h => h.innerText.includes('STATISTIK QC'));
+    const section05Card = section05Heading ? section05Heading.closest('.space-y-4') as HTMLElement : null;
 
     const staffRows = Array.from(document.querySelectorAll('table')).map(table => {
-      return Array.from(table.querySelectorAll('tbody tr')).map(tr => tr.innerText.replace(/\n/g, ' '));
+      return (Array.from(table.querySelectorAll('tbody tr')) as HTMLElement[]).map(tr => tr.innerText.replace(/\n/g, ' '));
     });
 
     return {

@@ -55,7 +55,7 @@ const panelsToTest = [
     )
   },
   {
-    name: '2. Dashboard Panel',
+    name: '2. Dashboard Panel (Default / Nov 2026)',
     render: () => renderToString(
       <Dashboard
         logbookEntries={INITIAL_LOGBOOK_ENTRIES}
@@ -65,7 +65,50 @@ const panelsToTest = [
         dailyTasks={INITIAL_DAILY_TASKS}
         currentUser={testAdminUser}
         onNavigate={() => {}}
+        activeMonth="2026-11"
       />
+    )
+  },
+  {
+    name: '2b. Dashboard Panel (Dec 2026)',
+    render: () => renderToString(
+      <Dashboard
+        logbookEntries={INITIAL_LOGBOOK_ENTRIES}
+        dailyReports={INITIAL_DAILY_REPORTS}
+        findings={INITIAL_FINDINGS}
+        workOrders={INITIAL_WORK_ORDERS}
+        dailyTasks={INITIAL_DAILY_TASKS}
+        currentUser={testAdminUser}
+        onNavigate={() => {}}
+        activeMonth="2026-12"
+      />
+    )
+  },
+  {
+    name: '2c. Dashboard Panel (Oct 2026 & All)',
+    render: () => renderToString(
+      <>
+        <Dashboard
+          logbookEntries={INITIAL_LOGBOOK_ENTRIES}
+          dailyReports={INITIAL_DAILY_REPORTS}
+          findings={INITIAL_FINDINGS}
+          workOrders={INITIAL_WORK_ORDERS}
+          dailyTasks={INITIAL_DAILY_TASKS}
+          currentUser={testAdminUser}
+          onNavigate={() => {}}
+          activeMonth="2026-10"
+        />
+        <Dashboard
+          logbookEntries={INITIAL_LOGBOOK_ENTRIES}
+          dailyReports={INITIAL_DAILY_REPORTS}
+          findings={INITIAL_FINDINGS}
+          workOrders={INITIAL_WORK_ORDERS}
+          dailyTasks={INITIAL_DAILY_TASKS}
+          currentUser={testAdminUser}
+          onNavigate={() => {}}
+          activeMonth="all"
+        />
+      </>
     )
   },
   {
@@ -81,6 +124,7 @@ const panelsToTest = [
         initialTasks={INITIAL_DAILY_TASKS}
         logbookEntries={INITIAL_LOGBOOK_ENTRIES}
         onAddLogbookEntry={() => {}}
+        activeMonth="2026-11"
       />
     )
   },
@@ -90,19 +134,38 @@ const panelsToTest = [
       <CareerCompetencyModule
         currentUser={testAdminUser}
         onLogActivity={dummyLogActivity}
-      />
-    )
-  },
-  {
-    name: '5. Kinerja Karyawan Panel',
-    render: () => renderToString(
-      <EmployeePerformanceModule
-        currentUser={testAdminUser}
         dailyReports={INITIAL_DAILY_REPORTS}
         logbookEntries={INITIAL_LOGBOOK_ENTRIES}
         findings={INITIAL_FINDINGS}
         workOrders={INITIAL_WORK_ORDERS}
+        dailyTasks={INITIAL_DAILY_TASKS}
+        activeMonth="2026-11"
       />
+    )
+  },
+  {
+    name: '5. Kinerja Karyawan Panel (Nov, Dec, Oct, All)',
+    render: () => renderToString(
+      <>
+        <EmployeePerformanceModule
+          currentUser={testAdminUser}
+          dailyReports={INITIAL_DAILY_REPORTS}
+          logbookEntries={INITIAL_LOGBOOK_ENTRIES}
+          findings={INITIAL_FINDINGS}
+          workOrders={INITIAL_WORK_ORDERS}
+          dailyTasks={INITIAL_DAILY_TASKS}
+          activeMonth="2026-11"
+        />
+        <EmployeePerformanceModule
+          currentUser={testAdminUser}
+          dailyReports={INITIAL_DAILY_REPORTS}
+          logbookEntries={INITIAL_LOGBOOK_ENTRIES}
+          findings={INITIAL_FINDINGS}
+          workOrders={INITIAL_WORK_ORDERS}
+          dailyTasks={INITIAL_DAILY_TASKS}
+          activeMonth="2026-12"
+        />
+      </>
     )
   },
   {
@@ -110,11 +173,13 @@ const panelsToTest = [
     render: () => renderToString(
       <Findings
         findings={INITIAL_FINDINGS}
+        workOrders={INITIAL_WORK_ORDERS}
         onAddFinding={() => {}}
         onUpdateFindingStatus={() => {}}
         onDeleteFinding={() => {}}
         currentUser={testAdminUser}
         onLogActivity={dummyLogActivity}
+        activeMonth="2026-11"
       />
     )
   },
@@ -193,15 +258,32 @@ const panelsToTest = [
     )
   },
   {
-    name: '13. Laporan & Ekspor Panel',
+    name: '13. Laporan & Ekspor Panel (Nov, Dec, Oct, All)',
     render: () => renderToString(
-      <Reports
-        logbookEntries={INITIAL_LOGBOOK_ENTRIES}
-        dailyReports={INITIAL_DAILY_REPORTS}
-        findings={INITIAL_FINDINGS}
-        currentUser={testAdminUser}
-        onLogActivity={dummyLogActivity}
-      />
+      <>
+        <Reports
+          logbookEntries={INITIAL_LOGBOOK_ENTRIES}
+          dailyReports={INITIAL_DAILY_REPORTS}
+          findings={INITIAL_FINDINGS}
+          workOrders={INITIAL_WORK_ORDERS}
+          dailyTasks={INITIAL_DAILY_TASKS}
+          schedules={INITIAL_MAINTENANCE_SCHEDULES}
+          currentUser={testAdminUser}
+          onLogActivity={dummyLogActivity}
+          activeMonth="2026-11"
+        />
+        <Reports
+          logbookEntries={INITIAL_LOGBOOK_ENTRIES}
+          dailyReports={INITIAL_DAILY_REPORTS}
+          findings={INITIAL_FINDINGS}
+          workOrders={INITIAL_WORK_ORDERS}
+          dailyTasks={INITIAL_DAILY_TASKS}
+          schedules={INITIAL_MAINTENANCE_SCHEDULES}
+          currentUser={testAdminUser}
+          onLogActivity={dummyLogActivity}
+          activeMonth="2026-12"
+        />
+      </>
     )
   },
   {

@@ -146,9 +146,11 @@ Semua agen yang beroperasi wajib mengadopsi standar kinerja berikut:
 Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terbaru berikut:
 
 1. **Sumber Referensi Resmi & GID Aktif:**
-   - URL Google Sheet Resmi: `https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=1340328886#gid=1340328886`
+   - URL Google Sheet Resmi: `https://docs.google.com/spreadsheets/d/1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA/edit?gid=7916507#gid=7916507`
    - Spreadsheet ID: `1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA`
-   - GID Tab Aktif Oktober 2026: `1340328886`
+   - GID Tab Oktober 2026: `1340328886`
+   - GID Tab Aktif November 2026: `7916507`
+   - GID Tab Desember 2026: `368237370`
 
 2. **Aturan Sinkronisasi Non-Destruktif (Safe Merge Protocol):**
    - Engine `agent_google_sheet_sync.ts` **dilarang keras** menghapus atau mengganti `CANONICAL_FIRESTORE_FINDINGS` dan `CANONICAL_FIRESTORE_WORK_ORDERS` menjadi array kosong (`[]`).
@@ -202,8 +204,8 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
       - Agustus 2026: GID `1894783738` (Month: `2026-08`)
       - September 2026: GID `1869844599` (Month: `2026-09`)
       - Oktober 2026: GID `1340328886` (Month: `2026-10`)
-      - November 2026: GID `1463883290` (Month: `2026-11`)
-      - Desember 2026: GID `646140708` (Month: `2026-12`)
+      - November 2026: GID `7916507` (Month: `2026-11`)
+      - Desember 2026: GID `368237370` (Month: `2026-12`)
     - **Normalisasi Dinamis Header (Wajib):** Pada tab bulan Mei s/d Agustus, kolom A kosong atau berisi nomor urut sehingga kolom Tanggal bergeser ke indeks 1 atau 2. Agen dan parser WAJIB menggunakan `extractNormalizedDailySheetRows` dari `src/lib/dailySheetParser.ts` untuk mendeteksi posisi `Tanggal` secara dinamis, bukan mengasumsikan kolom 0.
     - **Larangan Halusinasi, Data Sintetis & Gimmick:**
       - Dilarang mengarang baris kegiatan atau nama kru yang tidak tercatat di Google Sheet.

@@ -20,6 +20,16 @@ import {
   OKTOBER_2026_DAYS
 } from './oktober2026Schedule';
 
+import {
+  OFFICIAL_NOVEMBER_2026_SCHEDULE,
+  NOVEMBER_2026_DAYS
+} from './november2026Schedule';
+
+import {
+  OFFICIAL_DESEMBER_2026_SCHEDULE,
+  DESEMBER_2026_DAYS
+} from './desember2026Schedule';
+
 export type { StaffScheduleRow };
 export { SHIFT_LEGEND, SCHEDULE_NOTE };
 
@@ -159,7 +169,7 @@ export const SCHEDULE_OCT_2026: MonthlySchedule = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// NOVEMBER 2026 — Template
+// NOVEMBER 2026 — Official
 // ─────────────────────────────────────────────────────────────
 export const SCHEDULE_NOV_2026: MonthlySchedule = {
   key: '2026-11',
@@ -168,12 +178,12 @@ export const SCHEDULE_NOV_2026: MonthlySchedule = {
   label: 'November 2026',
   labelShort: 'Nov 2026',
   totalDays: 30,
-  days: generateMonthDays(2026, 11),
-  rows: buildTemplateRows(2026, 11)
+  days: NOVEMBER_2026_DAYS,
+  rows: OFFICIAL_NOVEMBER_2026_SCHEDULE
 };
 
 // ─────────────────────────────────────────────────────────────
-// DESEMBER 2026 — Template
+// DESEMBER 2026 — Official
 // ─────────────────────────────────────────────────────────────
 export const SCHEDULE_DEC_2026: MonthlySchedule = {
   key: '2026-12',
@@ -182,37 +192,98 @@ export const SCHEDULE_DEC_2026: MonthlySchedule = {
   label: 'Desember 2026',
   labelShort: 'Des 2026',
   totalDays: 31,
-  days: generateMonthDays(2026, 12),  // corrected: Dec has 31 days
-  rows: buildTemplateRows(2026, 12)
+  days: DESEMBER_2026_DAYS,
+  rows: OFFICIAL_DESEMBER_2026_SCHEDULE
 };
+
+function createDynamicSchedule(year: number, month: number): MonthlySchedule {
+  const key = `${year}-${String(month).padStart(2, '0')}`;
+  const days = generateMonthDays(year, month);
+  return {
+    key,
+    month,
+    year,
+    label: `${MONTH_NAMES_ID[month] || month} ${year}`,
+    labelShort: `${MONTH_NAMES_SHORT[month] || month} ${year}`,
+    totalDays: days.length,
+    days,
+    rows: buildTemplateRows(year, month)
+  };
+}
+
+export const SCHEDULE_MAY_2026: MonthlySchedule = createDynamicSchedule(2026, 5);
+export const SCHEDULE_JUN_2026: MonthlySchedule = createDynamicSchedule(2026, 6);
+export const SCHEDULE_JUL_2026: MonthlySchedule = createDynamicSchedule(2026, 7);
+export const SCHEDULE_AUG_2026: MonthlySchedule = createDynamicSchedule(2026, 8);
 
 // ─────────────────────────────────────────────────────────────
 // REGISTRY — semua jadwal yang tersedia
 // ─────────────────────────────────────────────────────────────
 export const ALL_MONTHLY_SCHEDULES: MonthlySchedule[] = [
+  SCHEDULE_MAY_2026,
+  SCHEDULE_JUN_2026,
+  SCHEDULE_JUL_2026,
+  SCHEDULE_AUG_2026,
   SCHEDULE_SEP_2026,
   SCHEDULE_OCT_2026,
   SCHEDULE_NOV_2026,
   SCHEDULE_DEC_2026
 ];
 
+const dynamicScheduleCache: Record<string, MonthlySchedule> = {};
+
 export function getScheduleByKey(key: string): MonthlySchedule | undefined {
-  return ALL_MONTHLY_SCHEDULES.find(s => s.key === key);
+  if (!key || key === 'all') return undefined;
+  const found = ALL_MONTHLY_SCHEDULES.find(s => s.key === key);
+  if (found) return found;
+  if (dynamicScheduleCache[key]) return dynamicScheduleCache[key];
+  const match = key.match(/^(\d{4})-(\d{2})$/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    if (month >= 1 && month <= 12) {
+      const generated = createDynamicSchedule(year, month);
+      dynamicScheduleCache[key] = generated;
+      return generated;
+    }
+  }
+  return undefined;
 }
 
 export function getScheduleByMonthYear(month: number, year: number): MonthlySchedule | undefined {
-  return ALL_MONTHLY_SCHEDULES.find(s => s.month === month && s.year === year);
+  const found = ALL_MONTHLY_SCHEDULES.find(s => s.month === month && s.year === year);
+  if (found) return found;
+  if (month >= 1 && month <= 12 && year >= 2020 && year <= 2100) {
+    const key = `${year}-${String(month).padStart(2, '0')}`;
+    return getScheduleByKey(key);
+  }
+  return undefined;
+}
+
+export function formatMonthLabel(key: string): string {
+  if (!key || key === 'all') return 'Semua Bulan';
+  const sched = getScheduleByKey(key);
+  if (sched) return sched.label;
+  const match = key.match(/^(\d{4})-(\d{2})$/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    if (month >= 1 && month <= 12) {
+      return `${MONTH_NAMES_ID[month]} ${year}`;
+    }
+  }
+  return key;
 }
 
 export function getCurrentMonthSchedule(): MonthlySchedule {
   const now = new Date();
   const found = getScheduleByMonthYear(now.getMonth() + 1, now.getFullYear());
-  return found || SCHEDULE_OCT_2026;
+  return found || SCHEDULE_NOV_2026;
 }
 
 export function getActiveMonthKey(): string {
   const now = new Date();
   const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const found = ALL_MONTHLY_SCHEDULES.find(s => s.key === key);
-  return found ? key : '2026-10';
+  const found = getScheduleByKey(key);
+  return found ? key : '2026-11';
 }

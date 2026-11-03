@@ -8,6 +8,7 @@ import { Finding, Division, Staff, WorkOrder, Asset } from '../types';
 import { STAFF_LIST, getMasterStaffList } from '../data';
 import { AlertTriangle, Plus, Search, Trash2, CheckCircle, Clock, Check, X, ShieldAlert, Wrench, ArrowRight, Activity, Filter, Sparkles, CheckSquare, User } from 'lucide-react';
 import { subscribeCloudCollection } from '../lib/cloudSync';
+import { getActiveMonthKey, formatMonthLabel } from '../data/staffSchedules';
 
 interface FindingsProps {
   findings: Finding[];
@@ -45,7 +46,7 @@ export default function Findings({
   currentUser,
   onLogActivity,
   initialSubTab = 'findings',
-  activeMonth = '2026-10',
+  activeMonth = getActiveMonthKey(),
   onActiveMonthChange,
 }: FindingsProps) {
   // Dynamic Master Staff List
@@ -453,7 +454,7 @@ export default function Findings({
             <span>Sinkronisasi Periode:</span>
           </span>
           <span className="font-bold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-md font-mono">
-            {activeMonth === 'all' ? 'Semua Periode' : activeMonth}
+            {activeMonth === 'all' ? 'Semua Periode' : formatMonthLabel(activeMonth)}
           </span>
           <span className="text-slate-300">•</span>
           <span className="text-slate-700 font-medium">

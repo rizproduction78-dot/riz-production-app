@@ -10,6 +10,7 @@ import { STAFF_LIST, QC_ITEMS_BY_DIVISION, getMasterStaffList } from '../data';
 import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';
 import { saveCloudDoc, deleteCloudDoc, subscribeCloudCollection } from '../lib/cloudSync';
 import { getStaffDivisions, isStaffInDivision } from '../utils/kpiCalculator';
+import { getActiveMonthKey, formatMonthLabel } from '../data/staffSchedules';
 import { compressImageFile } from '../utils/imageUtils';
 import {
   ClipboardList,
@@ -100,7 +101,7 @@ export default function LogTaskModule({
   onAddLogbookEntry,
   workOrders = [],
   initialSubTab = 'kanban',
-  activeMonth = '2026-10',
+  activeMonth = getActiveMonthKey(),
   onActiveMonthChange,
 }: LogTaskModuleProps) {
   const isManagement = Boolean(
@@ -680,7 +681,7 @@ export default function LogTaskModule({
             <span>Periode Data Terkoordinasi:</span>
           </span>
           <span className="font-bold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-md font-mono">
-            {activeMonth === 'all' ? 'Semua Periode' : activeMonth}
+            {activeMonth === 'all' ? 'Semua Periode' : formatMonthLabel(activeMonth)}
           </span>
           <span className="text-slate-300">•</span>
           <span className="text-slate-700 font-medium">

@@ -43,6 +43,7 @@ import {
   LongTermMemoryItem
 } from '../lib/ragVectorEngine';
 import { DailyReport, LogbookEntry, Finding, WorkOrder, Staff, Asset } from '../types';
+import { getActiveMonthKey, formatMonthLabel } from '../data/staffSchedules';
 
 interface AgenticOrchestratorModalProps {
   isOpen: boolean;
@@ -70,10 +71,11 @@ export default function AgenticOrchestratorModal({
   const [activeMode, setActiveMode] = useState<'consultation' | 'reporting' | 'memory'>('reporting');
   
   // Reporting State
+  const defaultPeriodLabel = formatMonthLabel(getActiveMonthKey());
   const [reportType, setReportType] = useState<'Harian' | 'Mingguan' | 'Bulanan'>('Bulanan');
-  const [periodInput, setPeriodInput] = useState('Oktober 2026');
+  const [periodInput, setPeriodInput] = useState(defaultPeriodLabel);
   const [orchestratedResult, setOrchestratedResult] = useState<OrchestratedReportResult | null>(() => {
-    return generateOrchestratedReport('Bulanan', 'Oktober 2026', {
+    return generateOrchestratedReport('Bulanan', defaultPeriodLabel, {
       dailyReports,
       logbookEntries,
       findings,
