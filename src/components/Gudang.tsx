@@ -648,6 +648,11 @@ export default function Gudang({
     .map(id => localAssets.find(a => a.id === id))
     .filter((a): a is Asset => Boolean(a));
 
+  // Filter untuk Tabel Ketersediaan & Alokasi Unit di Manajemen Gudang (Tahap 02)
+  const [warehouseUnitDivFilter, setWarehouseUnitDivFilter] = useState<'ALL' | 'Audio' | 'Lighting' | 'Multimedia' | 'Videotron'>('ALL');
+  const [warehouseUnitStatusFilter, setWarehouseUnitStatusFilter] = useState<'ALL' | 'SCHEDULED' | 'REPAIR' | 'AVAILABLE'>('ALL');
+  const [warehouseUnitSearch, setWarehouseUnitSearch] = useState('');
+
   // Real-time Cloud Subscription
   useEffect(() => {
     const unsub = subscribeCloudCollection<WarehouseLog>(
@@ -1327,103 +1332,244 @@ export default function Gudang({
         </>
       )}
 
-      {/* VIEW 1: WAREHOUSE ACTIVITY LOGS */}
-      {warehouseSubTab === 'logs' && (
+      {/* VIEW 1: WAREHOUSE UNIT ALLOCATION & ACTIVITY LOGS */}
+      {warehouseSubTab === 'logs' && (() => {
+        const assetsWithAvail = localAssets.map(asset => ({
+          asset,
+          avail: calculateInventoryAssetAvailability(asset, inventoryCalcCtx),
+          typeInfo: getInventoryAssetTypeInfo(asset)
+        }));
+
+        const unitsInRepairList = assetsWithAvail.filter(
+          item => item.avail.totalDamagedUnits > 0 || item.asset.location === 'Divisi SERVICE (Sedang Diperbaiki)' || item.asset.condition !== 'Baik'
+        );
+
+        const filteredWarehouseUnits = assetsWithAvail.filter(({ asset, avail, typeInfo }) => {
+          if (warehouseUnitDivFilter !== 'ALL' && asset.division !== warehouseUnitDivFilter) return false;
+          if (warehouseUnitStatusFilter === 'SCHEDULED' && avail.assignedUnits <= 0) return false;
+          if (warehouseUnitStatusFilter === 'REPAIR' && avail.totalDamagedUnits <= 0 && asset.condition === 'Baik' && asset.location !== 'Divisi SERVICE (Sedang Diperbaiki)') return false;
+          if (warehouseUnitStatusFilter === 'AVAILABLE' && avail.availableUnits <= 0) return false;
+          if (warehouseUnitSearch.trim()) {
+            const q = warehouseUnitSearch.toLowerCase().trim();
+            const matchJob = avail.assignedReasons.some(t => t.toLowerCase().includes(q));
+            const matchDamage = avail.damageReasons.some(s => s.toLowerCase().includes(q));
+            return (
+              asset.code.toLowerCase().includes(q) ||
+              asset.name.toLowerCase().includes(q) ||
+              asset.brand.toLowerCase().includes(q) ||
+              asset.division.toLowerCase().includes(q) ||
+              typeInfo.typeGroup.toLowerCase().includes(q) ||
+              matchJob ||
+              matchDamage
+            );
+          }
+          return true;
+        });
+
+        const scopedTableSummary = calculateInventorySummaryMetrics(
+          filteredWarehouseUnits.map(u => u.asset),
+          inventoryCalcCtx
+        );
+
+        return (
         <div className="space-y-6">
           
-          {/* Quick Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm text-center">
-              <div className="mx-auto w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
-                <ArrowDownLeft className="w-5 h-5" />
+          {/* 4 Kartu Utama Status Unit Gudang: Ready/Ada, Dijadwalkan, Dalam Proses Perbaikan, Sisa Unit untuk Penjadwalan Berikutnya */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button
+              type="button"
+              onClick={() => setWarehouseUnitStatusFilter('ALL')}
+              className={`p-4 bg-white border rounded-xl shadow-sm text-left transition-all cursor-pointer border-l-4 border-l-indigo-600 ${
+                warehouseUnitStatusFilter === 'ALL' ? 'ring-2 ring-indigo-500/30 border-indigo-200' : 'border-slate-100 hover:border-indigo-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <Boxes className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
+                  {localAssets.length} Jenis Alat
+                </span>
               </div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 font-mono">Barang Masuk</div>
-              <div className="font-extrabold text-xl text-slate-800 mt-1">
-                {warehouseLogs.filter(l => l.type === 'Masuk').reduce((acc, curr) => acc + curr.qty, 0)} Unit
+              <div className="text-[10px] uppercase font-bold text-slate-400 font-mono">
+                1. Unit Ready / Ada (Total Gudang)
               </div>
-            </div>
+              <div className="font-extrabold text-2xl text-slate-900 mt-1">
+                {overallInventorySummary.totalUnits} <span className="text-xs font-bold text-slate-500">Unit</span>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1">
+                Total seluruh unit peralatan yang dimiliki gudang.
+              </p>
+            </button>
 
-            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm text-center">
-              <div className="mx-auto w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mb-2">
-                <ArrowUpRight className="w-5 h-5" />
+            <button
+              type="button"
+              onClick={() => setWarehouseUnitStatusFilter(warehouseUnitStatusFilter === 'SCHEDULED' ? 'ALL' : 'SCHEDULED')}
+              className={`p-4 bg-white border rounded-xl shadow-sm text-left transition-all cursor-pointer border-l-4 border-l-amber-500 ${
+                warehouseUnitStatusFilter === 'SCHEDULED' ? 'ring-2 ring-amber-500/30 border-amber-300 bg-amber-50/20' : 'border-slate-100 hover:border-amber-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                  {assetsWithAvail.filter(x => x.avail.assignedUnits > 0).length} Jenis Terjadwal
+                </span>
               </div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 font-mono">Barang Keluar</div>
-              <div className="font-extrabold text-xl text-slate-800 mt-1">
-                {warehouseLogs.filter(l => l.type === 'Keluar').reduce((acc, curr) => acc + curr.qty, 0)} Unit
+              <div className="text-[10px] uppercase font-bold text-amber-700 font-mono">
+                2. Unit yang Dijadwalkan (Event/Job)
               </div>
-            </div>
+              <div className="font-extrabold text-2xl text-amber-700 mt-1">
+                {overallInventorySummary.assignedUnits} <span className="text-xs font-bold text-amber-600">Unit</span>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1">
+                Unit yang sedang dialokasikan pada jadwal penugasan kerja.
+              </p>
+            </button>
 
-            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm text-center">
-              <div className="mx-auto w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
-                <Truck className="w-5 h-5" />
+            <button
+              type="button"
+              onClick={() => setWarehouseUnitStatusFilter(warehouseUnitStatusFilter === 'REPAIR' ? 'ALL' : 'REPAIR')}
+              className={`p-4 bg-white border rounded-xl shadow-sm text-left transition-all cursor-pointer border-l-4 border-l-rose-500 ${
+                warehouseUnitStatusFilter === 'REPAIR' ? 'ring-2 ring-rose-500/30 border-rose-300 bg-rose-50/20' : 'border-slate-100 hover:border-rose-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <Wrench className="w-5 h-5 animate-pulse" />
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">
+                  {unitsInRepairList.length} Jenis Perbaikan
+                </span>
               </div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 font-mono">Loading (Out)</div>
-              <div className="font-extrabold text-xl text-slate-800 mt-1">
-                {warehouseLogs.filter(l => l.type === 'Loading').length} Event
+              <div className="text-[10px] uppercase font-bold text-rose-700 font-mono">
+                3. Dalam Proses Perbaikan (Servis)
               </div>
-            </div>
+              <div className="font-extrabold text-2xl text-rose-600 mt-1">
+                {overallInventorySummary.totalDamagedUnits} <span className="text-xs font-bold text-rose-500">Unit</span>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1">
+                Unit kendala/rusak berdasarkan report, temuan QC &amp; WO servis.
+              </p>
+            </button>
 
-            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm text-center">
-              <div className="mx-auto w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-2">
-                <Layers className="w-5 h-5" />
+            <button
+              type="button"
+              onClick={() => setWarehouseUnitStatusFilter(warehouseUnitStatusFilter === 'AVAILABLE' ? 'ALL' : 'AVAILABLE')}
+              className={`p-4 bg-white border rounded-xl shadow-sm text-left transition-all cursor-pointer border-l-4 border-l-emerald-500 ${
+                warehouseUnitStatusFilter === 'AVAILABLE' ? 'ring-2 ring-emerald-500/30 border-emerald-300 bg-emerald-50/20' : 'border-slate-100 hover:border-emerald-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                  Siap Pakai
+                </span>
               </div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 font-mono">Unloading (In)</div>
-              <div className="font-extrabold text-xl text-slate-800 mt-1">
-                {warehouseLogs.filter(l => l.type === 'Unloading').length} Event
+              <div className="text-[10px] uppercase font-bold text-emerald-700 font-mono">
+                4. Sisa Unit (Penjadwalan Berikutnya)
               </div>
-            </div>
-
-            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm text-center border-l-4 border-l-rose-500">
-              <div className="mx-auto w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-2">
-                <Wrench className="w-5 h-5 animate-pulse" />
+              <div className="font-extrabold text-2xl text-emerald-700 mt-1">
+                {overallInventorySummary.availableUnits} <span className="text-xs font-bold text-emerald-600">Unit</span>
               </div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 font-mono">Sedang Servis</div>
-              <div className="font-extrabold text-xl text-slate-800 mt-1">
-                {localAssets.filter(a => a.location === 'Divisi SERVICE (Sedang Diperbaiki)').length} Unit
-              </div>
-            </div>
-
-            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm text-center border-l-4 border-l-teal-500">
-              <div className="mx-auto w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center mb-2">
-                <CheckCircle className="w-5 h-5" />
-              </div>
-              <div className="text-[10px] uppercase font-bold text-slate-400 font-mono">Selesai Servis</div>
-              <div className="font-extrabold text-xl text-slate-800 mt-1">
-                {warehouseLogs.filter(l => l.type === 'Servis Masuk').reduce((acc, curr) => acc + curr.qty, 0)} Unit
-              </div>
-            </div>
+              <p className="text-[10px] text-slate-500 mt-1">
+                Sisa unit bebas yang masih bisa digunakan untuk jadwal berikutnya.
+              </p>
+            </button>
           </div>
 
-          {/* 2-Column Grid for Warehouse Logs and Service Division Monitor */}
+          {/* 2-Column Grid for Warehouse Unit Availability Table, Logs and Service Division Monitor */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Left Column: Warehouse Logs History & Form (col-span 2) */}
+            {/* Left Column: Tabel Ketersediaan Unit & Pencatatan Logistik (col-span 2) */}
             <div className="lg:col-span-2 space-y-4">
               
-              {/* Action Row */}
-              <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <span className="text-xs font-bold text-slate-700">Histori & Pencatatan Logistik Gudang</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (showLogForm) {
-                      setShowLogForm(false);
-                      setEditingLogId(null);
-                    } else {
-                      setType('Masuk');
-                      setItemName('');
-                      setQty(1);
-                      setNotes('');
-                      setAssetCodeInput('');
-                      setScannedPhoto(null);
-                      setShowLogForm(true);
-                    }
-                  }}
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>{showLogForm ? 'Tutup Formulir' : 'Catat Aktivitas Gudang'}</span>
-                </button>
+              {/* Action & Filter Bar */}
+              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                      Daftar Ketersediaan Unit, Penjadwalan, Perbaikan &amp; Sisa Unit Gudang
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Menampilkan <strong>{filteredWarehouseUnits.length} jenis alat</strong> — Ready/Ada: <strong>{scopedTableSummary.totalUnits} Unit</strong> • Dijadwalkan: <strong className="text-amber-700">-{scopedTableSummary.assignedUnits} Unit</strong> • Proses Perbaikan: <strong className="text-rose-600">-{scopedTableSummary.totalDamagedUnits} Unit</strong> • Sisa Bisa Digunakan: <strong className="text-emerald-700">{scopedTableSummary.availableUnits} Unit</strong>
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (showLogForm) {
+                        setShowLogForm(false);
+                        setEditingLogId(null);
+                      } else {
+                        setType('Masuk');
+                        setItemName('');
+                        setQty(1);
+                        setNotes('');
+                        setAssetCodeInput('');
+                        setScannedPhoto(null);
+                        setShowLogForm(true);
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 self-start sm:self-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{showLogForm ? 'Tutup Formulir' : 'Catat Aktivitas Gudang'}</span>
+                  </button>
+                </div>
+
+                {/* Filter Divisi, Status & Pencarian */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {([
+                      { key: 'ALL' as const, label: 'Semua Divisi' },
+                      { key: 'Audio' as const, label: 'Audio' },
+                      { key: 'Lighting' as const, label: 'Lighting' },
+                      { key: 'Multimedia' as const, label: 'Multimedia' },
+                      { key: 'Videotron' as const, label: 'Videotron' }
+                    ]).map(tab => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setWarehouseUnitDivFilter(tab.key)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                          warehouseUnitDivFilter === tab.key
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={warehouseUnitStatusFilter}
+                      onChange={(e) => setWarehouseUnitStatusFilter(e.target.value as any)}
+                      className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 bg-slate-50"
+                    >
+                      <option value="ALL">Semua Status Unit</option>
+                      <option value="SCHEDULED">Sedang Dijadwalkan ({assetsWithAvail.filter(x => x.avail.assignedUnits > 0).length})</option>
+                      <option value="REPAIR">Dalam Proses Perbaikan ({unitsInRepairList.length})</option>
+                      <option value="AVAILABLE">Masih Ada Sisa Unit ({assetsWithAvail.filter(x => x.avail.availableUnits > 0).length})</option>
+                    </select>
+
+                    <div className="relative flex-1 sm:w-48">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={warehouseUnitSearch}
+                        onChange={(e) => setWarehouseUnitSearch(e.target.value)}
+                        placeholder="Cari unit / kode / event..."
+                        className="w-full pl-8 pr-2.5 py-1.5 border border-slate-200 rounded-lg text-[11px] bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Warehouse log Form */}
@@ -1597,65 +1743,141 @@ export default function Gudang({
                 </form>
               )}
 
-              {/* Logs History Table */}
+              {/* Tabel Utama: Data Unit Ready/Ada, Dijadwalkan, Dalam Proses Perbaikan, dan Sisa Unit untuk Penjadwalan Berikutnya */}
               <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto touch-scroll">
+                <div className="overflow-x-auto touch-scroll max-h-[640px]">
                   <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-500 uppercase font-mono font-bold text-[10px]">
+                    <thead className="bg-slate-50 text-slate-600 uppercase font-mono font-bold text-[10px] sticky top-0 z-20 shadow-2xs">
                       <tr>
-                        <th scope="col" className="p-3">Tanggal</th>
-                        <th scope="col" className="p-3">Tipe</th>
-                        <th scope="col" className="p-3">Nama Barang</th>
-                        <th scope="col" className="p-3 text-center">QTY</th>
-                        <th scope="col" className="p-3">Asset Terkait</th>
-                        <th scope="col" className="p-3">PIC Gudang</th>
-                        <th scope="col" className="p-3">Catatan</th>
+                        <th scope="col" className="p-3">Kode &amp; Nama Unit</th>
+                        <th scope="col" className="p-3 text-center bg-indigo-50/60 text-indigo-900">Unit Ready / Ada</th>
+                        <th scope="col" className="p-3 text-center bg-amber-50/70 text-amber-900">Dijadwalkan</th>
+                        <th scope="col" className="p-3 text-center bg-rose-50/70 text-rose-900">Dalam Proses Perbaikan</th>
+                        <th scope="col" className="p-3 text-center bg-emerald-50/70 text-emerald-900">Sisa Unit (Jadwal Berikutnya)</th>
                         <th scope="col" className="p-3 text-center sticky right-0 bg-slate-50 shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
-                      {warehouseLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="p-3 font-mono">{log.date}</td>
-                          <td className="p-3">
-                            <span className={`px-2 py-0.5 rounded font-mono font-bold text-[9px] uppercase ${
-                              log.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                              log.type === 'Keluar' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
-                              log.type === 'Loading' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                              log.type === 'Unloading' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                              log.type === 'Servis Keluar' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                              'bg-teal-50 text-teal-700 border border-teal-200'
-                            }`}>
-                              {log.type}
-                            </span>
-                          </td>
-                          <td className="p-3 font-semibold text-slate-800">{log.itemName}</td>
-                          <td className="p-3 text-center font-bold">{log.qty} Unit</td>
-                          <td className="p-3 font-mono text-slate-500">{log.assetCode || '-'}</td>
-                          <td className="p-3 font-medium">{log.pic}</td>
-                          <td className="p-3 text-slate-500 max-w-[120px] truncate" title={log.notes}>{log.notes}</td>
-                          <td className="p-3 whitespace-nowrap text-center space-x-1 sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10 group-hover:bg-slate-50/50 transition-colors">
-                            <button
-                              onClick={() => handleEditLogClick(log)}
-                              className="px-2 py-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors"
-                              title="Edit Aktivitas (Tambah/Kurang QTY)"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteLogClick(log.id)}
-                              className="px-2 py-1 text-[10px] font-bold text-rose-600 bg-rose-50 rounded hover:bg-rose-100 transition-colors"
-                              title="Hapus Data Ini"
-                            >
-                              Hapus
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {warehouseLogs.length === 0 && (
+                    <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+                      {filteredWarehouseUnits.map(({ asset, avail, typeInfo }) => {
+                        const isZeroRemaining = avail.availableUnits <= 0;
+                        return (
+                          <tr key={asset.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="p-3 min-w-[210px]">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                                  {asset.code}
+                                </span>
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${typeInfo.bgClass} ${typeInfo.textClass} ${typeInfo.borderClass}`}>
+                                  {asset.division} • {typeInfo.shortTypeLabel}
+                                </span>
+                              </div>
+                              <div className="font-bold text-slate-900 mt-1 text-xs">{asset.name}</div>
+                              <div className="text-[10px] text-slate-400">
+                                Brand: <span className="font-semibold text-slate-600">{asset.brand}</span> • Lokasi: <span className="font-semibold text-slate-600">{asset.location}</span>
+                              </div>
+                            </td>
+
+                            {/* Kolom 1: Unit Ready / Ada */}
+                            <td className="p-3 text-center bg-indigo-50/20">
+                              <span className="inline-block px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 font-mono font-extrabold text-xs">
+                                {avail.totalUnits} {avail.unitLabel}
+                              </span>
+                            </td>
+
+                            {/* Kolom 2: Yang Dijadwalkan */}
+                            <td className="p-3 text-center bg-amber-50/20 min-w-[140px]">
+                              {avail.assignedUnits > 0 ? (
+                                <div className="space-y-1">
+                                  <span className="inline-block px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-mono font-extrabold text-xs">
+                                    {avail.assignedUnits} {avail.unitLabel}
+                                  </span>
+                                  {avail.assignedReasons.length > 0 && (
+                                    <div className="text-[10px] text-amber-800 font-medium leading-tight max-w-[180px] mx-auto">
+                                      {avail.assignedReasons.slice(0, 2).join(', ')}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[11px] font-mono text-slate-400">0 {avail.unitLabel}</span>
+                              )}
+                            </td>
+
+                            {/* Kolom 3: Dalam Proses Perbaikan */}
+                            <td className="p-3 text-center bg-rose-50/20 min-w-[140px]">
+                              {avail.totalDamagedUnits > 0 ? (
+                                <div className="space-y-1">
+                                  <span className="inline-block px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 font-mono font-extrabold text-xs">
+                                    {avail.totalDamagedUnits} {avail.unitLabel}
+                                  </span>
+                                  {avail.damageReasons.length > 0 && (
+                                    <div className="text-[10px] text-rose-700 font-medium leading-tight max-w-[180px] mx-auto">
+                                      {avail.damageReasons.slice(0, 2).join('; ')}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[11px] font-mono text-slate-400">0 {avail.unitLabel}</span>
+                              )}
+                            </td>
+
+                            {/* Kolom 4: Sisa Unit yang Masih Bisa Digunakan untuk Penjadwalan Berikutnya */}
+                            <td className="p-3 text-center bg-emerald-50/25 min-w-[130px]">
+                              <span className={`inline-block px-2.5 py-1 rounded-lg font-mono font-extrabold text-xs border ${
+                                isZeroRemaining
+                                  ? 'bg-rose-100 text-rose-800 border-rose-300'
+                                  : avail.availableUnits < avail.totalUnits
+                                  ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              }`}>
+                                {avail.availableUnits} {avail.unitLabel}
+                              </span>
+                              <div className="text-[9px] font-mono text-slate-400 mt-0.5">
+                                dari {avail.totalUnits} {avail.unitLabel}
+                              </div>
+                            </td>
+
+                            {/* Aksi */}
+                            <td className="p-3 whitespace-nowrap text-center space-x-1 sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  registerScannedAsset(asset);
+                                  setType('Keluar');
+                                  setItemName(asset.name);
+                                  setAssetCodeInput(asset.code);
+                                  setQty(1);
+                                  setNotes(`Alokasi keluar unit ${asset.name} (${asset.code})`);
+                                  setShowLogForm(true);
+                                }}
+                                className="px-2 py-1 text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-200 rounded hover:bg-orange-100 transition-colors cursor-pointer"
+                                title="Catat Barang Keluar / Penjadwalan"
+                              >
+                                Keluar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  registerScannedAsset(asset);
+                                  setType('Masuk');
+                                  setItemName(asset.name);
+                                  setAssetCodeInput(asset.code);
+                                  setQty(1);
+                                  setNotes(`Pengembalian masuk unit ${asset.name} (${asset.code})`);
+                                  setShowLogForm(true);
+                                }}
+                                className="px-2 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors cursor-pointer"
+                                title="Catat Barang Masuk Kembali ke Gudang"
+                              >
+                                Masuk
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredWarehouseUnits.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="text-center py-12 text-slate-400">
-                            Belum ada aktivitas gudang yang tercatat.
+                          <td colSpan={6} className="text-center py-12 text-slate-400">
+                            Tidak ada unit yang cocok dengan filter pencarian.
                           </td>
                         </tr>
                       )}
@@ -1664,97 +1886,170 @@ export default function Gudang({
                 </div>
               </div>
 
+              {/* Histori Transaksi Logistik Manual (Ditampilkan bila ada catatan aktivitas keluar/masuk) */}
+              {warehouseLogs.length > 0 && (
+                <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">
+                      Riwayat Transaksi Mutasi Gudang ({warehouseLogs.length} Catatan)
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto touch-scroll">
+                    <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-500 uppercase font-mono font-bold text-[10px]">
+                        <tr>
+                          <th scope="col" className="p-3">Tanggal</th>
+                          <th scope="col" className="p-3">Tipe</th>
+                          <th scope="col" className="p-3">Nama Barang</th>
+                          <th scope="col" className="p-3 text-center">QTY</th>
+                          <th scope="col" className="p-3">Asset Terkait</th>
+                          <th scope="col" className="p-3">PIC Gudang</th>
+                          <th scope="col" className="p-3">Catatan</th>
+                          <th scope="col" className="p-3 text-center sticky right-0 bg-slate-50 shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
+                        {warehouseLogs.map((log) => (
+                          <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="p-3 font-mono">{log.date}</td>
+                            <td className="p-3">
+                              <span className={`px-2 py-0.5 rounded font-mono font-bold text-[9px] uppercase ${
+                                log.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                log.type === 'Keluar' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                                log.type === 'Loading' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                log.type === 'Unloading' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                                log.type === 'Servis Keluar' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                'bg-teal-50 text-teal-700 border border-teal-200'
+                              }`}>
+                                {log.type}
+                              </span>
+                            </td>
+                            <td className="p-3 font-semibold text-slate-800">{log.itemName}</td>
+                            <td className="p-3 text-center font-bold">{log.qty} Unit</td>
+                            <td className="p-3 font-mono text-slate-500">{log.assetCode || '-'}</td>
+                            <td className="p-3 font-medium">{log.pic}</td>
+                            <td className="p-3 text-slate-500 max-w-[120px] truncate" title={log.notes}>{log.notes}</td>
+                            <td className="p-3 whitespace-nowrap text-center space-x-1 sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10 group-hover:bg-slate-50/50 transition-colors">
+                              <button
+                                onClick={() => handleEditLogClick(log)}
+                                className="px-2 py-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors"
+                                title="Edit Aktivitas (Tambah/Kurang QTY)"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLogClick(log.id)}
+                                className="px-2 py-1 text-[10px] font-bold text-rose-600 bg-rose-50 rounded hover:bg-rose-100 transition-colors"
+                                title="Hapus Data Ini"
+                              >
+                                Hapus
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
             </div>
 
-            {/* Right Column: Active Service Division Monitoring Sidebar (col-span 1) */}
+            {/* Right Column: Active Service & Repair Monitoring Sidebar (col-span 1) */}
             <div className="space-y-4">
               <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between border-b pb-3 mb-4">
                   <div className="flex items-center gap-2">
                     <Wrench className="w-4 h-4 text-rose-600 animate-pulse" />
-                    <span className="font-bold text-sm text-slate-800">Monitor Servis Aktif</span>
+                    <span className="font-bold text-sm text-slate-800">Unit Dalam Proses Perbaikan</span>
                   </div>
-                  <span className="px-2 py-0.5 bg-rose-50 text-rose-700 font-mono text-[10px] font-bold rounded-full border border-rose-150">
-                    {localAssets.filter(a => a.location === 'Divisi SERVICE (Sedang Diperbaiki)').length} Unit
+                  <span className="px-2 py-0.5 bg-rose-50 text-rose-700 font-mono text-[10px] font-bold rounded-full border border-rose-200">
+                    {overallInventorySummary.totalDamagedUnits} Unit ({unitsInRepairList.length} Jenis)
                   </span>
                 </div>
 
-                {localAssets.filter(a => a.location === 'Divisi SERVICE (Sedang Diperbaiki)').length === 0 ? (
+                {unitsInRepairList.length === 0 ? (
                   <div className="text-center py-8 px-4 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
                     <CheckCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     <p className="text-xs font-semibold text-slate-500">Semua Aset Kondisi Baik</p>
-                    <p className="text-[10px] text-slate-400 mt-1">Tidak ada peralatan yang sedang berada di divisi service saat ini.</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Tidak ada peralatan yang sedang dalam proses perbaikan saat ini.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
-                    {localAssets.filter(a => a.location === 'Divisi SERVICE (Sedang Diperbaiki)').map(item => (
-                      <div key={item.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-slate-200 transition-all flex flex-col gap-2">
-                        <div className="flex justify-between items-start">
+                  <div className="space-y-3 max-h-[580px] overflow-y-auto pr-1">
+                    {unitsInRepairList.map(({ asset: item, avail }) => (
+                      <div key={item.id} className="p-3 bg-rose-50/30 rounded-lg border border-rose-100 hover:border-rose-200 transition-all flex flex-col gap-2">
+                        <div className="flex justify-between items-start gap-2">
                           <div>
-                            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase block">{item.code}</span>
-                            <span className="font-semibold text-xs text-slate-800">{item.name}</span>
+                            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase block">{item.code} • {item.division}</span>
+                            <span className="font-bold text-xs text-slate-900">{item.name}</span>
                           </div>
-                          <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase bg-rose-50 text-rose-700 border border-rose-100">
-                            {item.condition}
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-extrabold bg-rose-100 text-rose-800 border border-rose-200 shrink-0">
+                            Perbaikan: {avail.totalDamagedUnits} {avail.unitLabel}
                           </span>
                         </div>
 
-                        <div className="flex justify-between items-center text-[10px] text-slate-400 mt-1 pt-2 border-t border-slate-100">
-                          <span>Divisi: <strong className="text-slate-600">{item.division}</strong></span>
-                          <span>Lokasi: <strong className="text-rose-600">SERVICE</strong></span>
+                        {avail.damageReasons.length > 0 && (
+                          <div className="text-[10px] text-rose-800 bg-white/80 p-2 rounded border border-rose-100 leading-snug">
+                            {avail.damageReasons.join(' • ')}
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-center text-[10px] text-slate-500 pt-1 border-t border-rose-100/80 font-mono">
+                          <span>Ready/Ada: <strong className="text-slate-800">{avail.totalUnits}</strong></span>
+                          <span>Terjadwal: <strong className="text-amber-700">{avail.assignedUnits}</strong></span>
+                          <span>Sisa Unit: <strong className="text-emerald-700">{avail.availableUnits}</strong></span>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            // Update asset location back to Warehouse
-                            const newLoc = 'Gudang Utama RIZ';
-                            const newCond = 'Baik';
-                            
-                            const updated = localAssets.map(a => {
-                              if (a.id === item.id) {
-                                return {
-                                  ...a,
-                                  location: newLoc,
-                                  condition: newCond
-                                };
-                              }
-                              return a;
-                            });
+                        {item.location === 'Divisi SERVICE (Sedang Diperbaiki)' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newLoc = 'Gudang Utama RIZ';
+                              const newCond = 'Baik';
+                              
+                              const updated = localAssets.map(a => {
+                                if (a.id === item.id) {
+                                  return {
+                                    ...a,
+                                    location: newLoc,
+                                    condition: newCond
+                                  };
+                                }
+                                return a;
+                              });
 
-                            setLocalAssets(updated);
-                            localStorage.setItem('riz_assets', JSON.stringify(updated));
-                            pushCollectionToCloud('assets', updated, currentUser.name);
+                              setLocalAssets(updated);
+                              localStorage.setItem('riz_assets', JSON.stringify(updated));
+                              pushCollectionToCloud('assets', updated, currentUser.name);
 
-                            // Propagate if handlers exist
-                            if (onUpdateAssetLocation) onUpdateAssetLocation(item.id, newLoc);
-                            if (onUpdateAssetCondition) onUpdateAssetCondition(item.id, newCond);
+                              if (onUpdateAssetLocation) onUpdateAssetLocation(item.id, newLoc);
+                              if (onUpdateAssetCondition) onUpdateAssetCondition(item.id, newCond);
 
-                            // Create finished service log
-                            const newLog: WarehouseLog = {
-                              id: 'wl-' + Date.now(),
-                              type: 'Servis Masuk',
-                              date: new Date().toISOString().split('T')[0],
-                              itemName: item.name,
-                              qty: 1,
-                              pic: currentUser.name,
-                              notes: `Selesai diperbaiki oleh divisi SERVICE, dikembalikan ke Gudang Utama RIZ.`,
-                              assetCode: item.code
-                            };
-                            const nextLogs = [newLog, ...warehouseLogs];
-                            setWarehouseLogs(nextLogs);
-                            localStorage.setItem('riz_warehouse_logs', JSON.stringify(nextLogs));
-                            pushCollectionToCloud('warehouse_logs', nextLogs, currentUser.name);
-                            saveCloudDoc('warehouse_logs', newLog.id, newLog, currentUser.name);
+                              const newLog: WarehouseLog = {
+                                id: 'wl-' + Date.now(),
+                                type: 'Servis Masuk',
+                                date: new Date().toISOString().split('T')[0],
+                                itemName: item.name,
+                                qty: 1,
+                                pic: currentUser.name,
+                                notes: `Selesai diperbaiki oleh divisi SERVICE, dikembalikan ke Gudang Utama RIZ.`,
+                                assetCode: item.code
+                              };
+                              const nextLogs = [newLog, ...warehouseLogs];
+                              setWarehouseLogs(nextLogs);
+                              localStorage.setItem('riz_warehouse_logs', JSON.stringify(nextLogs));
+                              pushCollectionToCloud('warehouse_logs', nextLogs, currentUser.name);
+                              saveCloudDoc('warehouse_logs', newLog.id, newLog, currentUser.name);
 
-                            onLogActivity(currentUser.name, currentUser.role, `Gudang menerima kembali aset ${item.code} dari SERVICE (Kondisi: Baik)`);
-                            alert(`Aset ${item.code} (${item.name}) telah selesai di-servis & dikembalikan ke Gudang!`);
-                          }}
-                          className="w-full mt-1.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold uppercase flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span>Selesai Servis & Terima</span>
-                        </button>
+                              onLogActivity(currentUser.name, currentUser.role, `Gudang menerima kembali aset ${item.code} dari SERVICE (Kondisi: Baik)`);
+                              alert(`Aset ${item.code} (${item.name}) telah selesai di-servis & dikembalikan ke Gudang!`);
+                            }}
+                            className="w-full mt-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold uppercase flex items-center justify-center gap-1 cursor-pointer transition-all shadow-xs"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>Selesai Servis &amp; Terima</span>
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1765,7 +2060,8 @@ export default function Gudang({
           </div>
 
         </div>
-      )}
+        );
+      })()}
 
       {/* VIEW 1B: SUSUNAN UNIT INVENTORY GUDANG RESMI (DIKELOMPOKKAN BERDASARKAN DIVISI & TYPE ALAT) */}
       {warehouseSubTab === 'inventory' && (() => {
