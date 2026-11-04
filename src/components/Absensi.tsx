@@ -387,13 +387,35 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     } catch {}
     return INITIAL_JOB_ASSIGNMENTS;
   });
+  const isManagementOrOwner =
+    currentUser.division === 'Admin' ||
+    currentUser.role === 'Owner' ||
+    currentUser.role === 'Direktur' ||
+    currentUser.role === 'Manager' ||
+    currentUser.role === 'Admin' ||
+    currentUser.role === 'Supervisor' ||
+    currentUser.id === 'director-wahyu';
+
   const [jobMonthFilter, setJobMonthFilter] = useState<string>(() => {
     if (activeMonth === '2026-12') return '2026-12';
     return '2026-11';
   });
+  const [jobSelectedStaffId, setJobSelectedStaffId] = useState<string>(() =>
+    isManagementOrOwner ? 'ALL' : currentUser.id
+  );
   const [jobDivisionFilter, setJobDivisionFilter] = useState<string>('All');
   const [jobCrewTypeFilter, setJobCrewTypeFilter] = useState<'All' | 'Staff' | 'Freelance'>('All');
   const [jobSearchQuery, setJobSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    setJobSelectedStaffId(isManagementOrOwner ? 'ALL' : currentUser.id);
+  }, [currentUser.id, isManagementOrOwner]);
+
+  useEffect(() => {
+    if (initialScheduleViewMode) {
+      setScheduleViewMode(initialScheduleViewMode);
+    }
+  }, [initialScheduleViewMode]);
   const [showJobFormModal, setShowJobFormModal] = useState<boolean>(false);
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [jobFormDate, setJobFormDate] = useState<string>('2026-11-05');
@@ -1335,63 +1357,65 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
         <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-6">
 
           {/* Sub-navigation inside Schedule: Mode switcher */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-            <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1 rounded-xl text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setScheduleViewMode('official')}
-                className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${scheduleViewMode === 'official'
-                  ? 'bg-emerald-600 text-white shadow-xs font-black'
-                  : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <Calendar className="w-4 h-4" />
-                <span>📅 Schedule Resmi Bulanan</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setScheduleViewMode('job_assignments')}
-                className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${scheduleViewMode === 'job_assignments'
-                  ? 'bg-indigo-600 text-white shadow-xs font-black'
-                  : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <Briefcase className="w-4 h-4" />
-                <span>📋 Penugasan Job & Event (Staff & Freelance)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setScheduleViewMode('custom')}
-                className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${scheduleViewMode === 'custom'
-                  ? 'bg-white text-indigo-600 shadow-xs font-black'
-                  : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <Edit className="w-4 h-4" />
-                <span>✏️ Editor Tanggal 1-31 (Custom)</span>
-              </button>
-            </div>
+          {initialScheduleViewMode !== 'job_assignments' && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+              <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setScheduleViewMode('official')}
+                  className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${scheduleViewMode === 'official'
+                    ? 'bg-emerald-600 text-white shadow-xs font-black'
+                    : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>📅 Schedule Resmi Bulanan</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScheduleViewMode('job_assignments')}
+                  className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${scheduleViewMode === 'job_assignments'
+                    ? 'bg-indigo-600 text-white shadow-xs font-black'
+                    : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                  <Briefcase className="w-4 h-4" />
+                  <span>📋 Penugasan Job & Event (Staff & Freelance)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScheduleViewMode('custom')}
+                  className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${scheduleViewMode === 'custom'
+                    ? 'bg-white text-indigo-600 shadow-xs font-black'
+                    : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>✏️ Editor Tanggal 1-31 (Custom)</span>
+                </button>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <a
-                href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-700 flex items-center gap-1.5 transition-colors"
-                title="Folder Bukti Absensi Google Drive"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span>Drive Bukti Absensi ↗</span>
-              </a>
-              <button
-                onClick={() => window.print()}
-                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Cetak Schedule PDF</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <a
+                  href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-700 flex items-center gap-1.5 transition-colors"
+                  title="Folder Bukti Absensi Google Drive"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>Drive Bukti Absensi ↗</span>
+                </a>
+                <button
+                  onClick={() => window.print()}
+                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Cetak Schedule PDF</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ────────────────────────────────────────────────────────── */}
           {/* HEADER PRINT LOGO (Hanya muncul saat dicetak)               */}
@@ -1511,11 +1535,62 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
           {/* MODE 1B: JOB & EVENT ASSIGNMENTS (STAFF & FREELANCE)       */}
           {/* ────────────────────────────────────────────────────────── */}
           {scheduleViewMode === 'job_assignments' && (() => {
+            const matchesStaffOnJob = (job: JobAssignment, targetStaff: Staff | undefined): boolean => {
+              if (!targetStaff) return true;
+              const targetId = targetStaff.id;
+              const targetNameLower = targetStaff.name.toLowerCase();
+              const targetNickLower = (targetStaff.nickname || '').toLowerCase().trim();
+              const picLower = (job.pic || '').toLowerCase();
+
+              // 1. Check if staff is PIC of the job or any section
+              if (
+                picLower.includes(targetNameLower) ||
+                (targetNickLower && picLower.includes(targetNickLower))
+              ) {
+                return true;
+              }
+
+              // 2. Check if staff is in any section's crew or sectionPic
+              return job.sections.some(sec => {
+                const secPicLower = (sec.sectionPic || '').toLowerCase();
+                if (
+                  secPicLower.includes(targetNameLower) ||
+                  (targetNickLower && secPicLower.includes(targetNickLower))
+                ) {
+                  return true;
+                }
+                return sec.crew.some(c => {
+                  if (c.staffId && c.staffId === targetId) return true;
+                  const cName = c.name.toLowerCase();
+                  const cCanon = (c.canonicalName || '').toLowerCase();
+                  if (cName === targetNameLower || cCanon.includes(targetNameLower)) return true;
+                  if (targetNickLower && (cName === targetNickLower || cCanon.includes(targetNickLower))) return true;
+                  return false;
+                });
+              });
+            };
+
+            const selectedStaffObj =
+              jobSelectedStaffId === 'ALL'
+                ? undefined
+                : staffList.find(s => s.id === jobSelectedStaffId) ||
+                  STAFF_LIST.find(s => s.id === jobSelectedStaffId);
+
             const monthFilteredJobs = jobAssignments.filter(job =>
               jobMonthFilter === 'ALL' ? true : job.monthKey === jobMonthFilter
             );
 
+            // Compute assignment count per staff for the active month filter
+            const staffJobCounts = new Map<string, number>();
+            staffList.forEach(st => {
+              const cnt = monthFilteredJobs.filter(j => matchesStaffOnJob(j, st)).length;
+              staffJobCounts.set(st.id, cnt);
+            });
+
             const filteredJobs = monthFilteredJobs.filter(job => {
+              if (selectedStaffObj && !matchesStaffOnJob(job, selectedStaffObj)) {
+                return false;
+              }
               if (jobDivisionFilter !== 'All') {
                 const hasDiv = job.sections.some(sec => sec.division === jobDivisionFilter);
                 if (!hasDiv) return false;
@@ -1662,6 +1737,91 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                   <div className="p-3.5 bg-amber-50/60 border border-amber-200 rounded-xl">
                     <div className="text-[10px] font-mono uppercase font-bold text-amber-800">Armada Mobilisasi Terlibat</div>
                     <div className="text-xl font-black text-amber-950 mt-0.5">{uniqueVehicleSet.size} <span className="text-xs font-semibold text-amber-700">Unit Kendaraan</span></div>
+                  </div>
+                </div>
+
+                {/* Staff Name Filter Bar (Muncul Sesuai Nama Staff) */}
+                <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-indigo-600" />
+                      <span className="text-xs font-black text-indigo-950 uppercase tracking-wide">
+                        Filter Penugasan Sesuai Nama Staff:
+                      </span>
+                      {selectedStaffObj ? (
+                        <span className="px-2.5 py-0.5 bg-indigo-600 text-white rounded-full text-xs font-black">
+                          {selectedStaffObj.name}{selectedStaffObj.nickname ? ` (${selectedStaffObj.nickname})` : ''} — {filteredJobs.length} Job
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 bg-slate-800 text-white rounded-full text-xs font-bold">
+                          Semua Staff & Freelance ({filteredJobs.length} Job)
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setJobSelectedStaffId(currentUser.id)}
+                        className={`px-3 py-1 rounded-lg text-xs font-black cursor-pointer transition-all border ${
+                          jobSelectedStaffId === currentUser.id
+                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-2xs'
+                            : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+                        }`}
+                      >
+                        👤 Jadwal Saya ({currentUser.nickname || currentUser.name.split(' ')[0]}: {staffJobCounts.get(currentUser.id) || 0})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setJobSelectedStaffId('ALL')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all border ${
+                          jobSelectedStaffId === 'ALL'
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        📋 Semua Jadwal ({monthFilteredJobs.length})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quick Staff Pills */}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {staffList
+                      .filter(st => st.id !== 'director-wahyu')
+                      .map(st => {
+                        const count = staffJobCounts.get(st.id) || 0;
+                        const isSelected = jobSelectedStaffId === st.id;
+                        const shortLabel = st.nickname ? `${st.nickname} (${st.name.split(' ')[0]})` : st.name;
+                        return (
+                          <button
+                            key={st.id}
+                            type="button"
+                            onClick={() => setJobSelectedStaffId(isSelected ? 'ALL' : st.id)}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                              isSelected
+                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs ring-2 ring-indigo-300'
+                                : count > 0
+                                  ? 'bg-white text-slate-800 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
+                                  : 'bg-slate-100/70 text-slate-400 border-slate-200/60 hover:bg-slate-100'
+                            }`}
+                            title={`${st.name} (${st.division}) — ${count} Jadwal Penugasan`}
+                          >
+                            <span>{shortLabel}</span>
+                            <span
+                              className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-black ${
+                                isSelected
+                                  ? 'bg-white text-indigo-700'
+                                  : count > 0
+                                    ? 'bg-indigo-100 text-indigo-800'
+                                    : 'bg-slate-200 text-slate-500'
+                              }`}
+                            >
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      })}
                   </div>
                 </div>
 
@@ -1874,22 +2034,32 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                   <div className="flex flex-wrap gap-1.5">
                                     {sec.crew.map((member, mIdx) => {
                                       const isStaff = member.personnelType === 'Staff';
+                                      const isSelectedStaffMember = Boolean(
+                                        selectedStaffObj &&
+                                        (member.staffId === selectedStaffObj.id ||
+                                          member.name.toLowerCase() === (selectedStaffObj.nickname || '').toLowerCase() ||
+                                          member.name.toLowerCase() === selectedStaffObj.name.toLowerCase())
+                                      );
                                       return (
                                         <div
                                           key={mIdx}
-                                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold ${
-                                            isStaff
-                                              ? 'bg-indigo-50/90 text-indigo-950 border-indigo-200'
-                                              : 'bg-emerald-50/90 text-emerald-950 border-emerald-200'
+                                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition-all ${
+                                            isSelectedStaffMember
+                                              ? 'bg-indigo-600 text-white border-indigo-700 ring-2 ring-amber-400 shadow-sm'
+                                              : isStaff
+                                                ? 'bg-indigo-50/90 text-indigo-950 border-indigo-200'
+                                                : 'bg-emerald-50/90 text-emerald-950 border-emerald-200'
                                           }`}
                                           title={member.canonicalName ? `${member.canonicalName} (${member.personnelType} - ${member.division || ''})` : member.name}
                                         >
                                           <span>{member.name}</span>
                                           <span
                                             className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-black uppercase ${
-                                              isStaff
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'bg-emerald-600 text-white'
+                                              isSelectedStaffMember
+                                                ? 'bg-amber-300 text-slate-950'
+                                                : isStaff
+                                                  ? 'bg-indigo-600 text-white'
+                                                  : 'bg-emerald-600 text-white'
                                             }`}
                                           >
                                             {isStaff ? 'STAFF' : 'FREELANCE'}

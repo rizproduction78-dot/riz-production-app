@@ -66,6 +66,7 @@ import {
   Sparkles,
   Sliders,
   Truck,
+  Briefcase,
   Download,
   Smartphone,
   Share,
@@ -202,10 +203,11 @@ export default function App() {
     const role = currentUser?.role;
     const isOwnerOrAdmin = currentUser?.division === 'Admin' || role === 'Owner' || role === 'Direktur' || role === 'Admin' || currentUser?.id === 'director-wahyu' || String(currentUser?.name || '').toLowerCase().includes('wahyu (owner)');
 
-    // 1. Owner & Admin / Management (13 Fitur Lengkap Sesuai Workflow Operasional 5W)
+    // 1. Owner & Admin / Management (Fitur Lengkap Sesuai Workflow Operasional 5W)
     if (isOwnerOrAdmin) {
       return [
         { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'job_schedule', label: 'Jadwal Penugasan Kerja', icon: Briefcase, category: 'Operasional 5W & QC' },
         { id: 'absensi_schedule', label: 'Jadwal Shift (1-31)', icon: Calendar, category: 'Operasional 5W & QC' },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'Operasional 5W & QC' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional 5W & QC' },
@@ -225,6 +227,7 @@ export default function App() {
     if (role === 'Manager') {
       return [
         { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'job_schedule', label: 'Jadwal Penugasan Kerja', icon: Briefcase, category: 'Operasional 5W & QC' },
         { id: 'absensi_schedule', label: 'Jadwal Shift (1-31)', icon: Calendar, category: 'Operasional 5W & QC' },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'Operasional 5W & QC' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional 5W & QC' },
@@ -244,6 +247,7 @@ export default function App() {
     if (role === 'Supervisor') {
       return [
         { id: 'dashboard', label: 'Dashboard Monitoring', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'job_schedule', label: 'Jadwal Penugasan Kerja', icon: Briefcase, category: 'Operasional 5W & QC' },
         { id: 'absensi_schedule', label: 'Jadwal Shift (1-31)', icon: Calendar, category: 'Operasional 5W & QC' },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'Operasional 5W & QC' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional 5W & QC' },
@@ -263,6 +267,7 @@ export default function App() {
     if (role === 'Team Leader') {
       return [
         { id: 'dashboard', label: 'Dashboard Divisi', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'job_schedule', label: `Jadwal Penugasan (${currentUser.nickname || currentUser.name.split(' ')[0]})`, icon: Briefcase, category: 'Operasional 5W & QC' },
         { id: 'absensi_schedule', label: 'Jadwal Kerja (1-31)', icon: Calendar, category: 'Operasional 5W & QC' },
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'Operasional 5W & QC' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional 5W & QC' },
@@ -278,6 +283,7 @@ export default function App() {
     if (role === 'Staff') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'job_schedule', label: `Jadwal Penugasan (${currentUser.nickname || currentUser.name.split(' ')[0]})`, icon: Briefcase, category: 'Operasional 5W & QC' },
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck, category: 'Operasional 5W & QC' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional 5W & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional 5W & QC' },
@@ -291,6 +297,7 @@ export default function App() {
     if (role === 'Gudang') {
       return [
         { id: 'dashboard', label: 'Dashboard Gudang', icon: LayoutDashboard, category: 'Ringkasan' },
+        { id: 'job_schedule', label: `Jadwal Penugasan (${currentUser.nickname || currentUser.name.split(' ')[0]})`, icon: Briefcase, category: 'Operasional 5W & QC' },
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck, category: 'Operasional 5W & QC' },
         { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
         { id: 'armada', label: 'Kelola Armada', icon: Truck, category: 'Logistik & Fasilitas' },
@@ -302,6 +309,7 @@ export default function App() {
     
     return [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, category: 'Ringkasan' },
+      { id: 'job_schedule', label: 'Jadwal Penugasan Kerja', icon: Briefcase, category: 'Operasional 5W & QC' },
       { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'Operasional 5W & QC' },
       { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList, category: 'Operasional 5W & QC' },
       { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp, category: 'SDM & Evaluasi KPI' },
@@ -2062,11 +2070,23 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'job_schedule' && (
+          <Absensi
+            currentUser={currentUser}
+            onLogActivity={handleLogActivity}
+            forceSubTab="schedule"
+            initialScheduleViewMode="job_assignments"
+            activeMonth={activeMonth}
+            onActiveMonthChange={handleActiveMonthChange}
+          />
+        )}
+
         {activeTab === 'absensi_schedule' && isLeaderOrHigher && (
           <Absensi
             currentUser={currentUser}
             onLogActivity={handleLogActivity}
             forceSubTab="schedule"
+            initialScheduleViewMode="official"
             activeMonth={activeMonth}
             onActiveMonthChange={handleActiveMonthChange}
           />
