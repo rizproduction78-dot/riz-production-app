@@ -140,6 +140,16 @@ export interface PairedActivityRow {
   isNg: boolean;
 }
 
+export interface CategorySpecificView {
+  subtitle?: string;
+  metaBadge?: string;
+  activity: string;
+  notes?: string;
+  pairedRows?: PairedActivityRow[];
+  source: string;
+  targetTab: string;
+}
+
 export interface NotificationItem {
   id: string;
   date: string;
@@ -147,12 +157,15 @@ export interface NotificationItem {
   staffName: string;
   division: string;
   category: 'Daily Task' | 'Daily Log' | 'Temuan Unit Bermasalah' | 'Mutasi Unit Gudang';
+  categories?: Array<'Daily Task' | 'Daily Log' | 'Temuan Unit Bermasalah' | 'Mutasi Unit Gudang'>;
   title: string;
   subtitle?: string;
   metaBadge?: string;
   activity: string;
   notes?: string;
   pairedRows?: PairedActivityRow[];
+  taskView?: CategorySpecificView;
+  findingView?: CategorySpecificView;
   qcResult: 'OK' | 'NG' | 'INFO';
   timestamp: number;
   updatedAtMs?: number;
@@ -277,6 +290,7 @@ export default function QCNotificationCenter({
 
   const knownRevisionsRef = useRef<Map<string, string>>(getStoredKnownRevisions());
   const isInitialLoadRef = useRef<boolean>(true);
+  const mountTimeRef = useRef<number>(Date.now());
   const [recentUpdatedIds, setRecentUpdatedIds] = useState<Set<string>>(() => new Set<string>());
   const [drawerSessionUnreadIds, setDrawerSessionUnreadIds] = useState<Set<string>>(() => new Set<string>());
 
@@ -372,9 +386,38 @@ export default function QCNotificationCenter({
     return STRICT_FINDING_TERMS.some(t => lower.includes(t));
   };
 
-  // Menggabungkan HANYA 4 SUMBER INPUT OPERASIONAL RESMI:
-  // 1. Daily Task
-  // 2. Daily Log (Daily Report & Logbook QC)
+  const normalizeStaffKey = (staffName?: string): string => {
+    const raw = String(staffName || '').toLowerCase().trim();
+    if (!raw) return 'staff';
+    if (raw.includes('butonk') || raw.includes('iwan')) return 'iwankurniawan';
+    if (raw.includes('kharo') || raw.includes('mulyana')) return 'mulyana';
+    if (raw.includes('yudis')) return 'yudishtirapurnamaa';
+    if (raw.includes('jay') || raw.includes('mulyadi')) return 'mulyadi';
+    if (raw.includes('mboh') || raw.includes('rahmat')) return 'muhamadrahmat';
+    if (raw.includes('unyim') || raw.includes('unyin') || raw.includes('wahyudin')) return 'wahyudin';
+    if (raw.includes('dani') || raw.includes('ramdani')) return 'ramdani';
+    if (raw.includes('opik') || raw.includes('taufik')) return 'taufikdiana';
+    if (raw.includes('nana') || raw.includes('buluk') || raw.includes('suryana')) return 'suryana';
+    if (raw.includes('ube') || raw.includes('udin')) return 'udinsaepudin';
+    if (raw.includes('subur') || raw.includes('aep') || raw.includes('absobur')) return 'aepsaepudin';
+    if (raw.includes('wigi') || raw.includes('dedi')) return 'dediaguswigiantoro';
+    if (raw.includes('irfan') || raw.includes('irvan')) return 'muhamadirvan';
+    if (raw.includes('heri')) return 'heri';
+    if (raw.includes('ayong')) return 'ayongsumarsih';
+    if (raw.includes('damri')) return 'damri';
+    if (raw.includes('gatot')) return 'gatotwiliyanto';
+    return raw.replace(/[^a-z0-9]/g, '');
+  };
+
+  const isGenericOkRemark = (rem?: string): boolean => {
+    const clean = String(rem || '').trim().toLowerCase();
+    if (!clean) return false;
+    return /^(kondisi\s+unit\s+sudah\s+ok|kondisi\s+sudah\s+ok|kondisi\s+ok|sudah\s+ok|ok|aman|normal|bagus|done|selesai)$/i.test(clean);
+  };
+
+  // Menggabungkan HANYA 4 SUMBER INPUT OPERASIONAL RESMI TANPA DUPLIKASI BERULANG:
+  // 1. Daily Log (Daily Report & Logbook QC) — Acuan Utama Google Sheet
+  // 2. Daily Task
   // 3. Temuan Unit Bermasalah Oleh Semua Divisi
   // 4. Unit Yang Dikeluarkan dan Diterima Oleh Divisi Gudang / Warehouse
   // Tersinkronisasi dinamis dengan periode bulan aktif (activeMonth)
@@ -382,6 +425,7 @@ export default function QCNotificationCenter({
     const list: NotificationItem[] = [];
     const seenIds = new Set<string>();
     const seenContentKeys = new Set<string>();
+    const itemsByDateStaff = new Map<string, NotificationItem>();
     const filterMonth = activeMonth && activeMonth !== 'all' ? activeMonth : null;
 
     // Peta referensi cepat rowDetails dari laporan harian (termasuk fallback canonical)
@@ -391,8 +435,7 @@ export default function QCNotificationCenter({
     INITIAL_DAILY_REPORTS.forEach(r => {
       if (r && r.id && Array.isArray(r.rowDetails) && r.rowDetails.length > 0) {
         canonicalRowDetailsById.set(r.id, r.rowDetails);
-        const normStaff = String(r.staffName || '').toLowerCase().trim();
-        const dKey = `${String(r.date || '').slice(0, 10)}_${normStaff}`;
+        const dKey = `${String(r.date || '').slice(0, 10)}_${normalizeStaffKey(r.staffName)}`;
         rowDetailsByDateStaff.set(dKey, r.rowDetails);
       }
     });
@@ -400,30 +443,52 @@ export default function QCNotificationCenter({
     dailyReports.forEach(r => {
       if (r && r.id && Array.isArray(r.rowDetails) && r.rowDetails.length > 0) {
         canonicalRowDetailsById.set(r.id, r.rowDetails);
-        const normStaff = String(r.staffName || '').toLowerCase().trim();
-        const dKey = `${String(r.date || '').slice(0, 10)}_${normStaff}`;
+        const dKey = `${String(r.date || '').slice(0, 10)}_${normalizeStaffKey(r.staffName)}`;
         rowDetailsByDateStaff.set(dKey, r.rowDetails);
       }
     });
 
-    // Helper membangun pasangan baris Aktivitas <-> Remark agar tidak menumpuk terpisah di bawah
+    // Helper membangun pasangan baris Aktivitas <-> Remark tanpa pengulangan kalimat "Kondisi unit sudah OK" berulang-ulang
+    const compactPairedRows = (rows: PairedActivityRow[]): PairedActivityRow[] => {
+      const deduped: PairedActivityRow[] = [];
+      const seenRowKey = new Set<string>();
+      rows.forEach(r => {
+        const key = `${r.activity.toLowerCase().trim()}__${r.remark.toLowerCase().trim()}`;
+        if (seenRowKey.has(key)) return;
+        seenRowKey.add(key);
+        deduped.push(r);
+      });
+
+      const genericOkCount = deduped.filter(r => !r.isNg && isGenericOkRemark(r.remark)).length;
+      if (genericOkCount <= 1) return deduped;
+
+      return deduped.map(r => {
+        if (!r.isNg && isGenericOkRemark(r.remark)) {
+          return { ...r, remark: 'OK' };
+        }
+        return r;
+      });
+    };
+
     const buildReportPairedRows = (
       rawDetails: Array<{ activity: string; remark: string }> | undefined,
       activityStr: string,
       notesStr?: string
     ): PairedActivityRow[] => {
       if (Array.isArray(rawDetails) && rawDetails.length > 0) {
-        return rawDetails
-          .filter(r => r && String(r.activity || '').trim() !== '')
-          .map(r => {
-            const act = String(r.activity || '').trim();
-            const rem = r.remark && r.remark !== '-' ? String(r.remark).trim() : '';
-            return {
-              activity: act,
-              remark: rem,
-              isNg: isRowKendalaText(act) || isRowKendalaText(rem)
-            };
-          });
+        return compactPairedRows(
+          rawDetails
+            .filter(r => r && String(r.activity || '').trim() !== '')
+            .map(r => {
+              const act = String(r.activity || '').trim();
+              const rem = r.remark && r.remark !== '-' ? String(r.remark).trim() : '';
+              return {
+                activity: act,
+                remark: rem,
+                isNg: isRowKendalaText(act) || isRowKendalaText(rem)
+              };
+            })
+        );
       }
 
       const actLines = String(activityStr || '')
@@ -437,33 +502,37 @@ export default function QCNotificationCenter({
 
       if (actLines.length === 0) return [];
       if (actLines.length === remLines.length) {
-        return actLines.map((act, idx) => ({
-          activity: act,
-          remark: remLines[idx] || '',
-          isNg: isRowKendalaText(act) || isRowKendalaText(remLines[idx])
-        }));
+        return compactPairedRows(
+          actLines.map((act, idx) => ({
+            activity: act,
+            remark: remLines[idx] || '',
+            isNg: isRowKendalaText(act) || isRowKendalaText(remLines[idx])
+          }))
+        );
       }
       if (actLines.length === 1 && remLines.length > 0) {
-        const joinedRem = remLines.join(' • ');
-        return [
+        const uniqueRems = Array.from(new Set(remLines));
+        const joinedRem = uniqueRems.join(' • ');
+        return compactPairedRows([
           {
             activity: actLines[0],
             remark: joinedRem,
             isNg: isRowKendalaText(actLines[0]) || isRowKendalaText(joinedRem)
           }
-        ];
+        ]);
       }
-      return actLines.map(act => ({
-        activity: act,
-        remark: '',
-        isNg: isRowKendalaText(act)
-      }));
+      return compactPairedRows(
+        actLines.map(act => ({
+          activity: act,
+          remark: '',
+          isNg: isRowKendalaText(act)
+        }))
+      );
     };
 
-    // Helper deduplikasi konten identik (misal logbook entry kembar dari daily report yang sama)
     const checkIsDuplicate = (date: string, staff: string, act: string) => {
       const normDate = String(date || '').slice(0, 10);
-      const normStaff = String(staff || '').toLowerCase().trim();
+      const normStaff = normalizeStaffKey(staff);
       const normAct = String(act || '').toLowerCase().trim().replace(/\s+/g, ' ');
       const key = `${normDate}_${normStaff}_${normAct}`;
       if (seenContentKeys.has(key)) return true;
@@ -471,89 +540,17 @@ export default function QCNotificationCenter({
       return false;
     };
 
-    // 1. INPUT DAILY TASK
-    dailyTasks.forEach(task => {
-      if (!task || !task.title) return;
-      const id = task.id || `task-${task.createdAt || Date.now()}-${task.title}`;
-      const idDate = extractDateFromId(id);
-      const dueDateClean = task.dueDate ? String(task.dueDate).split('T')[0] : '';
-      const createdDateClean = task.createdAt ? String(task.createdAt).split('T')[0] : '';
-      const dateVal = idDate || dueDateClean || createdDateClean || new Date().toISOString().split('T')[0];
+    const addCategoryUnique = (
+      item: NotificationItem,
+      cat: 'Daily Task' | 'Daily Log' | 'Temuan Unit Bermasalah' | 'Mutasi Unit Gudang'
+    ) => {
+      if (!item.categories) item.categories = [item.category];
+      if (!item.categories.includes(cat)) {
+        item.categories.push(cat);
+      }
+    };
 
-      if (filterMonth && !dateVal.startsWith(filterMonth)) return;
-      if (seenIds.has(id)) return;
-      seenIds.add(id);
-
-      const syncUpdatedBy = (task as any)._syncMeta?.updatedBy;
-      const isSyncTimestamp =
-        Boolean(idDate) ||
-        createdDateClean !== dateVal ||
-        syncUpdatedBy === 'Supabase Cloud Sync' ||
-        syncUpdatedBy === 'System Canonical Sync';
-      const timeVal =
-        !isSyncTimestamp && task.createdAt && task.createdAt.includes('T')
-          ? task.createdAt.split('T')[1].slice(0, 5)
-          : undefined;
-      const staffVal = task.assignedName || task.assignedTo || 'Tim Lapangan';
-      const effectiveTargetDate = dueDateClean || dateVal;
-
-      if (checkIsDuplicate(dateVal, staffVal, task.title)) return;
-
-      const rawDesc = String(task.description || task.title || '').trim();
-      const remarkSplit = rawDesc.split(/\n\s*REMARK:\s*\n?/i);
-      const cleanActPart = (remarkSplit[0] || task.title).trim();
-      const cleanRemPart = remarkSplit.length > 1 ? remarkSplit.slice(1).join('\n').trim() : '';
-
-      const dKey = `${dateVal}_${staffVal.toLowerCase().trim()}`;
-      const matchedSheetRows = rowDetailsByDateStaff.get(dKey);
-      const taskActLines = cleanActPart.split('\n').map(s => s.trim()).filter(Boolean);
-      const useSheetRows =
-        matchedSheetRows &&
-        matchedSheetRows.length === taskActLines.length &&
-        matchedSheetRows[0]?.activity.toLowerCase() === taskActLines[0]?.toLowerCase();
-
-      const taskPairedRows = buildReportPairedRows(
-        useSheetRows ? matchedSheetRows : undefined,
-        cleanActPart,
-        cleanRemPart
-      );
-
-      const hasUnpairedSummaryNote =
-        !useSheetRows &&
-        cleanRemPart !== '' &&
-        taskPairedRows.length > 1 &&
-        taskPairedRows.every(r => !r.remark);
-
-      const lowerTaskText = `${task.title || ''} ${rawDesc} ${(task as any).notes || ''}`.toLowerCase();
-      const isTaskKendala =
-        taskPairedRows.some(r => r.isNg) || STRICT_FINDING_TERMS.some(t => lowerTaskText.includes(t));
-      const taskQcResult: 'OK' | 'NG' | 'INFO' = isTaskKendala ? 'NG' : (task.status === 'Done' ? 'OK' : 'INFO');
-      const taskBaseTs = parseSafeTimestamp(dateVal, timeVal, task.id);
-      const taskMetaBadge = `${effectiveTargetDate ? `Target: ${effectiveTargetDate}` : ''}${task.status ? ` • Status: ${task.status}` : ''}`;
-
-      list.push({
-        id,
-        date: dateVal,
-        time: timeVal,
-        staffName: staffVal,
-        division: task.division || 'Umum',
-        category: 'Daily Task',
-        title: `Input Daily Task: ${task.title}`,
-        subtitle: task.title !== cleanActPart ? `Tugas: ${task.title}` : undefined,
-        metaBadge: taskMetaBadge || undefined,
-        activity: cleanActPart,
-        notes: hasUnpairedSummaryNote ? cleanRemPart : undefined,
-        pairedRows: taskPairedRows.length > 0 ? taskPairedRows : undefined,
-        qcResult: taskQcResult,
-        timestamp: taskBaseTs,
-        updatedAtMs: parseLiveUpdateTimestamp(task, taskBaseTs),
-        revisionKey: buildRevisionKey(id, rawDesc, taskMetaBadge, taskQcResult),
-        source: 'Daily Task Kanban',
-        targetTab: 'log_task'
-      });
-    });
-
-    // 2. INPUT DAILY LOG (Laporan Harian Staf & Checklist Logbook QC)
+    // 1. INPUT DAILY LOG (Laporan Harian Staf & Checklist Logbook QC) — Acuan Utama Google Sheet
     dailyReports.forEach(rep => {
       if (!rep || !rep.activity || rep.activity === '-' || String(rep.activity).trim() === '') return;
       const id = rep.id || `rep-${rep.date}-${rep.staffName}-${rep.activity.slice(0, 10)}`;
@@ -563,12 +560,14 @@ export default function QCNotificationCenter({
       seenIds.add(id);
 
       const staffVal = rep.staffName || 'Staff';
+      const staffKey = normalizeStaffKey(staffVal);
+      const dKey = `${dateVal}_${staffKey}`;
       if (checkIsDuplicate(dateVal, staffVal, rep.activity)) return;
 
       const effectiveRowDetails =
         (Array.isArray(rep.rowDetails) && rep.rowDetails.length > 0 ? rep.rowDetails : undefined) ||
         canonicalRowDetailsById.get(id) ||
-        rowDetailsByDateStaff.get(`${dateVal}_${staffVal.toLowerCase().trim()}`);
+        rowDetailsByDateStaff.get(dKey);
 
       const repNotes = rep.notes && rep.notes !== '-' ? rep.notes : undefined;
       const repPairedRows = buildReportPairedRows(effectiveRowDetails, rep.activity, repNotes);
@@ -584,12 +583,13 @@ export default function QCNotificationCenter({
       const allRemarksPairedInline =
         repPairedRows.length > 0 && repPairedRows.some(r => r.remark && r.remark.trim() !== '');
 
-      list.push({
+      const itemObj: NotificationItem = {
         id,
         date: dateVal,
         staffName: staffVal,
         division: rep.division || 'Umum',
         category: 'Daily Log',
+        categories: ['Daily Log'],
         title: `Daily Log: ${staffVal}`,
         activity: rep.activity,
         notes: allRemarksPairedInline ? undefined : repNotes,
@@ -600,7 +600,12 @@ export default function QCNotificationCenter({
         revisionKey: buildRevisionKey(id, rep.activity, repNotes, repQcResult),
         source: rep._source === 'google_sheet' ? 'Google Sheet Sync' : 'Input Aplikasi',
         targetTab: 'log_task'
-      });
+      };
+
+      list.push(itemObj);
+      if (!itemsByDateStaff.has(dKey)) {
+        itemsByDateStaff.set(dKey, itemObj);
+      }
     });
 
     logbookEntries.forEach(log => {
@@ -612,11 +617,13 @@ export default function QCNotificationCenter({
       seenIds.add(id);
 
       const staffVal = log.staffName || 'Teknisi QC';
-      if (checkIsDuplicate(dateVal, staffVal, log.activity)) return;
+      const staffKey = normalizeStaffKey(staffVal);
+      const dKey = `${dateVal}_${staffKey}`;
+      if (itemsByDateStaff.has(dKey) || checkIsDuplicate(dateVal, staffVal, log.activity)) return;
 
       const effectiveRowDetails =
         (Array.isArray(log.rowDetails) && log.rowDetails.length > 0 ? log.rowDetails : undefined) ||
-        rowDetailsByDateStaff.get(`${dateVal}_${staffVal.toLowerCase().trim()}`);
+        rowDetailsByDateStaff.get(dKey);
 
       const logNotes = log.followUp && log.followUp !== '-' ? log.followUp : undefined;
       const logPairedRows = buildReportPairedRows(effectiveRowDetails, log.activity, logNotes);
@@ -626,13 +633,15 @@ export default function QCNotificationCenter({
       const isNg = log.result === 'NG' || logPairedRows.some(r => r.isNg);
       const logQcResult: 'OK' | 'NG' = isNg ? 'NG' : 'OK';
       const logBaseTs = parseSafeTimestamp(dateVal, log.time, log.id);
-      list.push({
+
+      const itemObj: NotificationItem = {
         id,
         date: dateVal,
         time: log.time,
         staffName: staffVal,
         division: log.division || 'Umum',
         category: 'Daily Log',
+        categories: ['Daily Log'],
         title: `Daily Log QC ${log.division} (${log.result})`,
         activity: log.activity,
         notes: allRemarksPairedInline ? undefined : logNotes,
@@ -643,10 +652,116 @@ export default function QCNotificationCenter({
         revisionKey: buildRevisionKey(id, log.activity, logNotes, logQcResult),
         source: 'Form QC Onhouse',
         targetTab: 'log_task'
-      });
+      };
+
+      list.push(itemObj);
+      itemsByDateStaff.set(dKey, itemObj);
     });
 
-    // 3. TEMUAN UNIT BERMASALAH OLEH SEMUA DIVISI (Findings Audio, Lighting, Videotron, Multimedia, Service, Gudang)
+    // 2. INPUT DAILY TASK (Jika berasal dari tanggal & staf yang sama dengan Daily Log, gabungkan tanpa duplikasi kartu!)
+    dailyTasks.forEach(task => {
+      if (!task || !task.title) return;
+      const id = task.id || `task-${task.createdAt || Date.now()}-${task.title}`;
+      const idDate = extractDateFromId(id);
+      const dueDateClean = task.dueDate ? String(task.dueDate).split('T')[0] : '';
+      const createdDateClean = task.createdAt ? String(task.createdAt).split('T')[0] : '';
+      const dateVal = idDate || dueDateClean || createdDateClean || new Date().toISOString().split('T')[0];
+
+      if (filterMonth && !dateVal.startsWith(filterMonth)) return;
+      if (seenIds.has(id)) return;
+      seenIds.add(id);
+
+      const staffVal = task.assignedName || task.assignedTo || 'Tim Lapangan';
+      const staffKey = normalizeStaffKey(staffVal);
+      const dKey = `${dateVal}_${staffKey}`;
+      const effectiveTargetDate = dueDateClean || dateVal;
+
+      const rawDesc = String(task.description || task.title || '').trim();
+      const remarkSplit = rawDesc.split(/\n\s*REMARK:\s*\n?/i);
+      const cleanActPart = (remarkSplit[0] || task.title).trim();
+      const cleanRemPart = remarkSplit.length > 1 ? remarkSplit.slice(1).join('\n').trim() : '';
+
+      const matchedSheetRows = rowDetailsByDateStaff.get(dKey);
+      const taskActLines = cleanActPart.split('\n').map(s => s.trim()).filter(Boolean);
+      const useSheetRows =
+        matchedSheetRows &&
+        matchedSheetRows.length === taskActLines.length &&
+        matchedSheetRows[0]?.activity.toLowerCase() === taskActLines[0]?.toLowerCase();
+
+      const taskPairedRows = buildReportPairedRows(
+        useSheetRows ? matchedSheetRows : undefined,
+        cleanActPart,
+        cleanRemPart
+      );
+      const taskMetaBadge = `${effectiveTargetDate ? `Target: ${effectiveTargetDate}` : ''}${task.status ? ` • Status: ${task.status}` : ''}`;
+
+      // Jika sudah ada kartu Daily Log untuk staf & tanggal yang sama, gabungkan ke kartu tersebut agar tidak muncul berulang!
+      const existingLogItem = itemsByDateStaff.get(dKey);
+      if (existingLogItem) {
+        addCategoryUnique(existingLogItem, 'Daily Task');
+        existingLogItem.taskView = {
+          subtitle: task.title !== cleanActPart ? `Tugas: ${task.title}` : undefined,
+          metaBadge: taskMetaBadge || undefined,
+          activity: cleanActPart,
+          pairedRows: taskPairedRows.length > 0 ? taskPairedRows : existingLogItem.pairedRows,
+          source: 'Daily Task Kanban',
+          targetTab: 'log_task'
+        };
+        return;
+      }
+
+      if (checkIsDuplicate(dateVal, staffVal, task.title)) return;
+
+      const syncUpdatedBy = (task as any)._syncMeta?.updatedBy;
+      const isSyncTimestamp =
+        Boolean(idDate) ||
+        createdDateClean !== dateVal ||
+        syncUpdatedBy === 'Supabase Cloud Sync' ||
+        syncUpdatedBy === 'System Canonical Sync';
+      const timeVal =
+        !isSyncTimestamp && task.createdAt && task.createdAt.includes('T')
+          ? task.createdAt.split('T')[1].slice(0, 5)
+          : undefined;
+
+      const hasUnpairedSummaryNote =
+        !useSheetRows &&
+        cleanRemPart !== '' &&
+        taskPairedRows.length > 1 &&
+        taskPairedRows.every(r => !r.remark);
+
+      const lowerTaskText = `${task.title || ''} ${rawDesc} ${(task as any).notes || ''}`.toLowerCase();
+      const isTaskKendala =
+        taskPairedRows.some(r => r.isNg) || STRICT_FINDING_TERMS.some(t => lowerTaskText.includes(t));
+      const taskQcResult: 'OK' | 'NG' | 'INFO' = isTaskKendala ? 'NG' : (task.status === 'Done' ? 'OK' : 'INFO');
+      const taskBaseTs = parseSafeTimestamp(dateVal, timeVal, task.id);
+
+      const itemObj: NotificationItem = {
+        id,
+        date: dateVal,
+        time: timeVal,
+        staffName: staffVal,
+        division: task.division || 'Umum',
+        category: 'Daily Task',
+        categories: ['Daily Task'],
+        title: `Input Daily Task: ${task.title}`,
+        subtitle: task.title !== cleanActPart ? `Tugas: ${task.title}` : undefined,
+        metaBadge: taskMetaBadge || undefined,
+        activity: cleanActPart,
+        notes: hasUnpairedSummaryNote ? cleanRemPart : undefined,
+        pairedRows: taskPairedRows.length > 0 ? taskPairedRows : undefined,
+        qcResult: taskQcResult,
+        timestamp: taskBaseTs,
+        updatedAtMs: parseLiveUpdateTimestamp(task, taskBaseTs),
+        revisionKey: buildRevisionKey(id, rawDesc, taskMetaBadge, taskQcResult),
+        source: 'Daily Task Kanban',
+        targetTab: 'log_task'
+      };
+
+      list.push(itemObj);
+      itemsByDateStaff.set(dKey, itemObj);
+    });
+
+    // 3. TEMUAN UNIT BERMASALAH OLEH SEMUA DIVISI (Jika berasal dari tanggal & staf yang sama dengan Daily Log, gabungkan tanpa duplikasi kartu!)
     const seenFindingStaffDateKeys = new Set<string>();
     const sortedFindings = [...findings].sort((a, b) => {
       const aIsFd = String(a?.id || '').startsWith('fd-') ? 0 : 1;
@@ -663,12 +778,12 @@ export default function QCNotificationCenter({
       if (seenIds.has(id)) return;
 
       const staffVal = f.pic || 'Teknisi';
-      const normStaff = String(staffVal).toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+      const staffKey = normalizeStaffKey(staffVal);
+      const dKey = `${dateVal}_${staffKey}`;
       const isSheetFinding = f._source === 'google_sheet' || id.startsWith('gsheet-finding-') || id.startsWith('fd-2026');
       if (isSheetFinding && !dateVal.startsWith('2026-09')) {
-        const staffDateKey = `${dateVal}_${normStaff}`;
-        if (seenFindingStaffDateKeys.has(staffDateKey)) return;
-        seenFindingStaffDateKeys.add(staffDateKey);
+        if (seenFindingStaffDateKeys.has(dKey)) return;
+        seenFindingStaffDateKeys.add(dKey);
       }
 
       // Bersihkan teks "(... Kondisi unit sudah OK)" bila masih ada dari cache lama
@@ -676,10 +791,6 @@ export default function QCNotificationCenter({
         .replace(/\s*\([^)]*kondisi(?:\s+unit)?(?:\s+sudah)?\s+ok[^)]*\)/gi, '')
         .trim();
 
-      if (checkIsDuplicate(dateVal, staffVal, cleanedIssueText)) return;
-      seenIds.add(id);
-
-      // Parse segmen temuan per baris unit bermasalah
       const issueSegments = cleanedIssueText
         .split(/\s*\|\s*|\n+/)
         .map(s => s.trim())
@@ -712,14 +823,39 @@ export default function QCNotificationCenter({
         .filter(Boolean)
         .join(' • ');
 
+      // Jika sudah ada kartu Daily Log / Daily Task pada tanggal & staf yang sama, gabungkan tanpa membuat kartu duplikat!
+      const existingLogItem = itemsByDateStaff.get(dKey);
+      if (existingLogItem) {
+        seenIds.add(id);
+        addCategoryUnique(existingLogItem, 'Temuan Unit Bermasalah');
+        existingLogItem.qcResult = 'NG';
+        if (!existingLogItem.subtitle && f.equipment) {
+          existingLogItem.subtitle = `Unit Kendala: ${f.equipment}`;
+        }
+        const ngRowsFromLog = existingLogItem.pairedRows?.filter(r => r.isNg) || [];
+        existingLogItem.findingView = {
+          subtitle: f.equipment ? `Unit: ${f.equipment}` : undefined,
+          metaBadge: findMetaBadge || undefined,
+          activity: cleanedIssueText,
+          pairedRows: ngRowsFromLog.length > 0 ? ngRowsFromLog : (findingPairedRows.length > 0 ? findingPairedRows : undefined),
+          source: 'Log Temuan Kerusakan',
+          targetTab: 'findings'
+        };
+        return;
+      }
+
+      if (checkIsDuplicate(dateVal, staffVal, cleanedIssueText)) return;
+      seenIds.add(id);
+
       const findBaseTs = parseSafeTimestamp(dateVal, undefined, f.id);
 
-      list.push({
+      const itemObj: NotificationItem = {
         id,
         date: dateVal,
         staffName: staffVal,
         division: f.division || 'Semua Divisi',
         category: 'Temuan Unit Bermasalah',
+        categories: ['Temuan Unit Bermasalah'],
         title: `Temuan Unit: ${f.equipment} (${f.division || 'Umum'})`,
         subtitle: f.equipment ? `Unit: ${f.equipment}` : undefined,
         metaBadge: findMetaBadge || undefined,
@@ -731,7 +867,10 @@ export default function QCNotificationCenter({
         revisionKey: buildRevisionKey(id, cleanedIssueText, findMetaBadge, 'NG'),
         source: 'Log Temuan Kerusakan',
         targetTab: 'findings'
-      });
+      };
+
+      list.push(itemObj);
+      itemsByDateStaff.set(dKey, itemObj);
     });
 
     // 4. UNIT YANG DIKELUARKAN DAN DITERIMA OLEH DIVISI GUDANG / WAREHOUSE (Mutasi Logistik)
@@ -761,6 +900,7 @@ export default function QCNotificationCenter({
         staffName: staffVal,
         division: 'Gudang',
         category: 'Mutasi Unit Gudang',
+        categories: ['Mutasi Unit Gudang'],
         title,
         subtitle: `${actionLabel}: ${log.itemName} (${log.qty || 1} unit)`,
         activity,
@@ -791,6 +931,7 @@ export default function QCNotificationCenter({
         staffName: 'Divisi Gudang / Logistik',
         division: 'Gudang',
         category: 'Temuan Unit Bermasalah',
+        categories: ['Temuan Unit Bermasalah'],
         title: `Pemberitahuan ${alert.docType}: ${alert.policeNumber} (${alert.vehicleName})`,
         subtitle: `${alert.docType} Armada: ${alert.policeNumber} (${alert.vehicleName})`,
         metaBadge: `Masa Berlaku: ${alert.validityPeriod} • Status: ${alert.status === 'expired' ? 'KADALUARSA' : 'H-1 BULAN SEBELUM BERAKHIR'}`,
@@ -800,6 +941,26 @@ export default function QCNotificationCenter({
         source: 'Legalitas Dokumen Armada Gudang',
         targetTab: 'gudang'
       });
+    });
+
+    // Pastikan setiap item yang berstatus NG otomatis masuk dalam kategori filter 'Temuan Unit Bermasalah'
+    list.forEach(item => {
+      if (item.qcResult === 'NG') {
+        addCategoryUnique(item, 'Temuan Unit Bermasalah');
+        if (!item.findingView && item.pairedRows) {
+          const ngOnly = item.pairedRows.filter(r => r.isNg);
+          if (ngOnly.length > 0) {
+            item.findingView = {
+              subtitle: item.subtitle,
+              metaBadge: item.metaBadge,
+              activity: item.activity,
+              pairedRows: ngOnly,
+              source: item.source,
+              targetTab: 'findings'
+            };
+          }
+        }
+      }
     });
 
     // Urutkan daftar secara mutlak dari TANGGAL MASUK TERBARU (Descending YYYY-MM-DD)
@@ -816,20 +977,13 @@ export default function QCNotificationCenter({
         return String(b.time).localeCompare(String(a.time));
       }
 
-      // 3. Jika tanggal sama, urutan prioritas kategori agar Daily Log (Google Sheet) berada paling atas
-      const catOrder: Record<string, number> = {
-        'Daily Log': 0,
-        'Temuan Unit Bermasalah': 1,
-        'Daily Task': 2,
-        'Mutasi Unit Gudang': 3
-      };
-      const orderA = catOrder[a.category] ?? 9;
-      const orderB = catOrder[b.category] ?? 9;
-      if (orderA !== orderB) {
-        return orderA - orderB;
+      // 3. Jika tanggal sama, item dengan kendala (NG) diutamakan di atas
+      if (a.qcResult !== b.qcResult) {
+        if (a.qcResult === 'NG') return -1;
+        if (b.qcResult === 'NG') return 1;
       }
 
-      // 4. Jika tanggal & kategori sama, timestamp numerik terbaru paling atas
+      // 4. Jika tanggal & status sama, timestamp numerik terbaru paling atas
       if (b.timestamp !== a.timestamp) {
         return b.timestamp - a.timestamp;
       }
@@ -994,7 +1148,10 @@ export default function QCNotificationCenter({
         selectedDivision === 'Semua' ||
         n.division === selectedDivision ||
         (isMulyanaDualDivisionStaff(n.staffName) && (selectedDivision === 'Service' || selectedDivision === 'Videotron'));
-      const matchCat = selectedCategory === 'Semua' || n.category === selectedCategory;
+      const itemCats = n.categories && n.categories.length > 0 ? n.categories : [n.category];
+      const matchCat =
+        selectedCategory === 'Semua' ||
+        itemCats.includes(selectedCategory as any);
       const matchStatus =
         statusFilter === 'ALL' ||
         (statusFilter === 'NG' && n.qcResult === 'NG') ||
@@ -1007,7 +1164,7 @@ export default function QCNotificationCenter({
         (n.subtitle && n.subtitle.toLowerCase().includes(query)) ||
         (n.notes && n.notes.toLowerCase().includes(query)) ||
         n.division.toLowerCase().includes(query) ||
-        n.category.toLowerCase().includes(query) ||
+        itemCats.some(c => c.toLowerCase().includes(query)) ||
         n.date.includes(query);
       return matchDiv && matchCat && matchStatus && matchSearch;
     });
@@ -1401,7 +1558,7 @@ export default function QCNotificationCenter({
                   const isSelected = selectedCategory === cat;
                   const count = cat === 'Semua'
                     ? notifications.length
-                    : notifications.filter(n => n.category === cat).length;
+                    : notifications.filter(n => (n.categories || [n.category]).includes(cat as any)).length;
                   return (
                     <button
                       key={cat}
@@ -1526,11 +1683,29 @@ export default function QCNotificationCenter({
                   {filteredNotifications.slice(0, displayLimit).map(item => {
                     const isNg = item.qcResult === 'NG';
                     const isCardNew = drawerSessionUnreadIds.has(item.id) || isItemUnread(item);
-                    const hasPairedRows = Array.isArray(item.pairedRows) && item.pairedRows.length > 0;
+                    const activeView =
+                      selectedCategory === 'Temuan Unit Bermasalah' && item.findingView
+                        ? item.findingView
+                        : selectedCategory === 'Daily Task' && item.taskView
+                        ? item.taskView
+                        : null;
+                    const displaySubtitle = activeView ? activeView.subtitle : item.subtitle;
+                    const displayMetaBadge = activeView ? activeView.metaBadge : item.metaBadge;
+                    const displayPairedRows = activeView?.pairedRows || item.pairedRows;
+                    const displayActivity = activeView ? activeView.activity : item.activity;
+                    const displayNotes = activeView ? activeView.notes : item.notes;
+                    const displaySource = activeView ? activeView.source : item.source;
+                    const displayCategoryBadge =
+                      selectedCategory !== 'Semua' ? selectedCategory : item.category;
+                    const hasPairedRows = Array.isArray(displayPairedRows) && displayPairedRows.length > 0;
                     return (
                       <div
                         key={item.id}
-                        onClick={() => handleItemClick(item)}
+                        onClick={() =>
+                          handleItemClick(
+                            activeView ? { ...item, targetTab: activeView.targetTab } : item
+                          )
+                        }
                         className={`rounded-lg border bg-white transition-all shadow-xs overflow-hidden cursor-pointer hover:shadow-md ${
                           isNg
                             ? 'border-l-4 border-l-rose-500 border-slate-200'
@@ -1552,7 +1727,7 @@ export default function QCNotificationCenter({
                                 {item.division}
                               </span>
                               <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                {item.category}
+                                {displayCategoryBadge}
                               </span>
                               {isCardNew && (
                                 <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-indigo-600 text-white uppercase tracking-wider">
@@ -1588,16 +1763,16 @@ export default function QCNotificationCenter({
                           </div>
 
                           {/* Sub-header Unit / Judul Tugas & Info Target/Prioritas */}
-                          {(item.subtitle || item.metaBadge) && (
+                          {(displaySubtitle || displayMetaBadge) && (
                             <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5 px-2 py-1 rounded bg-slate-100/90 border border-slate-200/80 text-[10px]">
-                              {item.subtitle && (
+                              {displaySubtitle && (
                                 <span className="font-bold text-slate-800">
-                                  {item.subtitle}
+                                  {displaySubtitle}
                                 </span>
                               )}
-                              {item.metaBadge && (
+                              {displayMetaBadge && (
                                 <span className="font-mono font-semibold text-slate-600">
-                                  {item.metaBadge}
+                                  {displayMetaBadge}
                                 </span>
                               )}
                             </div>
@@ -1612,10 +1787,10 @@ export default function QCNotificationCenter({
                                   : 'bg-slate-50/80 border-slate-100 divide-slate-200/60'
                               }`}
                             >
-                              {item.pairedRows!.map((row, rIdx) => (
+                              {displayPairedRows!.map((row, rIdx) => (
                                 <div
                                   key={rIdx}
-                                  className="px-2.5 py-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs"
+                                  className="px-2.5 py-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-xs"
                                 >
                                   <div className="flex items-start gap-1.5 min-w-0 flex-1">
                                     <span
@@ -1633,7 +1808,7 @@ export default function QCNotificationCenter({
                                   </div>
                                   {row.remark && row.remark.trim() !== '' && (
                                     <span
-                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 self-start sm:self-center max-w-full sm:max-w-[52%] ${
+                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 self-start sm:self-center ${
                                         row.isNg
                                           ? 'bg-rose-100/90 text-rose-800 border border-rose-200'
                                           : 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
@@ -1644,7 +1819,7 @@ export default function QCNotificationCenter({
                                       ) : (
                                         <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
                                       )}
-                                      <span className="truncate" title={row.remark}>
+                                      <span className="leading-snug">
                                         {row.remark}
                                       </span>
                                     </span>
@@ -1660,12 +1835,12 @@ export default function QCNotificationCenter({
                                   : 'bg-slate-50 text-slate-800 border border-slate-100'
                               }`}
                             >
-                              <p className="whitespace-pre-line">{item.activity}</p>
+                              <p className="whitespace-pre-line">{displayActivity}</p>
                             </div>
                           )}
 
                           {/* Catatan Tambahan jika ada dan belum terpasang per baris */}
-                          {item.notes && item.notes.trim() !== '' && (
+                          {displayNotes && displayNotes.trim() !== '' && (
                             <div
                               className={`text-[11px] rounded p-1.5 px-2 mb-1.5 border-l-2 ${
                                 isNg
@@ -1674,7 +1849,7 @@ export default function QCNotificationCenter({
                               }`}
                             >
                               <span className="font-bold mr-1">Catatan:</span>
-                              <span className="whitespace-pre-line">{item.notes}</span>
+                              <span className="whitespace-pre-line">{displayNotes}</span>
                             </div>
                           )}
 
@@ -1682,7 +1857,7 @@ export default function QCNotificationCenter({
                           <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-mono">
                             <span className="flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                              {item.source}
+                              {displaySource}
                             </span>
                             <span className="text-indigo-600 font-bold flex items-center gap-0.5 hover:underline">
                               Buka Modul

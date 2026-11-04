@@ -18,14 +18,34 @@ export class ErrorBoundary extends (React.Component as any) {
   constructor(props: { children: React.ReactNode }) {
     super(props);
     (this as any).state = { hasError: false, error: null };
+    (this as any).retryCount = 0;
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
+  componentDidMount() {
+    if (typeof window !== 'undefined' && (import.meta as any).hot) {
+      (import.meta as any).hot.on('vite:afterUpdate', () => {
+        const state = (this as any).state as ErrorBoundaryState;
+        if (state?.hasError) {
+          (this as any).retryCount = 0;
+          (this as any).setState({ hasError: false, error: null });
+        }
+      });
+    }
+  }
+
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('[ErrorBoundary caught error]:', error, errorInfo);
+    // Auto-recover sekali jika terjadi transient ReferenceError / HMR update di tengah perubahan file
+    if ((this as any).retryCount < 2) {
+      (this as any).retryCount += 1;
+      setTimeout(() => {
+        (this as any).setState({ hasError: false, error: null });
+      }, 300);
+    }
   }
 
   handleHardReset() {
