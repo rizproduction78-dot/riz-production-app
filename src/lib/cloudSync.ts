@@ -7,7 +7,7 @@
  * Powered by Unified Local Storage, BroadcastChannel, Supabase, and Google Sheets Synchronization.
  */
 
-import { normalizeStaffMaster, normalizeVehiclesMaster, STAFF_LIST, getMasterStaffList, INITIAL_DAILY_TASKS, INITIAL_DAILY_REPORTS, INITIAL_LOGBOOK_ENTRIES, INITIAL_FINDINGS, INITIAL_JOB_ASSIGNMENTS } from '../data';
+import { normalizeStaffMaster, normalizeVehiclesMaster, normalizeAssetsMaster, STAFF_LIST, getMasterStaffList, INITIAL_DAILY_TASKS, INITIAL_DAILY_REPORTS, INITIAL_LOGBOOK_ENTRIES, INITIAL_FINDINGS, INITIAL_JOB_ASSIGNMENTS } from '../data';
 import { isStaffMatch } from '../utils/kpiCalculator';
 import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
 import {
@@ -488,6 +488,10 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
 
   if (collectionName === 'master_vehicles') {
     return normalizeVehiclesMaster(items) as unknown as T[];
+  }
+
+  if (collectionName === 'assets') {
+    return normalizeAssetsMaster(items) as unknown as T[];
   }
 
   // Special normalization for daily_reports: preserve literal Google Sheet text and prioritize live _syncedAt / user-edited

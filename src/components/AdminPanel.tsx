@@ -24,7 +24,8 @@ import {
   LogbookEntry,
   OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_URL,
   OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID,
-  OFFICIAL_ARMADA_SPREADSHEET_URL
+  OFFICIAL_ARMADA_SPREADSHEET_URL,
+  OFFICIAL_INVENTORY_SPREADSHEET_URL
 } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, getMasterStaffList, getMasterFreelanceList, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc, filterMaintenanceHistoryByCurrentYear } from '../data';
 import { getScheduleByKey, StaffScheduleRow, getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
@@ -2787,31 +2788,42 @@ export default function AdminPanel({
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Cari aset / kode / lokasi..."
+                placeholder="Cari aset / kode / merk / lokasi..."
                 value={assetSearch}
                 onChange={(e) => setAssetSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
               />
             </div>
 
-            <button
-              onClick={() => {
-                setAssetFormData({
-                  name: '',
-                  code: '',
-                  brand: 'Standard',
-                  serialNumber: '-',
-                  division: 'Audio',
-                  location: 'Gudang Utama - Rak A1',
-                  condition: 'Baik'
-                });
-                setShowAddAssetModal(true);
-              }}
-              className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tambah Aset Gudang Baru</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={OFFICIAL_INVENTORY_SPREADSHEET_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                <span>Sheet Inventaris Resmi ({assets.length} Kelompok) ↗</span>
+              </a>
+              <button
+                onClick={() => {
+                  setAssetFormData({
+                    name: '',
+                    code: '',
+                    brand: 'Standard',
+                    serialNumber: '-',
+                    division: 'Audio',
+                    location: 'Gudang Utama - Rak A1',
+                    condition: 'Baik'
+                  });
+                  setShowAddAssetModal(true);
+                }}
+                className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Aset Gudang Baru</span>
+              </button>
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">

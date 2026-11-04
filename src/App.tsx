@@ -350,7 +350,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v75_job_assignments_schedule';
+  const REF_SYNC_KEY = 'riz_ref_synced_v76_inventory_assets_1lZ9Ja';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
@@ -402,6 +402,7 @@ export default function App() {
     localStorage.setItem('riz_master_staff_list', JSON.stringify(normalizeCollectionItems('master_staff', mergeById(STAFF_LIST, 'riz_master_staff_list'))));
     localStorage.setItem('riz_freelance_workers', JSON.stringify(normalizeCollectionItems('freelance_workers', mergeById(INITIAL_FREELANCE_WORKERS, 'riz_freelance_workers'))));
     localStorage.setItem('riz_master_vehicles', JSON.stringify(normalizeVehiclesMaster(mergeById(INITIAL_VEHICLES, 'riz_master_vehicles'))));
+    localStorage.setItem('riz_assets', JSON.stringify(normalizeCollectionItems('assets', mergeById(INITIAL_ASSETS, 'riz_assets'))));
     localStorage.setItem('riz_job_assignments_v1', JSON.stringify(normalizeCollectionItems('job_assignments', mergeById(INITIAL_JOB_ASSIGNMENTS, 'riz_job_assignments_v1'))));
     localStorage.removeItem('riz_notification_known_revisions_v4');
     localStorage.removeItem('riz_notification_read_ids_v4');
@@ -532,7 +533,15 @@ export default function App() {
 
   const [assets, setAssets] = useState<Asset[]>(() => {
     const saved = localStorage.getItem('riz_assets');
-    return saved ? JSON.parse(saved) : INITIAL_ASSETS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return normalizeCollectionItems('assets', parsed);
+        }
+      } catch (e) {}
+    }
+    return normalizeCollectionItems('assets', INITIAL_ASSETS);
   });
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {

@@ -10,6 +10,7 @@ import {
   CANONICAL_FIRESTORE_FINDINGS,
   CANONICAL_FIRESTORE_WORK_ORDERS
 } from './data/canonicalFirestoreData';
+import { INITIAL_INVENTORY_ASSETS } from './data/inventoryAssetsData';
 
 export const STAFF_LIST: Staff[] = [
   // 1. Gudang
@@ -389,7 +390,7 @@ export const QC_ITEMS_BY_DIVISION = {
 };
 
 export const INITIAL_VEHICLE_MAINTENANCES: VehicleMaintenanceRecord[] = [];
-export const INITIAL_ASSETS: Asset[] = [];
+export const INITIAL_ASSETS: Asset[] = INITIAL_INVENTORY_ASSETS;
 export const INITIAL_MAINTENANCE_SCHEDULES: MaintenanceSchedule[] = [];
 export const INITIAL_WORK_ORDERS: WorkOrder[] = CANONICAL_FIRESTORE_WORK_ORDERS;
 
@@ -2796,6 +2797,62 @@ export function normalizeVehiclesMaster(rawList: any[]): VehicleMaster[] {
           policeNumber: plate,
           totalMaintenanceCost: computedCost,
           maintenanceHistory: sortedHist
+        });
+      }
+    });
+  }
+
+  return Array.from(resultById.values());
+}
+
+/**
+ * Normalisasi Master Inventaris Aset Gudang Resmi (133 Kelompok Aset dari Google Sheet 1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O):
+ * Menggabungkan INITIAL_ASSETS resmi dengan perubahan atau penambahan user di localStorage / Cloud Sync.
+ */
+export function normalizeAssetsMaster(rawList: any[]): Asset[] {
+  const resultById = new Map<string, Asset>();
+  const canonicalByCode = new Map<string, Asset>();
+
+  INITIAL_ASSETS.forEach(asset => {
+    resultById.set(asset.id, {
+      ...asset,
+      repairHistory: Array.isArray(asset.repairHistory) ? asset.repairHistory : []
+    });
+    canonicalByCode.set(asset.code.toUpperCase().trim(), asset);
+  });
+
+  if (Array.isArray(rawList)) {
+    const flat = rawList.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
+    flat.forEach(item => {
+      if (!item || typeof item !== 'object' || item._deleted) return;
+      const itemId = String(item.id || '').trim();
+      const itemCode = String(item.code || '').toUpperCase().trim();
+      if (!itemId && !itemCode) return;
+
+      const canonical = (itemId ? resultById.get(itemId) : undefined) || (itemCode ? canonicalByCode.get(itemCode) : undefined);
+      if (canonical) {
+        resultById.set(canonical.id, {
+          ...canonical,
+          ...item,
+          id: canonical.id,
+          code: item.code || canonical.code,
+          name: item.name || canonical.name,
+          brand: item.brand || canonical.brand,
+          serialNumber: item.serialNumber || canonical.serialNumber,
+          division: item.division || canonical.division,
+          location: item.location || canonical.location,
+          condition: item.condition || canonical.condition,
+          repairHistory: Array.isArray(item.repairHistory) && item.repairHistory.length > 0
+            ? item.repairHistory
+            : canonical.repairHistory
+        });
+      } else {
+        const key = itemId || `ast-custom-${itemCode}`;
+        resultById.set(key, {
+          ...(item as Asset),
+          id: key,
+          code: itemCode || key.toUpperCase(),
+          repairHistory: Array.isArray(item.repairHistory) ? item.repairHistory : []
         });
       }
     });

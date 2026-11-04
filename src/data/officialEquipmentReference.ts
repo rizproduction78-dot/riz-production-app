@@ -56,6 +56,13 @@ export const OFFICIAL_EQUIPMENT_SOURCES: OfficialEquipmentSource[] = [
     division: 'Gudang',
     url: 'https://www.rizproduction.id/rental-custom-event-production',
     description: 'Custom backdrop, stage set design, entrance gate, wallpanel display, dan rigging truss untuk kebutuhan event dan branding.'
+  },
+  {
+    title: 'Google Sheet Master Inventaris Gudang Resmi (Lighting, Sound, Streaming, LED)',
+    category: 'Master Inventaris Aset Gudang (133 Kelompok Aset Resmi)',
+    division: 'Gudang',
+    url: 'https://docs.google.com/spreadsheets/d/1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O/edit?usp=sharing',
+    description: 'Database inventaris resmi seluruh peralatan gudang PT. Riz Production Multi Kreasi (Lighting, Sound/Audio, Streaming/Multimedia, dan LED Videotron).'
   }
 ];
 

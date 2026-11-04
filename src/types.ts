@@ -258,6 +258,9 @@ export interface Finding {
   };
 }
 
+export const OFFICIAL_INVENTORY_SPREADSHEET_ID = "1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O";
+export const OFFICIAL_INVENTORY_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O/edit?usp=sharing";
+
 export interface Asset {
   id: string;
   code: string;

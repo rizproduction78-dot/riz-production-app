@@ -10,9 +10,10 @@ import {
   VehicleMaster,
   ManifestCargoItem,
   FleetDriver,
-  OFFICIAL_ARMADA_SPREADSHEET_URL
+  OFFICIAL_ARMADA_SPREADSHEET_URL,
+  OFFICIAL_INVENTORY_SPREADSHEET_URL
 } from '../types';
-import { INITIAL_ASSETS, INITIAL_VEHICLES, INITIAL_FLEET_DRIVERS, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc, filterMaintenanceHistoryByCurrentYear } from '../data';
+import { INITIAL_ASSETS, INITIAL_VEHICLES, INITIAL_FLEET_DRIVERS, normalizeVehiclesMaster, normalizeAssetsMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc, filterMaintenanceHistoryByCurrentYear } from '../data';
 import {
   Package,
   ArrowDownLeft,
@@ -152,14 +153,17 @@ export default function Gudang({
     try {
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
         const saved = localStorage.getItem('riz_assets');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return normalizeAssetsMaster(parsed);
+        }
       }
     } catch (e) {}
     return INITIAL_ASSETS;
   });
 
   useEffect(() => {
-    setLocalAssets(assets);
+    setLocalAssets(normalizeAssetsMaster(assets));
   }, [assets]);
 
   const isAdminDivision = true; // Allow viewing and managing fleet/armada
@@ -1423,7 +1427,19 @@ export default function Gudang({
 
               {/* Quick Scan Suggestions List */}
               <div className="space-y-2 text-left">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Daftar Barcode Aset Gudang</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">
+                    Daftar Barcode Aset Gudang ({localAssets.length})
+                  </span>
+                  <a
+                    href={OFFICIAL_INVENTORY_SPREADSHEET_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline font-mono"
+                  >
+                    BUKA SHEET ↗
+                  </a>
+                </div>
                 <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto pr-1">
                   {localAssets.map((asset) => (
                     <button
