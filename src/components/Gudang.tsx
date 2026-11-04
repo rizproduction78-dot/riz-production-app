@@ -12,7 +12,7 @@ import {
   FleetDriver,
   OFFICIAL_ARMADA_SPREADSHEET_URL
 } from '../types';
-import { INITIAL_ASSETS, INITIAL_VEHICLES, INITIAL_FLEET_DRIVERS, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc, limitMaintenanceHistoryOnePerYear } from '../data';
+import { INITIAL_ASSETS, INITIAL_VEHICLES, INITIAL_FLEET_DRIVERS, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc, filterMaintenanceHistoryByCurrentYear } from '../data';
 import {
   Package,
   ArrowDownLeft,
@@ -2077,22 +2077,27 @@ export default function Gudang({
                             </span>
                           </div>
                         </div>
-                        {typeof v.totalMaintenanceCost === 'number' && (
-                          <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                            <span className="text-slate-500 font-sans text-[10px]">Total Riwayat Servis:</span>
-                            <span className="font-bold text-indigo-700">
-                              Rp {v.totalMaintenanceCost.toLocaleString('id-ID')} ({v.maintenanceHistory?.length || 0}x)
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const yearlySummary = filterMaintenanceHistoryByCurrentYear(v.maintenanceHistory, '2026');
+                          return (
+                            <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                              <span className="text-slate-500 font-sans text-[10px]">Total Riwayat Servis ({yearlySummary.year}):</span>
+                              <span className="font-bold text-indigo-700">
+                                Rp {yearlySummary.totalCost.toLocaleString('id-ID')} ({yearlySummary.records.length}x)
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {v.maintenanceHistory && v.maintenanceHistory.length > 0 && (() => {
-                        const yearlyHistory = limitMaintenanceHistoryOnePerYear(v.maintenanceHistory);
+                        const yearlySummary = filterMaintenanceHistoryByCurrentYear(v.maintenanceHistory, '2026');
+                        const yearlyHistory = yearlySummary.records;
+                        if (yearlyHistory.length === 0) return null;
                         return (
                           <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 space-y-1.5 max-h-40 overflow-y-auto">
                             <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                              <span>Riwayat Servis Resmi ({yearlyHistory.length} Thn)</span>
+                              <span>Riwayat Servis Resmi {yearlySummary.year} ({yearlyHistory.length})</span>
                               <a
                                 href={v.sheetGid ? `https://docs.google.com/spreadsheets/d/1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs/edit?gid=${v.sheetGid}#gid=${v.sheetGid}` : OFFICIAL_ARMADA_SPREADSHEET_URL}
                                 target="_blank"

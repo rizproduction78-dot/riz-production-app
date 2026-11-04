@@ -16,7 +16,7 @@ import {
   EXPIRY_ALERT_THRESHOLD_DAYS
 } from '../src/utils/vehicleExpiryAlerts';
 import { VehicleMaster } from '../src/types';
-import { INITIAL_VEHICLES, normalizeVehiclesMaster, formatServiceDateIndonesian, limitMaintenanceHistoryOnePerYear } from '../src/data';
+import { INITIAL_VEHICLES, normalizeVehiclesMaster, formatServiceDateIndonesian, filterMaintenanceHistoryByCurrentYear } from '../src/data';
 
 function runVehicleExpiryTests() {
   console.log('================================================================');
@@ -207,17 +207,23 @@ function runVehicleExpiryTests() {
   assert(v8446Edited?.totalMaintenanceCost === 8735077 + 450000, 'Total biaya servis harus terupdate sesuai riwayat servis yang diedit');
   console.log('✓ PASS: Edit Unit Armada & Riwayat Servis tersimpan permanen dan tidak kembali semula.\n');
 
-  console.log('[TEST 7] Verifikasi Pembatasan Riwayat Servis Maksimal 1 Catatan per Tahun (limitMaintenanceHistoryOnePerYear)');
+  console.log('[TEST 7] Verifikasi Pembatasan Riwayat Servis & Total Biaya khusus 1 Tahun Berjalan (2026)');
   const v8569 = INITIAL_VEHICLES.find(v => v.policeNumber === 'F 8569 BH')!;
-  const limited8569 = limitMaintenanceHistoryOnePerYear(v8569.maintenanceHistory);
-  assert(limited8569.length === 1, 'F 8569 BH (2 catatan di 2026) harus dibatasi menjadi 1 catatan untuk tahun 2026');
-  assert(limited8569[0].date === '2026-08-26', 'Catatan F 8569 BH tahun 2026 yang tampil harus yang terkini (2026-08-26)');
+  const summary8569 = filterMaintenanceHistoryByCurrentYear(v8569.maintenanceHistory, '2026');
+  assert(summary8569.records.length === 2, 'F 8569 BH di tahun 2026 memiliki 2 catatan servis');
+  assert(summary8569.totalCost === 1515970, 'Total biaya servis F 8569 BH tahun 2026 harus Rp 1.515.970');
 
   const v8433Full = INITIAL_VEHICLES.find(v => v.policeNumber === 'F 8433 BF')!;
-  const limited8433 = limitMaintenanceHistoryOnePerYear(v8433Full.maintenanceHistory);
-  assert(limited8433.length === 3, 'F 8433 BF (2026, 2025, 2024) harus menghasilkan tepat 3 catatan (1 per tahun)');
-  assert(limited8433.map(r => r.date.slice(0, 4)).join(',') === '2026,2025,2024', 'Urutan tahun harus 2026, 2025, 2024');
-  console.log('✓ PASS: Pembatasan riwayat servis 1 catatan per tahun pada ringkasan kartu armada terverifikasi.\n');
+  const summary8433 = filterMaintenanceHistoryByCurrentYear(v8433Full.maintenanceHistory, '2026');
+  assert(summary8433.records.length === 4, 'F 8433 BF di tahun 2026 harus menampilkan 4 catatan servis tahun 2026 saja (tanpa 2025/2024)');
+  assert(summary8433.records.every(r => r.date.startsWith('2026-')), 'Seluruh catatan F 8433 BF yang tampil harus tahun 2026');
+  assert(summary8433.totalCost === 3989241, 'Total biaya servis F 8433 BF tahun 2026 harus Rp 3.989.241');
+
+  const v8446Full = INITIAL_VEHICLES.find(v => v.policeNumber === 'F 8446 BF')!;
+  const summary8446 = filterMaintenanceHistoryByCurrentYear(v8446Full.maintenanceHistory, '2026');
+  assert(summary8446.records.length === 3, 'F 8446 BF di tahun 2026 harus menampilkan 3 catatan servis tahun 2026 saja');
+  assert(summary8446.totalCost === 3490085, 'Total biaya servis F 8446 BF tahun 2026 harus Rp 3.490.085');
+  console.log('✓ PASS: Pembatasan riwayat servis & total biaya khusus 1 tahun berjalan (2026) terverifikasi 100%.\n');
 
   console.log('================================================================');
   console.log('  SEMUA PENGUJIAN MASA BERLAKU STNK & KIR LULUS SEMPURNA (100%)');

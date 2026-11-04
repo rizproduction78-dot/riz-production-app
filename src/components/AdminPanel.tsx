@@ -26,7 +26,7 @@ import {
   OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID,
   OFFICIAL_ARMADA_SPREADSHEET_URL
 } from '../types';
-import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, getMasterStaffList, getMasterFreelanceList, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc } from '../data';
+import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, getMasterStaffList, getMasterFreelanceList, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc, filterMaintenanceHistoryByCurrentYear } from '../data';
 import { getScheduleByKey, StaffScheduleRow, getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
 import {
   exportStaffToJson,
@@ -3148,14 +3148,19 @@ export default function AdminPanel({
                                   <span className="font-mono text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-700">
                                     {v.policeNumber || '-'}
                                   </span>
-                                  <a
-                                    href={v.sheetGid ? `https://docs.google.com/spreadsheets/d/1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs/edit?gid=${v.sheetGid}#gid=${v.sheetGid}` : OFFICIAL_ARMADA_SPREADSHEET_URL}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-[10px] text-indigo-600 hover:underline font-mono font-bold"
-                                  >
-                                    Sheet Servis ({v.maintenanceHistory?.length || 0}x • Rp {(v.totalMaintenanceCost || 0).toLocaleString('id-ID')}) ↗
-                                  </a>
+                                  {(() => {
+                                    const yearlySummary = filterMaintenanceHistoryByCurrentYear(v.maintenanceHistory, '2026');
+                                    return (
+                                      <a
+                                        href={v.sheetGid ? `https://docs.google.com/spreadsheets/d/1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs/edit?gid=${v.sheetGid}#gid=${v.sheetGid}` : OFFICIAL_ARMADA_SPREADSHEET_URL}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-[10px] text-indigo-600 hover:underline font-mono font-bold"
+                                      >
+                                        Sheet Servis {yearlySummary.year} ({yearlySummary.records.length}x • Rp {yearlySummary.totalCost.toLocaleString('id-ID')}) ↗
+                                      </a>
+                                    );
+                                  })()}
                                 </div>
                                 {v.maintenanceHistory && v.maintenanceHistory.length > 0 && (() => {
                                   const sorted = sortMaintenanceHistoryDesc(v.maintenanceHistory);

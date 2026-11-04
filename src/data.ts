@@ -2655,22 +2655,30 @@ export function sortMaintenanceHistoryDesc(records?: VehicleMaintenanceRecord[])
 }
 
 /**
+ * Membatasi riwayat servis hanya untuk 1 tahun berjalan (tahun terkini, default 2026)
+ * dan menghitung total biaya serta jumlah catatan servis pada tahun tersebut.
+ */
+export function filterMaintenanceHistoryByCurrentYear(
+  records?: VehicleMaintenanceRecord[],
+  targetYear?: string
+): { year: string; records: VehicleMaintenanceRecord[]; totalCost: number } {
+  const sorted = sortMaintenanceHistoryDesc(records);
+  const effectiveYear =
+    targetYear ||
+    (sorted.length > 0 && /^\d{4}/.test(String(sorted[0]?.date || '').trim())
+      ? String(sorted[0].date).trim().slice(0, 4)
+      : '2026');
+  const filtered = sorted.filter(rec => String(rec?.date || '').trim().startsWith(effectiveYear));
+  const totalCost = filtered.reduce((sum, rec) => sum + (Number(rec?.cost) || 0), 0);
+  return { year: effectiveYear, records: filtered, totalCost };
+}
+
+/**
  * Membatasi ringkasan riwayat servis maksimal 1 catatan servis terkini per tahun
  * (diurutkan dari tahun terbaru ke tahun sebelumnya).
  */
 export function limitMaintenanceHistoryOnePerYear(records?: VehicleMaintenanceRecord[]): VehicleMaintenanceRecord[] {
-  const sorted = sortMaintenanceHistoryDesc(records);
-  const seenYears = new Set<string>();
-  const limited: VehicleMaintenanceRecord[] = [];
-  for (const rec of sorted) {
-    const year = String(rec?.date || '').trim().slice(0, 4);
-    const key = /^\d{4}$/.test(year) ? year : `other-${limited.length}`;
-    if (!seenYears.has(key)) {
-      seenYears.add(key);
-      limited.push(rec);
-    }
-  }
-  return limited;
+  return filterMaintenanceHistoryByCurrentYear(records, '2026').records;
 }
 
 /**
