@@ -3,14 +3,24 @@ import {
   Staff,
   AttendanceLog,
   WorkSchedule,
+  JobAssignment,
+  JobDivisionSection,
   OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL,
   OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL,
+  OFFICIAL_JOB_SCHEDULE_DOC_URL,
+  OFFICIAL_ARMADA_SPREADSHEET_URL,
   OFFICIAL_COMPANY_ADDRESS,
   OFFICIAL_COMPANY_PLUS_CODE,
   OFFICIAL_COMPANY_GPS_COORDINATES,
   OFFICIAL_COMPANY_GOOGLE_MAPS_URL
 } from '../types';
-import { STAFF_LIST, getMasterStaffList } from '../data';
+import {
+  STAFF_LIST,
+  getMasterStaffList,
+  INITIAL_JOB_ASSIGNMENTS,
+  buildCrewList,
+  formatFleetVehicleBadge
+} from '../data';
 import {
   SHIFT_LEGEND,
   SCHEDULE_NOTE,
@@ -44,9 +54,15 @@ import {
   Plus,
   Trash2,
   Printer,
-  X
+  X,
+  Truck,
+  Package,
+  Briefcase,
+  Users,
+  ExternalLink,
+  ShieldCheck
 } from 'lucide-react';
-import { subscribeCloudCollection, saveCloudDoc, pushCollectionToCloud } from '../lib/cloudSync';
+import { subscribeCloudCollection, saveCloudDoc, deleteCloudDoc, pushCollectionToCloud } from '../lib/cloudSync';
 
 export const WAJIB_ABSEN_NAMES = [
   'Agus', 'Fahrul', 'Caca', 'Seno',
@@ -183,12 +199,13 @@ interface AbsensiProps {
   currentUser: Staff;
   onLogActivity: (username: string, role: string, action: string) => void;
   forceSubTab?: 'self' | 'schedule' | 'progress' | 'maintenance_dashboard';
+  initialScheduleViewMode?: 'official' | 'job_assignments' | 'custom';
   activeMonth?: string;
   onActiveMonthChange?: (monthKey: string) => void;
   scheduleData?: StaffScheduleRow[];
 }
 
-export default function Absensi({ currentUser, onLogActivity, forceSubTab, activeMonth: propActiveMonth = getActiveMonthKey(), onActiveMonthChange, scheduleData: propScheduleData }: AbsensiProps) {
+export default function Absensi({ currentUser, onLogActivity, forceSubTab, initialScheduleViewMode, activeMonth: propActiveMonth = getActiveMonthKey(), onActiveMonthChange, scheduleData: propScheduleData }: AbsensiProps) {
   const activeMonth = propActiveMonth === 'all' ? getActiveMonthKey() : propActiveMonth;
   const [scheduleData, setScheduleData] = useState<StaffScheduleRow[]>(() => {
     if (propScheduleData && propScheduleData.length > 0) return propScheduleData;
@@ -354,8 +371,211 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
   });
 
   // Official Schedule State
-  const [scheduleViewMode, setScheduleViewMode] = useState<'official' | 'custom'>('official');
+  const [scheduleViewMode, setScheduleViewMode] = useState<'official' | 'job_assignments' | 'custom'>(
+    initialScheduleViewMode || 'official'
+  );
   const [divisionFilter, setDivisionFilter] = useState<string>('All');
+
+  // Job Assignments State (Staff & Freelance Event / Job Schedule)
+  const [jobAssignments, setJobAssignments] = useState<JobAssignment[]>(() => {
+    try {
+      const saved = localStorage.getItem('riz_job_assignments_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return INITIAL_JOB_ASSIGNMENTS;
+  });
+  const [jobMonthFilter, setJobMonthFilter] = useState<string>(() => {
+    if (activeMonth === '2026-12') return '2026-12';
+    return '2026-11';
+  });
+  const [jobDivisionFilter, setJobDivisionFilter] = useState<string>('All');
+  const [jobCrewTypeFilter, setJobCrewTypeFilter] = useState<'All' | 'Staff' | 'Freelance'>('All');
+  const [jobSearchQuery, setJobSearchQuery] = useState<string>('');
+  const [showJobFormModal, setShowJobFormModal] = useState<boolean>(false);
+  const [editingJobId, setEditingJobId] = useState<string | null>(null);
+  const [jobFormDate, setJobFormDate] = useState<string>('2026-11-05');
+  const [jobFormDateLabel, setJobFormDateLabel] = useState<string>('');
+  const [jobFormVenue, setJobFormVenue] = useState<string>('');
+  const [jobFormLoadingSchedule, setJobFormLoadingSchedule] = useState<string>('');
+  const [jobFormPic, setJobFormPic] = useState<string>('');
+  const [jobFormStatus, setJobFormStatus] = useState<JobAssignment['status']>('Terjadwal');
+  const [jobFormNotes, setJobFormNotes] = useState<string>('');
+  const [jobFormDivision, setJobFormDivision] = useState<JobDivisionSection['division']>('Audio');
+  const [jobFormPackageLabel, setJobFormPackageLabel] = useState<string>('');
+  const [jobFormEquipmentText, setJobFormEquipmentText] = useState<string>('');
+  const [jobFormCrewText, setJobFormCrewText] = useState<string>('');
+  const [jobFormVehiclesText, setJobFormVehiclesText] = useState<string>('');
+
+  useEffect(() => {
+    if (activeMonth === '2026-11' || activeMonth === '2026-12') {
+      setJobMonthFilter(activeMonth);
+    }
+  }, [activeMonth]);
+
+  useEffect(() => {
+    const unsubJobs = subscribeCloudCollection<JobAssignment>(
+      'job_assignments',
+      'riz_job_assignments_v1',
+      (data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const sorted = [...data].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+          setJobAssignments(sorted);
+        } else {
+          setJobAssignments(INITIAL_JOB_ASSIGNMENTS);
+        }
+      },
+      INITIAL_JOB_ASSIGNMENTS
+    );
+    return () => unsubJobs();
+  }, []);
+
+  const canManageJobSchedule =
+    currentUser.role === 'Owner' ||
+    currentUser.role === 'Direktur' ||
+    currentUser.role === 'Manager' ||
+    currentUser.role === 'Admin' ||
+    currentUser.role === 'Supervisor' ||
+    currentUser.role === 'Team Leader';
+
+  const handleOpenAddJobModal = () => {
+    setEditingJobId(null);
+    const defaultDate = jobMonthFilter === '2026-12' ? '2026-12-01' : '2026-11-05';
+    setJobFormDate(defaultDate);
+    setJobFormDateLabel('');
+    setJobFormVenue('');
+    setJobFormLoadingSchedule('');
+    setJobFormPic(currentUser.name);
+    setJobFormStatus('Terjadwal');
+    setJobFormNotes('');
+    setJobFormDivision('Audio');
+    setJobFormPackageLabel('Sound 5rb');
+    setJobFormEquipmentText('');
+    setJobFormCrewText('');
+    setJobFormVehiclesText('');
+    setShowJobFormModal(true);
+  };
+
+  const handleOpenEditJobModal = (job: JobAssignment) => {
+    setEditingJobId(job.id);
+    setJobFormDate(job.date);
+    setJobFormDateLabel(job.dateLabel);
+    setJobFormVenue(job.venue);
+    setJobFormLoadingSchedule(job.loadingSchedule || '');
+    setJobFormPic(job.pic || '');
+    setJobFormStatus(job.status || 'Terjadwal');
+    setJobFormNotes(job.notes || '');
+    const firstSec = job.sections[0];
+    setJobFormDivision(firstSec?.division || 'Audio');
+    setJobFormPackageLabel(firstSec?.packageLabel || '');
+    setJobFormEquipmentText((firstSec?.equipment || []).join('\n'));
+    setJobFormCrewText(
+      (firstSec?.crew || [])
+        .map(c => (c.roleNote ? `${c.name} (${c.roleNote})` : c.name))
+        .join(', ')
+    );
+    setJobFormVehiclesText((firstSec?.vehicles || []).join(', '));
+    setShowJobFormModal(true);
+  };
+
+  const handleSaveJobAssignment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!jobFormVenue.trim()) {
+      alert('Lokasi / Venue wajib diisi.');
+      return;
+    }
+    const monthKey = jobFormDate.slice(0, 7) || '2026-11';
+    const rawCrewTokens = jobFormCrewText
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    const resolvedCrew = buildCrewList(rawCrewTokens, jobFormDivision);
+    const equipmentList = jobFormEquipmentText
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+    const vehicleList = jobFormVehiclesText
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    const existingJob = editingJobId ? jobAssignments.find(j => j.id === editingJobId) : null;
+    const updatedSection: JobDivisionSection = {
+      division: jobFormDivision,
+      packageLabel: jobFormPackageLabel.trim() || jobFormDivision,
+      equipment: equipmentList,
+      crew: resolvedCrew,
+      vehicles: vehicleList
+    };
+
+    const nextSections = existingJob && existingJob.sections.length > 1
+      ? [updatedSection, ...existingJob.sections.slice(1)]
+      : [updatedSection];
+
+    const finalJob: JobAssignment & { _userEdited?: boolean } = {
+      id: editingJobId || `job-${jobFormDate.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`,
+      monthKey,
+      date: jobFormDate,
+      dateLabel: jobFormDateLabel.trim() || `${jobFormDate} ${jobFormVenue.trim()}`,
+      venue: jobFormVenue.trim(),
+      loadingSchedule: jobFormLoadingSchedule.trim() || '-',
+      pic: jobFormPic.trim() || '-',
+      status: jobFormStatus,
+      notes: jobFormNotes.trim() || undefined,
+      sections: nextSections,
+      _userEdited: true
+    };
+
+    setJobAssignments(prev => {
+      const exists = prev.some(j => j.id === finalJob.id);
+      const next = exists ? prev.map(j => (j.id === finalJob.id ? finalJob : j)) : [finalJob, ...prev];
+      const sorted = [...next].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+      try {
+        localStorage.setItem('riz_job_assignments_v1', JSON.stringify(sorted));
+      } catch {}
+      return sorted;
+    });
+
+    saveCloudDoc('job_assignments', finalJob.id, finalJob, currentUser.name);
+    onLogActivity(
+      currentUser.name,
+      currentUser.role,
+      `${editingJobId ? 'Memperbarui' : 'Menambahkan'} Jadwal Penugasan Job: ${finalJob.dateLabel} (PIC: ${finalJob.pic})`
+    );
+    setShowJobFormModal(false);
+  };
+
+  const handleUpdateJobStatus = (job: JobAssignment, nextStatus: JobAssignment['status']) => {
+    const updated: JobAssignment & { _userEdited?: boolean } = {
+      ...job,
+      status: nextStatus,
+      _userEdited: true
+    };
+    setJobAssignments(prev => {
+      const next = prev.map(j => (j.id === job.id ? updated : j));
+      try {
+        localStorage.setItem('riz_job_assignments_v1', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    saveCloudDoc('job_assignments', updated.id, updated, currentUser.name);
+    onLogActivity(currentUser.name, currentUser.role, `Mengubah status Job "${job.dateLabel}" menjadi ${nextStatus}`);
+  };
+
+  const handleDeleteJobAssignment = (job: JobAssignment) => {
+    if (!window.confirm(`Hapus jadwal penugasan job "${job.dateLabel}"?`)) return;
+    setJobAssignments(prev => {
+      const next = prev.filter(j => j.id !== job.id);
+      try {
+        localStorage.setItem('riz_job_assignments_v1', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    deleteCloudDoc('job_assignments', job.id);
+    onLogActivity(currentUser.name, currentUser.role, `Menghapus Jadwal Penugasan Job: ${job.dateLabel}`);
+  };
 
   // Active check in / out state for current user on today's date
   const todayStr = new Date().toISOString().split('T')[0];
@@ -654,11 +874,25 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
                 Absensi Mandiri
               </button>
 
-              {/* Schedule Tab available to Admin, Supervisor and Manager */}
-              {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+              <button
+                onClick={() => {
+                  setActiveSubTab('schedule');
+                  setScheduleViewMode('job_assignments');
+                }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${activeSubTab === 'schedule' && scheduleViewMode === 'job_assignments' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                  }`}
+              >
+                📋 Penugasan Job & Event
+              </button>
+
+              {/* Schedule Tab available to Admin, Supervisor, Manager and Team Leader */}
+              {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager' || currentUser.role === 'Owner' || currentUser.role === 'Direktur' || currentUser.role === 'Team Leader') && (
                 <button
-                  onClick={() => setActiveSubTab('schedule')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${activeSubTab === 'schedule' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                  onClick={() => {
+                    setActiveSubTab('schedule');
+                    setScheduleViewMode('official');
+                  }}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${activeSubTab === 'schedule' && scheduleViewMode !== 'job_assignments' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
                     }`}
                 >
                   Penjadwalan (1-31)
@@ -666,6 +900,41 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {forceSubTab === 'self' && (
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-white p-3 rounded-xl border border-slate-100 shadow-2xs">
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('self')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${activeSubTab === 'self' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Absensi Mandiri</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSubTab('schedule');
+                setScheduleViewMode('job_assignments');
+              }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${activeSubTab === 'schedule' && scheduleViewMode === 'job_assignments' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              <Briefcase className="w-3.5 h-3.5" />
+              <span>📋 Penugasan Job & Event (Staff & Freelance)</span>
+            </button>
+          </div>
+          <a
+            href={OFFICIAL_JOB_SCHEDULE_DOC_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Dokumen Resmi Jadwal Crew ↗</span>
+          </a>
         </div>
       )}
 
@@ -1067,7 +1336,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
 
           {/* Sub-navigation inside Schedule: Mode switcher */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+            <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1 rounded-xl text-xs font-bold">
               <button
                 type="button"
                 onClick={() => setScheduleViewMode('official')}
@@ -1078,6 +1347,17 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
               >
                 <Calendar className="w-4 h-4" />
                 <span>📅 Schedule Resmi Bulanan</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setScheduleViewMode('job_assignments')}
+                className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer flex items-center gap-2 ${scheduleViewMode === 'job_assignments'
+                  ? 'bg-indigo-600 text-white shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+                  }`}
+              >
+                <Briefcase className="w-4 h-4" />
+                <span>📋 Penugasan Job & Event (Staff & Freelance)</span>
               </button>
               <button
                 type="button"
@@ -1226,6 +1506,639 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, activ
               </div>
             </div>
           )}
+
+          {/* ────────────────────────────────────────────────────────── */}
+          {/* MODE 1B: JOB & EVENT ASSIGNMENTS (STAFF & FREELANCE)       */}
+          {/* ────────────────────────────────────────────────────────── */}
+          {scheduleViewMode === 'job_assignments' && (() => {
+            const monthFilteredJobs = jobAssignments.filter(job =>
+              jobMonthFilter === 'ALL' ? true : job.monthKey === jobMonthFilter
+            );
+
+            const filteredJobs = monthFilteredJobs.filter(job => {
+              if (jobDivisionFilter !== 'All') {
+                const hasDiv = job.sections.some(sec => sec.division === jobDivisionFilter);
+                if (!hasDiv) return false;
+              }
+              if (jobCrewTypeFilter !== 'All') {
+                const hasCrewType = job.sections.some(sec =>
+                  sec.crew.some(c => c.personnelType === jobCrewTypeFilter)
+                );
+                if (!hasCrewType) return false;
+              }
+              if (jobSearchQuery.trim()) {
+                const q = jobSearchQuery.toLowerCase().trim();
+                const inHeader =
+                  job.dateLabel.toLowerCase().includes(q) ||
+                  job.venue.toLowerCase().includes(q) ||
+                  job.pic.toLowerCase().includes(q) ||
+                  (job.loadingSchedule || '').toLowerCase().includes(q) ||
+                  (job.notes || '').toLowerCase().includes(q);
+                const inSections = job.sections.some(sec =>
+                  sec.packageLabel.toLowerCase().includes(q) ||
+                  sec.equipment.some(eq => eq.toLowerCase().includes(q)) ||
+                  sec.crew.some(c => c.name.toLowerCase().includes(q) || (c.canonicalName || '').toLowerCase().includes(q) || (c.roleNote || '').toLowerCase().includes(q)) ||
+                  sec.vehicles.some(v => v.toLowerCase().includes(q) || formatFleetVehicleBadge(v).toLowerCase().includes(q))
+                );
+                if (!inHeader && !inSections) return false;
+              }
+              return true;
+            });
+
+            let totalStaffAssignments = 0;
+            let totalFreelanceAssignments = 0;
+            const uniqueVehicleSet = new Set<string>();
+            filteredJobs.forEach(job => {
+              job.sections.forEach(sec => {
+                sec.crew.forEach(c => {
+                  if (c.personnelType === 'Staff') totalStaffAssignments++;
+                  else totalFreelanceAssignments++;
+                });
+                sec.vehicles.forEach(v => {
+                  if (v && v !== '-') uniqueVehicleSet.add(v);
+                });
+              });
+            });
+
+            const getDivisionBadgeStyle = (div: JobDivisionSection['division']) => {
+              switch (div) {
+                case 'Audio':
+                  return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+                case 'Videotron':
+                  return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                case 'Lighting':
+                  return 'bg-amber-100 text-amber-800 border-amber-200';
+                case 'Multimedia':
+                  return 'bg-purple-100 text-purple-800 border-purple-200';
+                case 'Produksi':
+                  return 'bg-rose-100 text-rose-800 border-rose-200';
+                default:
+                  return 'bg-slate-100 text-slate-800 border-slate-200';
+              }
+            };
+
+            const getJobStatusBadgeStyle = (st?: JobAssignment['status']) => {
+              switch (st) {
+                case 'Loading / Setup':
+                  return 'bg-amber-100 text-amber-800 border-amber-300';
+                case 'Berlangsung (Show)':
+                  return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                case 'Bongkaran':
+                  return 'bg-purple-100 text-purple-800 border-purple-300';
+                case 'Selesai':
+                  return 'bg-slate-200 text-slate-700 border-slate-300';
+                default:
+                  return 'bg-blue-50 text-blue-700 border-blue-200';
+              }
+            };
+
+            return (
+              <div className="space-y-5">
+                {/* Official Reference Banner */}
+                <div className="p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-xl border border-indigo-800/60 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2 py-0.5 bg-indigo-500/30 border border-indigo-400/40 rounded text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-200">
+                        OFFICIAL CREW & JOB SCHEDULE
+                      </span>
+                      <span className="text-xs text-slate-300 font-mono">
+                         Staff Inhouse & Kru Freelance
+                      </span>
+                    </div>
+                    <h3 className="text-base font-black tracking-tight text-white">
+                      Jadwal Penugasan Kerja / Job Event (Staff/Crew, Unit Alat, Armada, Lokasi/Venue & PIC)
+                    </h3>
+                    <p className="text-xs text-slate-300">
+                      Sumber Acuan Resmi: Google Docs Jadwal Crew November & Desember 2026 serta Google Sheet Armada Resmi PT. Riz Production Multi Kreasi.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <a
+                      href={OFFICIAL_JOB_SCHEDULE_DOC_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-indigo-300" />
+                      <span>Google Doc Jadwal Crew ↗</span>
+                    </a>
+                    <a
+                      href={OFFICIAL_ARMADA_SPREADSHEET_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-100 border border-emerald-400/40 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                    >
+                      <Truck className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>Sheet Armada Resmi ↗</span>
+                    </a>
+                    {canManageJobSchedule && (
+                      <button
+                        type="button"
+                        onClick={handleOpenAddJobModal}
+                        className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Tambah Jadwal Job</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Summary Metrics */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div className="text-[10px] font-mono uppercase font-bold text-slate-500">Total Jadwal Job / Venue</div>
+                    <div className="text-xl font-black text-slate-900 mt-0.5">{filteredJobs.length} <span className="text-xs font-semibold text-slate-500">Event</span></div>
+                  </div>
+                  <div className="p-3.5 bg-indigo-50/60 border border-indigo-200 rounded-xl">
+                    <div className="text-[10px] font-mono uppercase font-bold text-indigo-700">Penugasan Staff Inhouse</div>
+                    <div className="text-xl font-black text-indigo-950 mt-0.5">{totalStaffAssignments} <span className="text-xs font-semibold text-indigo-600">Penugasan</span></div>
+                  </div>
+                  <div className="p-3.5 bg-emerald-50/60 border border-emerald-200 rounded-xl">
+                    <div className="text-[10px] font-mono uppercase font-bold text-emerald-700">Penugasan Kru Freelance</div>
+                    <div className="text-xl font-black text-emerald-950 mt-0.5">{totalFreelanceAssignments} <span className="text-xs font-semibold text-emerald-600">Penugasan</span></div>
+                  </div>
+                  <div className="p-3.5 bg-amber-50/60 border border-amber-200 rounded-xl">
+                    <div className="text-[10px] font-mono uppercase font-bold text-amber-800">Armada Mobilisasi Terlibat</div>
+                    <div className="text-xl font-black text-amber-950 mt-0.5">{uniqueVehicleSet.size} <span className="text-xs font-semibold text-amber-700">Unit Kendaraan</span></div>
+                  </div>
+                </div>
+
+                {/* Filters Bar */}
+                <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 text-xs font-bold">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setJobMonthFilter('2026-11');
+                          if (onActiveMonthChange) onActiveMonthChange('2026-11');
+                        }}
+                        className={`px-3 py-1.5 rounded-md cursor-pointer transition-all ${jobMonthFilter === '2026-11' ? 'bg-indigo-600 text-white font-black' : 'text-slate-600 hover:text-slate-900'}`}
+                      >
+                        November 2026
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setJobMonthFilter('2026-12');
+                          if (onActiveMonthChange) onActiveMonthChange('2026-12');
+                        }}
+                        className={`px-3 py-1.5 rounded-md cursor-pointer transition-all ${jobMonthFilter === '2026-12' ? 'bg-indigo-600 text-white font-black' : 'text-slate-600 hover:text-slate-900'}`}
+                      >
+                        Desember 2026
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setJobMonthFilter('ALL')}
+                        className={`px-3 py-1.5 rounded-md cursor-pointer transition-all ${jobMonthFilter === 'ALL' ? 'bg-indigo-600 text-white font-black' : 'text-slate-600 hover:text-slate-900'}`}
+                      >
+                        Semua Bulan ({jobAssignments.length})
+                      </button>
+                    </div>
+
+                    <select
+                      value={jobDivisionFilter}
+                      onChange={(e) => setJobDivisionFilter(e.target.value)}
+                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 outline-none"
+                    >
+                      <option value="All">Semua Divisi Alat</option>
+                      <option value="Audio">Audio / Sound</option>
+                      <option value="Videotron">Videotron / LED</option>
+                      <option value="Lighting">Lighting</option>
+                      <option value="Multimedia">Multimedia / Stream</option>
+                      <option value="Produksi">Produksi</option>
+                    </select>
+
+                    <select
+                      value={jobCrewTypeFilter}
+                      onChange={(e) => setJobCrewTypeFilter(e.target.value as 'All' | 'Staff' | 'Freelance')}
+                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 outline-none"
+                    >
+                      <option value="All">Semua Personil (Staff + Freelance)</option>
+                      <option value="Staff">Hanya Staff Inhouse</option>
+                      <option value="Freelance">Hanya Kru Freelance</option>
+                    </select>
+                  </div>
+
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      value={jobSearchQuery}
+                      onChange={(e) => setJobSearchQuery(e.target.value)}
+                      placeholder="Cari staff/freelance, lokasi/venue, unit alat, armada, PIC..."
+                      className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Job Assignment Cards List */}
+                <div className="space-y-4">
+                  {filteredJobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="bg-white border border-slate-200 rounded-xl shadow-2xs hover:shadow-md transition-shadow overflow-hidden"
+                    >
+                      {/* Top Bar: Date, Venue, Loading, PIC, Status & Actions */}
+                      <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2.5 py-1 bg-slate-900 text-white rounded-md text-xs font-mono font-black">
+                              {job.date}
+                            </span>
+                            <h4 className="text-sm md:text-base font-black text-slate-900 tracking-tight">
+                              {job.dateLabel}
+                            </h4>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-full text-[11px] font-bold">
+                              <MapPin className="w-3 h-3 text-indigo-600" />
+                              {job.venue}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 pt-0.5">
+                            {job.loadingSchedule && (
+                              <span className="inline-flex items-center gap-1 font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                Loading / Berangkat: {job.loadingSchedule}
+                              </span>
+                            )}
+                            <span className="inline-flex items-center gap-1 font-bold text-slate-800 bg-white border border-slate-200 px-2.5 py-0.5 rounded shadow-2xs">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                              Person in Charge (PIC): <span className="text-indigo-700 uppercase">{job.pic || '-'}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 self-start lg:self-center">
+                          <select
+                            value={job.status || 'Terjadwal'}
+                            onChange={(e) => handleUpdateJobStatus(job, e.target.value as JobAssignment['status'])}
+                            className={`text-xs font-extrabold px-2.5 py-1.5 rounded-lg border outline-none cursor-pointer ${getJobStatusBadgeStyle(job.status)}`}
+                          >
+                            <option value="Terjadwal">📅 Terjadwal</option>
+                            <option value="Loading / Setup">🚚 Loading / Setup</option>
+                            <option value="Berlangsung (Show)">🎬 Berlangsung (Show)</option>
+                            <option value="Bongkaran">📦 Bongkaran</option>
+                            <option value="Selesai">✅ Selesai</option>
+                          </select>
+
+                          {canManageJobSchedule && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditJobModal(job)}
+                                className="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                                title="Edit Jadwal Penugasan"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteJobAssignment(job)}
+                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold cursor-pointer"
+                                title="Hapus Jadwal Penugasan"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Special Venue / Dresscode Notes */}
+                      {job.notes && (
+                        <div className="px-4 py-2.5 bg-amber-50/90 border-b border-amber-200 flex items-start gap-2 text-xs text-amber-900">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-black uppercase tracking-wider mr-1.5">Catatan / SOP Venue:</span>
+                            <span className="font-semibold">{job.notes}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Division Sections Grid */}
+                      <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {job.sections.map((sec, sIdx) => (
+                          <div
+                            key={`${job.id}-sec-${sIdx}`}
+                            className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/40 space-y-3 flex flex-col justify-between"
+                          >
+                            <div className="space-y-3">
+                              {/* Package Header */}
+                              <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2 py-0.5 text-[10px] font-mono font-black uppercase rounded border ${getDivisionBadgeStyle(sec.division)}`}>
+                                    {sec.division}
+                                  </span>
+                                  <span className="text-xs font-black text-slate-900">
+                                    {sec.packageLabel}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] font-mono font-semibold text-slate-500">
+                                  {sec.crew.length} Crew • {sec.equipment.length} Alat
+                                </span>
+                              </div>
+
+                              {/* 1. Unit Alat (Equipment Manifest) */}
+                              <div>
+                                <div className="text-[10px] font-mono uppercase font-bold text-slate-500 mb-1.5 flex items-center gap-1">
+                                  <Package className="w-3 h-3 text-indigo-600" />
+                                  <span>Unit Alat & Spesifikasi Teknis:</span>
+                                </div>
+                                {sec.equipment.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {sec.equipment.map((eq, eqIdx) => (
+                                      <span
+                                        key={eqIdx}
+                                        className="px-2 py-1 bg-white border border-slate-200 rounded-md text-[11px] font-semibold text-slate-800 shadow-2xs"
+                                      >
+                                        • {eq}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-[11px] text-slate-400 italic">Sesuai paket standar {sec.packageLabel}</div>
+                                )}
+                              </div>
+
+                              {/* 2. Staff & Freelance Crew */}
+                              <div>
+                                <div className="text-[10px] font-mono uppercase font-bold text-slate-500 mb-1.5 flex items-center gap-1">
+                                  <Users className="w-3 h-3 text-emerald-600" />
+                                  <span>Personil Penugasan (Staff Inhouse & Freelance):</span>
+                                </div>
+                                {sec.crew.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {sec.crew.map((member, mIdx) => {
+                                      const isStaff = member.personnelType === 'Staff';
+                                      return (
+                                        <div
+                                          key={mIdx}
+                                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold ${
+                                            isStaff
+                                              ? 'bg-indigo-50/90 text-indigo-950 border-indigo-200'
+                                              : 'bg-emerald-50/90 text-emerald-950 border-emerald-200'
+                                          }`}
+                                          title={member.canonicalName ? `${member.canonicalName} (${member.personnelType} - ${member.division || ''})` : member.name}
+                                        >
+                                          <span>{member.name}</span>
+                                          <span
+                                            className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-black uppercase ${
+                                              isStaff
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'bg-emerald-600 text-white'
+                                            }`}
+                                          >
+                                            {isStaff ? 'STAFF' : 'FREELANCE'}
+                                          </span>
+                                          {member.roleNote && (
+                                            <span className="text-[10px] font-mono font-semibold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded">
+                                              {member.roleNote}
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <div className="text-[11px] text-slate-400 italic">Belum ada personil ditugaskan</div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 3. Armada / Mobilisasi */}
+                            <div className="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+                              <div className="text-[10px] font-mono uppercase font-bold text-slate-500 flex items-center gap-1">
+                                <Truck className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Armada / Mobilisasi:</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {sec.vehicles.length > 0 ? (
+                                  sec.vehicles.map((veh, vIdx) => (
+                                    <span
+                                      key={vIdx}
+                                      className="px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-300 rounded text-[11px] font-mono font-bold"
+                                      title={formatFleetVehicleBadge(veh)}
+                                    >
+                                      🚚 {formatFleetVehicleBadge(veh)}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-[11px] text-slate-400 font-mono">-</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {filteredJobs.length === 0 && (
+                    <div className="text-center py-12 bg-slate-50 border border-dashed border-slate-200 rounded-xl space-y-2">
+                      <Briefcase className="w-10 h-10 text-slate-300 mx-auto" />
+                      <div className="text-sm font-bold text-slate-700">Tidak ada jadwal penugasan job yang sesuai filter</div>
+                      <p className="text-xs text-slate-500">Ubah filter bulan, divisi, tipe personil, atau kata kunci pencarian di atas.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Add / Edit Job Assignment Modal */}
+                {showJobFormModal && (
+                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                        <div>
+                          <h3 className="text-base font-black text-slate-900">
+                            {editingJobId ? 'Edit Jadwal Penugasan Job / Event' : 'Tambah Jadwal Penugasan Job / Event Baru'}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            Lengkapi 5 komponen wajib: Tanggal & Venue, PIC, Unit Alat, Staff/Freelance Crew, dan Armada.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowJobFormModal(false)}
+                          className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleSaveJobAssignment} className="space-y-4 text-xs">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">Tanggal Event *</label>
+                            <input
+                              type="date"
+                              required
+                              value={jobFormDate}
+                              onChange={(e) => setJobFormDate(e.target.value)}
+                              className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">Label Tanggal & Judul Job</label>
+                            <input
+                              type="text"
+                              placeholder="Contoh: 3 Nov Qbig BSD"
+                              value={jobFormDateLabel}
+                              onChange={(e) => setJobFormDateLabel(e.target.value)}
+                              className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">Lokasi / Venue *</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Contoh: Qbig BSD / Parkir Timur Senayan"
+                              value={jobFormVenue}
+                              onChange={(e) => setJobFormVenue(e.target.value)}
+                              className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">Person in Charge (PIC) *</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Contoh: Jay / Fahrul / Agus / Wahyu"
+                              value={jobFormPic}
+                              onChange={(e) => setJobFormPic(e.target.value)}
+                              className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">Jadwal Loading / Jam Berangkat</label>
+                            <input
+                              type="text"
+                              placeholder="Contoh: Loading Tgl 2 Nov Jam 18.00 WIB"
+                              value={jobFormLoadingSchedule}
+                              onChange={(e) => setJobFormLoadingSchedule(e.target.value)}
+                              className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">Status Penugasan</label>
+                            <select
+                              value={jobFormStatus}
+                              onChange={(e) => setJobFormStatus(e.target.value as JobAssignment['status'])}
+                              className="w-full p-2 border border-slate-200 rounded-lg font-bold"
+                            >
+                              <option value="Terjadwal">Terjadwal</option>
+                              <option value="Loading / Setup">Loading / Setup</option>
+                              <option value="Berlangsung (Show)">Berlangsung (Show)</option>
+                              <option value="Bongkaran">Bongkaran</option>
+                              <option value="Selesai">Selesai</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">Divisi Utama</label>
+                            <select
+                              value={jobFormDivision}
+                              onChange={(e) => setJobFormDivision(e.target.value as JobDivisionSection['division'])}
+                              className="w-full p-2 border border-slate-200 rounded-lg font-bold"
+                            >
+                              <option value="Audio">Audio / Sound</option>
+                              <option value="Videotron">Videotron / LED</option>
+                              <option value="Lighting">Lighting</option>
+                              <option value="Multimedia">Multimedia / Stream</option>
+                              <option value="Produksi">Produksi</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">Nama Paket Alat</label>
+                            <input
+                              type="text"
+                              placeholder="Contoh: Sound 20rb / LED 48Meter / Lighting"
+                              value={jobFormPackageLabel}
+                              onChange={(e) => setJobFormPackageLabel(e.target.value)}
+                              className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-slate-700 mb-1">
+                            Daftar Unit Alat (Satu baris per item alat)
+                          </label>
+                          <textarea
+                            rows={4}
+                            placeholder={"Midasha 32\n4 set dB + 1 set Vertec\n4 Qsc + 4 dB Tech"}
+                            value={jobFormEquipmentText}
+                            onChange={(e) => setJobFormEquipmentText(e.target.value)}
+                            className="w-full p-2 border border-slate-200 rounded-lg font-mono text-xs"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">
+                              Staff / Freelance Crew (Pisahkan koma, otomatis deteksi Staff vs Freelance)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Contoh: Mboh, Dani, Butonk, Adul, Kiting (Bongkaran)"
+                              value={jobFormCrewText}
+                              onChange={(e) => setJobFormCrewText(e.target.value)}
+                              className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-bold text-slate-700 mb-1">
+                              Armada / Kendaraan (Pisahkan koma)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Contoh: Truck, Riz 2, Engkel Riz, Yosep"
+                              value={jobFormVehiclesText}
+                              onChange={(e) => setJobFormVehiclesText(e.target.value)}
+                              className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-slate-700 mb-1">Catatan Khusus / Dresscode / SOP Venue</label>
+                          <input
+                            type="text"
+                            placeholder="Contoh: WAJIB PAKAI KEMEJA, CELANA PANJANG DAN SEPATU"
+                            value={jobFormNotes}
+                            onChange={(e) => setJobFormNotes(e.target.value)}
+                            className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                          <button
+                            type="button"
+                            onClick={() => setShowJobFormModal(false)}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold cursor-pointer"
+                          >
+                            Batal
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-black cursor-pointer shadow-xs"
+                          >
+                            Simpan Jadwal Penugasan
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* ────────────────────────────────────────────────────────── */}
           {/* MODE 2: CUSTOM 1-31 GENERATOR (LEGACY / EXPERIMENTAL)      */}
           {/* ────────────────────────────────────────────────────────── */}

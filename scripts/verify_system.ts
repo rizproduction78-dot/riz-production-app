@@ -3,7 +3,7 @@
  * Tests all modules, types, data schemas, sync engine, and component imports.
  */
 
-import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, INITIAL_ASSETS, INITIAL_MAINTENANCE_SCHEDULES, INITIAL_WORK_ORDERS, INITIAL_FINDINGS, INITIAL_LOGBOOK_ENTRIES, INITIAL_DAILY_REPORTS, INITIAL_DAILY_TASKS } from '../src/data';
+import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, INITIAL_ASSETS, INITIAL_MAINTENANCE_SCHEDULES, INITIAL_WORK_ORDERS, INITIAL_FINDINGS, INITIAL_LOGBOOK_ENTRIES, INITIAL_DAILY_REPORTS, INITIAL_DAILY_TASKS, INITIAL_JOB_ASSIGNMENTS, resolveCrewMember, formatFleetVehicleBadge } from '../src/data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../src/data/september2026Schedule';
 import { OFFICIAL_COMPETENCY_MATRICES } from '../src/data/competencyMatrixData';
 import { getDeviceOSInfo, ALL_SYNC_COLLECTIONS, SyncStatus, subscribeSyncStatus } from '../src/lib/cloudSync';
@@ -32,7 +32,7 @@ assert(typeof deviceInfo.os === 'string', 'Device OS detection works', `Detected
 assert(typeof deviceInfo.deviceType === 'string', 'Device type detection works', `Type: ${deviceInfo.deviceType}`);
 
 // 2. Test All Sync Collections Registry
-assert(ALL_SYNC_COLLECTIONS.length === 23, 'Sync Collections Registry contains all 23 modules', `Count: ${ALL_SYNC_COLLECTIONS.length}`);
+assert(ALL_SYNC_COLLECTIONS.length === 24, 'Sync Collections Registry contains all 24 modules', `Count: ${ALL_SYNC_COLLECTIONS.length}`);
 ALL_SYNC_COLLECTIONS.forEach(col => {
   assert(Boolean(col.name && col.key && col.label), `Registry Item '${col.name}' is well-formed`);
 });
@@ -44,6 +44,17 @@ assert(Array.isArray(INITIAL_FREELANCE_WORKERS), 'Freelance workers initial list
 assert(Array.isArray(INITIAL_FLEET_DRIVERS), 'Fleet drivers initial list is a valid array', `Count: ${INITIAL_FLEET_DRIVERS.length}`);
 assert(OFFICIAL_SEPTEMBER_2026_SCHEDULE.length > 0, 'September 2026 schedule populated', `Rows: ${OFFICIAL_SEPTEMBER_2026_SCHEDULE.length}`);
 assert(Boolean(OFFICIAL_COMPETENCY_MATRICES['Audio']), 'Competency matrices contain Audio division');
+
+// 3b. Test Official Job Assignments (Staff & Freelance Crew Schedule from Google Doc 1Lwti9V2-5P4WwwkMPupR5stuXNc1Y02W)
+assert(INITIAL_JOB_ASSIGNMENTS.length >= 49, 'Official Job Assignments populated (Nov & Dec 2026)', `Count: ${INITIAL_JOB_ASSIGNMENTS.length}`);
+const novJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-11');
+const decJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-12');
+assert(novJobs.length >= 40 && decJobs.length >= 5, 'Job Assignments cover both November 2026 and December 2026', `Nov: ${novJobs.length}, Dec: ${decJobs.length}`);
+const sampleStaffCrew = resolveCrewMember('Mboh');
+const sampleFreelanceCrew = resolveCrewMember('Adul', 'Audio', 'Bongkaran');
+assert(sampleStaffCrew.personnelType === 'Staff' && sampleStaffCrew.staffId === 'staff-rahmat', 'resolveCrewMember accurately maps Inhouse Staff (Mboh -> staff-rahmat)');
+assert(sampleFreelanceCrew.personnelType === 'Freelance' && sampleFreelanceCrew.roleNote === 'Bongkaran', 'resolveCrewMember accurately maps Freelance Crew with roleNote (Adul -> Freelance)');
+assert(formatFleetVehicleBadge('Riz 2').includes('F 8446 BF'), 'formatFleetVehicleBadge maps Riz 2 to official plate F 8446 BF');
 
 // 4. Test KPI Calculator
 const testStaff = STAFF_LIST[0];

@@ -7,7 +7,7 @@
  * Powered by Unified Local Storage, BroadcastChannel, Supabase, and Google Sheets Synchronization.
  */
 
-import { normalizeStaffMaster, normalizeVehiclesMaster, STAFF_LIST, getMasterStaffList, INITIAL_DAILY_TASKS, INITIAL_DAILY_REPORTS, INITIAL_LOGBOOK_ENTRIES, INITIAL_FINDINGS } from '../data';
+import { normalizeStaffMaster, normalizeVehiclesMaster, STAFF_LIST, getMasterStaffList, INITIAL_DAILY_TASKS, INITIAL_DAILY_REPORTS, INITIAL_LOGBOOK_ENTRIES, INITIAL_FINDINGS, INITIAL_JOB_ASSIGNMENTS } from '../data';
 import { isStaffMatch } from '../utils/kpiCalculator';
 import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
 import {
@@ -208,7 +208,8 @@ export const ALL_SYNC_COLLECTIONS = [
   { name: 'attendance_logs', key: 'riz_attendance_logs', label: 'Log Absensi Mandiri' },
   { name: 'staff_competencies', key: 'riz_staff_electrical_competencies', label: 'Kompetensi Kelistrikan' },
   { name: 'career_records', key: 'riz_career_pipeline_records', label: 'Paspor Kompetensi & Karir' },
-  { name: 'warehouse_logs', key: 'riz_warehouse_logs', label: 'Log Inventaris Gudang' }
+  { name: 'warehouse_logs', key: 'riz_warehouse_logs', label: 'Log Inventaris Gudang' },
+  { name: 'job_assignments', key: 'riz_job_assignments_v1', label: 'Jadwal Penugasan Job & Event' }
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -745,6 +746,31 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     return Array.from(map.values()) as T[];
   }
 
+  // Normalization for job_assignments to preserve canonical Google Doc schedule while keeping user edits
+  if (collectionName === 'job_assignments') {
+    const canonicalMap = new Map<string, any>((INITIAL_JOB_ASSIGNMENTS || []).map((j: any) => [String(j.id), j]));
+    const map = new Map<string, any>();
+    canonicalMap.forEach((val, key) => map.set(key, val));
+    items.forEach((item: any) => {
+      if (!item || !item.id) return;
+      const rawId = String(item.id);
+      const canonical = canonicalMap.get(rawId);
+      const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
+      if (canonical && !isUserEdited) {
+        map.set(rawId, {
+          ...canonical,
+          ...(item.status ? { status: item.status } : {}),
+        });
+      } else {
+        map.set(rawId, {
+          ...(canonical || {}),
+          ...item,
+        });
+      }
+    });
+    return Array.from(map.values()) as T[];
+  }
+
   return items;
 }
 
@@ -788,6 +814,7 @@ export function subscribeCloudCollection<T = any>(
         collectionName === 'freelance_workers' ||
         collectionName === 'fleet_drivers' ||
         collectionName === 'assets' ||
+        collectionName === 'job_assignments' ||
         collectionName.startsWith('schedule_') ||
         collectionName === 'logbook_entries' ||
         collectionName === 'daily_reports' ||

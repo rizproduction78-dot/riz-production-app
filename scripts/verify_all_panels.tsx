@@ -216,6 +216,17 @@ const panelsToTest = [
     )
   },
   {
+    name: '9b. Jadwal Penugasan Job & Event (Staff & Freelance)',
+    render: () => renderToString(
+      <Absensi
+        currentUser={testAdminUser}
+        onLogActivity={dummyLogActivity}
+        forceSubTab="schedule"
+        initialScheduleViewMode="job_assignments"
+      />
+    )
+  },
+  {
     name: '10. Dashboard Pemeliharaan Kelistrikan',
     render: () => renderToString(
       <Absensi

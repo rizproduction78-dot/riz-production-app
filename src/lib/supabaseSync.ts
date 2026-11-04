@@ -45,6 +45,7 @@ const COLLECTION_CACHE_KEY_MAP: Record<string, string> = {
   custom_qc_checklists: 'riz_custom_qc_checklists',
   staff_competencies: 'riz_staff_electrical_competencies',
   career_records: 'riz_career_pipeline_records',
+  job_assignments: 'riz_job_assignments_v1',
 };
 
 /**

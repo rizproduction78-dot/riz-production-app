@@ -2803,3 +2803,11 @@ export function normalizeVehiclesMaster(rawList: any[]): VehicleMaster[] {
 
   return Array.from(resultById.values());
 }
+
+export {
+  INITIAL_JOB_ASSIGNMENTS,
+  resolveCrewMember,
+  buildCrewList,
+  formatFleetVehicleBadge
+} from './data/jobAssignmentsData';
+

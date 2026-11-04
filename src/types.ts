@@ -17,6 +17,10 @@ export const OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID = "1hBGpse_uG9bbeMN
 export const OFFICIAL_ARMADA_SPREADSHEET_ID = "1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs";
 export const OFFICIAL_ARMADA_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs/edit?usp=sharing";
 
+// Sumber Resmi Google Docs Jadwal Penugasan Kerja / Job Crew (Staff & Freelance)
+export const OFFICIAL_JOB_SCHEDULE_DOC_ID = "1Lwti9V2-5P4WwwkMPupR5stuXNc1Y02W";
+export const OFFICIAL_JOB_SCHEDULE_DOC_URL = "https://docs.google.com/document/d/1Lwti9V2-5P4WwwkMPupR5stuXNc1Y02W/edit#heading=h.nf6ix777sh6z";
+
 // Alamat Resmi & Koordinat GPS Kantor / Gudang PT. Riz Production Multi Kreasi
 export const OFFICIAL_COMPANY_ADDRESS = "Jl. Alternatif Jl. Tugu Wates No.78, RT.02/RW.13, Kedungbadak, Tanah Sareal, Kota Bogor, Jawa Barat 16164";
 export const OFFICIAL_COMPANY_PLUS_CODE = "CRR3+82 Kedungbadak, Bogor City, West Java";
@@ -402,4 +406,46 @@ export interface VehicleMaintenanceRecord {
   nextServiceDate?: string;
   notes?: string;
 }
+
+export interface JobCrewMember {
+  name: string; // Nama panggilan di jadwal (misal: Mboh, Bulux, Adin, Ayong, Wigi)
+  canonicalName: string; // Nama resmi di master Staff / Freelance
+  personnelType: 'Staff' | 'Freelance';
+  staffId?: string; // ID staf inhouse atau freelance
+  division?: string;
+  roleNote?: string; // Catatan peran khusus (misal: Pasang, Bongkaran, VJ & Zoom, Campers, Drop)
+}
+
+export interface JobDivisionSection {
+  division: 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Produksi' | 'Umum';
+  packageLabel: string; // e.g., "Sound 20rb", "LED 48Meter (Victor)", "Lighting", "Stream + 4 Cam"
+  equipment: string[]; // Daftar unit alat yang dibawa
+  crew: JobCrewMember[]; // Daftar staff inhouse & freelance yang ditugaskan
+  vehicles: string[]; // Daftar unit armada / mobilisasi (Truck, Riz 2, Engkel Riz, Serena, Yosep, dll.)
+  sectionPic?: string; // PIC spesifik sub-divisi bila ada
+}
+
+export interface JobAssignment {
+  id: string;
+  monthKey: string; // '2026-11' | '2026-12'
+  date: string; // YYYY-MM-DD (tanggal mulai event)
+  endDate?: string; // YYYY-MM-DD (tanggal selesai bila multi-hari)
+  dateLabel: string; // Label tanggal asli dari dokumen (misal: "3 Nov 2026", "28-30 Nov 2026")
+  venue: string; // Lokasi / Venue (misal: "Qbig BSD", "Parkir Timur Senayan", "Sheraton")
+  loadingSchedule: string; // Jadwal loading / berangkat (misal: "Packing Malam Jalan jam 06.00 Pagi", "Loading 3 Malam")
+  pic: string; // Person in Charge utama event (misal: "Jay (Mulyadi)", "Fahrul", "Agus", "Mboh (Muhamad Rahmat)")
+  sections: JobDivisionSection[];
+  notes?: string; // Catatan khusus kostum / aturan venue / vendor
+  status: 'Terjadwal' | 'Loading / Setup' | 'Berlangsung (Show)' | 'Bongkaran' | 'Selesai';
+  _userEdited?: boolean;
+  _syncMeta?: {
+    updatedAt: string;
+    updatedBy: string;
+    deviceOS?: string;
+    deviceType?: string;
+    browser?: string;
+    _userEdited?: boolean;
+  };
+}
+
 
