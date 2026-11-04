@@ -7,6 +7,11 @@ export interface SheetRow {
   cells: string[]; // 7 sel: A..G (Tanggal, Crew, SOUND, LIGHTING, LED, MULTIMEDIA, REMARK)
 }
 
+export interface ParsedRowDetail {
+  activity: string;
+  remark: string;
+}
+
 export interface ParsedEntry {
   id: string;
   date: string; // YYYY-MM-DD
@@ -17,6 +22,7 @@ export interface ParsedEntry {
   notes: string;
   isQc: boolean;
   sheetRow: number;
+  rowDetails?: ParsedRowDetail[];
   _unmatched?: boolean;
 }
 
@@ -357,6 +363,7 @@ export function parseDailySheet(rows: SheetRow[], fallbackMonthKey?: string): Pa
           notes: remark,
           isQc,
           sheetRow: row.rowNumber,
+          rowDetails: [{ activity: activityText || remark, remark: activityText ? remark : '' }],
           ...(!staffId ? { _unmatched: true } : {}),
         });
       }
@@ -371,6 +378,10 @@ export function parseDailySheet(rows: SheetRow[], fallbackMonthKey?: string): Pa
         if (remark) {
           lastEntry.notes = lastEntry.notes ? `${lastEntry.notes}\n${remark}` : remark;
         }
+        if (!lastEntry.rowDetails) {
+          lastEntry.rowDetails = [];
+        }
+        lastEntry.rowDetails.push({ activity: activityText, remark });
         if (!lastEntry.isQc) {
           lastEntry.isQc = checkIsQc(lastEntry.activity + ' ' + lastEntry.notes);
         }

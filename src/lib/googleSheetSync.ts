@@ -1222,6 +1222,7 @@ export async function pullDailyLogFromGviz(
           division: entry.division,
           activity: entry.activity,
           notes: entry.notes || '',
+          ...(entry.rowDetails ? { rowDetails: entry.rowDetails } : {}),
           status: 'Submitted',
           _source: 'google_sheet',
           _syncedAt: nowSyncIso
@@ -1254,6 +1255,7 @@ export async function pullDailyLogFromGviz(
                 notes: entry.notes || 'Kondisi operasional normal'
               }
             },
+            ...(entry.rowDetails ? { rowDetails: entry.rowDetails } : {}),
             _source: 'google_sheet',
             _syncedAt: nowSyncIso
           };
@@ -1345,17 +1347,27 @@ export async function pullDailyLogFromGviz(
           return `dedup_${dateStr || ''}_${eq.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}_${iss.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
         };
 
-        // Ekstrak hanya baris remark yang benar-benar bermasalah (jangan ikutkan baris "Kondisi OK" / "Bersih & Normal")
-        const rawNoteLines = entry.notes.split('\n').map(l => l.trim()).filter(Boolean);
-        const rawActLines = entry.activity.split('\n').map(l => l.trim()).filter(Boolean);
+        // Ekstrak hanya baris remark yang benar-benar bermasalah (jangan ikutkan baris "Kondisi unit sudah OK" / "Bersih & Normal")
         let filteredIssueLines: string[] = [];
-        if (rawNoteLines.length > 1) {
-          rawNoteLines.forEach((nLine, idx) => {
-            if (isFindingRemark(nLine)) {
-              const matchedAct = rawActLines[idx] && rawActLines.length === rawNoteLines.length ? `${rawActLines[idx]}: ` : '';
-              filteredIssueLines.push(`${matchedAct}${nLine}`);
+        if (Array.isArray(entry.rowDetails) && entry.rowDetails.length > 0) {
+          entry.rowDetails.forEach(sub => {
+            const rem = String(sub.remark || '').trim();
+            const act = String(sub.activity || '').trim();
+            if (rem && isFindingRemark(rem)) {
+              filteredIssueLines.push(act && act !== rem ? `${act}: ${rem}` : rem);
             }
           });
+        } else {
+          const rawNoteLines = entry.notes.split('\n').map(l => l.trim()).filter(Boolean);
+          const rawActLines = entry.activity.split('\n').map(l => l.trim()).filter(Boolean);
+          if (rawNoteLines.length > 1) {
+            rawNoteLines.forEach((nLine, idx) => {
+              if (isFindingRemark(nLine)) {
+                const matchedAct = rawActLines[idx] && rawActLines.length === rawNoteLines.length ? `${rawActLines[idx]}: ` : '';
+                filteredIssueLines.push(`${matchedAct}${nLine}`);
+              }
+            });
+          }
         }
         const remarkIssue = filteredIssueLines.length > 0 ? filteredIssueLines.join(' | ') : entry.notes.trim();
         const eqNorm = equipName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();

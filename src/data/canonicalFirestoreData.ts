@@ -4076,6 +4076,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "- Cek kabel lan",
     "notes": "Aman",
+    "rowDetails": [
+      {
+        "activity": "- Cek kabel lan",
+        "remark": "Aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4086,6 +4092,16 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "- Bersiin Prosesor dan cek kelengkapan kabel Di Processor\n- Nyuci pemberat",
     "notes": "Sudah\nSudah",
+    "rowDetails": [
+      {
+        "activity": "- Bersiin Prosesor dan cek kelengkapan kabel Di Processor",
+        "remark": "Sudah"
+      },
+      {
+        "activity": "- Nyuci pemberat",
+        "remark": "Sudah"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4096,6 +4112,40 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "1. repair 3 kabinet ic warna  + ganti dead pixel 2 kabinet clear\n2. cek 11 modul kabinet\n- 2 modul ilang jalur ic\n- 3 modul ilang jalur pixel\n- 3 modul kena ic warna\n- 1 modul arus konslet\n3. copot ic buat kanibal\n4. sortir masking",
     "notes": "Aman\nBeres\nPerbaikan\nPerbaikan\nPerbaikan\nPerbaikan\nSudah\nSudah",
+    "rowDetails": [
+      {
+        "activity": "1. repair 3 kabinet ic warna  + ganti dead pixel 2 kabinet clear",
+        "remark": "Aman"
+      },
+      {
+        "activity": "2. cek 11 modul kabinet",
+        "remark": "Beres"
+      },
+      {
+        "activity": "- 2 modul ilang jalur ic",
+        "remark": "Perbaikan"
+      },
+      {
+        "activity": "- 3 modul ilang jalur pixel",
+        "remark": "Perbaikan"
+      },
+      {
+        "activity": "- 3 modul kena ic warna",
+        "remark": "Perbaikan"
+      },
+      {
+        "activity": "- 1 modul arus konslet",
+        "remark": "Perbaikan"
+      },
+      {
+        "activity": "3. copot ic buat kanibal",
+        "remark": "Sudah"
+      },
+      {
+        "activity": "4. sortir masking",
+        "remark": "Sudah"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4106,6 +4156,76 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "inventory\nstand speaker 22pcs\nstand mic lama 44pcs\nstand mic baru 20pcs\nstand kick pendek 5pcs\nstand mic pendek 4pcs\nstand boox 22pcs\nstand key singel 4pcs\nstand key soubel 3pcs\nstand gtr lama isi 3 2pcs\nstand gtr singel 4pcs\nstand gtr baru isi 3 1pcs isi 3pcs\nmarking mic sm58 57 condensor c1000\nmarking mic drum\ntakel 2ton 2pcs\ntakel 1ton 8pcs\nsetrap takel panjang 10pcs pendek 2pcs",
     "notes": "On progress\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nAda\nSudah\nSudah\nAman\nAman\nAda",
+    "rowDetails": [
+      {
+        "activity": "inventory",
+        "remark": "On progress"
+      },
+      {
+        "activity": "stand speaker 22pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "stand mic lama 44pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "stand mic baru 20pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "stand kick pendek 5pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "stand mic pendek 4pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "stand boox 22pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "stand key singel 4pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "stand key soubel 3pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "stand gtr lama isi 3 2pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "stand gtr singel 4pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "stand gtr baru isi 3 1pcs isi 3pcs",
+        "remark": "Ada"
+      },
+      {
+        "activity": "marking mic sm58 57 condensor c1000",
+        "remark": "Sudah"
+      },
+      {
+        "activity": "marking mic drum",
+        "remark": "Sudah"
+      },
+      {
+        "activity": "takel 2ton 2pcs",
+        "remark": "Aman"
+      },
+      {
+        "activity": "takel 1ton 8pcs",
+        "remark": "Aman"
+      },
+      {
+        "activity": "setrap takel panjang 10pcs pendek 2pcs",
+        "remark": "Ada"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4116,6 +4236,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "- Beraihin kaki level",
     "notes": "- Kondisi Baik",
+    "rowDetails": [
+      {
+        "activity": "- Beraihin kaki level",
+        "remark": "- Kondisi Baik"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4126,6 +4252,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "- Bersihin Ambalan",
     "notes": "- Kondisi Baik",
+    "rowDetails": [
+      {
+        "activity": "- Bersihin Ambalan",
+        "remark": "- Kondisi Baik"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4136,6 +4268,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "- Beneren perleng legran",
     "notes": "- Kondisi Normal",
+    "rowDetails": [
+      {
+        "activity": "- Beneren perleng legran",
+        "remark": "- Kondisi Normal"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4146,6 +4284,40 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Lighting",
     "activity": "Cek Unit Tripot\n- A , Tripot Centurion\n- B , Tripot Centurion\n- C , Tripot Lama (Berat)\n- D , Tripot Lama\n- E , Tripot Lama ( Tipis Enteng )\n- F , Tripot Lama ( Tipis Enteng )\n- G , Tripot Custom",
     "notes": "Normal\nNormal\nNormal\nNormal\nNormal\nNormal\nKeadaan tidak komplite",
+    "rowDetails": [
+      {
+        "activity": "Cek Unit Tripot",
+        "remark": ""
+      },
+      {
+        "activity": "- A , Tripot Centurion",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- B , Tripot Centurion",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- C , Tripot Lama (Berat)",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- D , Tripot Lama",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- E , Tripot Lama ( Tipis Enteng )",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- F , Tripot Lama ( Tipis Enteng )",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- G , Tripot Custom",
+        "remark": "Keadaan tidak komplite"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4156,6 +4328,16 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "- repair 1 kabinet ganti ic warna + ganti dead pixel\n- repair modul 1 clear ganti ic warna",
     "notes": "1 modul pcb bengkok\nAman 1",
+    "rowDetails": [
+      {
+        "activity": "- repair 1 kabinet ganti ic warna + ganti dead pixel",
+        "remark": "1 modul pcb bengkok"
+      },
+      {
+        "activity": "- repair modul 1 clear ganti ic warna",
+        "remark": "Aman 1"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4166,6 +4348,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cleaning up  16 speaker monitor db , LVX 2 unit",
     "notes": "kondisi baik",
+    "rowDetails": [
+      {
+        "activity": "cleaning up  16 speaker monitor db , LVX 2 unit",
+        "remark": "kondisi baik"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4176,6 +4364,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cleaning up  16 speaker monitor db , LVX 2 unit",
     "notes": "KOndisi Baik",
+    "rowDetails": [
+      {
+        "activity": "cleaning up  16 speaker monitor db , LVX 2 unit",
+        "remark": "KOndisi Baik"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4186,6 +4380,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Lighting",
     "activity": "Cleaning All Beam 450 24 Unit (No. 1 - 24)",
     "notes": "Normal Semua",
+    "rowDetails": [
+      {
+        "activity": "Cleaning All Beam 450 24 Unit (No. 1 - 24)",
+        "remark": "Normal Semua"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4196,6 +4396,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cleaning up monitor ART 312,ART 315",
     "notes": "Kondisi Bersih",
+    "rowDetails": [
+      {
+        "activity": "cleaning up monitor ART 312,ART 315",
+        "remark": "Kondisi Bersih"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4206,6 +4412,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cleaning up monitor ART 312,ART 315",
     "notes": "Kondisi Bersih",
+    "rowDetails": [
+      {
+        "activity": "cleaning up monitor ART 312,ART 315",
+        "remark": "Kondisi Bersih"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4216,6 +4428,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cek unit AVANDA210",
     "notes": "-semua unit AVANDA210 kondisi normaL",
+    "rowDetails": [
+      {
+        "activity": "cek unit AVANDA210",
+        "remark": "-semua unit AVANDA210 kondisi normaL"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4226,6 +4444,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cek unit AVANDA210",
     "notes": "Aman",
+    "rowDetails": [
+      {
+        "activity": "cek unit AVANDA210",
+        "remark": "Aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4236,6 +4460,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cek unit AVANDA210",
     "notes": "Kondisi Baik",
+    "rowDetails": [
+      {
+        "activity": "cek unit AVANDA210",
+        "remark": "Kondisi Baik"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4246,6 +4476,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "Sortir led 5 box",
     "notes": "-3 box kondisi baik no. 02, 12, 27",
+    "rowDetails": [
+      {
+        "activity": "Sortir led 5 box",
+        "remark": "-3 box kondisi baik no. 02, 12, 27"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4256,6 +4492,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "Sortir led 5 box",
     "notes": "-Box no. 03 full service dead pixel, box no. 25 5 kabinet dead pixel",
+    "rowDetails": [
+      {
+        "activity": "Sortir led 5 box",
+        "remark": "-Box no. 03 full service dead pixel, box no. 25 5 kabinet dead pixel"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4266,6 +4508,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "- Cek Sub KLA No.3 Update Service",
     "notes": "Kondisi Aman",
+    "rowDetails": [
+      {
+        "activity": "- Cek Sub KLA No.3 Update Service",
+        "remark": "Kondisi Aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4276,6 +4524,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "- Cleaning Semua keyboard RD",
     "notes": "Kondisi Bersih",
+    "rowDetails": [
+      {
+        "activity": "- Cleaning Semua keyboard RD",
+        "remark": "Kondisi Bersih"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4286,6 +4540,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "- Marking label Ulang Nomor Mic Satuan dan Mic drum set",
     "notes": "Beres",
+    "rowDetails": [
+      {
+        "activity": "- Marking label Ulang Nomor Mic Satuan dan Mic drum set",
+        "remark": "Beres"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4296,6 +4556,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "- Cek Kondisi Console Midas HD",
     "notes": "Kondisi Aman dan Normal",
+    "rowDetails": [
+      {
+        "activity": "- Cek Kondisi Console Midas HD",
+        "remark": "Kondisi Aman dan Normal"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4306,6 +4572,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "- Sortir Beberapa kabel XLR Dan Akai Serta kabel Power",
     "notes": "Aman",
+    "rowDetails": [
+      {
+        "activity": "- Sortir Beberapa kabel XLR Dan Akai Serta kabel Power",
+        "remark": "Aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4316,6 +4588,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "- Mencatat Serial NUmber Mic dan Receiver Sennheiser EWD",
     "notes": "Selesai",
+    "rowDetails": [
+      {
+        "activity": "- Mencatat Serial NUmber Mic dan Receiver Sennheiser EWD",
+        "remark": "Selesai"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4326,6 +4604,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Multimedia",
     "activity": "- Bantu Team Sound",
     "notes": "",
+    "rowDetails": [
+      {
+        "activity": "- Bantu Team Sound",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4336,6 +4620,24 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "repair 4 kabinet led\n- 1 kabinet ganti ic warna\n- 1 kabinet ngacing\n- 2 kabinet ganti jalur",
     "notes": "Done\nDone\nDone\nDone",
+    "rowDetails": [
+      {
+        "activity": "repair 4 kabinet led",
+        "remark": "Done"
+      },
+      {
+        "activity": "- 1 kabinet ganti ic warna",
+        "remark": "Done"
+      },
+      {
+        "activity": "- 1 kabinet ngacing",
+        "remark": "Done"
+      },
+      {
+        "activity": "- 2 kabinet ganti jalur",
+        "remark": "Done"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4346,6 +4648,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Lighting",
     "activity": "Ganti Pompa Smoke No.1",
     "notes": "- Kondisi Sudah Normal (OKE)",
+    "rowDetails": [
+      {
+        "activity": "Ganti Pompa Smoke No.1",
+        "remark": "- Kondisi Sudah Normal (OKE)"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4356,6 +4664,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "Cek hanging bar gantung",
     "notes": "- Kondisi Baik",
+    "rowDetails": [
+      {
+        "activity": "Cek hanging bar gantung",
+        "remark": "- Kondisi Baik"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4366,6 +4680,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "cek Hangging Bar",
     "notes": "Aman",
+    "rowDetails": [
+      {
+        "activity": "cek Hangging Bar",
+        "remark": "Aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4376,6 +4696,36 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "1. repair 12 kabinet\n- 10 kabinet ganti dead pixel\n- 1 kabinet ngacing\n- 1 kabinet ganti jalur\n2. cek all servisan\n- 1 box 4 kabinet on progres\n- 2 box rusak berat",
     "notes": "Beres\nBeres\nBeres\nBeres\nOn progress\nOn progress\n- Kerusakan Ganti IC Warna, Ilang Jalur, GantiKonektor output sama ngacing",
+    "rowDetails": [
+      {
+        "activity": "1. repair 12 kabinet",
+        "remark": "Beres"
+      },
+      {
+        "activity": "- 10 kabinet ganti dead pixel",
+        "remark": "Beres"
+      },
+      {
+        "activity": "- 1 kabinet ngacing",
+        "remark": "Beres"
+      },
+      {
+        "activity": "- 1 kabinet ganti jalur",
+        "remark": "Beres"
+      },
+      {
+        "activity": "2. cek all servisan",
+        "remark": "On progress"
+      },
+      {
+        "activity": "- 1 box 4 kabinet on progres",
+        "remark": "On progress"
+      },
+      {
+        "activity": "- 2 box rusak berat",
+        "remark": "- Kerusakan Ganti IC Warna, Ilang Jalur, GantiKonektor output sama ngacing"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4386,6 +4736,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "* Melanjutkan pencatatan serial number all WHM - EAR monitor\n* Mengecek dan memastikan kelengkapan WHM \n* Membersihkan dan merking ulang nomor mic",
     "notes": "",
+    "rowDetails": [
+      {
+        "activity": "* Melanjutkan pencatatan serial number all WHM - EAR monitor\n* Mengecek dan memastikan kelengkapan WHM \n* Membersihkan dan merking ulang nomor mic",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4396,6 +4752,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "- Service Headset 2 Unit",
     "notes": "Beres",
+    "rowDetails": [
+      {
+        "activity": "- Service Headset 2 Unit",
+        "remark": "Beres"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4406,6 +4768,24 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "- Pencatatan Serial NUmber\n- Membersihkan Kamar mandi bawah\n- Service kabel Legran 1 Unit",
     "notes": "Haedset G3 3 Unit, IEM G4 4 Unit, IEM Mipro 1 Unit\nBersih\nBeres\nNote : G3 Yang isi 4 SN nya rusak gabisa input",
+    "rowDetails": [
+      {
+        "activity": "- Pencatatan Serial NUmber",
+        "remark": "Haedset G3 3 Unit, IEM G4 4 Unit, IEM Mipro 1 Unit"
+      },
+      {
+        "activity": "- Membersihkan Kamar mandi bawah",
+        "remark": "Bersih"
+      },
+      {
+        "activity": "- Service kabel Legran 1 Unit",
+        "remark": "Beres"
+      },
+      {
+        "activity": "",
+        "remark": "Note : G3 Yang isi 4 SN nya rusak gabisa input"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4416,6 +4796,28 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Multimedia",
     "activity": "Update Inventory\n- Tripod, Godox, Kabel HDMI\n- Kabel SDI, Perleng, Stand Godox\n- Klip GS, Matador Tv, TV 43\", TV 50\"\n-Kabel LAN, Belajar Ruting PTZ",
     "notes": "",
+    "rowDetails": [
+      {
+        "activity": "Update Inventory",
+        "remark": ""
+      },
+      {
+        "activity": "- Tripod, Godox, Kabel HDMI",
+        "remark": ""
+      },
+      {
+        "activity": "- Kabel SDI, Perleng, Stand Godox",
+        "remark": ""
+      },
+      {
+        "activity": "- Klip GS, Matador Tv, TV 43\", TV 50\"",
+        "remark": ""
+      },
+      {
+        "activity": "-Kabel LAN, Belajar Ruting PTZ",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4426,6 +4828,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "- Vacum bagian dalam box led dari pecahan silica gel",
     "notes": "8 box di bersihkan bagian dalam nya",
+    "rowDetails": [
+      {
+        "activity": "- Vacum bagian dalam box led dari pecahan silica gel",
+        "remark": "8 box di bersihkan bagian dalam nya"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4436,6 +4844,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "- Membersihkan 2 stand box led cube",
     "notes": "2 stand cube bersih",
+    "rowDetails": [
+      {
+        "activity": "- Membersihkan 2 stand box led cube",
+        "remark": "2 stand cube bersih"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4446,6 +4860,20 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "1. service 9 kabinet led\n- 8 kabinet gamti dead pixel\n- 1 kabinet ngacing",
     "notes": "Done\nDone\nDone",
+    "rowDetails": [
+      {
+        "activity": "1. service 9 kabinet led",
+        "remark": "Done"
+      },
+      {
+        "activity": "- 8 kabinet gamti dead pixel",
+        "remark": "Done"
+      },
+      {
+        "activity": "- 1 kabinet ngacing",
+        "remark": "Done"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4456,6 +4884,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "-update firmware m32 live 2unit,m32R 1unit,midas HD 2unit",
     "notes": "-setelah di updadate firmware terkonecting dgn normal",
+    "rowDetails": [
+      {
+        "activity": "-update firmware m32 live 2unit,m32R 1unit,midas HD 2unit",
+        "remark": "-setelah di updadate firmware terkonecting dgn normal"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4466,6 +4900,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "-cleaning drum YAMAHA TC1,TAMA SC",
     "notes": "-drum dlm kondisi bersih",
+    "rowDetails": [
+      {
+        "activity": "-cleaning drum YAMAHA TC1,TAMA SC",
+        "remark": "-drum dlm kondisi bersih"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4476,6 +4916,16 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Multimedia",
     "activity": "- Inventory Alat Streaming\n- Pembuatan Storytelling",
     "notes": "",
+    "rowDetails": [
+      {
+        "activity": "- Inventory Alat Streaming",
+        "remark": ""
+      },
+      {
+        "activity": "- Pembuatan Storytelling",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4486,6 +4936,20 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "1. servise 6 kabinet led\n- 1 kabinet ganti jalur\n- 5 kabinet gamti dead pixel",
     "notes": "",
+    "rowDetails": [
+      {
+        "activity": "1. servise 6 kabinet led",
+        "remark": ""
+      },
+      {
+        "activity": "- 1 kabinet ganti jalur",
+        "remark": ""
+      },
+      {
+        "activity": "- 5 kabinet gamti dead pixel",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4496,6 +4960,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Lighting",
     "activity": "- Ganti Lampu Beam No.10",
     "notes": "- Sudah Normal lagi beam No.10",
+    "rowDetails": [
+      {
+        "activity": "- Ganti Lampu Beam No.10",
+        "remark": "- Sudah Normal lagi beam No.10"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4506,6 +4976,28 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "1. servise 7 kabinet led\n- 1 kabinet ngacing\n-1 kabinet ganti ic warna\n- 5 kabinet ganti dead pixel\n2. cek 50 meter led strip",
     "notes": "1 box status masih servise berat\n1 rol (5m) led strip status error",
+    "rowDetails": [
+      {
+        "activity": "1. servise 7 kabinet led",
+        "remark": "1 box status masih servise berat"
+      },
+      {
+        "activity": "- 1 kabinet ngacing",
+        "remark": "1 rol (5m) led strip status error"
+      },
+      {
+        "activity": "-1 kabinet ganti ic warna",
+        "remark": ""
+      },
+      {
+        "activity": "- 5 kabinet ganti dead pixel",
+        "remark": ""
+      },
+      {
+        "activity": "2. cek 50 meter led strip",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4516,6 +5008,24 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Lighting",
     "activity": "Bersih2 ALL Parled 47 Unit\nBenerin Link 1 Unit\nBenerin Kabel 4x2.5 Bekas Event St Regist\nRapih Rapih Kabel & Tempat Lighting",
     "notes": "- Kondisi Bersih\n- Sudah Oke\n- Sudah Oke\n- Kondisi Rapih",
+    "rowDetails": [
+      {
+        "activity": "Bersih2 ALL Parled 47 Unit",
+        "remark": "- Kondisi Bersih"
+      },
+      {
+        "activity": "Benerin Link 1 Unit",
+        "remark": "- Sudah Oke"
+      },
+      {
+        "activity": "Benerin Kabel 4x2.5 Bekas Event St Regist",
+        "remark": "- Sudah Oke"
+      },
+      {
+        "activity": "Rapih Rapih Kabel & Tempat Lighting",
+        "remark": "- Kondisi Rapih"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4526,6 +5036,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "maintenace sub/avanda210",
     "notes": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "rowDetails": [
+      {
+        "activity": "maintenace sub/avanda210",
+        "remark": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4536,6 +5052,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "maintenace sub/avanda210",
     "notes": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "rowDetails": [
+      {
+        "activity": "maintenace sub/avanda210",
+        "remark": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4546,6 +5068,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "maintenace sub/avanda210",
     "notes": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "rowDetails": [
+      {
+        "activity": "maintenace sub/avanda210",
+        "remark": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4556,6 +5084,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "maintenace sub/avanda210",
     "notes": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "rowDetails": [
+      {
+        "activity": "maintenace sub/avanda210",
+        "remark": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4566,6 +5100,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "maintenace sub/avanda210",
     "notes": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman",
+    "rowDetails": [
+      {
+        "activity": "maintenace sub/avanda210",
+        "remark": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4576,6 +5116,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "touch up Dan cek SUB KLA",
     "notes": "",
+    "rowDetails": [
+      {
+        "activity": "touch up Dan cek SUB KLA",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4586,6 +5132,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Lighting",
     "activity": "Prepare Barang Barang Event",
     "notes": "Aman",
+    "rowDetails": [
+      {
+        "activity": "Prepare Barang Barang Event",
+        "remark": "Aman"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4596,6 +5148,16 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Lighting",
     "activity": "Beres Beres Barang dan Area Gudang\nPengembalian Alat Bekas Pakai Sewa (Alpha & SWL)",
     "notes": "- Rapih",
+    "rowDetails": [
+      {
+        "activity": "Beres Beres Barang dan Area Gudang",
+        "remark": "- Rapih"
+      },
+      {
+        "activity": "Pengembalian Alat Bekas Pakai Sewa (Alpha & SWL)",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4606,6 +5168,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cek unit monitor DB18",
     "notes": "-DB NO18 twiter mati",
+    "rowDetails": [
+      {
+        "activity": "cek unit monitor DB18",
+        "remark": "-DB NO18 twiter mati"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4616,6 +5184,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cek unit monitor DB15",
     "notes": "-DB NO15 twitwe kecil/lemah",
+    "rowDetails": [
+      {
+        "activity": "cek unit monitor DB15",
+        "remark": "-DB NO15 twitwe kecil/lemah"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4626,6 +5200,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cek unit monitor LVX15",
     "notes": "-mesin mati /dalam penegecekan mang damri",
+    "rowDetails": [
+      {
+        "activity": "cek unit monitor LVX15",
+        "remark": "-mesin mati /dalam penegecekan mang damri"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4636,6 +5216,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Lighting",
     "activity": "Cek unit & Cleaning All Hazer",
     "notes": "Kondisi Oke Semua",
+    "rowDetails": [
+      {
+        "activity": "Cek unit & Cleaning All Hazer",
+        "remark": "Kondisi Oke Semua"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4646,6 +5232,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Lighting",
     "activity": "Training Sound Yamaha",
     "notes": "",
+    "rowDetails": [
+      {
+        "activity": "Training Sound Yamaha",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4656,6 +5248,16 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "- cek & servise 12 roll led strip\n- buat dudukan power suplly led strip",
     "notes": "- Bagus\n- Done",
+    "rowDetails": [
+      {
+        "activity": "- cek & servise 12 roll led strip",
+        "remark": "- Bagus"
+      },
+      {
+        "activity": "- buat dudukan power suplly led strip",
+        "remark": "- Done"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4666,6 +5268,32 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "bersih\" dl 32\nDL 32 no 1\nDL 32 no 2\nDL 32 no 3\nDL 32 no 4\nmixer HD no 1",
     "notes": "CEK NYALA AMAN\nOK\nOK\nOK\nOK\nOK",
+    "rowDetails": [
+      {
+        "activity": "bersih\" dl 32",
+        "remark": "CEK NYALA AMAN"
+      },
+      {
+        "activity": "DL 32 no 1",
+        "remark": "OK"
+      },
+      {
+        "activity": "DL 32 no 2",
+        "remark": "OK"
+      },
+      {
+        "activity": "DL 32 no 3",
+        "remark": "OK"
+      },
+      {
+        "activity": "DL 32 no 4",
+        "remark": "OK"
+      },
+      {
+        "activity": "mixer HD no 1",
+        "remark": "OK"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4676,6 +5304,24 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "-cleaning dl251\n-cleaning marani mir4801\n-cek all kabel LAN\n-cleaning mixer HD967",
     "notes": "-BERSIH\n-BERSIH\n-ALL terkoneksi dgn  baik",
+    "rowDetails": [
+      {
+        "activity": "-cleaning dl251",
+        "remark": "-BERSIH"
+      },
+      {
+        "activity": "-cleaning marani mir4801",
+        "remark": "-BERSIH"
+      },
+      {
+        "activity": "-cek all kabel LAN",
+        "remark": "-ALL terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cleaning mixer HD967",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4686,6 +5332,24 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Multimedia",
     "activity": "Cek UPS\nCleaning Rak Kantor\nCleaning Tas Kamera\nCek Box 1 Perlenk, SDI, HDMI",
     "notes": "Udah Ga bisa ngisi",
+    "rowDetails": [
+      {
+        "activity": "Cek UPS",
+        "remark": "Udah Ga bisa ngisi"
+      },
+      {
+        "activity": "Cleaning Rak Kantor",
+        "remark": ""
+      },
+      {
+        "activity": "Cleaning Tas Kamera",
+        "remark": ""
+      },
+      {
+        "activity": "Cek Box 1 Perlenk, SDI, HDMI",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4696,6 +5360,56 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD\nEWD no. 5 - 8\nEWD no. 9 - 12\nEWD no. 15 - 16\nEWD no. 17 - 18\nSLXD no. 1 - 4\nSLXD no. 5 - 8\nQLXD no 9 - 12\ncleaning and check kelengkapan IEM Sennheisser G4\nno. 1 - 8\nrepack WHM QLXD menjadi 2 box ukuran 2U ( baru )\nmassing2 menjadi 2 WHM dalam 1 box",
     "notes": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event\nIEM semua dalam kondisi normal, kelengkapan oke.\nDistributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U.",
+    "rowDetails": [
+      {
+        "activity": "cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD",
+        "remark": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event"
+      },
+      {
+        "activity": "EWD no. 5 - 8",
+        "remark": ""
+      },
+      {
+        "activity": "EWD no. 9 - 12",
+        "remark": ""
+      },
+      {
+        "activity": "EWD no. 15 - 16",
+        "remark": ""
+      },
+      {
+        "activity": "EWD no. 17 - 18",
+        "remark": ""
+      },
+      {
+        "activity": "SLXD no. 1 - 4",
+        "remark": ""
+      },
+      {
+        "activity": "SLXD no. 5 - 8",
+        "remark": ""
+      },
+      {
+        "activity": "QLXD no 9 - 12",
+        "remark": ""
+      },
+      {
+        "activity": "cleaning and check kelengkapan IEM Sennheisser G4",
+        "remark": "IEM semua dalam kondisi normal, kelengkapan oke."
+      },
+      {
+        "activity": "no. 1 - 8",
+        "remark": ""
+      },
+      {
+        "activity": "repack WHM QLXD menjadi 2 box ukuran 2U ( baru )",
+        "remark": "Distributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U."
+      },
+      {
+        "activity": "massing2 menjadi 2 WHM dalam 1 box",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4706,6 +5420,52 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Lighting",
     "activity": "-Rapih2 Kabel Bekas Pakai Perbok\n-Benerin Kabel Power 4x2.5 (25M)\n-Cleaning All Beam 450\nNo. 1-2-3-4-5-6-7-8-9-10-11-12-13\n14-15-16-17-18-19-20-21-22-23-24\n-Cleaning All Parled Trf A64\nNo. 1-2-3-4-5-6-7-8-9-10-11-12-13\n14-15-16-17-18-19-20-21-22-23-24\n25-26-27-28-29-30-31-32-33-34-35\n36-37-38-39-40-41-42-43-44-45-46\n47-48",
     "notes": "- Rapih Sesuai Tulisan Dibok\n- Sudah Kepasang Kembali Steker Nya\n-Bersih & Normal\n- Bersih & Normal KECUALI NO. 5-12-19-33 Eror\nNo. 5 - Warm Separo\nNo. 12 - Red Mati 1 Mata\nNo. 19 - Warm Separo\nNo. 33 - Red Separo",
+    "rowDetails": [
+      {
+        "activity": "-Rapih2 Kabel Bekas Pakai Perbok",
+        "remark": "- Rapih Sesuai Tulisan Dibok"
+      },
+      {
+        "activity": "-Benerin Kabel Power 4x2.5 (25M)",
+        "remark": "- Sudah Kepasang Kembali Steker Nya"
+      },
+      {
+        "activity": "-Cleaning All Beam 450",
+        "remark": "-Bersih & Normal"
+      },
+      {
+        "activity": "No. 1-2-3-4-5-6-7-8-9-10-11-12-13",
+        "remark": ""
+      },
+      {
+        "activity": "14-15-16-17-18-19-20-21-22-23-24",
+        "remark": ""
+      },
+      {
+        "activity": "-Cleaning All Parled Trf A64",
+        "remark": "- Bersih & Normal KECUALI NO. 5-12-19-33 Eror"
+      },
+      {
+        "activity": "No. 1-2-3-4-5-6-7-8-9-10-11-12-13",
+        "remark": "No. 5 - Warm Separo"
+      },
+      {
+        "activity": "14-15-16-17-18-19-20-21-22-23-24",
+        "remark": "No. 12 - Red Mati 1 Mata"
+      },
+      {
+        "activity": "25-26-27-28-29-30-31-32-33-34-35",
+        "remark": "No. 19 - Warm Separo"
+      },
+      {
+        "activity": "36-37-38-39-40-41-42-43-44-45-46",
+        "remark": "No. 33 - Red Separo"
+      },
+      {
+        "activity": "47-48",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4716,6 +5476,24 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Videotron",
     "activity": "servise 8 kabinet led\n- 6 kabinet ganti dead pixel\n-1 kabinet ganti ic warna\n- 1 kabinet ganti jalur",
     "notes": "2 unit minta ganti recieving card",
+    "rowDetails": [
+      {
+        "activity": "servise 8 kabinet led",
+        "remark": "2 unit minta ganti recieving card"
+      },
+      {
+        "activity": "- 6 kabinet ganti dead pixel",
+        "remark": ""
+      },
+      {
+        "activity": "-1 kabinet ganti ic warna",
+        "remark": ""
+      },
+      {
+        "activity": "- 1 kabinet ganti jalur",
+        "remark": ""
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4726,6 +5504,32 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "division": "Audio",
     "activity": "Ganti twitter DB No 15\nGanti twitter DB No 18\nGanti twitter DB No 5\nGanti Speaker DB no 5\nProses  Test Unit DB tech maintenance\nService Bracket Drum TAMA",
     "notes": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi unit sudah OK\nKondisi unit sudah OK\nKondisi unit sudah OK\nService ulang, DB no 15 belum normal\nKondisi unit sudah OK",
+    "rowDetails": [
+      {
+        "activity": "Ganti twitter DB No 15",
+        "remark": "Rekon-Kit Twitter masih bermasalah, suara kecil"
+      },
+      {
+        "activity": "Ganti twitter DB No 18",
+        "remark": "Kondisi unit sudah OK"
+      },
+      {
+        "activity": "Ganti twitter DB No 5",
+        "remark": "Kondisi unit sudah OK"
+      },
+      {
+        "activity": "Ganti Speaker DB no 5",
+        "remark": "Kondisi unit sudah OK"
+      },
+      {
+        "activity": "Proses  Test Unit DB tech maintenance",
+        "remark": "Service ulang, DB no 15 belum normal"
+      },
+      {
+        "activity": "Service Bracket Drum TAMA",
+        "remark": "Kondisi unit sudah OK"
+      }
+    ],
     "status": "Submitted",
     "_source": "google_sheet"
   }
@@ -10129,6 +10933,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Aman"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "- Cek kabel lan",
+        "remark": "Aman"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10147,6 +10957,16 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Sudah\nSudah"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "- Bersiin Prosesor dan cek kelengkapan kabel Di Processor",
+        "remark": "Sudah"
+      },
+      {
+        "activity": "- Nyuci pemberat",
+        "remark": "Sudah"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10165,6 +10985,40 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Aman\nBeres\nPerbaikan\nPerbaikan\nPerbaikan\nPerbaikan\nSudah\nSudah"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "1. repair 3 kabinet ic warna  + ganti dead pixel 2 kabinet clear",
+        "remark": "Aman"
+      },
+      {
+        "activity": "2. cek 11 modul kabinet",
+        "remark": "Beres"
+      },
+      {
+        "activity": "- 2 modul ilang jalur ic",
+        "remark": "Perbaikan"
+      },
+      {
+        "activity": "- 3 modul ilang jalur pixel",
+        "remark": "Perbaikan"
+      },
+      {
+        "activity": "- 3 modul kena ic warna",
+        "remark": "Perbaikan"
+      },
+      {
+        "activity": "- 1 modul arus konslet",
+        "remark": "Perbaikan"
+      },
+      {
+        "activity": "3. copot ic buat kanibal",
+        "remark": "Sudah"
+      },
+      {
+        "activity": "4. sortir masking",
+        "remark": "Sudah"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10183,6 +11037,40 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Normal\nNormal\nNormal\nNormal\nNormal\nNormal\nKeadaan tidak komplite"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "Cek Unit Tripot",
+        "remark": ""
+      },
+      {
+        "activity": "- A , Tripot Centurion",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- B , Tripot Centurion",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- C , Tripot Lama (Berat)",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- D , Tripot Lama",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- E , Tripot Lama ( Tipis Enteng )",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- F , Tripot Lama ( Tipis Enteng )",
+        "remark": "Normal"
+      },
+      {
+        "activity": "- G , Tripot Custom",
+        "remark": "Keadaan tidak komplite"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10201,6 +11089,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "-semua unit AVANDA210 kondisi normaL"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "cek unit AVANDA210",
+        "remark": "-semua unit AVANDA210 kondisi normaL"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10219,6 +11113,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Aman"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "cek unit AVANDA210",
+        "remark": "Aman"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10237,6 +11137,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Kondisi Baik"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "cek unit AVANDA210",
+        "remark": "Kondisi Baik"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10255,6 +11161,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Kondisi Aman"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "- Cek Sub KLA No.3 Update Service",
+        "remark": "Kondisi Aman"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10273,6 +11185,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Kondisi Aman dan Normal"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "- Cek Kondisi Console Midas HD",
+        "remark": "Kondisi Aman dan Normal"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10291,6 +11209,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "- Kondisi Baik"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "Cek hanging bar gantung",
+        "remark": "- Kondisi Baik"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10309,6 +11233,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Aman"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "cek Hangging Bar",
+        "remark": "Aman"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10327,6 +11257,36 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Beres\nBeres\nBeres\nBeres\nOn progress\nOn progress\n- Kerusakan Ganti IC Warna, Ilang Jalur, GantiKonektor output sama ngacing"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "1. repair 12 kabinet",
+        "remark": "Beres"
+      },
+      {
+        "activity": "- 10 kabinet ganti dead pixel",
+        "remark": "Beres"
+      },
+      {
+        "activity": "- 1 kabinet ngacing",
+        "remark": "Beres"
+      },
+      {
+        "activity": "- 1 kabinet ganti jalur",
+        "remark": "Beres"
+      },
+      {
+        "activity": "2. cek all servisan",
+        "remark": "On progress"
+      },
+      {
+        "activity": "- 1 box 4 kabinet on progres",
+        "remark": "On progress"
+      },
+      {
+        "activity": "- 2 box rusak berat",
+        "remark": "- Kerusakan Ganti IC Warna, Ilang Jalur, GantiKonektor output sama ngacing"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10345,6 +11305,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Synced from Google Sheet"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "* Melanjutkan pencatatan serial number all WHM - EAR monitor\n* Mengecek dan memastikan kelengkapan WHM \n* Membersihkan dan merking ulang nomor mic",
+        "remark": ""
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10363,6 +11329,28 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "1 box status masih servise berat\n1 rol (5m) led strip status error"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "1. servise 7 kabinet led",
+        "remark": "1 box status masih servise berat"
+      },
+      {
+        "activity": "- 1 kabinet ngacing",
+        "remark": "1 rol (5m) led strip status error"
+      },
+      {
+        "activity": "-1 kabinet ganti ic warna",
+        "remark": ""
+      },
+      {
+        "activity": "- 5 kabinet ganti dead pixel",
+        "remark": ""
+      },
+      {
+        "activity": "2. cek 50 meter led strip",
+        "remark": ""
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10381,6 +11369,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "maintenace sub/avanda210",
+        "remark": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10399,6 +11393,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "maintenace sub/avanda210",
+        "remark": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10417,6 +11417,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "maintenace sub/avanda210",
+        "remark": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10435,6 +11441,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "maintenace sub/avanda210",
+        "remark": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10453,6 +11465,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "maintenace sub/avanda210",
+        "remark": "membersihkan/pengecekan unit sub dan avanda210 yg di sewa kondisi bersih dan aman"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10471,6 +11489,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Synced from Google Sheet"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "touch up Dan cek SUB KLA",
+        "remark": ""
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10489,6 +11513,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "-DB NO18 twiter mati"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "cek unit monitor DB18",
+        "remark": "-DB NO18 twiter mati"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10507,6 +11537,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "-DB NO15 twitwe kecil/lemah"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "cek unit monitor DB15",
+        "remark": "-DB NO15 twitwe kecil/lemah"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10525,6 +11561,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "-mesin mati /dalam penegecekan mang damri"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "cek unit monitor LVX15",
+        "remark": "-mesin mati /dalam penegecekan mang damri"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10543,6 +11585,12 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Kondisi Oke Semua"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "Cek unit & Cleaning All Hazer",
+        "remark": "Kondisi Oke Semua"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10561,6 +11609,16 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "- Bagus\n- Done"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "- cek & servise 12 roll led strip",
+        "remark": "- Bagus"
+      },
+      {
+        "activity": "- buat dudukan power suplly led strip",
+        "remark": "- Done"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10579,6 +11637,32 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "CEK NYALA AMAN\nOK\nOK\nOK\nOK\nOK"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "bersih\" dl 32",
+        "remark": "CEK NYALA AMAN"
+      },
+      {
+        "activity": "DL 32 no 1",
+        "remark": "OK"
+      },
+      {
+        "activity": "DL 32 no 2",
+        "remark": "OK"
+      },
+      {
+        "activity": "DL 32 no 3",
+        "remark": "OK"
+      },
+      {
+        "activity": "DL 32 no 4",
+        "remark": "OK"
+      },
+      {
+        "activity": "mixer HD no 1",
+        "remark": "OK"
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10597,6 +11681,24 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "-BERSIH\n-BERSIH\n-ALL terkoneksi dgn  baik"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "-cleaning dl251",
+        "remark": "-BERSIH"
+      },
+      {
+        "activity": "-cleaning marani mir4801",
+        "remark": "-BERSIH"
+      },
+      {
+        "activity": "-cek all kabel LAN",
+        "remark": "-ALL terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cleaning mixer HD967",
+        "remark": ""
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10615,6 +11717,24 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Udah Ga bisa ngisi"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "Cek UPS",
+        "remark": "Udah Ga bisa ngisi"
+      },
+      {
+        "activity": "Cleaning Rak Kantor",
+        "remark": ""
+      },
+      {
+        "activity": "Cleaning Tas Kamera",
+        "remark": ""
+      },
+      {
+        "activity": "Cek Box 1 Perlenk, SDI, HDMI",
+        "remark": ""
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10633,6 +11753,56 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event\nIEM semua dalam kondisi normal, kelengkapan oke.\nDistributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U."
       }
     },
+    "rowDetails": [
+      {
+        "activity": "cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD",
+        "remark": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event"
+      },
+      {
+        "activity": "EWD no. 5 - 8",
+        "remark": ""
+      },
+      {
+        "activity": "EWD no. 9 - 12",
+        "remark": ""
+      },
+      {
+        "activity": "EWD no. 15 - 16",
+        "remark": ""
+      },
+      {
+        "activity": "EWD no. 17 - 18",
+        "remark": ""
+      },
+      {
+        "activity": "SLXD no. 1 - 4",
+        "remark": ""
+      },
+      {
+        "activity": "SLXD no. 5 - 8",
+        "remark": ""
+      },
+      {
+        "activity": "QLXD no 9 - 12",
+        "remark": ""
+      },
+      {
+        "activity": "cleaning and check kelengkapan IEM Sennheisser G4",
+        "remark": "IEM semua dalam kondisi normal, kelengkapan oke."
+      },
+      {
+        "activity": "no. 1 - 8",
+        "remark": ""
+      },
+      {
+        "activity": "repack WHM QLXD menjadi 2 box ukuran 2U ( baru )",
+        "remark": "Distributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U."
+      },
+      {
+        "activity": "massing2 menjadi 2 WHM dalam 1 box",
+        "remark": ""
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10651,6 +11821,52 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "- Rapih Sesuai Tulisan Dibok\n- Sudah Kepasang Kembali Steker Nya\n-Bersih & Normal\n- Bersih & Normal KECUALI NO. 5-12-19-33 Eror\nNo. 5 - Warm Separo\nNo. 12 - Red Mati 1 Mata\nNo. 19 - Warm Separo\nNo. 33 - Red Separo"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "-Rapih2 Kabel Bekas Pakai Perbok",
+        "remark": "- Rapih Sesuai Tulisan Dibok"
+      },
+      {
+        "activity": "-Benerin Kabel Power 4x2.5 (25M)",
+        "remark": "- Sudah Kepasang Kembali Steker Nya"
+      },
+      {
+        "activity": "-Cleaning All Beam 450",
+        "remark": "-Bersih & Normal"
+      },
+      {
+        "activity": "No. 1-2-3-4-5-6-7-8-9-10-11-12-13",
+        "remark": ""
+      },
+      {
+        "activity": "14-15-16-17-18-19-20-21-22-23-24",
+        "remark": ""
+      },
+      {
+        "activity": "-Cleaning All Parled Trf A64",
+        "remark": "- Bersih & Normal KECUALI NO. 5-12-19-33 Eror"
+      },
+      {
+        "activity": "No. 1-2-3-4-5-6-7-8-9-10-11-12-13",
+        "remark": "No. 5 - Warm Separo"
+      },
+      {
+        "activity": "14-15-16-17-18-19-20-21-22-23-24",
+        "remark": "No. 12 - Red Mati 1 Mata"
+      },
+      {
+        "activity": "25-26-27-28-29-30-31-32-33-34-35",
+        "remark": "No. 19 - Warm Separo"
+      },
+      {
+        "activity": "36-37-38-39-40-41-42-43-44-45-46",
+        "remark": "No. 33 - Red Separo"
+      },
+      {
+        "activity": "47-48",
+        "remark": ""
+      }
+    ],
     "_source": "google_sheet"
   },
   {
@@ -10669,6 +11885,32 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
         "notes": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi unit sudah OK\nKondisi unit sudah OK\nKondisi unit sudah OK\nService ulang, DB no 15 belum normal\nKondisi unit sudah OK"
       }
     },
+    "rowDetails": [
+      {
+        "activity": "Ganti twitter DB No 15",
+        "remark": "Rekon-Kit Twitter masih bermasalah, suara kecil"
+      },
+      {
+        "activity": "Ganti twitter DB No 18",
+        "remark": "Kondisi unit sudah OK"
+      },
+      {
+        "activity": "Ganti twitter DB No 5",
+        "remark": "Kondisi unit sudah OK"
+      },
+      {
+        "activity": "Ganti Speaker DB no 5",
+        "remark": "Kondisi unit sudah OK"
+      },
+      {
+        "activity": "Proses  Test Unit DB tech maintenance",
+        "remark": "Service ulang, DB no 15 belum normal"
+      },
+      {
+        "activity": "Service Bracket Drum TAMA",
+        "remark": "Kondisi unit sudah OK"
+      }
+    ],
     "_source": "google_sheet"
   }
 ];
@@ -11727,8 +12969,8 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "division": "Videotron",
     "status": "Open",
     "pic": "Mulyana",
-    "targetDate": "2026-11-03",
-    "issue": "servise 8 kabinet led (- 6 kabinet ganti dead pixel, -1 kabinet ganti ic warna, - 1 kabinet ganti jalur): 2 unit minta ganti recieving card",
+    "targetDate": "2026-11-07",
+    "issue": "Service 8 kabinet LED (6 kabinet ganti dead pixel, 1 kabinet ganti IC warna, 1 kabinet ganti jalur) — 2 unit minta ganti receiving card",
     "_source": "google_sheet",
     "equipment": "8 Kabinet LED Videotron (2 Unit Receiving Card)",
     "priority": "Tinggi"
@@ -11739,8 +12981,8 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "division": "Audio",
     "status": "Open",
     "pic": "Iwan Kurniawan",
-    "targetDate": "2026-11-04",
-    "issue": "Ganti twitter DB No 15: Rekon-Kit Twitter masih bermasalah, suara kecil | Proses Test Unit DB tech maintenance: Service ulang, DB no 15 belum normal (DB No 18, DB No 5, Speaker DB No 5 & Bracket Drum TAMA: Kondisi unit sudah OK)",
+    "targetDate": "2026-11-08",
+    "issue": "Ganti twitter DB No 15: Rekon-Kit Twitter masih bermasalah, suara kecil. Service ulang, DB no 15 belum normal (DB No 18 & DB No 5 kondisi OK)",
     "_source": "google_sheet",
     "equipment": "Speaker Monitor DB Tech No. 15 (Audio)",
     "priority": "Tinggi"
@@ -12199,7 +13441,7 @@ export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder[] = [
     "title": "Service 8 Kabinet LED (6 Dead Pixel, 1 IC Warna, 1 Jalur) & Ganti 2 Unit Receiving Card",
     "division": "Videotron",
     "deadline": "2026-11-07",
-    "description": "[Temuan QC ID: fd-20261103-kharo-kabinet-led] servise 8 kabinet led (- 6 kabinet ganti dead pixel, -1 kabinet ganti ic warna, - 1 kabinet ganti jalur) — Remark: 2 unit minta ganti recieving card",
+    "description": "[Temuan QC ID: fd-20261103-kharo-kabinet-led] servise 8 kabinet led (- 6 kabinet ganti dead pixel, -1 kabinet ganti ic warna, - 1 kabinet ganti jalur) — Remark: 2 unit minta ganti reciving card",
     "status": "In Progress",
     "progress": 75,
     "priority": "Tinggi",
@@ -12210,11 +13452,11 @@ export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder[] = [
     "id": "wo-20261104-butonk-db-maintenance",
     "dateCreated": "2026-11-04",
     "findingId": "fd-20261104-butonk-db15",
-    "equipment": "Speaker Monitor DB Tech No. 5, No. 15, No. 18 & Bracket Drum TAMA (Audio)",
-    "title": "Ganti Tweeter & Speaker DB Tech No. 5, No. 18, Bracket Drum TAMA (OK) & Service Ulang Rekon-Kit DB Tech No. 15",
+    "equipment": "Speaker Monitor DB Tech No. 5, No. 15 & No. 18 (Audio)",
+    "title": "Ganti Tweeter & Speaker DB Tech No. 5, No. 18 (OK) & Service Ulang Rekon-Kit DB Tech No. 15",
     "division": "Audio",
     "deadline": "2026-11-08",
-    "description": "[Temuan QC ID: fd-20261104-butonk-db15] Ganti twitter DB No 15 (Rekon-Kit Twitter masih bermasalah, suara kecil), Ganti twitter DB No 18 (Kondisi unit sudah OK), Ganti twitter DB No 5 (Kondisi unit sudah OK), Ganti Speaker DB no 5 (Kondisi unit sudah OK), Proses Test Unit DB tech maintenance (Service ulang, DB no 15 belum normal), Service Bracket Drum TAMA (Kondisi unit sudah OK)",
+    "description": "[Temuan QC ID: fd-20261104-butonk-db15] Ganti twitter DB No 15 (Rekon-Kit Twitter masih bermasalah, suara kecil), Ganti twitter DB No 18 (Kondisi OK), Ganti twitter DB No 5 (Kondisi OK), Ganti Speaker DB no 5 (Kondisi OK), Proses Test Unit DB tech maintenance (Service ulang, DB no 15 belum normal)",
     "status": "In Progress",
     "progress": 75,
     "priority": "Tinggi",

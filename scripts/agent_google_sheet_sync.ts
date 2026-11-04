@@ -73,6 +73,7 @@ async function runAgent() {
         division: e.division,
         activity: e.activity,
         notes: e.notes || '',
+        ...(e.rowDetails ? { rowDetails: e.rowDetails } : {}),
         status: 'Submitted',
         _source: 'google_sheet'
       }));
@@ -92,6 +93,7 @@ async function runAgent() {
             status: isNg ? ('Open' as const) : ('Close' as const),
             verification: 'Auto-Synced',
             checklists: { [e.activity.substring(0, 40)]: { status: isNg ? ('NG' as const) : ('OK' as const), notes: e.notes || 'Synced from Google Sheet' } },
+            ...(e.rowDetails ? { rowDetails: e.rowDetails } : {}),
             _source: 'google_sheet'
           };
         });
