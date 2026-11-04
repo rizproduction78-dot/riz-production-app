@@ -213,6 +213,11 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
     // Ensure baseStaff canonical properties are preserved if blanked or corrupted
     const baseStaff = STAFF_LIST.find(def => def.id === canonicalId);
     if (baseStaff) {
+      const rawMeta = (canonicalStaff as any)._syncMeta;
+      const isUserEdited = Boolean((canonicalStaff as any)._userEdited || rawMeta?._userEdited) || (
+        rawMeta?.updatedBy &&
+        !['System', 'System Auto-Sync', 'System Canonical Sync', 'BatchSync', 'Supabase Cloud Sync'].includes(rawMeta.updatedBy)
+      );
       canonicalStaff = {
         ...baseStaff,
         ...canonicalStaff,
@@ -221,10 +226,10 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
         fullName: (canonicalStaff.fullName && canonicalStaff.fullName.trim().length > 0) ? canonicalStaff.fullName : baseStaff.fullName,
         nickname: canonicalStaff.nickname || baseStaff.nickname,
         division: (canonicalStaff.division && canonicalStaff.division !== 'Umum') ? canonicalStaff.division : baseStaff.division,
-        role: (canonicalStaff.role && canonicalStaff.role !== 'Staff') ? canonicalStaff.role : baseStaff.role,
+        role: isUserEdited && canonicalStaff.role ? canonicalStaff.role : ((canonicalStaff.role && canonicalStaff.role !== 'Staff') ? canonicalStaff.role : baseStaff.role),
         level: canonicalStaff.level || baseStaff.level,
-        email: canonicalStaff.email || baseStaff.email,
-        phone: canonicalStaff.phone || baseStaff.phone,
+        email: canonicalStaff.email !== undefined ? canonicalStaff.email : baseStaff.email,
+        phone: canonicalStaff.phone !== undefined ? canonicalStaff.phone : baseStaff.phone,
       };
     }
 
@@ -2655,59 +2660,119 @@ export function sortMaintenanceHistoryDesc(records?: VehicleMaintenanceRecord[])
  */
 export function normalizeVehiclesMaster(rawList: any[]): VehicleMaster[] {
   const FAKE_PLATES = ['B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
+  let deletedIds = new Set<string>();
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const rawDel = localStorage.getItem('riz_deleted_ids_master_vehicles');
+      if (rawDel) {
+        const parsedDel = JSON.parse(rawDel);
+        if (Array.isArray(parsedDel)) deletedIds = new Set(parsedDel.map(String));
+      }
+    } catch {}
+  }
+
+  const canonicalById = new Map<string, VehicleMaster>();
   const canonicalByPlate = new Map<string, VehicleMaster>();
   INITIAL_VEHICLES.forEach(v => {
-    canonicalByPlate.set(v.policeNumber.toUpperCase().trim(), {
+    const sorted = {
       ...v,
       maintenanceHistory: sortMaintenanceHistoryDesc(v.maintenanceHistory)
-    });
+    };
+    canonicalById.set(v.id, sorted);
+    canonicalByPlate.set(v.policeNumber.toUpperCase().trim(), sorted);
   });
 
-  const resultByPlate = new Map<string, VehicleMaster>();
-  // Masukkan 7 unit resmi sebagai basis utama
+  const resultById = new Map<string, VehicleMaster>();
+  // Masukkan 7 unit resmi sebagai basis utama kecuali bila telah dihapus eksplisit oleh user
   INITIAL_VEHICLES.forEach(v => {
-    resultByPlate.set(v.policeNumber.toUpperCase().trim(), {
-      ...v,
-      maintenanceHistory: sortMaintenanceHistoryDesc(v.maintenanceHistory)
-    });
+    const plate = v.policeNumber.toUpperCase().trim();
+    if (!deletedIds.has(v.id) && !deletedIds.has(plate)) {
+      resultById.set(v.id, {
+        ...v,
+        maintenanceHistory: sortMaintenanceHistoryDesc(v.maintenanceHistory)
+      });
+    }
   });
 
   if (Array.isArray(rawList)) {
     const flat = rawList.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
     flat.forEach(item => {
-      if (!item || typeof item !== 'object') return;
+      if (!item || typeof item !== 'object' || item._deleted) return;
       const plate = String(item.policeNumber || '').toUpperCase().trim();
       if (!plate || FAKE_PLATES.includes(plate)) return;
+      const itemId = String(item.id || '').trim();
+      if ((itemId && deletedIds.has(itemId)) || deletedIds.has(plate)) return;
 
-      const canonical = canonicalByPlate.get(plate);
+      const canonical = (itemId ? canonicalById.get(itemId) : undefined) || canonicalByPlate.get(plate);
       if (canonical) {
-        // Pertahankan status operasional / odometer bila baru diupdate user, tetapi paksakan data resmi STNK, KIR, Nama, Tipe, & Riwayat Servis Terkini Paling Atas
-        resultByPlate.set(plate, {
-          ...item,
-          id: canonical.id,
-          name: canonical.name,
-          unitCode: canonical.unitCode,
-          ownership: canonical.ownership,
-          policeNumber: canonical.policeNumber,
-          vehicleType: canonical.vehicleType,
-          tonnageCapacity: canonical.tonnageCapacity,
-          cbmCapacity: canonical.cbmCapacity,
-          odometerKM: Math.max(Number(item.odometerKM || 0), canonical.odometerKM),
-          stnkTaxExpiry: canonical.stnkTaxExpiry,
-          kirExpiry: canonical.kirExpiry,
-          status: item.status || canonical.status,
-          sheetGid: canonical.sheetGid,
-          totalMaintenanceCost: canonical.totalMaintenanceCost,
-          maintenanceHistory: sortMaintenanceHistoryDesc(canonical.maintenanceHistory)
-        });
+        const isStaleLegacyStub =
+          !item._userEdited &&
+          (!Array.isArray(item.maintenanceHistory) || item.maintenanceHistory.length === 0) &&
+          (!item._syncMeta?.updatedAt || String(item._syncMeta.updatedAt) < '2026-11-04T06:45:00.000Z');
+
+        if (isStaleLegacyStub) {
+          resultById.set(canonical.id, {
+            ...item,
+            id: canonical.id,
+            name: canonical.name,
+            unitCode: canonical.unitCode,
+            ownership: canonical.ownership,
+            policeNumber: canonical.policeNumber,
+            vehicleType: canonical.vehicleType,
+            tonnageCapacity: canonical.tonnageCapacity,
+            cbmCapacity: canonical.cbmCapacity,
+            odometerKM: Math.max(Number(item.odometerKM || 0), canonical.odometerKM),
+            stnkTaxExpiry: canonical.stnkTaxExpiry,
+            kirExpiry: canonical.kirExpiry,
+            status: item.status || canonical.status,
+            sheetGid: canonical.sheetGid,
+            totalMaintenanceCost: canonical.totalMaintenanceCost,
+            maintenanceHistory: sortMaintenanceHistoryDesc(canonical.maintenanceHistory)
+          });
+        } else {
+          const mergedHistory = sortMaintenanceHistoryDesc(
+            Array.isArray(item.maintenanceHistory) ? item.maintenanceHistory : canonical.maintenanceHistory
+          );
+          const computedCost = Array.isArray(item.maintenanceHistory)
+            ? mergedHistory.reduce((sum, mh) => sum + Number(mh?.cost || 0), 0)
+            : (typeof item.totalMaintenanceCost === 'number' ? item.totalMaintenanceCost : canonical.totalMaintenanceCost);
+
+          resultById.set(canonical.id, {
+            ...canonical,
+            ...item,
+            id: canonical.id,
+            name: item.name || canonical.name,
+            unitCode: item.unitCode || canonical.unitCode,
+            ownership: item.ownership || canonical.ownership,
+            policeNumber: (item.policeNumber || canonical.policeNumber).toUpperCase().trim(),
+            vehicleType: item.vehicleType || canonical.vehicleType,
+            tonnageCapacity: item.tonnageCapacity !== undefined && !isNaN(Number(item.tonnageCapacity)) ? Number(item.tonnageCapacity) : canonical.tonnageCapacity,
+            cbmCapacity: item.cbmCapacity !== undefined && !isNaN(Number(item.cbmCapacity)) ? Number(item.cbmCapacity) : canonical.cbmCapacity,
+            odometerKM: item.odometerKM !== undefined && !isNaN(Number(item.odometerKM)) ? Number(item.odometerKM) : canonical.odometerKM,
+            stnkTaxExpiry: item.stnkTaxExpiry || canonical.stnkTaxExpiry,
+            kirExpiry: item.kirExpiry || canonical.kirExpiry,
+            status: item.status || canonical.status,
+            sheetGid: item.sheetGid || canonical.sheetGid,
+            totalMaintenanceCost: computedCost,
+            maintenanceHistory: mergedHistory
+          });
+        }
       } else {
-        resultByPlate.set(plate, {
+        const key = itemId || plate;
+        const sortedHist = sortMaintenanceHistoryDesc((item as VehicleMaster).maintenanceHistory);
+        const computedCost = Array.isArray(item.maintenanceHistory) && item.maintenanceHistory.length > 0
+          ? sortedHist.reduce((sum, mh) => sum + Number(mh?.cost || 0), 0)
+          : (typeof item.totalMaintenanceCost === 'number' ? item.totalMaintenanceCost : 0);
+        resultById.set(key, {
           ...(item as VehicleMaster),
-          maintenanceHistory: sortMaintenanceHistoryDesc((item as VehicleMaster).maintenanceHistory)
+          id: itemId || `veh-${plate.replace(/\s+/g, '-')}`,
+          policeNumber: plate,
+          totalMaintenanceCost: computedCost,
+          maintenanceHistory: sortedHist
         });
       }
     });
   }
 
-  return Array.from(resultByPlate.values());
+  return Array.from(resultById.values());
 }

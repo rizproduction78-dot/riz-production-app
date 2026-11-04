@@ -67,9 +67,11 @@ function extractCanonicalDateFromId(id?: string): string | undefined {
  */
 function formatForSupabase(collectionName: string, docId: string, data: Record<string, any>): Record<string, any> {
   const rowId = data.id || docId;
-  const syncMeta = data._syncMeta || {
+  const syncMeta = {
     updatedAt: new Date().toISOString(),
     updatedBy: 'System',
+    ...(data._syncMeta || {}),
+    ...(data._userEdited || data._syncMeta?._userEdited ? { _userEdited: true } : {}),
   };
 
   switch (collectionName) {
@@ -275,6 +277,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
     updatedAt: row.updated_at || new Date().toISOString(),
     updatedBy: 'Supabase Cloud Sync'
   };
+  const userEditedFlag = syncMeta?._userEdited ? { _userEdited: true } : {};
 
   switch (collectionName) {
     case 'master_staff':
@@ -293,6 +296,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         email: row.email || undefined,
         password: row.password || 'riz123',
         passwordRequest: row.password_request || '',
+        ...userEditedFlag,
         _syncMeta: syncMeta
       };
 
@@ -309,6 +313,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         photos: Array.isArray(row.photos) ? row.photos : undefined,
         status: row.status || 'Submitted',
         _source: row.source || 'supabase',
+        ...userEditedFlag,
         _syncMeta: syncMeta
       };
     }
@@ -329,6 +334,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         photoUrl: row.photo_url || undefined,
         photos: Array.isArray(row.photos) ? row.photos : undefined,
         _source: row.source || 'supabase',
+        ...userEditedFlag,
         _syncMeta: syncMeta
       };
     }
@@ -354,6 +360,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         photoUrl: row.photo_url || undefined,
         photos: Array.isArray(row.photos) ? row.photos : undefined,
         _source: 'supabase',
+        ...userEditedFlag,
         _syncMeta: syncMeta
       };
     }
@@ -375,6 +382,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         dateCreated: effectiveDateCreated,
         deadline: row.deadline || '',
         completedAt: row.completed_at || undefined,
+        ...userEditedFlag,
         _syncMeta: syncMeta
       };
     }
@@ -402,6 +410,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         description: row.notes || '',
         createdBy: row.created_by || 'System',
         createdAt: effectiveCreatedAt,
+        ...userEditedFlag,
         _syncMeta: syncMeta
       };
     }
@@ -510,6 +519,8 @@ export async function pushCollectionToSupabase(
         updated_by: 'System',
         updated_at: new Date().toISOString()
       }, { onConflict: 'key' });
+      // Bersihkan baris individual usang (misal master_vehicles_veh-1) agar tidak menimpa data koleksi terbaru
+      await supabase.from('system_configs').delete().like('key', `${collectionName}_%`);
       if (error) {
         return { success: false, count: 0, error: error.message };
       }
@@ -571,11 +582,23 @@ export async function pullCollectionFromSupabase<T = any>(collectionName: string
           const rid = String(r?.id || r?.no || r?.code || `idx-${idx}`);
           rowMap.set(rid, r);
         });
+        const bulkUpdatedAt = bulkData?.updated_at ? new Date(bulkData.updated_at).getTime() : 0;
         singleDocs.forEach(docRow => {
           if (docRow && docRow.data && typeof docRow.data === 'object') {
             const d = docRow.data;
             const did = String(d?.id || d?.no || d?.code || docRow.key.replace(`${collectionName}_`, ''));
-            rowMap.set(did, d);
+            const existing = rowMap.get(did);
+            if (!existing) {
+              rowMap.set(did, d);
+            } else {
+              const existingTime = existing._syncMeta?.updatedAt ? new Date(existing._syncMeta.updatedAt).getTime() : bulkUpdatedAt;
+              const singleTime = d._syncMeta?.updatedAt ? new Date(d._syncMeta.updatedAt).getTime() : (docRow.updated_at ? new Date(docRow.updated_at).getTime() : 0);
+              const singleUserEdited = Boolean(d._userEdited || d._syncMeta?._userEdited);
+              const existingUserEdited = Boolean(existing._userEdited || existing._syncMeta?._userEdited);
+              if ((singleUserEdited && !existingUserEdited) || singleTime > existingTime) {
+                rowMap.set(did, { ...existing, ...d });
+              }
+            }
           }
         });
         rows = Array.from(rowMap.values());
@@ -620,7 +643,12 @@ export async function pullCollectionFromSupabase<T = any>(collectionName: string
                 } else {
                   const localUpdatedAt = local._syncMeta?.updatedAt ? new Date(local._syncMeta.updatedAt).getTime() : 0;
                   const remoteUpdatedAt = remote._syncMeta?.updatedAt ? new Date(remote._syncMeta.updatedAt).getTime() : 0;
-                  if (collectionName === 'master_staff' || remoteUpdatedAt >= localUpdatedAt) {
+                  const localUserEdited = Boolean(local._userEdited || local._syncMeta?._userEdited);
+                  const remoteUserEdited = Boolean(remote._userEdited || remote._syncMeta?._userEdited);
+
+                  if (localUserEdited && !remoteUserEdited && remoteUpdatedAt <= localUpdatedAt) {
+                    // Pertahankan hasil editan user lokal agar tidak tertimpa data default lama dari server
+                  } else if (remoteUpdatedAt > localUpdatedAt || (!localUserEdited && localUpdatedAt === 0)) {
                     map.set(id, { ...local, ...remote });
                   }
                 }

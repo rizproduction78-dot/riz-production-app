@@ -16,7 +16,8 @@ import {
   INITIAL_DAILY_REPORTS,
   INITIAL_DAILY_TASKS,
   INITIAL_FREELANCE_WORKERS,
-  INITIAL_VEHICLES
+  INITIAL_VEHICLES,
+  normalizeVehiclesMaster
 } from './data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from './data/september2026Schedule';
 import { getActiveMonthKey, ALL_MONTHLY_SCHEDULES, formatMonthLabel } from './data/staffSchedules';
@@ -339,39 +340,40 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Forced one-time re-sync for all official data from Google Sheet reference (100% authentic multi-month tabulation & Official Armada)
-  const REF_SYNC_KEY = 'riz_ref_synced_v69_vercel_supabase_full_parity';
+  // Forced one-time re-sync for all official data from Google Sheet reference while preserving 100% of user edits
+  const REF_SYNC_KEY = 'riz_ref_synced_v70_preserve_all_user_edits';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
         const raw = localStorage.getItem(storageKey);
         const existing: T[] = raw ? JSON.parse(raw) : [];
         const map = new Map<string, T>();
+        // 1. Place canonical baseline first
+        canonical.forEach(item => { if (item?.id) map.set(item.id, item); });
+        // 2. Overlay existing user data on top so user edits NEVER revert back
         if (Array.isArray(existing)) {
           existing.forEach((item: any) => {
             if (!item?.id) return;
             const idStr = String(item.id);
-            // Bersihkan entri google_sheet bulan Oktober & November lama yang nomor barisnya berubah agar digantikan data kanonikal terbaru
+            const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
+            // Bersihkan entri google_sheet bulan Oktober & November lama yang belum pernah diedit user dan tidak ada di canonical
             if (
+              !isUserEdited &&
               (storageKey === 'riz_daily_reports_v2' || storageKey === 'riz_logbook_entries_v2') &&
               item._source === 'google_sheet' &&
-              (String(item.date || '').startsWith('2026-10') || String(item.date || '').startsWith('2026-11'))
+              (String(item.date || '').startsWith('2026-10') || String(item.date || '').startsWith('2026-11')) &&
+              !map.has(idStr)
             ) {
               return;
             }
-            if (storageKey === 'riz_daily_tasks_v2' && idStr.startsWith('dt-')) {
-              return;
+            const canonItem = map.get(idStr) as any;
+            if (canonItem) {
+              map.set(idStr, { ...canonItem, ...item });
+            } else {
+              map.set(idStr, item);
             }
-            if (
-              (storageKey === 'riz_findings_v2' || storageKey === 'riz_work_orders_v2') &&
-              (idStr.startsWith('find-202611') || idStr.startsWith('wo-202611'))
-            ) {
-              return;
-            }
-            map.set(item.id, item);
           });
         }
-        canonical.forEach(item => { if (item?.id) map.set(item.id, item); });
         return Array.from(map.values());
       } catch {
         return canonical;
@@ -384,22 +386,14 @@ export default function App() {
     localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(normalizeCollectionItems('logbook_entries', mergeById(INITIAL_LOGBOOK_ENTRIES, 'riz_logbook_entries_v2'))));
     localStorage.setItem('riz_daily_reports_v2', JSON.stringify(normalizeCollectionItems('daily_reports', mergeById(INITIAL_DAILY_REPORTS, 'riz_daily_reports_v2'))));
     localStorage.setItem('riz_work_orders_v2', JSON.stringify(normalizeCollectionItems('work_orders', mergeById(INITIAL_WORK_ORDERS, 'riz_work_orders_v2'))));
-    localStorage.setItem('riz_master_staff_list', JSON.stringify(STAFF_LIST));
-    localStorage.setItem('riz_freelance_workers', JSON.stringify(INITIAL_FREELANCE_WORKERS));
-    localStorage.setItem('riz_master_vehicles', JSON.stringify(INITIAL_VEHICLES));
+    localStorage.setItem('riz_master_staff_list', JSON.stringify(normalizeCollectionItems('master_staff', mergeById(STAFF_LIST, 'riz_master_staff_list'))));
+    localStorage.setItem('riz_freelance_workers', JSON.stringify(normalizeCollectionItems('freelance_workers', mergeById(INITIAL_FREELANCE_WORKERS, 'riz_freelance_workers'))));
+    localStorage.setItem('riz_master_vehicles', JSON.stringify(normalizeVehiclesMaster(mergeById(INITIAL_VEHICLES, 'riz_master_vehicles'))));
     ALL_MONTHLY_SCHEDULES.forEach(sch => {
-      localStorage.setItem(`riz_schedule_${sch.key}`, JSON.stringify(sch.rows));
+      if (!localStorage.getItem(`riz_schedule_${sch.key}`)) {
+        localStorage.setItem(`riz_schedule_${sch.key}`, JSON.stringify(sch.rows));
+      }
     });
-    
-    // Clear any obsolete deleted ID records
-    localStorage.removeItem('riz_deleted_ids_findings');
-    localStorage.removeItem('riz_deleted_ids_daily_tasks');
-    localStorage.removeItem('riz_deleted_ids_logbook_entries');
-    localStorage.removeItem('riz_deleted_ids_daily_reports');
-    localStorage.removeItem('riz_deleted_ids_work_orders');
-    localStorage.removeItem('riz_deleted_ids_master_staff');
-    localStorage.removeItem('riz_deleted_ids_freelance_workers');
-    localStorage.removeItem('riz_deleted_ids_master_vehicles');
 
     localStorage.setItem(REF_SYNC_KEY, 'true');
 
@@ -407,140 +401,8 @@ export default function App() {
     ['dt-20261101-02', 'dt-20261101-03'].forEach(id => deleteCloudDoc('daily_tasks', id).catch(() => {}));
     ['find-20261101-kharo-2', 'find-20261103-heri-1', 'find-20261103-yudis-1', 'find-20261104-butonk-1'].forEach(id => deleteCloudDoc('findings', id).catch(() => {}));
     ['wo-20261101-kharo-2', 'wo-20261103-heri-1', 'wo-20261103-yudis-1', 'wo-20261104-butonk-1'].forEach(id => deleteCloudDoc('work_orders', id).catch(() => {}));
-
-    // Simpan Wahyudin (Unyim) resmi ke Cloud master_staff
-    saveCloudDoc('master_staff', 'staff-unyin', {
-      id: 'staff-unyin',
-      name: 'Wahyudin',
-      fullName: 'Wahyudin',
-      nickname: 'Unyim',
-      email: 'wahyudin.unyin@gmail.com',
-      phone: '085812345678',
-      division: 'Audio',
-      role: 'Staff',
-      level: 3
-    }, 'System Auto-Sync').catch(() => {});
-
-    // Hapus non-inhouse freelance dari master_staff
     deleteCloudDoc('master_staff', 'staff-chandra').catch(() => {});
     deleteCloudDoc('master_staff', 'staff-rizky').catch(() => {});
-
-    // Simpan staff-suryana resmi
-    saveCloudDoc('master_staff', 'staff-suryana', {
-      id: 'staff-suryana',
-      name: 'Suryana',
-      fullName: 'Suryana',
-      nickname: 'Nana / Buluk',
-      email: 'nia.kurni1930@gmail.com',
-      phone: '083847130366',
-      division: 'Audio',
-      role: 'Staff',
-      level: 3
-    }, 'System Auto-Sync').catch(() => {});
-
-    // Sinkronisasi data Wahyu (Owner) ke Cloud master_staff
-    saveCloudDoc('master_staff', 'director-wahyu', {
-      id: 'director-wahyu',
-      name: 'Wahyu',
-      fullName: 'Wahyu',
-      nickname: 'Wahyu',
-      email: 'zakimau06@gmail.com',
-      phone: '083819947193',
-      division: 'Admin',
-      role: 'Owner',
-      level: 8
-    }, 'System Auto-Sync').catch(() => {});
-
-    // Sinkronisasi data Seno ke Cloud master_staff
-    saveCloudDoc('master_staff', 'staff-seno', {
-      id: 'staff-seno',
-      name: 'Seno Subroto',
-      fullName: 'Seno Subroto',
-      nickname: 'Seno',
-      email: 'seno.subroto78@gmail.com',
-      phone: '081297541980',
-      division: 'Admin',
-      role: 'Staff',
-      level: 4
-    }, 'System Auto-Sync').catch(() => {});
-
-    // Sinkronisasi data Damri (Leader Service) ke Cloud master_staff
-    saveCloudDoc('master_staff', 'staff-damri', {
-      id: 'staff-damri',
-      name: 'Damri',
-      fullName: 'Damri',
-      nickname: 'Mang Damri',
-      email: 'damri.service@rizproduction.com',
-      phone: '081288990011',
-      division: 'Service',
-      role: 'Team Leader',
-      level: 5
-    }, 'System Auto-Sync').catch(() => {});
-
-    // Sinkronisasi data Mulyana (Staff Service & Videotron) ke Cloud master_staff
-    saveCloudDoc('master_staff', 'staff-mulyana', {
-      id: 'staff-mulyana',
-      name: 'Mulyana',
-      fullName: 'Mulyana',
-      nickname: 'Kharo',
-      email: 'tabitakharo@gmail.com',
-      phone: '089523134060',
-      division: 'Service',
-      secondaryDivision: 'Videotron',
-      divisions: ['Service', 'Videotron'],
-      role: 'Staff',
-      level: 3
-    }, 'System Auto-Sync').catch(() => {});
-
-    // Sinkronisasi data Wahyudin (Unyim) (Staff Audio) ke Cloud master_staff
-    saveCloudDoc('master_staff', 'staff-unyin', {
-      id: 'staff-unyin',
-      name: 'Wahyudin',
-      fullName: 'Wahyudin',
-      nickname: 'Unyim',
-      email: 'wahyudin.unyin@gmail.com',
-      phone: '085812345678',
-      division: 'Audio',
-      role: 'Staff',
-      level: 3
-    }, 'System Auto-Sync').catch(() => {});
-
-    // Sinkronisasi Temuan QC Resmi ke Penyimpanan Sistem
-    INITIAL_FINDINGS.forEach(f => {
-      saveCloudDoc('findings', f.id, f, 'System Canonical Sync').catch(() => {});
-    });
-
-    // Sinkronisasi Daily Reports Resmi ke Penyimpanan Sistem
-    INITIAL_DAILY_REPORTS.forEach(r => {
-      saveCloudDoc('daily_reports', r.id, r, 'System Canonical Sync').catch(() => {});
-    });
-
-    // Sinkronisasi Logbook Entries Resmi ke Penyimpanan Sistem
-    INITIAL_LOGBOOK_ENTRIES.forEach(l => {
-      saveCloudDoc('logbook_entries', l.id, l, 'System Canonical Sync').catch(() => {});
-    });
-
-    // Sinkronisasi Daily Tasks Resmi ke Penyimpanan Sistem
-    INITIAL_DAILY_TASKS.forEach(t => {
-      saveCloudDoc('daily_tasks', t.id, t, 'System Canonical Sync').catch(() => {});
-    });
-
-    // Sinkronisasi Work Orders Resmi ke Penyimpanan Sistem
-    INITIAL_WORK_ORDERS.forEach(w => {
-      saveCloudDoc('work_orders', w.id, w, 'System Canonical Sync').catch(() => {});
-    });
-
-    // Sinkronisasi Master Armada Kendaraan Resmi ke Penyimpanan Sistem
-    INITIAL_VEHICLES.forEach(v => {
-      saveCloudDoc('master_vehicles', v.id, v, 'System Canonical Sync').catch(() => {});
-    });
-
-    // Sinkronisasi Semua Jadwal Bulanan ke Penyimpanan Sistem
-    ALL_MONTHLY_SCHEDULES.forEach(sch => {
-      sch.rows.forEach((row, idx) => {
-        saveCloudDoc(`schedule_${sch.key}`, `row-${row.no || idx + 1}`, row, 'System Auto-Sync').catch(() => {});
-      });
-    });
   }
 
   // Core States - Bersih murni dari data dummy & tersinkronisasi data riil resmi
@@ -919,8 +781,16 @@ export default function App() {
         async (id, docData) => {
           const { getDeletedIds } = await import('./lib/cloudSync');
           if (getDeletedIds('daily_reports').has(id)) return;
+          try {
+            const currentRaw = localStorage.getItem('riz_daily_reports_v2');
+            if (currentRaw) {
+              const currentList = JSON.parse(currentRaw);
+              const existing = Array.isArray(currentList) ? currentList.find((r: any) => r.id === id) : null;
+              if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
+            }
+          } catch {}
 
-          saveCloudDoc('daily_reports', id, docData).catch(e => console.error('[Sheet Sync] report save error:', e));
+          saveCloudDoc('daily_reports', id, docData, 'System Auto-Sync').catch(e => console.error('[Sheet Sync] report save error:', e));
           newReportDocs.push(docData);
         },
         async (id, docData) => {
@@ -928,7 +798,7 @@ export default function App() {
           if (getDeletedIds('findings').has(id)) return;
           if (existingIds.has(id)) return;
 
-          // Cek dari teks issue yang persis sama
+          // Cek dari teks issue yang persis sama atau sudah pernah diedit user
           const currentFindingsRaw = localStorage.getItem('riz_findings_v2');
           if (currentFindingsRaw) {
             try {
@@ -939,26 +809,35 @@ export default function App() {
             } catch {}
           }
 
-          saveCloudDoc('findings', id, docData).catch(e => console.error('[Sheet Sync] finding save error:', e));
+          saveCloudDoc('findings', id, docData, 'System Auto-Sync').catch(e => console.error('[Sheet Sync] finding save error:', e));
           newFindingDocs.push(docData);
         },
         existingIds,
         async (id, docData) => {
           const { getDeletedIds } = await import('./lib/cloudSync');
           if (getDeletedIds('logbook_entries').has(id)) return;
+          try {
+            const currentRaw = localStorage.getItem('riz_logbook_entries_v2');
+            if (currentRaw) {
+              const currentList = JSON.parse(currentRaw);
+              const existing = Array.isArray(currentList) ? currentList.find((l: any) => l.id === id) : null;
+              if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
+            }
+          } catch {}
 
-          saveCloudDoc('logbook_entries', id, docData).catch(e => console.error('[Sheet Sync] logbook save error:', e));
+          saveCloudDoc('logbook_entries', id, docData, 'System Auto-Sync').catch(e => console.error('[Sheet Sync] logbook save error:', e));
           newLogDocs.push(docData);
         }
       );
 
-      // Update state lokal LANGSUNG secara reaktif (Upsert: tambah baru atau timpa data yang diedit di Sheet)
+      // Update state lokal LANGSUNG secara reaktif (tanpa menimpa item yang sudah diedit user di aplikasi)
       if (newReportDocs.length > 0) {
         setDailyReports(prev => {
           const map = new Map<string, any>();
           prev.forEach(r => { if (r?.id) map.set(r.id, r); });
           newReportDocs.forEach(d => {
             const existing = map.get(d.id);
+            if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
             map.set(d.id, existing ? { ...existing, ...d } : d);
           });
           const merged = normalizeCollectionItems('daily_reports', Array.from(map.values()));
@@ -972,6 +851,7 @@ export default function App() {
           prev.forEach(l => { if (l?.id) map.set(l.id, l); });
           newLogDocs.forEach(d => {
             const existing = map.get(d.id);
+            if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
             map.set(d.id, existing ? { ...existing, ...d } : d);
           });
           const merged = normalizeCollectionItems('logbook_entries', Array.from(map.values()));
@@ -985,6 +865,7 @@ export default function App() {
           prev.forEach(f => { if (f?.id) map.set(f.id, f); });
           newFindingDocs.forEach(d => {
             const existing = map.get(d.id);
+            if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
             map.set(d.id, existing ? { ...existing, ...d, status: existing.status || d.status } : d);
           });
           const merged = normalizeCollectionItems('findings', Array.from(map.values()));

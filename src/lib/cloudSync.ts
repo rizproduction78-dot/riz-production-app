@@ -299,7 +299,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
   }
 
   // Special normalization for daily_tasks: preserve exact operational dates (createdAt & dueDate)
-  // and prevent Supabase row.created_at (sync timestamp) from overwriting task dates
+  // and prevent Supabase row.created_at (sync timestamp) from overwriting task dates, while keeping 100% of user edits
   if (collectionName === 'daily_tasks') {
     const canonicalMap = new Map<string, any>(INITIAL_DAILY_TASKS.map(t => [t.id, t]));
     const map = new Map<string, any>();
@@ -308,13 +308,14 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const rawId = String(item.id);
       const canonical = canonicalMap.get(rawId);
       const idDate = extractDateFromRecordId(rawId);
+      const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
 
       let effectiveDueDate = item.dueDate ? String(item.dueDate).slice(0, 10) : (canonical?.dueDate || idDate);
       let effectiveCreatedAt = item.createdAt ? String(item.createdAt) : (canonical?.createdAt || effectiveDueDate);
 
-      if (canonical) {
+      if (canonical && !isUserEdited) {
         effectiveCreatedAt = canonical.createdAt;
-        effectiveDueDate = canonical.dueDate || canonical.createdAt;
+        effectiveDueDate = item.dueDate ? String(item.dueDate).slice(0, 10) : (canonical.dueDate || canonical.createdAt);
       } else if (idDate) {
         effectiveCreatedAt = idDate;
         effectiveDueDate = effectiveDueDate || idDate;
@@ -332,13 +333,11 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       map.set(rawId, {
         ...(canonical || {}),
         ...item,
-        ...(canonical ? {
-          title: canonical.title,
-          description: canonical.description,
-          division: canonical.division,
-          assignedName: canonical.assignedName,
-          priority: canonical.priority,
-        } : {}),
+        title: item.title || canonical?.title || '',
+        description: item.description !== undefined ? item.description : (canonical?.description || ''),
+        division: item.division || canonical?.division || 'Umum',
+        assignedName: item.assignedName || canonical?.assignedName || '',
+        priority: item.priority || canonical?.priority || 'Sedang',
         createdAt: effectiveCreatedAt,
         dueDate: effectiveDueDate,
       });
@@ -409,7 +408,8 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     sortedItems.forEach((item: any) => {
       if (!item) return;
       const idDate = extractDateFromRecordId(item.id);
-      const normalizedItem = idDate
+      const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
+      const normalizedItem = idDate && !isUserEdited
         ? { ...item, dateCreated: idDate, date: idDate }
         : item;
       const semKey = getSemanticKey(normalizedItem);
@@ -417,11 +417,19 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (!existing) {
         map.set(semKey, normalizedItem);
       } else {
-        // Jika existing bukan 'fd-' tapi item baru adalah 'fd-', ganti dengan yang canonical!
-        if (String(normalizedItem.id || '').startsWith('fd-')) {
+        const existingEdited = Boolean(existing._userEdited || existing._syncMeta?._userEdited);
+        const existingUpdated = existing._syncMeta?.updatedAt ? new Date(existing._syncMeta.updatedAt).getTime() : 0;
+        const incomingUpdated = normalizedItem._syncMeta?.updatedAt ? new Date(normalizedItem._syncMeta.updatedAt).getTime() : 0;
+
+        if (isUserEdited && (!existingEdited || incomingUpdated >= existingUpdated)) {
+          map.set(semKey, normalizedItem);
+        } else if (existingEdited && (!isUserEdited || existingUpdated > incomingUpdated)) {
+          map.set(semKey, existing);
+        } else if (String(normalizedItem.id || '').startsWith('fd-')) {
           map.set(semKey, {
             ...normalizedItem,
-            // Pertahankan status lock atau approval jika sebelumnya sudah diubah user
+            ...(incomingUpdated < existingUpdated ? existing : {}),
+            id: normalizedItem.id,
             status: existing.status === 'Close' ? 'Close' : normalizedItem.status,
             approvedBy: existing.approvedBy || normalizedItem.approvedBy,
             approvedAt: existing.approvedAt || normalizedItem.approvedAt
@@ -847,15 +855,20 @@ export async function saveCloudDoc(
 ): Promise<void> {
   clearDeletedId(collectionName, docId);
   const deviceInfo = getDeviceOSInfo();
+  const effectiveUpdater = updaterName || data._syncMeta?.updatedBy || 'User';
+  const isSystemUpdater = ['System', 'System Auto-Sync', 'System Canonical Sync', 'BatchSync', 'Supabase Cloud Sync', 'OfficialSheetSync', 'GoogleSheetSync'].includes(effectiveUpdater);
+  const isUserEdited = Boolean(data._userEdited || data._syncMeta?._userEdited || !isSystemUpdater);
   const cleanData = {
     id: data.id || docId,
     ...JSON.parse(JSON.stringify(data)),
+    ...(isUserEdited ? { _userEdited: true } : {}),
     _syncMeta: {
       updatedAt: new Date().toISOString(),
-      updatedBy: updaterName || 'User',
+      updatedBy: effectiveUpdater,
       deviceOS: deviceInfo.os,
       deviceType: deviceInfo.deviceType,
-      browser: deviceInfo.browser
+      browser: deviceInfo.browser,
+      ...(isUserEdited ? { _userEdited: true } : {})
     }
   };
 

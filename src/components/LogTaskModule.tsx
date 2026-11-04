@@ -389,8 +389,9 @@ export default function LogTaskModule({
     e.preventDefault();
     if (!taskTitle.trim()) return;
 
-    const effectiveTaskDivision = isManagement ? taskDivision : currentUser.division;
-    const effectiveTaskAssignee = isManagement ? taskAssignee : currentUser.name;
+    const effectiveTaskDivision = taskDivision || currentUser.division;
+    const effectiveTaskAssignee = taskAssignee || currentUser.name;
+    const nowIso = new Date().toISOString();
 
     if (editingTask) {
       const updated: DailyTask = {
@@ -402,8 +403,10 @@ export default function LogTaskModule({
         assignedName: effectiveTaskAssignee,
         dueDate: taskDueDate,
         photos: taskPhotos.length > 0 ? taskPhotos : undefined,
-        photoUrl: taskPhotos[0] || undefined
-      };
+        photoUrl: taskPhotos[0] || undefined,
+        _userEdited: true,
+        _syncMeta: { updatedAt: nowIso, updatedBy: currentUser.name, _userEdited: true }
+      } as DailyTask;
       const nextTasks = tasks.map(t => t.id === editingTask.id ? updated : t);
       setTasks(nextTasks);
       try {
@@ -423,11 +426,13 @@ export default function LogTaskModule({
         status: 'Pending',
         assignedName: effectiveTaskAssignee,
         dueDate: taskDueDate,
-        createdAt: new Date().toISOString(),
+        createdAt: nowIso,
         createdBy: currentUser.name,
         photos: taskPhotos.length > 0 ? taskPhotos : undefined,
-        photoUrl: taskPhotos[0] || undefined
-      };
+        photoUrl: taskPhotos[0] || undefined,
+        _userEdited: true,
+        _syncMeta: { updatedAt: nowIso, updatedBy: currentUser.name, _userEdited: true }
+      } as DailyTask;
       const nextTasks = [newTask, ...tasks];
       setTasks(nextTasks);
       try {
@@ -443,9 +448,15 @@ export default function LogTaskModule({
   };
 
   const handleUpdateStatus = async (taskId: string, newStatus: 'Pending' | 'In Progress' | 'Done') => {
+    const nowIso = new Date().toISOString();
     const nextTasks = tasks.map(t => {
       if (t.id === taskId) {
-        const updated = { ...t, status: newStatus };
+        const updated = {
+          ...t,
+          status: newStatus,
+          _userEdited: true,
+          _syncMeta: { updatedAt: nowIso, updatedBy: currentUser.name, _userEdited: true }
+        } as DailyTask;
         saveCloudDoc('daily_tasks', taskId, updated, currentUser.name);
         return updated;
       }

@@ -169,6 +169,44 @@ function runVehicleExpiryTests() {
   });
   console.log('✓ PASS: 7 Unit Armada Resmi & Riwayat Servis Terkini Paling Atas terverifikasi 100%.\n');
 
+  console.log('[TEST 6] Verifikasi Edit Unit Armada & Riwayat Servis TIDAK PERNAH Kembali Semula');
+  const editedVehiclesInput = INITIAL_VEHICLES.map(v => {
+    if (v.policeNumber === 'F 8446 BF') {
+      const updatedHistory = [
+        {
+          date: '2026-11-04',
+          serviceType: 'Perbaikan Mesin / Kelistrikan' as const,
+          description: 'Servis Injeksi & Ganti Busi Baru',
+          cost: 450000
+        },
+        ...(v.maintenanceHistory || [])
+      ];
+      return {
+        ...v,
+        name: 'Pick Up Suzuki Carry / 012 (Edited)',
+        odometerKM: 66500,
+        status: 'Maintenance / Servis' as const,
+        kirExpiry: '2027-09-08',
+        maintenanceHistory: updatedHistory,
+        totalMaintenanceCost: updatedHistory.reduce((s, h) => s + h.cost, 0),
+        _userEdited: true,
+        _syncMeta: { updatedAt: '2026-11-04T09:00:00.000Z', updatedBy: 'Seno Subroto', _userEdited: true }
+      };
+    }
+    return v;
+  });
+
+  const normalizedAfterEdit = normalizeVehiclesMaster(editedVehiclesInput);
+  const v8446Edited = normalizedAfterEdit.find(v => v.policeNumber === 'F 8446 BF');
+  assert(v8446Edited?.name === 'Pick Up Suzuki Carry / 012 (Edited)', 'Nama yang diedit tidak boleh kembali semula');
+  assert(v8446Edited?.odometerKM === 66500, 'Odometer yang diedit tidak boleh kembali semula');
+  assert(v8446Edited?.status === 'Maintenance / Servis', 'Status yang diedit tidak boleh kembali semula');
+  assert(v8446Edited?.kirExpiry === '2027-09-08', 'Tanggal KIR yang diedit tidak boleh kembali semula');
+  assert(v8446Edited?.maintenanceHistory?.length === 7, 'Jumlah riwayat servis setelah ditambah harus 7 (tidak kembali ke 6)');
+  assert(v8446Edited?.maintenanceHistory?.[0]?.date === '2026-11-04', 'Catatan servis terbaru 2026-11-04 harus berada paling atas');
+  assert(v8446Edited?.totalMaintenanceCost === 8735077 + 450000, 'Total biaya servis harus terupdate sesuai riwayat servis yang diedit');
+  console.log('✓ PASS: Edit Unit Armada & Riwayat Servis tersimpan permanen dan tidak kembali semula.\n');
+
   console.log('================================================================');
   console.log('  SEMUA PENGUJIAN MASA BERLAKU STNK & KIR LULUS SEMPURNA (100%)');
   console.log('================================================================');

@@ -1201,17 +1201,18 @@ export default function AdminPanel({
     }
   });
 
-  const saveVehicles = async (updated: VehicleMaster[], actionDoc?: { type: 'save' | 'delete', id: string, doc?: VehicleMaster }) => {
-    setVehicles(updated);
-    localStorage.setItem('riz_master_vehicles', JSON.stringify(updated));
-    pushCollectionToCloud('master_vehicles', updated, currentUser.name);
+  const saveVehicles = async (updated: VehicleMaster[], actionDoc?: { type: 'save' | 'delete', id: string, doc?: VehicleMaster, secondaryKey?: string }) => {
+    const normalized = normalizeVehiclesMaster(updated);
+    setVehicles(normalized);
+    localStorage.setItem('riz_master_vehicles', JSON.stringify(normalized));
     if (actionDoc) {
       if (actionDoc.type === 'save' && actionDoc.doc) {
         await saveCloudDoc('master_vehicles', actionDoc.id, actionDoc.doc, currentUser.name);
       } else if (actionDoc.type === 'delete') {
-        await deleteCloudDoc('master_vehicles', actionDoc.id);
+        await deleteCloudDoc('master_vehicles', actionDoc.id, actionDoc.secondaryKey);
       }
     }
+    pushCollectionToCloud('master_vehicles', normalized, currentUser.name);
     onLogActivity(currentUser.name, currentUser.role, 'Admin memperbarui database master kendaraan armada');
   };
 
@@ -1231,16 +1232,49 @@ export default function AdminPanel({
 
   const handleOpenEditVehicle = (v: VehicleMaster) => {
     setActiveVehicleForEdit(v);
-    setVehicleFormData({ ...v });
+    setVehicleFormData({
+      ...v,
+      maintenanceHistory: Array.isArray(v.maintenanceHistory) ? v.maintenanceHistory.map(h => ({ ...h })) : []
+    });
     setShowEditVehicleModal(true);
   };
 
   const handleSaveEditVehicle = async () => {
     if (!activeVehicleForEdit || !vehicleFormData.name || !vehicleFormData.policeNumber) return;
+    const nowIso = new Date().toISOString();
+    const cleanedHistory = Array.isArray(vehicleFormData.maintenanceHistory)
+      ? sortMaintenanceHistoryDesc(
+          vehicleFormData.maintenanceHistory
+            .filter(h => h && (h.date || h.description || h.serviceType))
+            .map(h => ({
+              date: String(h.date || '').trim() || nowIso.split('T')[0],
+              serviceType: (h.serviceType || 'Service Rutin') as any,
+              description: String(h.description || '').trim() || '-',
+              cost: Number(h.cost) || 0,
+              odometerKM: h.odometerKM !== undefined ? Number(h.odometerKM) : undefined,
+              workshop: h.workshop
+            }))
+        )
+      : activeVehicleForEdit.maintenanceHistory;
+    const computedTotalCost = Array.isArray(cleanedHistory)
+      ? cleanedHistory.reduce((sum, item) => sum + (Number(item.cost) || 0), 0)
+      : (vehicleFormData.totalMaintenanceCost ?? activeVehicleForEdit.totalMaintenanceCost ?? 0);
+
     let updatedVehicleObj: VehicleMaster = activeVehicleForEdit;
     const updated = vehicles.map(v => {
       if (v.id === activeVehicleForEdit.id) {
-        updatedVehicleObj = { ...v, ...vehicleFormData } as VehicleMaster;
+        updatedVehicleObj = {
+          ...v,
+          ...vehicleFormData,
+          policeNumber: String(vehicleFormData.policeNumber || v.policeNumber).toUpperCase().trim(),
+          tonnageCapacity: Number(vehicleFormData.tonnageCapacity ?? v.tonnageCapacity ?? 0),
+          cbmCapacity: Number(vehicleFormData.cbmCapacity ?? v.cbmCapacity ?? 0),
+          odometerKM: Number(vehicleFormData.odometerKM ?? v.odometerKM ?? 0),
+          maintenanceHistory: cleanedHistory,
+          totalMaintenanceCost: computedTotalCost,
+          _userEdited: true,
+          _syncMeta: { updatedAt: nowIso, updatedBy: currentUser.name, _userEdited: true }
+        } as VehicleMaster;
         return updatedVehicleObj;
       }
       return v;
@@ -1257,19 +1291,39 @@ export default function AdminPanel({
 
   const handleCreateVehicle = async () => {
     if (!vehicleFormData.name || !vehicleFormData.policeNumber) return;
+    const nowIso = new Date().toISOString();
+    const cleanedHistory = Array.isArray(vehicleFormData.maintenanceHistory)
+      ? sortMaintenanceHistoryDesc(
+          vehicleFormData.maintenanceHistory
+            .filter(h => h && (h.date || h.description || h.serviceType))
+            .map(h => ({
+              date: String(h.date || '').trim() || nowIso.split('T')[0],
+              serviceType: (h.serviceType || 'Service Rutin') as any,
+              description: String(h.description || '').trim() || '-',
+              cost: Number(h.cost) || 0,
+              odometerKM: h.odometerKM !== undefined ? Number(h.odometerKM) : undefined,
+              workshop: h.workshop
+            }))
+        )
+      : [];
+    const computedTotalCost = cleanedHistory.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
     const newV: VehicleMaster = {
       id: 'veh-' + Date.now(),
       name: vehicleFormData.name,
       ownership: vehicleFormData.ownership || 'Internal',
       policeNumber: vehicleFormData.policeNumber.toUpperCase().trim(),
-      vehicleType: vehicleFormData.vehicleType || 'Truk Box CDD (6 Roda)',
+      vehicleType: vehicleFormData.vehicleType || vehicleFormData.name || 'Truk Box CDD (6 Roda)',
       tonnageCapacity: Number(vehicleFormData.tonnageCapacity || 3.0),
       cbmCapacity: Number(vehicleFormData.cbmCapacity || 15.0),
       odometerKM: Number(vehicleFormData.odometerKM || 0),
-      stnkTaxExpiry: vehicleFormData.stnkTaxExpiry || new Date().toISOString().split('T')[0],
-      kirExpiry: vehicleFormData.kirExpiry || new Date().toISOString().split('T')[0],
-      status: vehicleFormData.status || 'Siap Operasi'
-    };
+      stnkTaxExpiry: vehicleFormData.stnkTaxExpiry || nowIso.split('T')[0],
+      kirExpiry: vehicleFormData.kirExpiry || nowIso.split('T')[0],
+      status: vehicleFormData.status || 'Siap Operasi',
+      maintenanceHistory: cleanedHistory,
+      totalMaintenanceCost: computedTotalCost,
+      _userEdited: true,
+      _syncMeta: { updatedAt: nowIso, updatedBy: currentUser.name, _userEdited: true }
+    } as VehicleMaster;
     const updated = [newV, ...vehicles];
     setShowAddVehicleModal(false);
     setShowEditVehicleModal(false);
@@ -1287,7 +1341,7 @@ export default function AdminPanel({
     if (confirm(`Hapus unit armada "${targetName}" ini dari master database oleh Admin?`)) {
       const updated = vehicles.filter(v => v.id !== id);
       try {
-        await saveVehicles(updated, { type: 'delete', id });
+        await saveVehicles(updated, { type: 'delete', id, secondaryKey: target?.policeNumber });
       } catch (e) {
         console.warn('[Vehicle] Background delete error:', e);
       }
@@ -5319,13 +5373,13 @@ export default function AdminPanel({
       {/* MODAL MASTER VEHICLE: TAMBAH / EDIT ARMADA */}
       {(showAddVehicleModal || showEditVehicleModal) && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 z-50">
-          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xl max-w-2xl w-full p-4 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base">
-                  {showAddVehicleModal ? 'Tambah Unit Armada Baru (Admin)' : 'Edit Data Unit Armada (Admin)'}
+                  {showAddVehicleModal ? 'Tambah Unit Armada Baru (Admin)' : 'Edit Data Unit Armada & Riwayat Servis (Admin)'}
                 </h3>
-                <p className="text-[11px] text-slate-500 font-medium">Pengelolaan Master Inventaris Kendaraan Logistik</p>
+                <p className="text-[11px] text-slate-500 font-medium">Pengelolaan Master Inventaris Kendaraan & Riwayat Perbaikan Resmi</p>
               </div>
               <button
                 onClick={() => {
@@ -5377,7 +5431,7 @@ export default function AdminPanel({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Tonase (Ton)</label>
                   <input
@@ -5407,6 +5461,18 @@ export default function AdminPanel({
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-center"
                   />
                 </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Status Operasional *</label>
+                  <select
+                    value={vehicleFormData.status || 'Siap Operasi'}
+                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, status: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-bold"
+                  >
+                    <option value="Siap Operasi">Siap Operasi</option>
+                    <option value="Dalam Perjalanan">Dalam Perjalanan</option>
+                    <option value="Maintenance / Servis">Maintenance / Servis</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -5423,30 +5489,164 @@ export default function AdminPanel({
                   <p className="text-[9px] text-slate-400 mt-1 font-mono">Pemberitahuan aktif 1 bulan sebelum jatuh tempo</p>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Jatuh Tempo Uji KIR Dishub <span className="text-[10px] text-indigo-600 font-semibold">(6 Bulan)</span>
-                  </label>
-                  <input
-                    type="date"
-                    value={vehicleFormData.kirExpiry}
-                    onChange={(e) => setVehicleFormData({ ...vehicleFormData, kirExpiry: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">
+                      Jatuh Tempo Uji KIR Dishub <span className="text-[10px] text-indigo-600 font-semibold">(6 Bulan)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setVehicleFormData({
+                        ...vehicleFormData,
+                        kirExpiry: vehicleFormData.kirExpiry === '-' ? new Date().toISOString().split('T')[0] : '-'
+                      })}
+                      className="text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer"
+                    >
+                      {vehicleFormData.kirExpiry === '-' ? 'Set Tanggal KIR' : 'Non-KIR (-)'}
+                    </button>
+                  </div>
+                  {vehicleFormData.kirExpiry === '-' ? (
+                    <div className="w-full bg-slate-100 border border-slate-200 rounded-xl p-2 text-xs font-mono text-slate-500 font-bold">
+                      - (Non-KIR / Kendaraan Penumpang &amp; Motor)
+                    </div>
+                  ) : (
+                    <input
+                      type="date"
+                      value={vehicleFormData.kirExpiry}
+                      onChange={(e) => setVehicleFormData({ ...vehicleFormData, kirExpiry: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-mono"
+                    />
+                  )}
                   <p className="text-[9px] text-slate-400 mt-1 font-mono">Pemberitahuan aktif 1 bulan sebelum jatuh tempo</p>
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Status Operasional Unit *</label>
-                <select
-                  value={vehicleFormData.status}
-                  onChange={(e) => setVehicleFormData({ ...vehicleFormData, status: e.target.value as any })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-bold"
-                >
-                  <option value="Siap Operasi">Siap Operasi</option>
-                  <option value="Dalam Perjalanan">Dalam Perjalanan (On Trip)</option>
-                  <option value="Maintenance / Servis">Maintenance / Servis</option>
-                </select>
+              {/* RIWAYAT SERVIS RESMI / PERBAIKAN (DAPAT DIEDIT & DITAMBAH) */}
+              <div className="pt-3 border-t border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="font-extrabold text-slate-800 block text-xs">
+                      Riwayat Servis Resmi &amp; Perbaikan ({Array.isArray(vehicleFormData.maintenanceHistory) ? vehicleFormData.maintenanceHistory.length : 0})
+                    </label>
+                    <p className="text-[10px] text-slate-500">
+                      Total Biaya Servis: <span className="font-mono font-bold text-indigo-700">
+                        Rp {(Array.isArray(vehicleFormData.maintenanceHistory)
+                          ? vehicleFormData.maintenanceHistory.reduce((s, h) => s + (Number(h.cost) || 0), 0)
+                          : (vehicleFormData.totalMaintenanceCost || 0)
+                        ).toLocaleString('id-ID')}
+                      </span>
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const today = new Date().toISOString().split('T')[0];
+                      const currentHist = Array.isArray(vehicleFormData.maintenanceHistory) ? vehicleFormData.maintenanceHistory : [];
+                      setVehicleFormData({
+                        ...vehicleFormData,
+                        maintenanceHistory: [
+                          {
+                            date: today,
+                            serviceType: 'Service Rutin',
+                            description: '',
+                            cost: 0
+                          },
+                          ...currentHist
+                        ]
+                      });
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Tambah Catatan Servis
+                  </button>
+                </div>
+
+                {Array.isArray(vehicleFormData.maintenanceHistory) && vehicleFormData.maintenanceHistory.length > 0 ? (
+                  <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                    {vehicleFormData.maintenanceHistory.map((hist, idx) => (
+                      <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-2">
+                        <div className="grid grid-cols-12 gap-2 items-center">
+                          <div className="col-span-4">
+                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Tanggal Servis</label>
+                            <input
+                              type="date"
+                              value={hist.date || ''}
+                              onChange={(e) => {
+                                const list = [...(vehicleFormData.maintenanceHistory || [])];
+                                list[idx] = { ...list[idx], date: e.target.value };
+                                setVehicleFormData({ ...vehicleFormData, maintenanceHistory: list });
+                              }}
+                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-mono text-slate-800"
+                            />
+                          </div>
+                          <div className="col-span-4">
+                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Jenis Perbaikan</label>
+                            <select
+                              value={hist.serviceType || 'Service Rutin'}
+                              onChange={(e) => {
+                                const list = [...(vehicleFormData.maintenanceHistory || [])];
+                                list[idx] = { ...list[idx], serviceType: e.target.value as any };
+                                setVehicleFormData({ ...vehicleFormData, maintenanceHistory: list });
+                              }}
+                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-800"
+                            >
+                              <option value="Service Rutin">Service Rutin</option>
+                              <option value="Ganti Oli">Ganti Oli</option>
+                              <option value="Ganti Ban">Ganti Ban</option>
+                              <option value="Ganti Aki">Ganti Aki</option>
+                              <option value="Perbaikan Rem / Kopling">Perbaikan Rem / Kopling</option>
+                              <option value="Perbaikan Mesin / Kelistrikan">Perbaikan Mesin / Kelistrikan</option>
+                              <option value="Lainnya">Lainnya</option>
+                            </select>
+                          </div>
+                          <div className="col-span-3">
+                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Biaya (Rp)</label>
+                            <input
+                              type="number"
+                              value={hist.cost ?? 0}
+                              onChange={(e) => {
+                                const list = [...(vehicleFormData.maintenanceHistory || [])];
+                                list[idx] = { ...list[idx], cost: Number(e.target.value) };
+                                setVehicleFormData({ ...vehicleFormData, maintenanceHistory: list });
+                              }}
+                              className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-mono font-bold text-slate-800"
+                            />
+                          </div>
+                          <div className="col-span-1 flex justify-end pt-3.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const list = (vehicleFormData.maintenanceHistory || []).filter((_, i) => i !== idx);
+                                setVehicleFormData({ ...vehicleFormData, maintenanceHistory: list });
+                              }}
+                              title="Hapus catatan servis ini"
+                              className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Rincian Sparepart / Perbaikan</label>
+                          <input
+                            type="text"
+                            placeholder="Contoh: Ganti Oli Mesin + Filter Oli + Kampas Rem..."
+                            value={hist.description || ''}
+                            onChange={(e) => {
+                              const list = [...(vehicleFormData.maintenanceHistory || [])];
+                              list[idx] = { ...list[idx], description: e.target.value };
+                              setVehicleFormData({ ...vehicleFormData, maintenanceHistory: list });
+                            }}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] text-slate-700"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded-xl p-3 text-center">
+                    Belum ada catatan riwayat servis. Klik &quot;Tambah Catatan Servis&quot; untuk menambahkan.
+                  </p>
+                )}
               </div>
             </div>
 
