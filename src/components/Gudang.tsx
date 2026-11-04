@@ -12,7 +12,7 @@ import {
   FleetDriver,
   OFFICIAL_ARMADA_SPREADSHEET_URL
 } from '../types';
-import { INITIAL_ASSETS, INITIAL_VEHICLES, INITIAL_FLEET_DRIVERS, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc } from '../data';
+import { INITIAL_ASSETS, INITIAL_VEHICLES, INITIAL_FLEET_DRIVERS, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc, limitMaintenanceHistoryOnePerYear } from '../data';
 import {
   Package,
   ArrowDownLeft,
@@ -2088,11 +2088,11 @@ export default function Gudang({
                       </div>
 
                       {v.maintenanceHistory && v.maintenanceHistory.length > 0 && (() => {
-                        const sortedHistory = sortMaintenanceHistoryDesc(v.maintenanceHistory);
+                        const yearlyHistory = limitMaintenanceHistoryOnePerYear(v.maintenanceHistory);
                         return (
                           <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 space-y-1.5 max-h-40 overflow-y-auto">
                             <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                              <span>Riwayat Servis Resmi ({sortedHistory.length})</span>
+                              <span>Riwayat Servis Resmi ({yearlyHistory.length} Thn)</span>
                               <a
                                 href={v.sheetGid ? `https://docs.google.com/spreadsheets/d/1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs/edit?gid=${v.sheetGid}#gid=${v.sheetGid}` : OFFICIAL_ARMADA_SPREADSHEET_URL}
                                 target="_blank"
@@ -2102,7 +2102,7 @@ export default function Gudang({
                                 Buka Sheet ↗
                               </a>
                             </div>
-                            {sortedHistory.map((mh, idx) => (
+                            {yearlyHistory.map((mh, idx) => (
                               <div key={mh.id || idx} className="text-[10px] border-t border-slate-200/70 pt-1.5">
                                 <div className="flex justify-between items-center font-mono font-bold text-slate-800">
                                   <span className="flex items-center gap-1">

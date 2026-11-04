@@ -16,7 +16,7 @@ import {
   EXPIRY_ALERT_THRESHOLD_DAYS
 } from '../src/utils/vehicleExpiryAlerts';
 import { VehicleMaster } from '../src/types';
-import { INITIAL_VEHICLES, normalizeVehiclesMaster, formatServiceDateIndonesian } from '../src/data';
+import { INITIAL_VEHICLES, normalizeVehiclesMaster, formatServiceDateIndonesian, limitMaintenanceHistoryOnePerYear } from '../src/data';
 
 function runVehicleExpiryTests() {
   console.log('================================================================');
@@ -206,6 +206,18 @@ function runVehicleExpiryTests() {
   assert(v8446Edited?.maintenanceHistory?.[0]?.date === '2026-11-04', 'Catatan servis terbaru 2026-11-04 harus berada paling atas');
   assert(v8446Edited?.totalMaintenanceCost === 8735077 + 450000, 'Total biaya servis harus terupdate sesuai riwayat servis yang diedit');
   console.log('✓ PASS: Edit Unit Armada & Riwayat Servis tersimpan permanen dan tidak kembali semula.\n');
+
+  console.log('[TEST 7] Verifikasi Pembatasan Riwayat Servis Maksimal 1 Catatan per Tahun (limitMaintenanceHistoryOnePerYear)');
+  const v8569 = INITIAL_VEHICLES.find(v => v.policeNumber === 'F 8569 BH')!;
+  const limited8569 = limitMaintenanceHistoryOnePerYear(v8569.maintenanceHistory);
+  assert(limited8569.length === 1, 'F 8569 BH (2 catatan di 2026) harus dibatasi menjadi 1 catatan untuk tahun 2026');
+  assert(limited8569[0].date === '2026-08-26', 'Catatan F 8569 BH tahun 2026 yang tampil harus yang terkini (2026-08-26)');
+
+  const v8433Full = INITIAL_VEHICLES.find(v => v.policeNumber === 'F 8433 BF')!;
+  const limited8433 = limitMaintenanceHistoryOnePerYear(v8433Full.maintenanceHistory);
+  assert(limited8433.length === 3, 'F 8433 BF (2026, 2025, 2024) harus menghasilkan tepat 3 catatan (1 per tahun)');
+  assert(limited8433.map(r => r.date.slice(0, 4)).join(',') === '2026,2025,2024', 'Urutan tahun harus 2026, 2025, 2024');
+  console.log('✓ PASS: Pembatasan riwayat servis 1 catatan per tahun pada ringkasan kartu armada terverifikasi.\n');
 
   console.log('================================================================');
   console.log('  SEMUA PENGUJIAN MASA BERLAKU STNK & KIR LULUS SEMPURNA (100%)');

@@ -2655,6 +2655,25 @@ export function sortMaintenanceHistoryDesc(records?: VehicleMaintenanceRecord[])
 }
 
 /**
+ * Membatasi ringkasan riwayat servis maksimal 1 catatan servis terkini per tahun
+ * (diurutkan dari tahun terbaru ke tahun sebelumnya).
+ */
+export function limitMaintenanceHistoryOnePerYear(records?: VehicleMaintenanceRecord[]): VehicleMaintenanceRecord[] {
+  const sorted = sortMaintenanceHistoryDesc(records);
+  const seenYears = new Set<string>();
+  const limited: VehicleMaintenanceRecord[] = [];
+  for (const rec of sorted) {
+    const year = String(rec?.date || '').trim().slice(0, 4);
+    const key = /^\d{4}$/.test(year) ? year : `other-${limited.length}`;
+    if (!seenYears.has(key)) {
+      seenYears.add(key);
+      limited.push(rec);
+    }
+  }
+  return limited;
+}
+
+/**
  * Menormalisasi daftar kendaraan armada dari LocalStorage / Cloud agar selalu sinkron
  * dengan 7 unit resmi Google Sheet PT. Riz Production Multi Kreasi.
  */
