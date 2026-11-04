@@ -444,16 +444,32 @@ export default function QCNotificationCenter({
     });
 
     // 3. TEMUAN UNIT BERMASALAH OLEH SEMUA DIVISI (Findings Audio, Lighting, Videotron, Multimedia, Service, Gudang)
-    findings.forEach(f => {
+    const seenFindingStaffDateKeys = new Set<string>();
+    const sortedFindings = [...findings].sort((a, b) => {
+      const aIsFd = String(a?.id || '').startsWith('fd-') ? 0 : 1;
+      const bIsFd = String(b?.id || '').startsWith('fd-') ? 0 : 1;
+      return aIsFd - bIsFd; // Prioritaskan canonical fd-* sebelum gsheet-finding-*
+    });
+
+    sortedFindings.forEach(f => {
       if (!f || !f.issue) return;
       const id = f.id || `find-${f.dateCreated}-${f.equipment}-${f.issue.slice(0, 10)}`;
+      if (id.startsWith('gsheet-finding-2021-')) return;
       const dateVal = extractDateFromId(id) || (f.dateCreated ? String(f.dateCreated).slice(0, 10) : new Date().toISOString().split('T')[0]);
       if (filterMonth && !dateVal.startsWith(filterMonth)) return;
       if (seenIds.has(id)) return;
-      seenIds.add(id);
 
       const staffVal = f.pic || 'Teknisi';
+      const normStaff = String(staffVal).toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+      const isSheetFinding = f._source === 'google_sheet' || id.startsWith('gsheet-finding-') || id.startsWith('fd-2026');
+      if (isSheetFinding && !dateVal.startsWith('2026-09')) {
+        const staffDateKey = `${dateVal}_${normStaff}`;
+        if (seenFindingStaffDateKeys.has(staffDateKey)) return;
+        seenFindingStaffDateKeys.add(staffDateKey);
+      }
+
       if (checkIsDuplicate(dateVal, staffVal, f.issue)) return;
+      seenIds.add(id);
 
       list.push({
         id,
@@ -625,17 +641,35 @@ export default function QCNotificationCenter({
     return notifications.filter(n => n.qcResult === 'NG').length;
   }, [notifications]);
 
+  // Aturan Mutlak Staf Dual-Divisi (AGENTS.md Rule 2): Mulyana / Kharo bertugas di Service (primer) & Videotron (sekunder)
+  const isMulyanaDualDivisionStaff = (staffName?: string): boolean => {
+    if (!staffName) return false;
+    const lower = staffName.toLowerCase();
+    return lower.includes('mulyana') || lower.includes('kharo');
+  };
+
   // Statistik per divisi
   const divisionStats = useMemo(() => {
     const stats: Record<string, { total: number; ng: number }> = {
       Semua: { total: notifications.length, ng: totalKendalaGlobal }
     };
-    notifications.forEach(n => {
-      if (!stats[n.division]) {
-        stats[n.division] = { total: 0, ng: 0 };
+    const addDivCount = (div: string, isNg: boolean) => {
+      if (!stats[div]) {
+        stats[div] = { total: 0, ng: 0 };
       }
-      stats[n.division].total += 1;
-      if (n.qcResult === 'NG') stats[n.division].ng += 1;
+      stats[div].total += 1;
+      if (isNg) stats[div].ng += 1;
+    };
+    notifications.forEach(n => {
+      const isNg = n.qcResult === 'NG';
+      addDivCount(n.division, isNg);
+      if (isMulyanaDualDivisionStaff(n.staffName)) {
+        if (n.division === 'Videotron') {
+          addDivCount('Service', isNg);
+        } else if (n.division === 'Service') {
+          addDivCount('Videotron', isNg);
+        }
+      }
     });
     return stats;
   }, [notifications, totalKendalaGlobal]);
@@ -643,7 +677,10 @@ export default function QCNotificationCenter({
   // Filter notifikasi sesuai tab divisi, kategori input, status, dan pencarian teks
   const filteredNotifications = useMemo(() => {
     return notifications.filter(n => {
-      const matchDiv = selectedDivision === 'Semua' || n.division === selectedDivision;
+      const matchDiv =
+        selectedDivision === 'Semua' ||
+        n.division === selectedDivision ||
+        (isMulyanaDualDivisionStaff(n.staffName) && (selectedDivision === 'Service' || selectedDivision === 'Videotron'));
       const matchCat = selectedCategory === 'Semua' || n.category === selectedCategory;
       const matchStatus =
         statusFilter === 'ALL' ||

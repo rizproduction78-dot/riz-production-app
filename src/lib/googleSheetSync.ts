@@ -1080,48 +1080,52 @@ export async function pullDailyLogFromGviz(
     };
   }
 
-  const url = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+  const csvUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
+  const jsonUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
 
   let newReports = 0;
   let newFindings = 0;
   let skipped = 0;
 
   try {
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) {
-      return {
-        success: false,
-        message: `Gagal mengambil data dari Google Sheet (HTTP ${response.status})`,
-        timestamp: new Date().toISOString(),
-        newReportsCount: 0,
-        newFindingsCount: 0,
-        skippedCount: 0
-      };
-    }
-
-    const text = await response.text();
-    // gviz response wrapped in: google.visualization.Query.setResponse({...});
     let rawCellMatrix: string[][] = [];
-    const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
 
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[1]);
-      const rawCols: any[] = parsed?.table?.cols || [];
-      const colLabels = rawCols.map((col: any) => String(col?.label || '').trim());
-      const hasHeaderInCols = colLabels.some(lbl => lbl.toLowerCase().includes('tanggal') || lbl.toLowerCase().includes('crew'));
-      const rawRows: any[] = parsed?.table?.rows || [];
-      const rowsMatrix = rawRows.map(row => 
-        (row.c || []).map((cell: any) => String(cell?.f ?? cell?.v ?? ''))
-      );
-      rawCellMatrix = hasHeaderInCols ? [colLabels, ...rowsMatrix] : rowsMatrix;
-    } else {
-      // Fallback pipeline: fetch direct CSV export via gviz endpoint
-      const csvUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
+    // Primary pipeline: fetch direct CSV export via gviz endpoint (100% identical row indexing with CLI sync engine)
+    try {
       const csvRes = await fetch(csvUrl, { cache: 'no-store' });
       if (csvRes.ok) {
         const csvText = await csvRes.text();
         const parsedCsv = Papa.parse(csvText, { skipEmptyLines: true });
         rawCellMatrix = parsedCsv.data as string[][];
+      }
+    } catch {}
+
+    // Fallback pipeline: gviz JSON response
+    if (rawCellMatrix.length === 0) {
+      const response = await fetch(jsonUrl, { cache: 'no-store' });
+      if (!response.ok) {
+        return {
+          success: false,
+          message: `Gagal mengambil data dari Google Sheet (HTTP ${response.status})`,
+          timestamp: new Date().toISOString(),
+          newReportsCount: 0,
+          newFindingsCount: 0,
+          skippedCount: 0
+        };
+      }
+
+      const text = await response.text();
+      const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[1]);
+        const rawCols: any[] = parsed?.table?.cols || [];
+        const colLabels = rawCols.map((col: any) => String(col?.label || '').trim());
+        const hasHeaderInCols = colLabels.some(lbl => lbl.toLowerCase().includes('tanggal') || lbl.toLowerCase().includes('crew'));
+        const rawRows: any[] = parsed?.table?.rows || [];
+        const rowsMatrix = rawRows.map(row => 
+          (row.c || []).map((cell: any) => String(cell?.f ?? cell?.v ?? ''))
+        );
+        rawCellMatrix = hasHeaderInCols ? [colLabels, ...rowsMatrix] : rowsMatrix;
       }
     }
 
@@ -1148,6 +1152,29 @@ export async function pullDailyLogFromGviz(
         const parsed = JSON.parse(cachedReportsRaw);
         if (Array.isArray(parsed)) {
           parsed.forEach((r: any) => { if (r?.id) cachedReportsMap.set(r.id, r); });
+        }
+      } catch {}
+    }
+
+    // Daftarkan seluruh finding yang sudah ada (dari INITIAL_FINDINGS + localStorage) berdasarkan (date, pic)
+    // agar pullDailyLogFromGviz tidak pernah membuat duplikat gsheet-finding-* untuk staf & tanggal yang sama
+    const registerExistingFinding = (f: any) => {
+      if (!f) return;
+      if (f.id) existingReportIds.add(String(f.id));
+      const fDate = String(f.dateCreated || f.date || f.targetDate || '').trim().slice(0, 10);
+      const staffObj = STAFF_LIST.find(s => isStaffMatch(s, f.pic));
+      const fPicNorm = (staffObj ? staffObj.name : String(f.pic || '')).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      if (fDate && fPicNorm) {
+        existingReportIds.add(`dedup_date_staff_${fDate}_${fPicNorm}`);
+      }
+    };
+    INITIAL_FINDINGS.forEach(registerExistingFinding);
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const savedFindingsRaw = localStorage.getItem('riz_findings_v2');
+        if (savedFindingsRaw) {
+          const parsedFindings = JSON.parse(savedFindingsRaw);
+          if (Array.isArray(parsedFindings)) parsedFindings.forEach(registerExistingFinding);
         }
       } catch {}
     }
@@ -1298,18 +1325,31 @@ export async function pullDailyLogFromGviz(
           return `dedup_${dateStr || ''}_${eq.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}_${iss.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
         };
 
-        const remarkIssue = entry.notes.trim();
-        const remarkKey = remarkIssue.substring(0, 30).replace(/[^a-zA-Z0-9-]/g, '_');
+        // Ekstrak hanya baris remark yang benar-benar bermasalah (jangan ikutkan baris "Kondisi OK" / "Bersih & Normal")
+        const rawNoteLines = entry.notes.split('\n').map(l => l.trim()).filter(Boolean);
+        const rawActLines = entry.activity.split('\n').map(l => l.trim()).filter(Boolean);
+        let filteredIssueLines: string[] = [];
+        if (rawNoteLines.length > 1) {
+          rawNoteLines.forEach((nLine, idx) => {
+            if (isFindingRemark(nLine)) {
+              const matchedAct = rawActLines[idx] && rawActLines.length === rawNoteLines.length ? `${rawActLines[idx]}: ` : '';
+              filteredIssueLines.push(`${matchedAct}${nLine}`);
+            }
+          });
+        }
+        const remarkIssue = filteredIssueLines.length > 0 ? filteredIssueLines.join(' | ') : entry.notes.trim();
         const eqNorm = equipName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const issNorm = remarkIssue.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const picNorm = entry.staffName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const contentKeyNorm = `dedup_${eqNorm}_${issNorm}_${picNorm}`;
         const semKeyNorm = getSemanticKey(equipName, remarkIssue, entry.date);
+        const staffDateKey = `dedup_date_staff_${entry.date}_${picNorm}`;
 
-        const findingKey = `gsheet-finding-${entry.date}-${remarkKey}`;
+        const findingKey = `gsheet-finding-${entry.date}-${entry.staffId || picNorm}`;
 
         if (
           !existingReportIds.has(findingKey) &&
+          !existingReportIds.has(staffDateKey) &&
           !existingReportIds.has(remarkNorm) &&
           !existingReportIds.has(contentKeyNorm) &&
           !existingReportIds.has(semKeyNorm)
@@ -1329,6 +1369,7 @@ export async function pullDailyLogFromGviz(
           };
           await onSaveFinding(findingKey, findingDoc);
           existingReportIds.add(findingKey);
+          existingReportIds.add(staffDateKey);
           existingReportIds.add(remarkNorm);
           existingReportIds.add(semKeyNorm);
           newFindings++;

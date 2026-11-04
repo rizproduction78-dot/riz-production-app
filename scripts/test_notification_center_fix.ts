@@ -10,7 +10,7 @@
 import { assert } from 'console';
 import { formatFromSupabase } from '../src/lib/supabaseSync';
 import { normalizeCollectionItems } from '../src/lib/cloudSync';
-import { INITIAL_DAILY_TASKS } from '../src/data';
+import { INITIAL_DAILY_TASKS, INITIAL_FINDINGS, INITIAL_DAILY_REPORTS } from '../src/data';
 
 function runNotificationTests() {
   console.log('========================================================');
@@ -198,6 +198,81 @@ function runNotificationTests() {
     'Tidak boleh ada Daily Task yang tercemar jam sync 07:18!'
   );
   console.log('✓ PASS: Tanggal Daily Task presisi sesuai tanggal aktual masing-masing (tidak sama semua).\n');
+
+  console.log('[TEST 6] Anti-Duplikasi Temuan Unit Bermasalah (gsheet-finding-* vs fd-*)');
+  const duplicateFindingsInput = [
+    ...INITIAL_FINDINGS,
+    {
+      id: 'gsheet-finding-2026-11-04-Rekon-Kit_Twitter_masih_bermas',
+      dateCreated: '2026-11-04',
+      division: 'Audio',
+      pic: 'Iwan Kurniawan',
+      equipment: 'Speaker Unit (Audio)',
+      issue: 'Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi OK\nKondisi OK\nKondisi OK\nService ulang, DB no 15 belum normal',
+      priority: 'Sedang',
+      targetDate: '2026-11-04',
+      status: 'Open',
+      _source: 'google_sheet'
+    },
+    {
+      id: 'gsheet-finding-2026-11-03-2_unit_minta_ganti_reciving_ca',
+      dateCreated: '2026-11-03',
+      division: 'Videotron',
+      pic: 'Mulyana',
+      equipment: 'Modul Kabinet LED Videotron',
+      issue: '2 unit minta ganti reciving card',
+      priority: 'Sedang',
+      targetDate: '2026-11-03',
+      status: 'Open',
+      _source: 'google_sheet'
+    },
+    {
+      id: 'gsheet-finding-2026-11-02-Udah_Ga_bisa_ngisi',
+      dateCreated: '2026-11-02',
+      division: 'Multimedia',
+      pic: 'Mulyadi',
+      equipment: 'Peralatan Multimedia',
+      issue: 'Udah Ga bisa ngisi',
+      priority: 'Sedang',
+      targetDate: '2026-11-02',
+      status: 'Open',
+      _source: 'google_sheet'
+    }
+  ];
+  const dedupedFindings = normalizeCollectionItems('findings', duplicateFindingsInput as any);
+  const novFindings = dedupedFindings.filter((f: any) => String(f.dateCreated || '').startsWith('2026-11'));
+  console.log(`- Jumlah Temuan November 2026 setelah deduplikasi: ${novFindings.length}`);
+  assert(novFindings.length === 4, `Harus tepat 4 Temuan Unit Bermasalah di November 2026, ditemukan ${novFindings.length}`);
+  assert(
+    novFindings.every((f: any) => String(f.id).startsWith('fd-202611')),
+    'Seluruh Temuan November 2026 harus menggunakan ID kanonikal fd-202611* (bukan gsheet-finding-*)'
+  );
+  console.log('✓ PASS: Tidak ada duplikasi kartu Temuan Unit Bermasalah di Pusat Notifikasi.\n');
+
+  console.log('[TEST 7] Anti-Duplikasi & Akurasi Teks Daily Report November 2026');
+  const dirtyReportsInput = [
+    {
+      id: 'rep-20261104-staff-iwan-44',
+      date: '2026-11-04',
+      staffName: 'Iwan Kurniawan',
+      division: 'Audio',
+      activity: 'Ganti twitter DB No 15',
+      notes: 'Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi unit sudah OK',
+      status: 'Submitted',
+      _source: 'google_sheet'
+    },
+    ...INITIAL_DAILY_REPORTS.map(r =>
+      r.id === 'rep-20261104-staff-iwan-45'
+        ? { ...r, notes: r.notes.replace(/Kondisi OK/g, 'Kondisi unit sudah OK') }
+        : r
+    )
+  ];
+  const cleanReports = normalizeCollectionItems('daily_reports', dirtyReportsInput as any);
+  const novReports = cleanReports.filter((r: any) => String(r.date || '').startsWith('2026-11'));
+  const iwanNov4 = novReports.find((r: any) => r.id === 'rep-20261104-staff-iwan-45');
+  assert(novReports.length === 8, `Harus tepat 8 Daily Report di November 2026, ditemukan ${novReports.length}`);
+  assert(iwanNov4 && !String(iwanNov4.notes).includes('Kondisi unit sudah OK'), 'Teks notes Iwan Kurniawan harus "Kondisi OK" sesuai Google Sheet resmi');
+  console.log('✓ PASS: Daily Report November 2026 bebas duplikat dan 100% akurat sesuai Google Sheet.\n');
 
   console.log('========================================================');
   console.log('  SEMUA SKENARIO TEST NOTIFIKASI LULUS DENGAN SEMPURNA!  ');

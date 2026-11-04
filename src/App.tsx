@@ -341,7 +341,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v70_preserve_all_user_edits';
+  const REF_SYNC_KEY = 'riz_ref_synced_v71_clean_nov_findings_and_reports';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
@@ -355,7 +355,8 @@ export default function App() {
           existing.forEach((item: any) => {
             if (!item?.id) return;
             const idStr = String(item.id);
-            const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
+            const hasStaleKondisi = String(item.notes || item.followUp || '').includes('Kondisi unit sudah OK');
+            const isUserEdited = Boolean((item._userEdited || item._syncMeta?._userEdited) && !hasStaleKondisi);
             // Bersihkan entri google_sheet bulan Oktober & November lama yang belum pernah diedit user dan tidak ada di canonical
             if (
               !isUserEdited &&
@@ -366,9 +367,21 @@ export default function App() {
             ) {
               return;
             }
+            if (
+              !isUserEdited &&
+              storageKey === 'riz_findings_v2' &&
+              (idStr.startsWith('gsheet-finding-2026-10') || idStr.startsWith('gsheet-finding-2026-11') || idStr.startsWith('gsheet-finding-2021-')) &&
+              !map.has(idStr)
+            ) {
+              return;
+            }
             const canonItem = map.get(idStr) as any;
             if (canonItem) {
-              map.set(idStr, { ...canonItem, ...item });
+              if (hasStaleKondisi) {
+                map.set(idStr, canonItem);
+              } else {
+                map.set(idStr, { ...canonItem, ...item });
+              }
             } else {
               map.set(idStr, item);
             }
@@ -398,8 +411,33 @@ export default function App() {
     localStorage.setItem(REF_SYNC_KEY, 'true');
 
     // Hapus ID duplikat/usang dari penyimpanan Cloud
-    ['dt-20261101-02', 'dt-20261101-03'].forEach(id => deleteCloudDoc('daily_tasks', id).catch(() => {}));
-    ['find-20261101-kharo-2', 'find-20261103-heri-1', 'find-20261103-yudis-1', 'find-20261104-butonk-1'].forEach(id => deleteCloudDoc('findings', id).catch(() => {}));
+    ['dt-20261101-02', 'dt-20261101-03', 'task-test-777'].forEach(id => deleteCloudDoc('daily_tasks', id).catch(() => {}));
+    [
+      'find-20261101-kharo-2',
+      'find-20261103-heri-1',
+      'find-20261103-yudis-1',
+      'find-20261104-butonk-1',
+      'gsheet-finding-2026-11-02-Udah_Ga_bisa_ngisi',
+      'gsheet-finding-2026-11-03--_Rapih_Sesuai_Tulisan_Dibok_-',
+      'gsheet-finding-2026-11-03-2_unit_minta_ganti_recivibg_ca',
+      'gsheet-finding-2026-11-03-2_unit_minta_ganti_recieving_c',
+      'gsheet-finding-2026-11-03-2_unit_minta_ganti_reciving_ca',
+      'gsheet-finding-2026-11-04-Rekon-Kit_Twitter_masih_bermas',
+      'gsheet-finding-2026-10-02-Aman_Beres_Perbaikan_Perbaikan',
+      'gsheet-finding-2021-09-21--_Cover2_lengkap',
+    ].forEach(id => deleteCloudDoc('findings', id).catch(() => {}));
+    [
+      'rep-20261101-staff-mulyana-1',
+      'rep-20261102-staff-unyin-3',
+      'rep-20261102-staff-rahmat-9',
+      'rep-20261102-staff-mulyadi-13',
+      'rep-20261103-staff-yudish-17',
+      'rep-20261103-unknown-17',
+      'rep-20261103-staff-heri-29',
+      'rep-20261103-staff-mulyana-40',
+      'rep-20261104-staff-iwan-44',
+      'dr-test-999',
+    ].forEach(id => deleteCloudDoc('daily_reports', id).catch(() => {}));
     ['wo-20261101-kharo-2', 'wo-20261103-heri-1', 'wo-20261103-yudis-1', 'wo-20261104-butonk-1'].forEach(id => deleteCloudDoc('work_orders', id).catch(() => {}));
     deleteCloudDoc('master_staff', 'staff-chandra').catch(() => {});
     deleteCloudDoc('master_staff', 'staff-rizky').catch(() => {});
@@ -749,7 +787,9 @@ export default function App() {
         const eqNorm = String(f.equipment || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const issNorm = String(f.issue || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const picNorm = String(f.pic || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const fDate = String(f.dateCreated || (f as any).date || f.targetDate || '').trim().slice(0, 10);
         existingIds.add(`dedup_${eqNorm}_${issNorm}_${picNorm}`);
+        if (fDate && picNorm) existingIds.add(`dedup_date_staff_${fDate}_${picNorm}`);
       });
       logbookEntries.forEach(l => { if (l.id) existingIds.add(l.id); });
 
@@ -766,7 +806,9 @@ export default function App() {
           const eqNorm = String(f.equipment || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
           const issNorm = String(f.issue || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
           const picNorm = String(f.pic || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+          const fDate = String(f.dateCreated || f.date || f.targetDate || '').trim().slice(0, 10);
           existingIds.add(`dedup_${eqNorm}_${issNorm}_${picNorm}`);
+          if (fDate && picNorm) existingIds.add(`dedup_date_staff_${fDate}_${picNorm}`);
         });
         (savedLogs as any[]).forEach((l: any) => { if (l.id) existingIds.add(l.id); });
       } catch (_e) {}
