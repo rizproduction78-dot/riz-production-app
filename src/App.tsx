@@ -361,7 +361,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v76_inventory_assets_1lZ9Ja';
+  const REF_SYNC_KEY = 'riz_ref_synced_v77_inventory_no_nominal_deducted';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
@@ -2177,6 +2177,9 @@ export default function App() {
           <Gudang
             currentUser={currentUser}
             assets={assets}
+            findings={findings}
+            workOrders={workOrders}
+            dailyReports={dailyReports}
             onAddAsset={handleAddAsset}
             onUpdateAsset={handleUpdateAsset}
             onDeleteAsset={handleDeleteAsset}
@@ -2193,6 +2196,9 @@ export default function App() {
           <Gudang
             currentUser={currentUser}
             assets={assets}
+            findings={findings}
+            workOrders={workOrders}
+            dailyReports={dailyReports}
             onAddAsset={handleAddAsset}
             onUpdateAsset={handleUpdateAsset}
             onDeleteAsset={handleDeleteAsset}
@@ -2209,6 +2215,9 @@ export default function App() {
           <Gudang
             currentUser={currentUser}
             assets={assets}
+            findings={findings}
+            workOrders={workOrders}
+            dailyReports={dailyReports}
             onAddAsset={handleAddAsset}
             onUpdateAsset={handleUpdateAsset}
             onDeleteAsset={handleDeleteAsset}

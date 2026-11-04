@@ -3,6 +3,10 @@ import { PrintHeader } from './PrintHeader';
 import {
   Staff,
   Asset,
+  Finding,
+  WorkOrder,
+  DailyReport,
+  JobAssignment,
   WarehouseLog,
   FleetAssignment,
   P2HChecklist,
@@ -17,6 +21,7 @@ import {
   INITIAL_ASSETS,
   INITIAL_VEHICLES,
   INITIAL_FLEET_DRIVERS,
+  INITIAL_JOB_ASSIGNMENTS,
   normalizeVehiclesMaster,
   normalizeAssetsMaster,
   formatServiceDateIndonesian,
@@ -24,6 +29,9 @@ import {
   filterMaintenanceHistoryByCurrentYear,
   getInventoryAssetTypeInfo,
   groupInventoryAssetsByType,
+  stripInventoryNominalText,
+  calculateInventoryAssetAvailability,
+  calculateInventorySummaryMetrics,
   InventoryTypeIconKey
 } from '../data';
 import {
@@ -126,6 +134,10 @@ function getInventoryUnitIconInfo(asset: Asset) {
 interface GudangProps {
   currentUser: Staff;
   assets: Asset[];
+  findings?: Finding[];
+  workOrders?: WorkOrder[];
+  dailyReports?: DailyReport[];
+  jobAssignments?: JobAssignment[];
   onAddAsset?: (asset: Omit<Asset, 'id' | 'repairHistory'>) => void;
   onUpdateAsset?: (id: string, updated: Partial<Asset>) => void;
   onDeleteAsset?: (id: string) => void;
@@ -153,6 +165,10 @@ interface GudangProps {
 export default function Gudang({
   currentUser,
   assets,
+  findings = [],
+  workOrders = [],
+  dailyReports = [],
+  jobAssignments: propJobAssignments,
   onAddAsset,
   onUpdateAsset,
   onDeleteAsset,
@@ -242,6 +258,30 @@ export default function Gudang({
   useEffect(() => {
     setLocalAssets(normalizeAssetsMaster(assets));
   }, [assets]);
+
+  // Active Job Assignments for Inventory Unit Deduction
+  const [localJobAssignments] = useState<JobAssignment[]>(() => {
+    try {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        const saved = localStorage.getItem('riz_job_assignments_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
+    } catch (e) {}
+    return INITIAL_JOB_ASSIGNMENTS;
+  });
+  const activeJobAssignments = propJobAssignments !== undefined ? propJobAssignments : localJobAssignments;
+
+  const inventoryCalcCtx = {
+    findings,
+    workOrders,
+    dailyReports,
+    jobAssignments: activeJobAssignments
+  };
+
+  const overallInventorySummary = calculateInventorySummaryMetrics(localAssets, inventoryCalcCtx);
 
   const isAdminDivision = true; // Allow viewing and managing fleet/armada
 
@@ -1100,13 +1140,25 @@ export default function Gudang({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display font-bold text-slate-900 tracking-tight">Manajemen Logistik & Gudang</h1>
-          <p className="text-xs text-slate-500">
-            Pencatatan alur logistik barang masuk/keluar, scan barcode/QR asset, dan tata kelola armada serta biaya sewa operasional.
+          <p className="text-xs text-slate-600 font-medium mt-0.5">
+            <strong className="text-indigo-700 font-mono uppercase">Alur Kerja :&gt;</strong> Scan barcode/QR asset, Pencatatan alur logistik barang masuk/keluar, dan tata kelola armada serta biaya sewa operasional.
           </p>
         </div>
 
-        {/* Action Toggle Tabs */}
+        {/* Action Toggle Tabs (Disusun Sesuai Urutan Alur Kerja) */}
         <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg self-start overflow-x-auto no-scrollbar touch-scroll max-w-full">
+          <button
+            onClick={() => {
+              setWarehouseSubTab('scanner');
+            }}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              warehouseSubTab === 'scanner' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>1. Scan Barcode/QR Asset</span>
+          </button>
+
           <button
             onClick={() => {
               setWarehouseSubTab('logs');
@@ -1117,34 +1169,7 @@ export default function Gudang({
             }`}
           >
             <Package className="w-3.5 h-3.5" />
-            <span>Aktivitas Log Gudang</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setWarehouseSubTab('inventory');
-              if (onNavigateTab) onNavigateTab('gudang_inventory');
-            }}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-              warehouseSubTab === 'inventory' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
-            }`}
-          >
-            <Boxes className="w-3.5 h-3.5" />
-            <span>Susunan Unit Inventory ({localAssets.length})</span>
-          </button>
-          
-          <button
-            onClick={() => {
-              setWarehouseSubTab('scanner');
-              setScanMessage('');
-              setScannedAsset(null);
-            }}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-              warehouseSubTab === 'scanner' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
-            }`}
-          >
-            <Camera className="w-3.5 h-3.5" />
-            <span>Scan Asset (Barcode/QR)</span>
+            <span>2. Alur Logistik Masuk/Keluar</span>
           </button>
 
           {isAdminDivision && (
@@ -1158,9 +1183,108 @@ export default function Gudang({
               }`}
             >
               <Truck className="w-3.5 h-3.5" />
-              <span>Tata Kelola Armada & Biaya Sewa</span>
+              <span>3. Tata Kelola Armada & Biaya Sewa</span>
             </button>
           )}
+
+          <button
+            onClick={() => {
+              setWarehouseSubTab('inventory');
+              if (onNavigateTab) onNavigateTab('gudang_inventory');
+            }}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              warehouseSubTab === 'inventory' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+            }`}
+          >
+            <Boxes className="w-3.5 h-3.5" />
+            <span>Susunan Unit Inventory ({overallInventorySummary.availableUnits}/{overallInventorySummary.totalUnits})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ALUR KERJA LOGISTIK & GUDANG TERINTEGRASI (3 TAHAP UTAMA) */}
+      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+          <button
+            type="button"
+            onClick={() => setWarehouseSubTab('scanner')}
+            className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+              warehouseSubTab === 'scanner'
+                ? 'bg-indigo-50/90 border-indigo-300 ring-1 ring-indigo-500/30'
+                : 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100/80'
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono text-xs font-extrabold shrink-0 ${
+              warehouseSubTab === 'scanner' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 border border-slate-200'
+            }`}>
+              01
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span className="text-xs font-extrabold text-slate-900">Scan Barcode/QR Asset</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                Identifikasi kode aset, cek jumlah unit tersedia, lokasi & kondisi fisik peralatan.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setWarehouseSubTab('logs');
+              if (onNavigateTab) onNavigateTab('gudang');
+            }}
+            className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+              warehouseSubTab === 'logs'
+                ? 'bg-indigo-50/90 border-indigo-300 ring-1 ring-indigo-500/30'
+                : 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100/80'
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono text-xs font-extrabold shrink-0 ${
+              warehouseSubTab === 'logs' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 border border-slate-200'
+            }`}>
+              02
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span className="text-xs font-extrabold text-slate-900">Pencatatan Alur Logistik Masuk/Keluar</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                Catat barang masuk, barang keluar, loading/unloading event, serta mutasi servis.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setWarehouseSubTab('armada_governance');
+              if (onNavigateTab) onNavigateTab('armada');
+            }}
+            className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+              warehouseSubTab === 'armada_governance'
+                ? 'bg-indigo-50/90 border-indigo-300 ring-1 ring-indigo-500/30'
+                : 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100/80'
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono text-xs font-extrabold shrink-0 ${
+              warehouseSubTab === 'armada_governance' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 border border-slate-200'
+            }`}>
+              03
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span className="text-xs font-extrabold text-slate-900">Tata Kelola Armada & Biaya Sewa Operasional</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                Kelola SPJ penugasan armada, manifest muatan, inspeksi P2H & RAB biaya sewa operasional.
+              </p>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -1239,14 +1363,24 @@ export default function Gudang({
                   <Boxes className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  <h2 className="text-sm font-extrabold text-slate-900 flex flex-wrap items-center gap-2">
                     <span>Susunan Unit Inventory Gudang Resmi (Per Divisi & Type Alat)</span>
                     <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 font-mono text-[10px] font-bold rounded-full">
-                      {localAssets.length} Kelompok Unit
+                      Siap Pakai: {overallInventorySummary.availableUnits} / {overallInventorySummary.totalUnits} Unit
                     </span>
+                    {overallInventorySummary.totalDamagedUnits > 0 && (
+                      <span className="px-2 py-0.5 bg-rose-100 text-rose-700 font-mono text-[10px] font-bold rounded-full">
+                        Rusak (Report): -{overallInventorySummary.totalDamagedUnits} Unit
+                      </span>
+                    )}
+                    {overallInventorySummary.assignedUnits > 0 && (
+                      <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-mono text-[10px] font-bold rounded-full">
+                        Penugasan: -{overallInventorySummary.assignedUnits} Unit
+                      </span>
+                    )}
                   </h2>
                   <p className="text-[11px] text-slate-500">
-                    Klik divisi atau pilih langsung <strong>Type Alat</strong> di bawah untuk membuka daftar unit sesuai pengelompokan type-nya.
+                    Jumlah unit tersedia otomatis dikurangi apabila terdapat <strong>kerusakan pada report/temuan QC</strong> maupun sedang <strong>dijadwalkan pada penugasan kerja</strong>.
                   </p>
                 </div>
               </div>
@@ -1270,7 +1404,7 @@ export default function Gudang({
                   className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Boxes className="w-3.5 h-3.5" />
-                  <span>Buka Semua Unit ({localAssets.length})</span>
+                  <span>Buka Semua Unit ({overallInventorySummary.availableUnits}/{overallInventorySummary.totalUnits} Unit)</span>
                 </button>
               </div>
             </div>
@@ -1281,7 +1415,6 @@ export default function Gudang({
                   divKey: 'Audio' as const,
                   label: 'DIVISI AUDIO / SOUND',
                   subTitle: 'Speaker, Mixer & Backline',
-                  valueText: 'Nilai: Rp 486.950.000',
                   Icon: Volume2,
                   cardClass: 'border-blue-100 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300',
                   iconBoxClass: 'bg-blue-600 text-white',
@@ -1292,7 +1425,6 @@ export default function Gudang({
                   divKey: 'Lighting' as const,
                   label: 'DIVISI LIGHTING',
                   subTitle: 'Moving Beam, Parled & SFX',
-                  valueText: 'Nilai: Rp 220.600.000',
                   Icon: Lightbulb,
                   cardClass: 'border-amber-100 bg-gradient-to-br from-amber-50/70 to-white hover:border-amber-300',
                   iconBoxClass: 'bg-amber-500 text-white',
@@ -1303,7 +1435,6 @@ export default function Gudang({
                   divKey: 'Multimedia' as const,
                   label: 'DIVISI MULTIMEDIA',
                   subTitle: 'PC vMix, Camcorder & Clearcom',
-                  valueText: 'Nilai: Rp 339.848.000',
                   Icon: Video,
                   cardClass: 'border-purple-100 bg-gradient-to-br from-purple-50/70 to-white hover:border-purple-300',
                   iconBoxClass: 'bg-purple-600 text-white',
@@ -1314,7 +1445,6 @@ export default function Gudang({
                   divKey: 'Videotron' as const,
                   label: 'DIVISI VIDEOTRON / LED',
                   subTitle: 'LED P3.9 60m (30 Box) & VX6s',
-                  valueText: '120 Panel + Rigging Set',
                   Icon: Tv,
                   cardClass: 'border-emerald-100 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300',
                   iconBoxClass: 'bg-emerald-600 text-white',
@@ -1324,6 +1454,7 @@ export default function Gudang({
               ]).map(cfg => {
                 const divAssets = localAssets.filter(a => a.division === cfg.divKey);
                 const typeBuckets = groupInventoryAssetsByType(divAssets);
+                const divSummary = calculateInventorySummaryMetrics(divAssets, inventoryCalcCtx);
                 const CardIcon = cfg.Icon;
 
                 return (
@@ -1346,13 +1477,31 @@ export default function Gudang({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-1">
                           <span className={`text-[10px] font-mono font-bold uppercase ${cfg.labelClass}`}>{cfg.label}</span>
-                          <span className={`text-[10px] font-mono font-extrabold ${cfg.countBadgeClass} px-1.5 py-0.5 rounded`}>
-                            {divAssets.length} Unit
+                          <span
+                            className={`text-[10px] font-mono font-extrabold ${cfg.countBadgeClass} px-1.5 py-0.5 rounded`}
+                            title={`Siap Pakai: ${divSummary.availableUnits} dari Total ${divSummary.totalUnits} Unit (Rusak: -${divSummary.totalDamagedUnits}, Penugasan: -${divSummary.assignedUnits})`}
+                          >
+                            {divSummary.availableUnits}/{divSummary.totalUnits} Unit
                           </span>
                         </div>
                         <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">{cfg.subTitle}</div>
                         <div className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                          {typeBuckets.length} Kelompok Type • {cfg.valueText}
+                          {typeBuckets.length} Kelompok Type • Total {divSummary.totalUnits} Unit
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1 mt-1.5 font-mono text-[9px] font-bold">
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Siap: {divSummary.availableUnits} Unit
+                          </span>
+                          {divSummary.totalDamagedUnits > 0 && (
+                            <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+                              Rusak: -{divSummary.totalDamagedUnits}
+                            </span>
+                          )}
+                          {divSummary.assignedUnits > 0 && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                              Penugasan: -{divSummary.assignedUnits}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </button>
@@ -1361,6 +1510,8 @@ export default function Gudang({
                     <div className="pt-2 border-t border-slate-200/60 flex flex-wrap gap-1">
                       {typeBuckets.map(bucket => {
                         const TypeChipIcon = resolveInventoryTypeIcon(bucket.typeInfo.iconKey);
+                        const bucketSummary = calculateInventorySummaryMetrics(bucket.assets, inventoryCalcCtx);
+                        const hasDeduction = bucketSummary.totalDamagedUnits > 0 || bucketSummary.assignedUnits > 0;
                         return (
                           <button
                             key={bucket.typeInfo.typeGroup}
@@ -1371,11 +1522,13 @@ export default function Gudang({
                               setWarehouseSubTab('inventory');
                             }}
                             className={`px-2 py-0.5 rounded-md border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer hover:brightness-95 ${bucket.typeInfo.bgClass} ${bucket.typeInfo.textClass} ${bucket.typeInfo.borderClass}`}
-                            title={`Lihat Type: ${bucket.typeInfo.typeGroup}`}
+                            title={`${bucket.typeInfo.typeGroup}: Siap ${bucketSummary.availableUnits}/${bucketSummary.totalUnits} Unit (Rusak: -${bucketSummary.totalDamagedUnits}, Penugasan: -${bucketSummary.assignedUnits})`}
                           >
                             <TypeChipIcon className="w-2.5 h-2.5 shrink-0" />
-                            <span className="truncate max-w-[115px]">{bucket.typeInfo.shortTypeLabel}</span>
-                            <span className="font-mono text-[9px] opacity-80">({bucket.assets.length})</span>
+                            <span className="truncate max-w-[105px]">{bucket.typeInfo.shortTypeLabel}</span>
+                            <span className="font-mono text-[9px] opacity-85">
+                              ({hasDeduction ? `${bucketSummary.availableUnits}/${bucketSummary.totalUnits}` : bucketSummary.availableUnits})
+                            </span>
                           </button>
                         );
                       })}
@@ -1753,7 +1906,6 @@ export default function Gudang({
             key: 'Audio' as const,
             title: 'Divisi Audio / Sound System',
             sheetName: 'Inventory SOUND MAR 2024',
-            totalValueText: 'Total Nilai Inventaris: Rp 486.950.000',
             Icon: Volume2,
             headerBg: 'from-blue-600 to-indigo-700',
             badgeBg: 'bg-blue-50 text-blue-700 border-blue-200'
@@ -1762,7 +1914,6 @@ export default function Gudang({
             key: 'Lighting' as const,
             title: 'Divisi Lighting & Special Effects',
             sheetName: 'Inventory LIGHTING MAR 2024',
-            totalValueText: 'Total Nilai Inventaris: Rp 220.600.000',
             Icon: Lightbulb,
             headerBg: 'from-amber-500 to-orange-600',
             badgeBg: 'bg-amber-50 text-amber-800 border-amber-200'
@@ -1771,7 +1922,6 @@ export default function Gudang({
             key: 'Multimedia' as const,
             title: 'Divisi Multimedia & Live Streaming',
             sheetName: 'INVENTORY STREEMING MAR 2024',
-            totalValueText: 'Total Nilai Inventaris: Rp 339.848.000',
             Icon: Video,
             headerBg: 'from-purple-600 to-violet-700',
             badgeBg: 'bg-purple-50 text-purple-700 border-purple-200'
@@ -1780,7 +1930,6 @@ export default function Gudang({
             key: 'Videotron' as const,
             title: 'Divisi Videotron & LED Display',
             sheetName: 'INVENTORY LED MAR 2024',
-            totalValueText: 'LED Hybrid P3.9 60 Meter (30 Box / 120 Panel) + VX6s',
             Icon: Tv,
             headerBg: 'from-emerald-600 to-teal-700',
             badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -1790,6 +1939,8 @@ export default function Gudang({
         const activeDivisions = inventoryDivisionFilter === 'ALL'
           ? divisionConfigs
           : divisionConfigs.filter(d => d.key === inventoryDivisionFilter);
+
+        const scopedSummary = calculateInventorySummaryMetrics(divisionScopedAssets, inventoryCalcCtx);
 
         return (
           <div className="space-y-6">
@@ -1805,12 +1956,22 @@ export default function Gudang({
                       <h2 className="text-lg font-extrabold text-slate-900">
                         Susunan Unit Inventory Gudang Resmi (Berdasarkan Type Alat)
                       </h2>
-                      <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 font-mono text-xs font-bold rounded-full">
-                        {localAssets.length} Kelompok Unit • {availableTypeBuckets.length} Type Alat
+                      <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-mono text-xs font-bold rounded-full">
+                        Siap Pakai: {scopedSummary.availableUnits} / {scopedSummary.totalUnits} Unit
                       </span>
+                      {scopedSummary.totalDamagedUnits > 0 && (
+                        <span className="px-2.5 py-0.5 bg-rose-100 text-rose-800 font-mono text-xs font-bold rounded-full">
+                          Rusak (Report): -{scopedSummary.totalDamagedUnits} Unit
+                        </span>
+                      )}
+                      {scopedSummary.assignedUnits > 0 && (
+                        <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 font-mono text-xs font-bold rounded-full">
+                          Penugasan Job: -{scopedSummary.assignedUnits} Unit
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Susunan unit peralatan gudang dikelompokkan berdasarkan <strong>Divisi</strong> dan <strong>Type Alat</strong> sesuai Google Sheet Inventaris Resmi.
+                      Seluruh jumlah unit otomatis dikurangi apabila terdapat <strong>kerusakan berdasarkan report/temuan QC</strong> maupun sedang <strong>dijadwalkan pada penugasan kerja</strong>.
                     </p>
                   </div>
                 </div>
@@ -1866,85 +2027,42 @@ export default function Gudang({
                     <Boxes className="w-3.5 h-3.5" />
                     <span>Semua Divisi</span>
                     <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${inventoryDivisionFilter === 'ALL' ? 'bg-indigo-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                      {localAssets.length}
+                      {overallInventorySummary.availableUnits}/{overallInventorySummary.totalUnits}
                     </span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInventoryDivisionFilter('Audio');
-                      setInventoryTypeFilter('ALL');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                      inventoryDivisionFilter === 'Audio'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                    }`}
-                  >
-                    <Volume2 className="w-3.5 h-3.5" />
-                    <span>Audio / Sound</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${inventoryDivisionFilter === 'Audio' ? 'bg-blue-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                      {localAssets.filter(a => a.division === 'Audio').length}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInventoryDivisionFilter('Lighting');
-                      setInventoryTypeFilter('ALL');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                      inventoryDivisionFilter === 'Lighting'
-                        ? 'bg-amber-500 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                    }`}
-                  >
-                    <Lightbulb className="w-3.5 h-3.5" />
-                    <span>Lighting</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${inventoryDivisionFilter === 'Lighting' ? 'bg-amber-700 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                      {localAssets.filter(a => a.division === 'Lighting').length}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInventoryDivisionFilter('Multimedia');
-                      setInventoryTypeFilter('ALL');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                      inventoryDivisionFilter === 'Multimedia'
-                        ? 'bg-purple-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                    }`}
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                    <span>Multimedia / Streaming</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${inventoryDivisionFilter === 'Multimedia' ? 'bg-purple-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                      {localAssets.filter(a => a.division === 'Multimedia').length}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInventoryDivisionFilter('Videotron');
-                      setInventoryTypeFilter('ALL');
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                      inventoryDivisionFilter === 'Videotron'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                    }`}
-                  >
-                    <Tv className="w-3.5 h-3.5" />
-                    <span>Videotron / LED</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${inventoryDivisionFilter === 'Videotron' ? 'bg-emerald-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                      {localAssets.filter(a => a.division === 'Videotron').length}
-                    </span>
-                  </button>
+                  {([
+                    { key: 'Audio' as const, label: 'Audio / Sound', Icon: Volume2, activeClass: 'bg-blue-600 text-white shadow-xs', badgeActiveClass: 'bg-blue-800 text-white' },
+                    { key: 'Lighting' as const, label: 'Lighting', Icon: Lightbulb, activeClass: 'bg-amber-500 text-white shadow-xs', badgeActiveClass: 'bg-amber-700 text-white' },
+                    { key: 'Multimedia' as const, label: 'Multimedia / Streaming', Icon: Video, activeClass: 'bg-purple-600 text-white shadow-xs', badgeActiveClass: 'bg-purple-800 text-white' },
+                    { key: 'Videotron' as const, label: 'Videotron / LED', Icon: Tv, activeClass: 'bg-emerald-600 text-white shadow-xs', badgeActiveClass: 'bg-emerald-800 text-white' }
+                  ]).map(pill => {
+                    const pillSummary = calculateInventorySummaryMetrics(
+                      localAssets.filter(a => a.division === pill.key),
+                      inventoryCalcCtx
+                    );
+                    const PillIcon = pill.Icon;
+                    const isPillActive = inventoryDivisionFilter === pill.key;
+                    return (
+                      <button
+                        key={pill.key}
+                        type="button"
+                        onClick={() => {
+                          setInventoryDivisionFilter(pill.key);
+                          setInventoryTypeFilter('ALL');
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                          isPillActive ? pill.activeClass : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                        }`}
+                      >
+                        <PillIcon className="w-3.5 h-3.5" />
+                        <span>{pill.label}</span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${isPillActive ? pill.badgeActiveClass : 'bg-slate-200 text-slate-700'}`}>
+                          {pillSummary.availableUnits}/{pillSummary.totalUnits}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Search & Condition Filter */}
@@ -2011,6 +2129,7 @@ export default function Gudang({
                   {availableTypeBuckets.map(bucket => {
                     const TypeIcon = resolveInventoryTypeIcon(bucket.typeInfo.iconKey);
                     const isSelected = inventoryTypeFilter === bucket.typeInfo.typeGroup;
+                    const bucketMetrics = calculateInventorySummaryMetrics(bucket.assets, inventoryCalcCtx);
                     return (
                       <button
                         key={bucket.typeInfo.typeGroup}
@@ -2021,13 +2140,14 @@ export default function Gudang({
                             ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
                             : `${bucket.typeInfo.bgClass} ${bucket.typeInfo.textClass} ${bucket.typeInfo.borderClass} hover:brightness-95`
                         }`}
+                        title={`${bucket.typeInfo.typeGroup}: Siap ${bucketMetrics.availableUnits}/${bucketMetrics.totalUnits} Unit (Rusak: -${bucketMetrics.totalDamagedUnits}, Penugasan: -${bucketMetrics.assignedUnits})`}
                       >
                         <TypeIcon className="w-3 h-3 shrink-0" />
                         <span>{bucket.typeInfo.shortTypeLabel}</span>
                         <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
                           isSelected ? 'bg-indigo-800 text-white' : 'bg-white/80 text-slate-800'
                         }`}>
-                          {bucket.assets.length}
+                          {bucketMetrics.availableUnits}/{bucketMetrics.totalUnits}
                         </span>
                       </button>
                     );
@@ -2042,6 +2162,7 @@ export default function Gudang({
               if (divAssets.length === 0) return null;
               const DivIcon = divCfg.Icon;
               const divTypeBuckets = groupInventoryAssetsByType(divAssets);
+              const divMetrics = calculateInventorySummaryMetrics(divAssets, inventoryCalcCtx);
 
               return (
                 <div key={divCfg.key} className="space-y-5">
@@ -2055,21 +2176,28 @@ export default function Gudang({
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-base font-black tracking-tight">{divCfg.title}</h3>
                           <span className="px-2 py-0.5 bg-white/20 rounded-full text-[10px] font-mono font-bold">
-                            {divTypeBuckets.length} Kelompok Type • {divAssets.length} Unit
+                            {divTypeBuckets.length} Kelompok Type • Siap: {divMetrics.availableUnits} / {divMetrics.totalUnits} Unit
                           </span>
                         </div>
                         <p className="text-[11px] text-white/85 font-mono mt-0.5">
-                          Tab Sheet: {divCfg.sheetName} • {divCfg.totalValueText}
+                          Tab Sheet: {divCfg.sheetName} • Total Fisik: {divMetrics.totalUnits} Unit
+                          {divMetrics.totalDamagedUnits > 0 ? ` • Rusak (Report): -${divMetrics.totalDamagedUnits} Unit` : ''}
+                          {divMetrics.assignedUnits > 0 ? ` • Penugasan Job: -${divMetrics.assignedUnits} Unit` : ''}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] font-mono font-bold">
-                      <span className="px-2.5 py-1 bg-white/15 rounded-lg">
-                        Baik: {divAssets.filter(a => a.condition === 'Baik').length}
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono font-bold">
+                      <span className="px-2.5 py-1 bg-white/20 rounded-lg">
+                        Siap Pakai: {divMetrics.availableUnits} Unit
                       </span>
-                      {divAssets.filter(a => a.condition !== 'Baik').length > 0 && (
-                        <span className="px-2.5 py-1 bg-rose-500/40 border border-white/20 rounded-lg">
-                          Catatan/Servis: {divAssets.filter(a => a.condition !== 'Baik').length}
+                      {divMetrics.totalDamagedUnits > 0 && (
+                        <span className="px-2.5 py-1 bg-rose-500/45 border border-white/25 rounded-lg">
+                          Rusak (Report): -{divMetrics.totalDamagedUnits} Unit
+                        </span>
+                      )}
+                      {divMetrics.assignedUnits > 0 && (
+                        <span className="px-2.5 py-1 bg-amber-500/45 border border-white/25 rounded-lg">
+                          Penugasan: -{divMetrics.assignedUnits} Unit
                         </span>
                       )}
                     </div>
@@ -2079,8 +2207,7 @@ export default function Gudang({
                   <div className="space-y-5 pl-0 sm:pl-2">
                     {divTypeBuckets.map((bucket, bucketIdx) => {
                       const TypeGroupIcon = resolveInventoryTypeIcon(bucket.typeInfo.iconKey);
-                      const goodCount = bucket.assets.filter(a => a.condition === 'Baik').length;
-                      const issueCount = bucket.assets.length - goodCount;
+                      const bucketMetrics = calculateInventorySummaryMetrics(bucket.assets, inventoryCalcCtx);
 
                       return (
                         <div
@@ -2102,19 +2229,24 @@ export default function Gudang({
                                     {bucket.typeInfo.typeGroup}
                                   </h4>
                                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold border ${bucket.typeInfo.badgeClass}`}>
-                                    {bucket.assets.length} Kelompok Unit
+                                    {bucket.assets.length} Kelompok • {bucketMetrics.availableUnits}/{bucketMetrics.totalUnits} Unit Siap
                                   </span>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2 self-start sm:self-auto">
-                              <span className="px-2 py-0.5 bg-white/80 border border-emerald-200 text-emerald-700 rounded-md text-[10px] font-mono font-bold">
-                                Baik: {goodCount}
+                            <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                              <span className="px-2 py-0.5 bg-white/90 border border-emerald-200 text-emerald-700 rounded-md text-[10px] font-mono font-bold">
+                                Siap: {bucketMetrics.availableUnits} / {bucketMetrics.totalUnits} Unit
                               </span>
-                              {issueCount > 0 && (
+                              {bucketMetrics.totalDamagedUnits > 0 && (
+                                <span className="px-2 py-0.5 bg-rose-100/90 border border-rose-300 text-rose-800 rounded-md text-[10px] font-mono font-bold">
+                                  Rusak (Report): -{bucketMetrics.totalDamagedUnits} Unit
+                                </span>
+                              )}
+                              {bucketMetrics.assignedUnits > 0 && (
                                 <span className="px-2 py-0.5 bg-amber-100/90 border border-amber-300 text-amber-900 rounded-md text-[10px] font-mono font-bold">
-                                  Catatan: {issueCount}
+                                  Penugasan: -{bucketMetrics.assignedUnits} Unit
                                 </span>
                               )}
                               <button
@@ -2136,6 +2268,8 @@ export default function Gudang({
                             {bucket.assets.map(asset => {
                               const { Icon: UnitIcon, categoryLabel, bgClass, textClass, borderClass } = getInventoryUnitIconInfo(asset);
                               const isInService = asset.location.includes('SERVICE');
+                              const avail = calculateInventoryAssetAvailability(asset, inventoryCalcCtx);
+                              const cleanSerialSpec = stripInventoryNominalText(asset.serialNumber);
 
                               return (
                                 <div
@@ -2175,16 +2309,66 @@ export default function Gudang({
                                       </span>
                                     </div>
 
-                                    {/* Details Box: Brand, Specs/QTY/Value, Location */}
+                                    {/* Unit Availability & Deduction Box (Total - Rusak Report - Penugasan Job) */}
+                                    <div className="p-2.5 rounded-lg border border-slate-200 bg-slate-50/90 space-y-1.5">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="text-[10px] font-bold text-slate-600 uppercase font-mono">
+                                          Jumlah Unit Tersedia:
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-md font-mono text-xs font-extrabold border ${
+                                          avail.availableUnits === 0
+                                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                            : avail.totalDamagedUnits > 0 || avail.assignedUnits > 0
+                                            ? 'bg-amber-50 text-amber-900 border-amber-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        }`}>
+                                          {avail.availableUnits} / {avail.totalUnits} {avail.unitLabel} Siap
+                                        </span>
+                                      </div>
+
+                                      <div className="grid grid-cols-3 gap-1.5 pt-1 text-center font-mono text-[10px]">
+                                        <div className="p-1 rounded bg-white border border-slate-200">
+                                          <div className="text-[9px] text-slate-400">Total Awal</div>
+                                          <div className="font-extrabold text-slate-800">{avail.totalUnits} {avail.unitLabel}</div>
+                                        </div>
+                                        <div className={`p-1 rounded border ${avail.totalDamagedUnits > 0 ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-white border-slate-200 text-slate-400'}`}>
+                                          <div className="text-[9px]">Rusak/Report</div>
+                                          <div className="font-extrabold">{avail.totalDamagedUnits > 0 ? `-${avail.totalDamagedUnits}` : '0'} {avail.unitLabel}</div>
+                                        </div>
+                                        <div className={`p-1 rounded border ${avail.assignedUnits > 0 ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-white border-slate-200 text-slate-400'}`}>
+                                          <div className="text-[9px]">Penugasan</div>
+                                          <div className="font-extrabold">{avail.assignedUnits > 0 ? `-${avail.assignedUnits}` : '0'} {avail.unitLabel}</div>
+                                        </div>
+                                      </div>
+
+                                      {(avail.damageReasons.length > 0 || avail.assignedReasons.length > 0) && (
+                                        <div className="pt-1.5 border-t border-slate-200/80 space-y-1 text-[10px]">
+                                          {avail.damageReasons.map((reason, rIdx) => (
+                                            <div key={`dmg-${rIdx}`} className="flex items-start gap-1 text-rose-700 font-medium leading-tight">
+                                              <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5 text-rose-600" />
+                                              <span>Pengurangan Rusak: {reason}</span>
+                                            </div>
+                                          ))}
+                                          {avail.assignedReasons.map((reason, aIdx) => (
+                                            <div key={`asg-${aIdx}`} className="flex items-start gap-1 text-amber-800 font-medium leading-tight">
+                                              <Calendar className="w-3 h-3 shrink-0 mt-0.5 text-amber-600" />
+                                              <span>Penjadwalan Tugas: {reason}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Details Box: Brand, Specs/QTY (No Nominal), Location */}
                                     <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 space-y-1.5 text-[11px]">
                                       <div className="flex items-center justify-between gap-2">
                                         <span className="text-slate-400 font-medium">Type / Merek:</span>
                                         <span className="font-bold text-slate-800 text-right">{asset.brand}</span>
                                       </div>
                                       <div>
-                                        <span className="text-slate-400 font-medium block">Rincian Unit / QTY / Nilai Sheet:</span>
+                                        <span className="text-slate-400 font-medium block">Rincian Nomor Urut & Spesifikasi Unit:</span>
                                         <span className="font-mono text-[10px] font-semibold text-slate-700 leading-relaxed block mt-0.5">
-                                          {asset.serialNumber}
+                                          {cleanSerialSpec}
                                         </span>
                                       </div>
                                       <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/70">
@@ -2390,38 +2574,133 @@ export default function Gudang({
                   </div>
 
                   {/* Info table */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-                    <div>
-                      <span className="text-slate-400 font-semibold block">Merek / Brand:</span>
-                      <span className="text-slate-800 font-bold">{scannedAsset.brand}</span>
-                    </div>
+                  {(() => {
+                    const scannedAvail = calculateInventoryAssetAvailability(scannedAsset, inventoryCalcCtx);
+                    return (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                          <div>
+                            <span className="text-slate-400 font-semibold block">Merek / Brand:</span>
+                            <span className="text-slate-800 font-bold">{scannedAsset.brand}</span>
+                          </div>
 
-                    <div>
-                      <span className="text-slate-400 font-semibold block">Serial Number:</span>
-                      <span className="text-slate-800 font-mono font-bold">{scannedAsset.serialNumber}</span>
-                    </div>
+                          <div>
+                            <span className="text-slate-400 font-semibold block">Rincian Unit & Spesifikasi:</span>
+                            <span className="text-slate-800 font-mono font-bold">{stripInventoryNominalText(scannedAsset.serialNumber)}</span>
+                          </div>
 
-                    <div>
-                      <span className="text-slate-400 font-semibold block">Divisi Pemilik:</span>
-                      <span className="text-slate-800 font-bold">{scannedAsset.division} Division</span>
-                    </div>
+                          <div>
+                            <span className="text-slate-400 font-semibold block">Divisi Pemilik:</span>
+                            <span className="text-slate-800 font-bold">{scannedAsset.division} Division</span>
+                          </div>
 
-                    <div>
-                      <span className="text-slate-400 font-semibold block">Lokasi Penyimpanan Saat Ini:</span>
-                      <span className="text-slate-800 font-bold">{scannedAsset.location}</span>
-                    </div>
+                          <div>
+                            <span className="text-slate-400 font-semibold block">Lokasi Penyimpanan Saat Ini:</span>
+                            <span className="text-slate-800 font-bold">{scannedAsset.location}</span>
+                          </div>
 
-                    <div className="col-span-2">
-                      <span className="text-slate-400 font-semibold block">Kondisi Asset Saat Ini:</span>
-                      <span className={`inline-block px-2.5 py-0.5 rounded font-mono font-bold mt-1 text-[10px] uppercase ${
-                        scannedAsset.condition === 'Baik' ? 'bg-emerald-100 text-emerald-800' :
-                        scannedAsset.condition === 'Rusak Ringan' ? 'bg-amber-100 text-amber-800' :
-                        'bg-rose-100 text-rose-800'
-                      }`}>
-                        {scannedAsset.condition}
-                      </span>
-                    </div>
-                  </div>
+                          <div>
+                            <span className="text-slate-400 font-semibold block">Kondisi Asset Saat Ini:</span>
+                            <span className={`inline-block px-2.5 py-0.5 rounded font-mono font-bold mt-1 text-[10px] uppercase ${
+                              scannedAsset.condition === 'Baik' ? 'bg-emerald-100 text-emerald-800' :
+                              scannedAsset.condition === 'Rusak Ringan' ? 'bg-amber-100 text-amber-800' :
+                              'bg-rose-100 text-rose-800'
+                            }`}>
+                              {scannedAsset.condition}
+                            </span>
+                          </div>
+
+                          <div>
+                            <span className="text-slate-400 font-semibold block">Ketersediaan Unit Aktual:</span>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1 font-mono text-[11px] font-bold">
+                              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                                Siap: {scannedAvail.availableUnits}/{scannedAvail.totalUnits} {scannedAvail.unitLabel}
+                              </span>
+                              {scannedAvail.totalDamagedUnits > 0 && (
+                                <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800">
+                                  Rusak: -{scannedAvail.totalDamagedUnits}
+                                </span>
+                              )}
+                              {scannedAvail.assignedUnits > 0 && (
+                                <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800">
+                                  Penugasan: -{scannedAvail.assignedUnits}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Tindak Lanjut Alur Kerja: Scan -> Logistik Masuk/Keluar -> Armada */}
+                        <div className="p-3.5 bg-indigo-50/70 rounded-xl border border-indigo-200 space-y-2.5">
+                          <div className="text-[11px] font-extrabold text-indigo-950 uppercase font-mono flex items-center gap-1.5">
+                            <Package className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Lanjutkan Alur Kerja Hasil Scan ke Logistik & Armada:</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setType('Keluar');
+                                setItemName(scannedAsset.name);
+                                setAssetCodeInput(scannedAsset.code);
+                                setQty(1);
+                                setNotes(`Barang keluar via Scan Barcode [${scannedAsset.code}]`);
+                                setShowLogForm(true);
+                                setWarehouseSubTab('logs');
+                              }}
+                              className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                            >
+                              <ArrowUpRight className="w-3.5 h-3.5" />
+                              <span>Catat Barang Keluar (Tahap 2)</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setType('Masuk');
+                                setItemName(scannedAsset.name);
+                                setAssetCodeInput(scannedAsset.code);
+                                setQty(1);
+                                setNotes(`Barang masuk kembali ke gudang via Scan Barcode [${scannedAsset.code}]`);
+                                setShowLogForm(true);
+                                setWarehouseSubTab('logs');
+                              }}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                            >
+                              <ArrowDownLeft className="w-3.5 h-3.5" />
+                              <span>Catat Barang Masuk (Tahap 2)</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setManifestItems(prev => [
+                                  ...prev,
+                                  {
+                                    id: 'm-' + Date.now(),
+                                    division: (scannedAsset.division === 'Audio' || scannedAsset.division === 'Lighting' || scannedAsset.division === 'Multimedia' || scannedAsset.division === 'Videotron')
+                                      ? scannedAsset.division
+                                      : 'Audio',
+                                    itemDescription: `${scannedAsset.name} (${scannedAsset.code})`,
+                                    qty: 1,
+                                    unit: 'Unit',
+                                    estimatedCBM: 0.5
+                                  }
+                                ]);
+                                setWarehouseSubTab('armada_governance');
+                                setFleetSection('trips');
+                                setShowNewFleetModal(true);
+                              }}
+                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                            >
+                              <Truck className="w-3.5 h-3.5" />
+                              <span>Masukkan ke SPJ Armada & Biaya Sewa (Tahap 3)</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Live edit area */}
                   <div className="space-y-4 border-t pt-4">
@@ -4548,12 +4827,12 @@ export default function Gudang({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Rincian Nomor Urut / QTY / Nilai / Remark</label>
+                <label className="font-bold text-slate-700 block mb-1">Rincian Nomor Urut / QTY / Remark</label>
                 <input
                   type="text"
                   value={assetFormState.serialNumber}
                   onChange={(e) => setAssetFormState({ ...assetFormState, serialNumber: e.target.value })}
-                  placeholder="No. 1-12 • QTY: 12 Unit • Nilai: Rp 140.000.000"
+                  placeholder="No. 1-12 • QTY: 12 Unit • Kondisi Aman"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono text-slate-800"
                 />
               </div>

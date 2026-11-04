@@ -13,10 +13,26 @@ import {
 import {
   INITIAL_INVENTORY_ASSETS,
   getInventoryAssetTypeInfo,
-  groupInventoryAssetsByType
+  groupInventoryAssetsByType,
+  stripInventoryNominalText,
+  calculateInventoryAssetAvailability,
+  calculateInventorySummaryMetrics
 } from './data/inventoryAssetsData';
-export type { InventoryAssetTypeInfo, InventoryTypeGroupBucket, InventoryTypeIconKey } from './data/inventoryAssetsData';
-export { getInventoryAssetTypeInfo, groupInventoryAssetsByType };
+export type {
+  InventoryAssetTypeInfo,
+  InventoryTypeGroupBucket,
+  InventoryTypeIconKey,
+  InventoryAssetAvailability,
+  InventorySummaryMetrics,
+  InventoryCalculationContext
+} from './data/inventoryAssetsData';
+export {
+  getInventoryAssetTypeInfo,
+  groupInventoryAssetsByType,
+  stripInventoryNominalText,
+  calculateInventoryAssetAvailability,
+  calculateInventorySummaryMetrics
+};
 
 export const STAFF_LIST: Staff[] = [
   // 1. Gudang
@@ -2822,6 +2838,7 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
   INITIAL_ASSETS.forEach(asset => {
     resultById.set(asset.id, {
       ...asset,
+      serialNumber: stripInventoryNominalText(asset.serialNumber),
       repairHistory: Array.isArray(asset.repairHistory) ? asset.repairHistory : []
     });
     canonicalByCode.set(asset.code.toUpperCase().trim(), asset);
@@ -2844,7 +2861,7 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
           code: item.code || canonical.code,
           name: item.name || canonical.name,
           brand: item.brand || canonical.brand,
-          serialNumber: item.serialNumber || canonical.serialNumber,
+          serialNumber: stripInventoryNominalText(item.serialNumber || canonical.serialNumber),
           division: item.division || canonical.division,
           location: item.location || canonical.location,
           condition: item.condition || canonical.condition,
@@ -2858,6 +2875,7 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
           ...(item as Asset),
           id: key,
           code: itemCode || key.toUpperCase(),
+          serialNumber: stripInventoryNominalText(item.serialNumber || '-'),
           repairHistory: Array.isArray(item.repairHistory) ? item.repairHistory : []
         });
       }
