@@ -163,6 +163,9 @@ export interface WarehouseLog {
   itemName: string;
   qty: number;
   pic: string;
+  scannedBy?: string; // Nama personel yang melakukan proses scan barcode/QR
+  scannedByRole?: string; // Jabatan/divisi personel yang melakukan scan
+  scannedAt?: string; // Waktu proses scan dilakukan
   notes: string;
   assetCode?: string;
   photoUrl?: string;

@@ -592,39 +592,96 @@ export default function Gudang({
     inspector: currentUser.name === 'Agus' || currentUser.name?.includes('Agustino') ? 'Agustino (Admin)' : currentUser.name || ''
   });
 
-  // Scanner Simulator State — HANYA unit yang berhasil di-scan yang muncul di daftar
+  // Scanner Simulator State — HANYA unit yang berhasil di-scan yang muncul di daftar (Anti-Double Pencatatan + Wajib Catat Siapa yang Scan)
+  interface ScannedAssetRecord {
+    assetId: string;
+    assetCode: string;
+    scannedBy: string;
+    scannedByRole: string;
+    scannedByDivision: string;
+    scannedAt: string;
+  }
+
+  const deduplicateScanRecords = (records: ScannedAssetRecord[]): ScannedAssetRecord[] => {
+    const seen = new Set<string>();
+    const result: ScannedAssetRecord[] = [];
+    for (const rec of records) {
+      if (!rec || !rec.assetId) continue;
+      const key = `${rec.assetId.toLowerCase()}|${(rec.assetCode || '').toLowerCase()}`;
+      if (seen.has(key) || seen.has(rec.assetId.toLowerCase())) continue;
+      seen.add(key);
+      seen.add(rec.assetId.toLowerCase());
+      result.push(rec);
+    }
+    return result;
+  };
+
+  const deduplicateWarehouseLogs = (logs: WarehouseLog[]): WarehouseLog[] => {
+    const seenKeys = new Set<string>();
+    const seenIds = new Set<string>();
+    const result: WarehouseLog[] = [];
+    for (const log of logs) {
+      if (!log || typeof log !== 'object') continue;
+      if (log.id && seenIds.has(log.id)) continue;
+      const normalizedItemKey = (log.assetCode || log.itemName || '').trim().toLowerCase();
+      const compositeKey = `${(log.date || '').trim()}|${(log.type || '').trim().toLowerCase()}|${normalizedItemKey}`;
+      if (normalizedItemKey && seenKeys.has(compositeKey)) continue;
+      if (log.id) seenIds.add(log.id);
+      if (normalizedItemKey) seenKeys.add(compositeKey);
+      result.push(log);
+    }
+    return result;
+  };
+
   const [scannedAsset, setScannedAsset] = useState<Asset | null>(null);
   const [isScanningSimulated, setIsScanningSimulated] = useState(false);
   const [scanSearchInput, setScanSearchInput] = useState('');
   const [scanMessage, setScanMessage] = useState('');
-  const [scannedAssetIds, setScannedAssetIds] = useState<string[]>(() => {
+  const [scannedRecords, setScannedRecords] = useState<ScannedAssetRecord[]>(() => {
     try {
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        const saved = localStorage.getItem('riz_scanned_asset_ids_v1');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed.map(String);
+        const savedV2 = localStorage.getItem('riz_scanned_asset_records_v1');
+        if (savedV2) {
+          const parsed = JSON.parse(savedV2);
+          if (Array.isArray(parsed)) {
+            return deduplicateScanRecords(parsed);
+          }
         }
       }
     } catch (e) {}
     return [];
   });
 
-  const registerScannedAsset = (asset: Asset) => {
-    setScannedAssetIds(prev => {
-      const next = [asset.id, ...prev.filter(id => id !== asset.id)];
+  const registerScannedAsset = (asset: Asset): { isDuplicate: boolean; record: ScannedAssetRecord } => {
+    const existing = scannedRecords.find(
+      r => r.assetId === asset.id || r.assetCode.toLowerCase() === asset.code.toLowerCase()
+    );
+    if (existing) {
+      return { isDuplicate: true, record: existing };
+    }
+    const newRec: ScannedAssetRecord = {
+      assetId: asset.id,
+      assetCode: asset.code,
+      scannedBy: currentUser.name,
+      scannedByRole: currentUser.role,
+      scannedByDivision: currentUser.division,
+      scannedAt: new Date().toLocaleString('id-ID')
+    };
+    setScannedRecords(prev => {
+      const next = deduplicateScanRecords([newRec, ...prev]);
       try {
-        localStorage.setItem('riz_scanned_asset_ids_v1', JSON.stringify(next));
+        localStorage.setItem('riz_scanned_asset_records_v1', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
+    return { isDuplicate: false, record: newRec };
   };
 
   const handleRemoveScannedAssetFromList = (assetId: string) => {
-    setScannedAssetIds(prev => {
-      const next = prev.filter(id => id !== assetId);
+    setScannedRecords(prev => {
+      const next = prev.filter(r => r.assetId !== assetId);
       try {
-        localStorage.setItem('riz_scanned_asset_ids_v1', JSON.stringify(next));
+        localStorage.setItem('riz_scanned_asset_records_v1', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
@@ -635,30 +692,43 @@ export default function Gudang({
   };
 
   const handleClearAllScannedAssets = () => {
-    setScannedAssetIds([]);
+    setScannedRecords([]);
     setScannedAsset(null);
     setScanMessage('');
     try {
+      localStorage.removeItem('riz_scanned_asset_records_v1');
       localStorage.removeItem('riz_scanned_asset_ids_v1');
     } catch (e) {}
   };
 
-  // Daftar unit yang HANYA berisi unit yang sudah berhasil di-scan
-  const scannedAssetsList = scannedAssetIds
-    .map(id => localAssets.find(a => a.id === id))
-    .filter((a): a is Asset => Boolean(a));
+  // Daftar unit yang HANYA berisi unit yang sudah berhasil di-scan (Tanpa Duplikasi)
+  const scannedAssetsWithMeta = deduplicateScanRecords(scannedRecords)
+    .map(record => {
+      const asset = localAssets.find(a => a.id === record.assetId || a.code.toLowerCase() === record.assetCode.toLowerCase());
+      return asset ? { asset, record } : null;
+    })
+    .filter((item): item is { asset: Asset; record: ScannedAssetRecord } => Boolean(item));
+
+  const scannedAssetsList = scannedAssetsWithMeta.map(item => item.asset);
+  const getScanRecordForAsset = (assetIdOrCode?: string): ScannedAssetRecord | undefined => {
+    if (!assetIdOrCode) return undefined;
+    const key = assetIdOrCode.trim().toLowerCase();
+    return scannedRecords.find(r => r.assetId.toLowerCase() === key || r.assetCode.toLowerCase() === key);
+  };
 
   // Filter untuk Tabel Ketersediaan & Alokasi Unit di Manajemen Gudang (Tahap 02)
   const [warehouseUnitDivFilter, setWarehouseUnitDivFilter] = useState<'ALL' | 'Audio' | 'Lighting' | 'Multimedia' | 'Videotron'>('ALL');
   const [warehouseUnitStatusFilter, setWarehouseUnitStatusFilter] = useState<'ALL' | 'SCHEDULED' | 'REPAIR' | 'AVAILABLE'>('ALL');
   const [warehouseUnitSearch, setWarehouseUnitSearch] = useState('');
 
-  // Real-time Cloud Subscription
+  // Real-time Cloud Subscription (dengan proteksi Anti-Double Pencatatan)
   useEffect(() => {
     const unsub = subscribeCloudCollection<WarehouseLog>(
       'warehouse_logs',
       'riz_warehouse_logs',
-      setWarehouseLogs,
+      (rawLogs) => {
+        setWarehouseLogs(deduplicateWarehouseLogs(rawLogs || []));
+      },
       []
     );
     return () => unsub();
@@ -666,22 +736,54 @@ export default function Gudang({
 
   // Save states
   useEffect(() => {
-    localStorage.setItem('riz_warehouse_logs', JSON.stringify(warehouseLogs));
+    localStorage.setItem('riz_warehouse_logs', JSON.stringify(deduplicateWarehouseLogs(warehouseLogs)));
   }, [warehouseLogs]);
 
   const handleAddWarehouseLog = (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemName.trim() || qty <= 0) return;
 
+    const todayDate = new Date().toISOString().split('T')[0];
+    const normalizedCode = (assetCodeInput || '').trim().toUpperCase();
+    const normalizedItemKey = (normalizedCode || itemName.trim()).toLowerCase();
+
+    // Proteksi Anti-Double Pencatatan pada History Gudang
+    if (!editingLogId) {
+      const duplicateLog = warehouseLogs.find(log => {
+        const logKey = (log.assetCode || log.itemName || '').trim().toLowerCase();
+        return (
+          log.date === todayDate &&
+          log.type === type &&
+          logKey === normalizedItemKey
+        );
+      });
+      if (duplicateLog) {
+        alert(
+          `Pencatatan Ditolak (Anti-Double Pencatatan):\nUnit "${itemName}" (${normalizedCode || '-'}) sudah tercatat untuk transaksi "${type}" pada tanggal ${todayDate} (Petugas Scan: ${duplicateLog.scannedBy || duplicateLog.pic}).\nHasil scan tidak boleh ada double pencatatan!`
+        );
+        return;
+      }
+    }
+
+    const matchedScanRec = getScanRecordForAsset(normalizedCode || itemName);
+    const scannerPersonName = matchedScanRec?.scannedBy || currentUser.name;
+    const scannerPersonRole = matchedScanRec
+      ? `${matchedScanRec.scannedByRole} (${matchedScanRec.scannedByDivision})`
+      : `${currentUser.role} (${currentUser.division})`;
+    const scannerTimestamp = matchedScanRec?.scannedAt || new Date().toLocaleString('id-ID');
+
     const newLog: WarehouseLog = {
       id: editingLogId || ('wl-' + Date.now()),
       type,
-      date: new Date().toISOString().split('T')[0],
-      itemName,
+      date: todayDate,
+      itemName: itemName.trim(),
       qty,
       pic: picName || currentUser.name,
+      scannedBy: scannerPersonName,
+      scannedByRole: scannerPersonRole,
+      scannedAt: scannerTimestamp,
       notes,
-      assetCode: assetCodeInput || undefined,
+      assetCode: normalizedCode || undefined,
       photoUrl: scannedPhoto || undefined,
       _syncMeta: {
         updatedAt: new Date().toISOString(),
@@ -690,11 +792,11 @@ export default function Gudang({
     };
 
     if (editingLogId) {
-      setWarehouseLogs(prev => prev.map(log => log.id === editingLogId ? newLog : log));
-      onLogActivity(currentUser.name, currentUser.role, `Mengedit log gudang: ${type} - ${itemName}`);
+      setWarehouseLogs(prev => deduplicateWarehouseLogs(prev.map(log => log.id === editingLogId ? newLog : log)));
+      onLogActivity(currentUser.name, currentUser.role, `Mengedit log gudang: ${type} - ${itemName} (Petugas Scan: ${scannerPersonName})`);
     } else {
-      setWarehouseLogs(prev => [newLog, ...prev]);
-      onLogActivity(currentUser.name, currentUser.role, `Mencatat log gudang: ${type} - ${itemName} sebanyak ${qty} Unit`);
+      setWarehouseLogs(prev => deduplicateWarehouseLogs([newLog, ...prev]));
+      onLogActivity(currentUser.name, currentUser.role, `Mencatat log gudang: ${type} - ${itemName} sebanyak ${qty} Unit (Petugas Scan: ${scannerPersonName})`);
     }
     
     saveCloudDoc('warehouse_logs', newLog.id, newLog, currentUser.name);
@@ -1132,10 +1234,22 @@ export default function Gudang({
         );
 
       if (found) {
-        registerScannedAsset(found);
+        const scanRes = registerScannedAsset(found);
         setScannedAsset(found);
-        setScanMessage(`SUKSES: Barcode [${found.code}] ${found.name} berhasil di-scan dan masuk ke daftar!`);
-        onLogActivity(currentUser.name, currentUser.role, `Melakukan scan barcode asset: ${found.code} (${found.name})`);
+        if (scanRes.isDuplicate) {
+          setScanMessage(
+            `DUPLIKAT DICEGAH: Barcode [${found.code}] ${found.name} sudah tercatat di-scan oleh ${scanRes.record.scannedBy} (${scanRes.record.scannedAt}). Hasil scan tidak boleh ada double pencatatan!`
+          );
+        } else {
+          setScanMessage(
+            `SUKSES: Barcode [${found.code}] ${found.name} berhasil di-scan oleh ${scanRes.record.scannedBy} (${scanRes.record.scannedAt})!`
+          );
+          onLogActivity(
+            currentUser.name,
+            currentUser.role,
+            `Melakukan scan barcode asset: ${found.code} (${found.name}) — Petugas Scan: ${currentUser.name}`
+          );
+        }
       } else {
         setScannedAsset(null);
         setScanMessage(`ERROR: Barcode / Kode Asset "${targetCode}" tidak ditemukan. Unit yang belum berhasil di-scan tidak dapat muncul di daftar.`);
@@ -1886,72 +2000,172 @@ export default function Gudang({
                 </div>
               </div>
 
-              {/* Histori Transaksi Logistik Manual (Ditampilkan bila ada catatan aktivitas keluar/masuk) */}
-              {warehouseLogs.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800">
-                      Riwayat Transaksi Mutasi Gudang ({warehouseLogs.length} Catatan)
-                    </span>
-                  </div>
-                  <div className="overflow-x-auto touch-scroll">
-                    <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-                      <thead className="bg-slate-50 text-slate-500 uppercase font-mono font-bold text-[10px]">
-                        <tr>
-                          <th scope="col" className="p-3">Tanggal</th>
-                          <th scope="col" className="p-3">Tipe</th>
-                          <th scope="col" className="p-3">Nama Barang</th>
-                          <th scope="col" className="p-3 text-center">QTY</th>
-                          <th scope="col" className="p-3">Asset Terkait</th>
-                          <th scope="col" className="p-3">PIC Gudang</th>
-                          <th scope="col" className="p-3">Catatan</th>
-                          <th scope="col" className="p-3 text-center sticky right-0 bg-slate-50 shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
-                        {warehouseLogs.map((log) => (
-                          <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="p-3 font-mono">{log.date}</td>
-                            <td className="p-3">
-                              <span className={`px-2 py-0.5 rounded font-mono font-bold text-[9px] uppercase ${
-                                log.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                                log.type === 'Keluar' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
-                                log.type === 'Loading' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                                log.type === 'Unloading' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                                log.type === 'Servis Keluar' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                                'bg-teal-50 text-teal-700 border border-teal-200'
-                              }`}>
-                                {log.type}
-                              </span>
-                            </td>
-                            <td className="p-3 font-semibold text-slate-800">{log.itemName}</td>
-                            <td className="p-3 text-center font-bold">{log.qty} Unit</td>
-                            <td className="p-3 font-mono text-slate-500">{log.assetCode || '-'}</td>
-                            <td className="p-3 font-medium">{log.pic}</td>
-                            <td className="p-3 text-slate-500 max-w-[120px] truncate" title={log.notes}>{log.notes}</td>
-                            <td className="p-3 whitespace-nowrap text-center space-x-1 sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10 group-hover:bg-slate-50/50 transition-colors">
-                              <button
-                                onClick={() => handleEditLogClick(log)}
-                                className="px-2 py-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors"
-                                title="Edit Aktivitas (Tambah/Kurang QTY)"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteLogClick(log.id)}
-                                className="px-2 py-1 text-[10px] font-bold text-rose-600 bg-rose-50 rounded hover:bg-rose-100 transition-colors"
-                                title="Hapus Data Ini"
-                              >
-                                Hapus
-                              </button>
-                            </td>
+              {/* History Gudang & Riwayat Proses Scan (Wajib Menyertakan Siapa yang Melakukan Proses Scan & Anti-Double Pencatatan) */}
+              {(() => {
+                const uniqueLogs = deduplicateWarehouseLogs(warehouseLogs);
+                const loggedCodes = new Set(
+                  uniqueLogs
+                    .map(l => (l.assetCode || '').trim().toLowerCase())
+                    .filter(Boolean)
+                );
+
+                // Gabungkan hasil scan yang belum masuk ke transaksi mutasi agar setiap proses scan langsung tercatat di History Gudang tanpa duplikasi
+                const scanOnlyEntries = scannedAssetsWithMeta.filter(
+                  ({ asset }) => !loggedCodes.has(asset.code.trim().toLowerCase())
+                );
+
+                const totalHistoryCount = uniqueLogs.length + scanOnlyEntries.length;
+
+                return (
+                  <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide block">
+                          History Gudang &amp; Riwayat Proses Scan ({totalHistoryCount} Catatan Unik)
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          Menampilkan siapa yang melakukan proses scan pada setiap unit. Sistem otomatis memblokir double pencatatan hasil scan.
+                        </span>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono text-[10px] font-bold self-start sm:self-auto">
+                        Anti-Double Scan Aktif
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto touch-scroll">
+                      <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-500 uppercase font-mono font-bold text-[10px]">
+                          <tr>
+                            <th scope="col" className="p-3">Tanggal / Waktu Scan</th>
+                            <th scope="col" className="p-3">Tipe Proses</th>
+                            <th scope="col" className="p-3">Nama Barang &amp; Kode Unit</th>
+                            <th scope="col" className="p-3 text-center">QTY</th>
+                            <th scope="col" className="p-3 bg-indigo-50/60 text-indigo-900">Petugas Scan (Siapa yang Scan)</th>
+                            <th scope="col" className="p-3">PIC Gudang</th>
+                            <th scope="col" className="p-3">Catatan</th>
+                            <th scope="col" className="p-3 text-center sticky right-0 bg-slate-50 shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10">Aksi</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
+                          {uniqueLogs.map((log) => {
+                            const linkedScan = getScanRecordForAsset(log.assetCode || log.itemName);
+                            const scannerName = log.scannedBy || linkedScan?.scannedBy || log._syncMeta?.updatedBy || log.pic;
+                            const scannerRole = log.scannedByRole || (linkedScan ? `${linkedScan.scannedByRole} (${linkedScan.scannedByDivision})` : 'Staff Gudang');
+                            const scannerTime = log.scannedAt || linkedScan?.scannedAt || log.date;
+
+                            return (
+                              <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-3 font-mono text-[11px]">
+                                  <div className="font-bold text-slate-800">{log.date}</div>
+                                  <div className="text-[10px] text-slate-400">{scannerTime}</div>
+                                </td>
+                                <td className="p-3">
+                                  <span className={`px-2 py-0.5 rounded font-mono font-bold text-[9px] uppercase ${
+                                    log.type === 'Masuk' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                    log.type === 'Keluar' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                                    log.type === 'Loading' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                    log.type === 'Unloading' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                                    log.type === 'Servis Keluar' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                                    'bg-teal-50 text-teal-700 border border-teal-200'
+                                  }`}>
+                                    {log.type}
+                                  </span>
+                                </td>
+                                <td className="p-3">
+                                  <div className="font-semibold text-slate-800">{log.itemName}</div>
+                                  {log.assetCode && (
+                                    <span className="font-mono text-[10px] text-indigo-600 font-bold">{log.assetCode}</span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-center font-bold">{log.qty} Unit</td>
+                                <td className="p-3 bg-indigo-50/20">
+                                  <div className="flex items-center gap-1.5">
+                                    <UserCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                    <div>
+                                      <div className="font-bold text-slate-900 text-xs">{scannerName}</div>
+                                      <div className="text-[10px] text-indigo-700 font-medium">{scannerRole}</div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="p-3 font-medium">{log.pic}</td>
+                                <td className="p-3 text-slate-500 max-w-[160px] truncate" title={log.notes}>{log.notes}</td>
+                                <td className="p-3 whitespace-nowrap text-center space-x-1 sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10 group-hover:bg-slate-50/50 transition-colors">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEditLogClick(log)}
+                                    className="px-2 py-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors cursor-pointer"
+                                    title="Edit Aktivitas"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteLogClick(log.id)}
+                                    className="px-2 py-1 text-[10px] font-bold text-rose-600 bg-rose-50 rounded hover:bg-rose-100 transition-colors cursor-pointer"
+                                    title="Hapus Data Ini"
+                                  >
+                                    Hapus
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+
+                          {scanOnlyEntries.map(({ asset, record }) => (
+                            <tr key={`scan-rec-${asset.id}`} className="hover:bg-slate-50/50 transition-colors bg-emerald-50/15">
+                              <td className="p-3 font-mono text-[11px]">
+                                <div className="font-bold text-slate-800">{record.scannedAt}</div>
+                              </td>
+                              <td className="p-3">
+                                <span className="px-2 py-0.5 rounded font-mono font-bold text-[9px] uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                  Hasil Scan Barcode
+                                </span>
+                              </td>
+                              <td className="p-3">
+                                <div className="font-semibold text-slate-800">{asset.name}</div>
+                                <span className="font-mono text-[10px] text-indigo-600 font-bold">{asset.code}</span>
+                              </td>
+                              <td className="p-3 text-center font-bold">1 Kelompok</td>
+                              <td className="p-3 bg-indigo-50/20">
+                                <div className="flex items-center gap-1.5">
+                                  <UserCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                  <div>
+                                    <div className="font-bold text-slate-900 text-xs">{record.scannedBy}</div>
+                                    <div className="text-[10px] text-indigo-700 font-medium">
+                                      {record.scannedByRole} ({record.scannedByDivision})
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-3 font-medium">{record.scannedBy}</td>
+                              <td className="p-3 text-slate-500 max-w-[180px] truncate">
+                                Unit berhasil di-scan oleh {record.scannedBy} (Kondisi: {asset.condition})
+                              </td>
+                              <td className="p-3 whitespace-nowrap text-center space-x-1 sticky right-0 bg-white shadow-[-4px_0_10px_rgba(0,0,0,0.05)] z-10">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveScannedAssetFromList(asset.id)}
+                                  className="px-2 py-1 text-[10px] font-bold text-rose-600 bg-rose-50 rounded hover:bg-rose-100 transition-colors cursor-pointer"
+                                  title="Hapus Hasil Scan"
+                                >
+                                  Hapus
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+
+                          {totalHistoryCount === 0 && (
+                            <tr>
+                              <td colSpan={8} className="text-center py-10 text-slate-400">
+                                Belum ada history scan atau transaksi gudang yang tercatat. Setiap proses scan barcode akan otomatis mencatat nama petugas scan tanpa duplikasi.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
             </div>
 
@@ -2721,11 +2935,19 @@ export default function Gudang({
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        registerScannedAsset(asset);
+                                        const scanRes = registerScannedAsset(asset);
                                         setWarehouseSubTab('scanner');
                                         setScanSearchInput(asset.code);
                                         setScannedAsset(asset);
-                                        setScanMessage(`SUKSES: Unit ${asset.code} (${asset.name}) berhasil di-scan dan masuk ke daftar.`);
+                                        if (scanRes.isDuplicate) {
+                                          setScanMessage(
+                                            `DUPLIKAT DICEGAH: Unit ${asset.code} (${asset.name}) sudah di-scan sebelumnya oleh ${scanRes.record.scannedBy} (${scanRes.record.scannedAt}).`
+                                          );
+                                        } else {
+                                          setScanMessage(
+                                            `SUKSES: Unit ${asset.code} (${asset.name}) berhasil di-scan oleh ${scanRes.record.scannedBy} (${scanRes.record.scannedAt}).`
+                                          );
+                                        }
                                       }}
                                       className="px-2.5 py-1.5 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
                                     >
@@ -2846,6 +3068,7 @@ export default function Gudang({
               {scanMessage && (
                 <div className={`p-3 rounded-lg text-xs font-mono ${
                   scanMessage.includes('SUKSES') ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
+                  scanMessage.includes('DUPLIKAT') ? 'bg-amber-50 text-amber-900 border border-amber-300 font-bold' :
                   scanMessage.includes('ERROR') ? 'bg-rose-50 text-rose-800 border border-rose-200' :
                   'bg-indigo-50 text-indigo-800 border border-indigo-200'
                 }`}>
@@ -2853,14 +3076,14 @@ export default function Gudang({
                 </div>
               )}
 
-              {/* Daftar Unit yang Berhasil Di-Scan (Hanya yang sudah di-scan yang muncul) */}
+              {/* Daftar Unit yang Berhasil Di-Scan (Hanya yang sudah di-scan yang muncul & Tidak Boleh Double Pencatatan) */}
               <div className="space-y-2 text-left">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] uppercase font-bold text-slate-500 block font-mono">
-                    Daftar Unit Berhasil Di-Scan ({scannedAssetsList.length})
+                    Daftar Unit Berhasil Di-Scan ({scannedAssetsWithMeta.length})
                   </span>
                   <div className="flex items-center gap-2">
-                    {scannedAssetsList.length > 0 && (
+                    {scannedAssetsWithMeta.length > 0 && (
                       <button
                         type="button"
                         onClick={handleClearAllScannedAssets}
@@ -2880,9 +3103,9 @@ export default function Gudang({
                   </div>
                 </div>
 
-                {scannedAssetsList.length > 0 ? (
+                {scannedAssetsWithMeta.length > 0 ? (
                   <div className="grid grid-cols-1 gap-1.5 max-h-56 overflow-y-auto pr-1">
-                    {scannedAssetsList.map((asset) => {
+                    {scannedAssetsWithMeta.map(({ asset, record }) => {
                       const isSelected = scannedAsset?.id === asset.id;
                       return (
                         <div
@@ -2898,7 +3121,7 @@ export default function Gudang({
                             onClick={() => {
                               setScanSearchInput(asset.code);
                               setScannedAsset(asset);
-                              setScanMessage(`SUKSES: Menampilkan hasil scan unit ${asset.code} (${asset.name}).`);
+                              setScanMessage(`SUKSES: Menampilkan hasil scan unit ${asset.code} (${asset.name}) — Petugas Scan: ${record.scannedBy}.`);
                             }}
                             className="flex-1 text-left cursor-pointer"
                           >
@@ -2907,6 +3130,10 @@ export default function Gudang({
                               <span className="font-bold text-slate-800">{asset.name}</span>
                             </div>
                             <div className="text-[10px] text-slate-500 font-mono pl-5">{asset.code} • {asset.division}</div>
+                            <div className="text-[10px] text-indigo-700 font-semibold pl-5 mt-0.5 flex items-center gap-1">
+                              <UserCheck className="w-3 h-3 text-indigo-600 shrink-0" />
+                              <span>Scan oleh: {record.scannedBy} ({record.scannedByDivision}) • {record.scannedAt}</span>
+                            </div>
                           </button>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase font-bold ${
@@ -2968,9 +3195,27 @@ export default function Gudang({
                   {/* Info table */}
                   {(() => {
                     const scannedAvail = calculateInventoryAssetAvailability(scannedAsset, inventoryCalcCtx);
+                    const activeScanRec = getScanRecordForAsset(scannedAsset.id) || getScanRecordForAsset(scannedAsset.code);
                     return (
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                          <div className="md:col-span-2 p-2.5 bg-indigo-50/80 border border-indigo-200 rounded-lg flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <UserCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                              <div>
+                                <span className="text-[10px] font-mono uppercase font-bold text-indigo-600 block">
+                                  Siapa yang Melakukan Proses Scan (Petugas Scan)
+                                </span>
+                                <span className="text-xs font-extrabold text-slate-900">
+                                  {activeScanRec ? `${activeScanRec.scannedBy} — ${activeScanRec.scannedByRole} (${activeScanRec.scannedByDivision})` : `${currentUser.name} — ${currentUser.role} (${currentUser.division})`}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white text-indigo-700 border border-indigo-200">
+                              Waktu Scan: {activeScanRec ? activeScanRec.scannedAt : new Date().toLocaleString('id-ID')}
+                            </span>
+                          </div>
+
                           <div>
                             <span className="text-slate-400 font-semibold block">Merek / Brand:</span>
                             <span className="text-slate-800 font-bold">{scannedAsset.brand}</span>
@@ -3066,19 +3311,25 @@ export default function Gudang({
                             <button
                               type="button"
                               onClick={() => {
-                                setManifestItems(prev => [
-                                  ...prev,
-                                  {
-                                    id: 'm-' + Date.now(),
-                                    division: (scannedAsset.division === 'Audio' || scannedAsset.division === 'Lighting' || scannedAsset.division === 'Multimedia' || scannedAsset.division === 'Videotron')
-                                      ? scannedAsset.division
-                                      : 'Audio',
-                                    itemDescription: `${scannedAsset.name} (${scannedAsset.code})`,
-                                    qty: 1,
-                                    unit: 'Unit',
-                                    estimatedCBM: 0.5
-                                  }
-                                ]);
+                                const expectedDesc = `${scannedAsset.name} (${scannedAsset.code})`;
+                                const alreadyInManifest = manifestItems.some(
+                                  m => m.itemDescription.toLowerCase() === expectedDesc.toLowerCase()
+                                );
+                                if (!alreadyInManifest) {
+                                  setManifestItems(prev => [
+                                    ...prev,
+                                    {
+                                      id: 'm-' + Date.now(),
+                                      division: (scannedAsset.division === 'Audio' || scannedAsset.division === 'Lighting' || scannedAsset.division === 'Multimedia' || scannedAsset.division === 'Videotron')
+                                        ? scannedAsset.division
+                                        : 'Audio',
+                                      itemDescription: expectedDesc,
+                                      qty: 1,
+                                      unit: 'Unit',
+                                      estimatedCBM: 0.5
+                                    }
+                                  ]);
+                                }
                                 setWarehouseSubTab('armada_governance');
                                 setFleetSection('trips');
                                 setShowNewFleetModal(true);
@@ -3146,6 +3397,7 @@ export default function Gudang({
                         <button
                           type="button"
                           onClick={() => {
+                            const activeRec = getScanRecordForAsset(scannedAsset.id) || getScanRecordForAsset(scannedAsset.code);
                             handleGudangUpdateAsset('Divisi SERVICE (Sedang Diperbaiki)', 'Rusak Ringan');
                             const newLog: WarehouseLog = {
                               id: 'wl-' + Date.now(),
@@ -3154,10 +3406,13 @@ export default function Gudang({
                               itemName: scannedAsset.name,
                               qty: 1,
                               pic: currentUser.name,
+                              scannedBy: activeRec?.scannedBy || currentUser.name,
+                              scannedByRole: activeRec ? `${activeRec.scannedByRole} (${activeRec.scannedByDivision})` : `${currentUser.role} (${currentUser.division})`,
+                              scannedAt: activeRec?.scannedAt || new Date().toLocaleString('id-ID'),
                               notes: `Kirim barang ke divisi SERVICE untuk perbaikan via scanner.`,
                               assetCode: scannedAsset.code
                             };
-                            setWarehouseLogs(prev => [newLog, ...prev]);
+                            setWarehouseLogs(prev => deduplicateWarehouseLogs([newLog, ...prev]));
                           }}
                           className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer shadow-sm"
                         >
@@ -3166,6 +3421,7 @@ export default function Gudang({
                         <button
                           type="button"
                           onClick={() => {
+                            const activeRec = getScanRecordForAsset(scannedAsset.id) || getScanRecordForAsset(scannedAsset.code);
                             handleGudangUpdateAsset('Gudang Utama RIZ', 'Baik');
                             const newLog: WarehouseLog = {
                               id: 'wl-' + Date.now(),
@@ -3174,10 +3430,13 @@ export default function Gudang({
                               itemName: scannedAsset.name,
                               qty: 1,
                               pic: currentUser.name,
+                              scannedBy: activeRec?.scannedBy || currentUser.name,
+                              scannedByRole: activeRec ? `${activeRec.scannedByRole} (${activeRec.scannedByDivision})` : `${currentUser.role} (${currentUser.division})`,
+                              scannedAt: activeRec?.scannedAt || new Date().toLocaleString('id-ID'),
                               notes: `Barang telah selesai diperbaiki oleh divisi SERVICE, kembali ke gudang via scanner.`,
                               assetCode: scannedAsset.code
                             };
-                            setWarehouseLogs(prev => [newLog, ...prev]);
+                            setWarehouseLogs(prev => deduplicateWarehouseLogs([newLog, ...prev]));
                           }}
                           className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] uppercase transition-all cursor-pointer shadow-sm"
                         >
