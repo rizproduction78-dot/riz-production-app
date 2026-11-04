@@ -400,6 +400,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     if (activeMonth === '2026-12') return '2026-12';
     return '2026-11';
   });
+  const [jobWeekFilter, setJobWeekFilter] = useState<'ALL' | 'W1' | 'W2' | 'W3' | 'W4' | 'W5'>('W1');
   const [jobSelectedStaffId, setJobSelectedStaffId] = useState<string>(() =>
     isManagementOrOwner ? 'ALL' : currentUser.id
   );
@@ -409,6 +410,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
 
   useEffect(() => {
     setJobSelectedStaffId(isManagementOrOwner ? 'ALL' : currentUser.id);
+    setJobWeekFilter('W1');
   }, [currentUser.id, isManagementOrOwner]);
 
   useEffect(() => {
@@ -1576,18 +1578,33 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                 : staffList.find(s => s.id === jobSelectedStaffId) ||
                   STAFF_LIST.find(s => s.id === jobSelectedStaffId);
 
+            const getJobWeekCode = (dateStr: string): 'W1' | 'W2' | 'W3' | 'W4' | 'W5' => {
+              const dayNum = Number(String(dateStr || '').slice(8, 10)) || 1;
+              if (dayNum <= 7) return 'W1';
+              if (dayNum <= 14) return 'W2';
+              if (dayNum <= 21) return 'W3';
+              if (dayNum <= 28) return 'W4';
+              return 'W5';
+            };
+
+            const getWeekRangeLabel = (weekCode: 'W1' | 'W2' | 'W3' | 'W4' | 'W5', mKey: string): string => {
+              const mName = mKey === '2026-12' ? 'Des 2026' : mKey === '2026-11' ? 'Nov 2026' : 'Bulan Aktif';
+              const maxDay = mKey === '2026-12' ? 31 : 30;
+              switch (weekCode) {
+                case 'W1': return `Minggu 1 (Tgl 1–7 ${mName})`;
+                case 'W2': return `Minggu 2 (Tgl 8–14 ${mName})`;
+                case 'W3': return `Minggu 3 (Tgl 15–21 ${mName})`;
+                case 'W4': return `Minggu 4 (Tgl 22–28 ${mName})`;
+                case 'W5': return `Minggu 5 (Tgl 29–${maxDay} ${mName})`;
+              }
+            };
+
             const monthFilteredJobs = jobAssignments.filter(job =>
               jobMonthFilter === 'ALL' ? true : job.monthKey === jobMonthFilter
             );
 
-            // Compute assignment count per staff for the active month filter
-            const staffJobCounts = new Map<string, number>();
-            staffList.forEach(st => {
-              const cnt = monthFilteredJobs.filter(j => matchesStaffOnJob(j, st)).length;
-              staffJobCounts.set(st.id, cnt);
-            });
-
-            const filteredJobs = monthFilteredJobs.filter(job => {
+            // Jobs matching month + staff + division + crewType + search (used to count per-week tabs)
+            const baseFilteredJobs = monthFilteredJobs.filter(job => {
               if (selectedStaffObj && !matchesStaffOnJob(job, selectedStaffObj)) {
                 return false;
               }
@@ -1619,6 +1636,32 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
               }
               return true;
             });
+
+            const weekJobCounts: Record<'W1' | 'W2' | 'W3' | 'W4' | 'W5', number> = {
+              W1: 0,
+              W2: 0,
+              W3: 0,
+              W4: 0,
+              W5: 0
+            };
+            baseFilteredJobs.forEach(job => {
+              const wk = getJobWeekCode(job.date);
+              weekJobCounts[wk] = (weekJobCounts[wk] || 0) + 1;
+            });
+
+            // Compute assignment count per staff for the active month & week filter
+            const weekScopedMonthJobs = monthFilteredJobs.filter(job =>
+              jobWeekFilter === 'ALL' ? true : getJobWeekCode(job.date) === jobWeekFilter
+            );
+            const staffJobCounts = new Map<string, number>();
+            staffList.forEach(st => {
+              const cnt = weekScopedMonthJobs.filter(j => matchesStaffOnJob(j, st)).length;
+              staffJobCounts.set(st.id, cnt);
+            });
+
+            const filteredJobs = baseFilteredJobs.filter(job =>
+              jobWeekFilter === 'ALL' ? true : getJobWeekCode(job.date) === jobWeekFilter
+            );
 
             let totalStaffAssignments = 0;
             let totalFreelanceAssignments = 0;
@@ -1740,6 +1783,92 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                   </div>
                 </div>
 
+                {/* Per 1 Minggu (Weekly) Selector Bar */}
+                <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-emerald-600" />
+                      <span className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                        Jadwal Penugasan Kerja Per 1 Minggu (7 Hari):
+                      </span>
+                      <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-full text-xs font-black">
+                        {jobWeekFilter === 'ALL'
+                          ? `Semua Minggu (${filteredJobs.length} Job)`
+                          : `${getWeekRangeLabel(jobWeekFilter, jobMonthFilter)} — ${filteredJobs.length} Job`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                    {([
+                      { code: 'W1' as const, title: 'Minggu 1', range: 'Tanggal 1 – 7' },
+                      { code: 'W2' as const, title: 'Minggu 2', range: 'Tanggal 8 – 14' },
+                      { code: 'W3' as const, title: 'Minggu 3', range: 'Tanggal 15 – 21' },
+                      { code: 'W4' as const, title: 'Minggu 4', range: 'Tanggal 22 – 28' },
+                      { code: 'W5' as const, title: 'Minggu 5', range: jobMonthFilter === '2026-12' ? 'Tanggal 29 – 31' : 'Tanggal 29 – 30' },
+                    ]).map(wk => {
+                      const isSelected = jobWeekFilter === wk.code;
+                      const cnt = weekJobCounts[wk.code] || 0;
+                      return (
+                        <button
+                          key={wk.code}
+                          type="button"
+                          onClick={() => setJobWeekFilter(wk.code)}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm ring-2 ring-emerald-300'
+                              : cnt > 0
+                                ? 'bg-slate-50 hover:bg-emerald-50/60 text-slate-800 border-slate-200 hover:border-emerald-300'
+                                : 'bg-slate-50/50 text-slate-400 border-slate-200/60'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs font-black uppercase">{wk.title}</span>
+                            <span
+                              className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-black ${
+                                isSelected
+                                  ? 'bg-white text-emerald-800'
+                                  : cnt > 0
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-slate-200 text-slate-500'
+                              }`}
+                            >
+                              {cnt} Job
+                            </span>
+                          </div>
+                          <div className={`text-[10px] font-mono mt-1 ${isSelected ? 'text-emerald-100 font-bold' : 'text-slate-500'}`}>
+                            {wk.range}
+                          </div>
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => setJobWeekFilter('ALL')}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        jobWeekFilter === 'ALL'
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-slate-300'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xs font-black uppercase">Semua Minggu</span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-black ${
+                            jobWeekFilter === 'ALL' ? 'bg-white text-slate-900' : 'bg-slate-200 text-slate-700'
+                          }`}
+                        >
+                          {baseFilteredJobs.length} Job
+                        </span>
+                      </div>
+                      <div className={`text-[10px] font-mono mt-1 ${jobWeekFilter === 'ALL' ? 'text-slate-300 font-bold' : 'text-slate-500'}`}>
+                        Full 1 Bulan (Tgl 1–{jobMonthFilter === '2026-12' ? '31' : '30'})
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Staff Name Filter Bar (Muncul Sesuai Nama Staff) */}
                 <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2.5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -1780,7 +1909,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                             : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                         }`}
                       >
-                        📋 Semua Jadwal ({monthFilteredJobs.length})
+                        📋 Semua Jadwal ({weekScopedMonthJobs.length})
                       </button>
                     </div>
                   </div>
@@ -1894,9 +2023,32 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                   </div>
                 </div>
 
-                {/* Job Assignment Cards List */}
-                <div className="space-y-4">
-                  {filteredJobs.map((job) => (
+                {/* Job Assignment Cards List Grouped Per 1 Minggu */}
+                <div className="space-y-6">
+                  {(['W1', 'W2', 'W3', 'W4', 'W5'] as const)
+                    .filter(wk => (jobWeekFilter === 'ALL' ? true : wk === jobWeekFilter))
+                    .map(wkCode => {
+                      const jobsInWeek = filteredJobs.filter(j => getJobWeekCode(j.date) === wkCode);
+                      if (jobsInWeek.length === 0) return null;
+                      return (
+                        <div key={wkCode} className="space-y-3">
+                          {/* Weekly Section Header */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl border border-slate-800 shadow-xs">
+                            <div className="flex items-center gap-2.5">
+                              <span className="px-2.5 py-0.5 bg-emerald-500 text-slate-950 rounded-md text-xs font-mono font-black uppercase">
+                                {wkCode}
+                              </span>
+                              <span className="text-sm font-black tracking-tight">
+                                {getWeekRangeLabel(wkCode, jobMonthFilter)}
+                              </span>
+                            </div>
+                            <span className="text-xs font-mono font-bold text-emerald-300">
+                              {jobsInWeek.length} Jadwal Penugasan Job
+                            </span>
+                          </div>
+
+                          <div className="space-y-4">
+                            {jobsInWeek.map((job) => (
                     <div
                       key={job.id}
                       className="bg-white border border-slate-200 rounded-xl shadow-2xs hover:shadow-md transition-shadow overflow-hidden"
@@ -2106,12 +2258,16 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                       </div>
                     </div>
                   ))}
+                          </div>
+                        </div>
+                      );
+                    })}
 
                   {filteredJobs.length === 0 && (
                     <div className="text-center py-12 bg-slate-50 border border-dashed border-slate-200 rounded-xl space-y-2">
                       <Briefcase className="w-10 h-10 text-slate-300 mx-auto" />
-                      <div className="text-sm font-bold text-slate-700">Tidak ada jadwal penugasan job yang sesuai filter</div>
-                      <p className="text-xs text-slate-500">Ubah filter bulan, divisi, tipe personil, atau kata kunci pencarian di atas.</p>
+                      <div className="text-sm font-bold text-slate-700">Tidak ada jadwal penugasan job pada minggu / filter yang dipilih</div>
+                      <p className="text-xs text-slate-500">Pilih tab Minggu 1–5 lainnya, klik "Semua Minggu", atau ubah filter nama staff di atas.</p>
                     </div>
                   )}
                 </div>
