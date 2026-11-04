@@ -10,7 +10,13 @@ import {
   CANONICAL_FIRESTORE_FINDINGS,
   CANONICAL_FIRESTORE_WORK_ORDERS
 } from './data/canonicalFirestoreData';
-import { INITIAL_INVENTORY_ASSETS } from './data/inventoryAssetsData';
+import {
+  INITIAL_INVENTORY_ASSETS,
+  getInventoryAssetTypeInfo,
+  groupInventoryAssetsByType
+} from './data/inventoryAssetsData';
+export type { InventoryAssetTypeInfo, InventoryTypeGroupBucket, InventoryTypeIconKey } from './data/inventoryAssetsData';
+export { getInventoryAssetTypeInfo, groupInventoryAssetsByType };
 
 export const STAFF_LIST: Staff[] = [
   // 1. Gudang

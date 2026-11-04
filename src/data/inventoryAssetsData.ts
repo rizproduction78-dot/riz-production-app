@@ -1496,3 +1496,629 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     repairHistory: []
   }
 ];
+
+export type InventoryTypeIconKey =
+  | 'speaker'
+  | 'sliders'
+  | 'cpu'
+  | 'music'
+  | 'radio'
+  | 'mic'
+  | 'layers'
+  | 'zap'
+  | 'lightbulb'
+  | 'sparkles'
+  | 'monitor'
+  | 'camera'
+  | 'tv'
+  | 'video'
+  | 'package';
+
+export interface InventoryAssetTypeInfo {
+  typeGroup: string;
+  shortTypeLabel: string;
+  typeOrder: number;
+  iconKey: InventoryTypeIconKey;
+  bgClass: string;
+  textClass: string;
+  borderClass: string;
+  headerBgClass: string;
+  badgeClass: string;
+}
+
+export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo {
+  const id = (asset.id || '').toLowerCase();
+  const name = (asset.name || '').toLowerCase();
+  const text = `${asset.code} ${asset.name} ${asset.brand} ${asset.serialNumber}`.toLowerCase();
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 1. DIVISI AUDIO / SOUND (Sheet: Inventory SOUND MAR 2024)
+  // ─────────────────────────────────────────────────────────────────────────
+  if (asset.division === 'Audio') {
+    if (
+      ['ast-aud-001', 'ast-aud-002', 'ast-aud-010'].includes(id) ||
+      name.includes('pa speaker') ||
+      name.includes('line array') ||
+      name.includes('fullrange')
+    ) {
+      return {
+        typeGroup: 'PA Speaker, Line Array & Fullrange',
+        shortTypeLabel: 'PA Speaker & Line Array',
+        typeOrder: 10,
+        iconKey: 'speaker',
+        bgClass: 'bg-blue-50',
+        textClass: 'text-blue-600',
+        borderClass: 'border-blue-200',
+        headerBgClass: 'bg-blue-50/80 border-blue-200 text-blue-900',
+        badgeClass: 'bg-blue-100 text-blue-800 border-blue-200'
+      };
+    }
+
+    if (
+      ['ast-aud-003', 'ast-aud-004', 'ast-aud-005', 'ast-aud-006', 'ast-aud-007', 'ast-aud-008', 'ast-aud-009'].includes(id) ||
+      name.includes('sub double') ||
+      name.includes('sub single') ||
+      name.includes('subwoofer')
+    ) {
+      return {
+        typeGroup: 'Subwoofer (Sub Double & Sub Single)',
+        shortTypeLabel: 'Subwoofer (Double/Single)',
+        typeOrder: 20,
+        iconKey: 'speaker',
+        bgClass: 'bg-indigo-50',
+        textClass: 'text-indigo-600',
+        borderClass: 'border-indigo-200',
+        headerBgClass: 'bg-indigo-50/80 border-indigo-200 text-indigo-900',
+        badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-200'
+      };
+    }
+
+    if (
+      ['ast-aud-011', 'ast-aud-012', 'ast-aud-013'].includes(id) ||
+      name.includes('monitor speaker') ||
+      name.includes('floor monitor')
+    ) {
+      return {
+        typeGroup: 'Floor Monitor Speaker',
+        shortTypeLabel: 'Floor Monitor Speaker',
+        typeOrder: 30,
+        iconKey: 'speaker',
+        bgClass: 'bg-sky-50',
+        textClass: 'text-sky-600',
+        borderClass: 'border-sky-200',
+        headerBgClass: 'bg-sky-50/80 border-sky-200 text-sky-900',
+        badgeClass: 'bg-sky-100 text-sky-800 border-sky-200'
+      };
+    }
+
+    if (
+      ['ast-aud-014', 'ast-aud-015', 'ast-aud-016', 'ast-aud-017', 'ast-aud-018', 'ast-aud-019'].includes(id) ||
+      name.includes('mixer') ||
+      name.includes('stage box') ||
+      name.includes('stagebox') ||
+      text.includes('dl 32') ||
+      text.includes('dl32')
+    ) {
+      return {
+        typeGroup: 'Digital / Analog Mixer & IO Stage Box',
+        shortTypeLabel: 'Mixer & IO Stage Box',
+        typeOrder: 40,
+        iconKey: 'sliders',
+        bgClass: 'bg-indigo-50',
+        textClass: 'text-indigo-700',
+        borderClass: 'border-indigo-200',
+        headerBgClass: 'bg-indigo-50/80 border-indigo-200 text-indigo-900',
+        badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-200'
+      };
+    }
+
+    if (
+      ['ast-aud-020', 'ast-aud-021', 'ast-aud-022', 'ast-aud-056', 'ast-aud-057'].includes(id) ||
+      name.includes('power amply') ||
+      name.includes('speaker management') ||
+      name.includes('dlms') ||
+      name.includes('audio splitter') ||
+      text.includes('xilica') ||
+      text.includes('dcx 2496')
+    ) {
+      return {
+        typeGroup: 'Power Amplifier, DLMS & Audio Splitter',
+        shortTypeLabel: 'Power Amply, DLMS & Splitter',
+        typeOrder: 50,
+        iconKey: 'cpu',
+        bgClass: 'bg-cyan-50',
+        textClass: 'text-cyan-700',
+        borderClass: 'border-cyan-200',
+        headerBgClass: 'bg-cyan-50/80 border-cyan-200 text-cyan-900',
+        badgeClass: 'bg-cyan-100 text-cyan-800 border-cyan-200'
+      };
+    }
+
+    if (
+      ['ast-aud-023', 'ast-aud-024', 'ast-aud-025', 'ast-aud-026', 'ast-aud-027', 'ast-aud-028', 'ast-aud-029', 'ast-aud-030', 'ast-aud-031'].includes(id) ||
+      name.includes('instrument') ||
+      name.includes('drum ') ||
+      name.includes('keyboard') ||
+      text.includes('jc-120') ||
+      text.includes('kc-550') ||
+      text.includes('marshall') ||
+      text.includes('krueger')
+    ) {
+      return {
+        typeGroup: 'Instrument & Backline (Drum, Amply, Keyboard)',
+        shortTypeLabel: 'Instrument & Backline',
+        typeOrder: 60,
+        iconKey: 'music',
+        bgClass: 'bg-violet-50',
+        textClass: 'text-violet-600',
+        borderClass: 'border-violet-200',
+        headerBgClass: 'bg-violet-50/80 border-violet-200 text-violet-900',
+        badgeClass: 'bg-violet-100 text-violet-800 border-violet-200'
+      };
+    }
+
+    if (
+      ['ast-aud-032', 'ast-aud-033', 'ast-aud-034', 'ast-aud-035', 'ast-aud-036', 'ast-aud-037'].includes(id) ||
+      name.includes('microphone wireless') ||
+      name.includes('clipon')
+    ) {
+      return {
+        typeGroup: 'Microphone Wireless & Clip-On',
+        shortTypeLabel: 'Microphone Wireless',
+        typeOrder: 70,
+        iconKey: 'radio',
+        bgClass: 'bg-sky-50',
+        textClass: 'text-sky-700',
+        borderClass: 'border-sky-200',
+        headerBgClass: 'bg-sky-50/80 border-sky-200 text-sky-900',
+        badgeClass: 'bg-sky-100 text-sky-800 border-sky-200'
+      };
+    }
+
+    if (
+      ['ast-aud-047', 'ast-aud-048', 'ast-aud-049', 'ast-aud-050'].includes(id) ||
+      name.includes('di-box') ||
+      name.includes('di-active') ||
+      text.includes('ultra-di')
+    ) {
+      return {
+        typeGroup: 'DI-Box Active & Passive',
+        shortTypeLabel: 'DI-Box Active & Passive',
+        typeOrder: 90,
+        iconKey: 'sliders',
+        bgClass: 'bg-teal-50',
+        textClass: 'text-teal-700',
+        borderClass: 'border-teal-200',
+        headerBgClass: 'bg-teal-50/80 border-teal-200 text-teal-900',
+        badgeClass: 'bg-teal-100 text-teal-800 border-teal-200'
+      };
+    }
+
+    if (
+      [
+        'ast-aud-038', 'ast-aud-039', 'ast-aud-040', 'ast-aud-041', 'ast-aud-042',
+        'ast-aud-043', 'ast-aud-044', 'ast-aud-045', 'ast-aud-046', 'ast-aud-051',
+        'ast-aud-052', 'ast-aud-053', 'ast-aud-054', 'ast-aud-055'
+      ].includes(id) ||
+      name.includes('microphone') ||
+      name.includes('gooseneck') ||
+      name.includes('condenser')
+    ) {
+      return {
+        typeGroup: 'Microphone Cable, Gooseneck, Drum Mic & Condenser',
+        shortTypeLabel: 'Mic Cable, Drum & Condenser',
+        typeOrder: 80,
+        iconKey: 'mic',
+        bgClass: 'bg-blue-50',
+        textClass: 'text-blue-700',
+        borderClass: 'border-blue-200',
+        headerBgClass: 'bg-blue-50/80 border-blue-200 text-blue-900',
+        badgeClass: 'bg-blue-100 text-blue-800 border-blue-200'
+      };
+    }
+
+    if (
+      ['ast-aud-062', 'ast-aud-063', 'ast-aud-064', 'ast-aud-065', 'ast-aud-066', 'ast-aud-070'].includes(id) ||
+      name.includes('stand ') ||
+      name.includes('takel') ||
+      name.includes('strap') ||
+      name.includes('booster')
+    ) {
+      return {
+        typeGroup: 'Stand, Rigging & Takel Audio',
+        shortTypeLabel: 'Stand, Rigging & Takel',
+        typeOrder: 100,
+        iconKey: 'layers',
+        bgClass: 'bg-slate-100',
+        textClass: 'text-slate-700',
+        borderClass: 'border-slate-300',
+        headerBgClass: 'bg-slate-100 border-slate-300 text-slate-900',
+        badgeClass: 'bg-slate-200 text-slate-800 border-slate-300'
+      };
+    }
+
+    return {
+      typeGroup: 'Cabling Snake/XLR, Panel Listrik & Stabilizer',
+      shortTypeLabel: 'Cabling, Panel & Stabilizer',
+      typeOrder: 110,
+      iconKey: 'zap',
+      bgClass: 'bg-amber-50',
+      textClass: 'text-amber-700',
+      borderClass: 'border-amber-200',
+      headerBgClass: 'bg-amber-50/80 border-amber-200 text-amber-900',
+      badgeClass: 'bg-amber-100 text-amber-800 border-amber-200'
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 2. DIVISI LIGHTING (Sheet: Inventory LIGHTING MAR 2024)
+  // ─────────────────────────────────────────────────────────────────────────
+  if (asset.division === 'Lighting') {
+    if (
+      ['ast-lgt-001', 'ast-lgt-002', 'ast-lgt-003'].includes(id) ||
+      name.includes('moving beam')
+    ) {
+      return {
+        typeGroup: 'Moving Beam Lighting',
+        shortTypeLabel: 'Moving Beam',
+        typeOrder: 210,
+        iconKey: 'lightbulb',
+        bgClass: 'bg-amber-50',
+        textClass: 'text-amber-600',
+        borderClass: 'border-amber-200',
+        headerBgClass: 'bg-amber-50/80 border-amber-200 text-amber-900',
+        badgeClass: 'bg-amber-100 text-amber-800 border-amber-200'
+      };
+    }
+
+    if (
+      ['ast-lgt-004', 'ast-lgt-005', 'ast-lgt-006', 'ast-lgt-007'].includes(id) ||
+      name.includes('fresnel') ||
+      name.includes('parled') ||
+      name.includes('par light')
+    ) {
+      return {
+        typeGroup: 'Fresnel & Parled / Par Light',
+        shortTypeLabel: 'Fresnel & Parled',
+        typeOrder: 220,
+        iconKey: 'lightbulb',
+        bgClass: 'bg-yellow-50',
+        textClass: 'text-yellow-700',
+        borderClass: 'border-yellow-200',
+        headerBgClass: 'bg-yellow-50/80 border-yellow-200 text-yellow-900',
+        badgeClass: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      };
+    }
+
+    if (
+      ['ast-lgt-008', 'ast-lgt-009', 'ast-lgt-010', 'ast-lgt-011'].includes(id) ||
+      name.includes('stormy') ||
+      name.includes('strobe') ||
+      name.includes('wallwasher') ||
+      name.includes('follow spot') ||
+      name.includes('mini brute')
+    ) {
+      return {
+        typeGroup: 'Strobe, Wallwasher, Follow Spot & Mini Brute',
+        shortTypeLabel: 'Strobe, Wallwasher & Follow Spot',
+        typeOrder: 230,
+        iconKey: 'sparkles',
+        bgClass: 'bg-orange-50',
+        textClass: 'text-orange-600',
+        borderClass: 'border-orange-200',
+        headerBgClass: 'bg-orange-50/80 border-orange-200 text-orange-900',
+        badgeClass: 'bg-orange-100 text-orange-800 border-orange-200'
+      };
+    }
+
+    if (
+      ['ast-lgt-012', 'ast-lgt-013', 'ast-lgt-027'].includes(id) ||
+      name.includes('smoke') ||
+      name.includes('hazer') ||
+      name.includes('minyak')
+    ) {
+      return {
+        typeGroup: 'Smoke Machine, Hazer & Consumable SFX',
+        shortTypeLabel: 'Smoke Machine & Hazer (SFX)',
+        typeOrder: 240,
+        iconKey: 'sparkles',
+        bgClass: 'bg-rose-50',
+        textClass: 'text-rose-600',
+        borderClass: 'border-rose-200',
+        headerBgClass: 'bg-rose-50/80 border-rose-200 text-rose-900',
+        badgeClass: 'bg-rose-100 text-rose-800 border-rose-200'
+      };
+    }
+
+    if (
+      ['ast-lgt-014', 'ast-lgt-015', 'ast-lgt-016', 'ast-lgt-017', 'ast-lgt-018', 'ast-lgt-019'].includes(id) ||
+      name.includes('mixer lighting') ||
+      name.includes('grand ma') ||
+      name.includes('avolite') ||
+      name.includes('splitter dmx')
+    ) {
+      return {
+        typeGroup: 'Mixer Lighting Console & Splitter DMX',
+        shortTypeLabel: 'Mixer Console & Splitter DMX',
+        typeOrder: 250,
+        iconKey: 'sliders',
+        bgClass: 'bg-amber-50',
+        textClass: 'text-amber-700',
+        borderClass: 'border-amber-200',
+        headerBgClass: 'bg-amber-50/80 border-amber-200 text-amber-900',
+        badgeClass: 'bg-amber-100 text-amber-800 border-amber-200'
+      };
+    }
+
+    if (
+      ['ast-lgt-020', 'ast-lgt-021', 'ast-lgt-028'].includes(id) ||
+      name.includes('stand lighting') ||
+      name.includes('cover beam') ||
+      name.includes('cover parled')
+    ) {
+      return {
+        typeGroup: 'Stand Lighting & Cover Unit',
+        shortTypeLabel: 'Stand Lighting & Cover',
+        typeOrder: 260,
+        iconKey: 'layers',
+        bgClass: 'bg-slate-100',
+        textClass: 'text-slate-700',
+        borderClass: 'border-slate-300',
+        headerBgClass: 'bg-slate-100 border-slate-300 text-slate-900',
+        badgeClass: 'bg-slate-200 text-slate-800 border-slate-300'
+      };
+    }
+
+    return {
+      typeGroup: 'Kabel Link DMX & Power Extension Lighting',
+      shortTypeLabel: 'Kabel Link DMX & Power',
+      typeOrder: 270,
+      iconKey: 'zap',
+      bgClass: 'bg-orange-50',
+      textClass: 'text-orange-700',
+      borderClass: 'border-orange-200',
+      headerBgClass: 'bg-orange-50/80 border-orange-200 text-orange-900',
+      badgeClass: 'bg-orange-100 text-orange-800 border-orange-200'
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 3. DIVISI MULTIMEDIA (Sheet: INVENTORY STREEMING MAR 2024)
+  // ─────────────────────────────────────────────────────────────────────────
+  if (asset.division === 'Multimedia') {
+    if (
+      ['ast-mm-001', 'ast-mm-002', 'ast-mm-003'].includes(id) ||
+      name.includes('pc streaming') ||
+      name.includes('workstation')
+    ) {
+      return {
+        typeGroup: 'PC Streaming Workstation',
+        shortTypeLabel: 'PC Streaming Workstation',
+        typeOrder: 310,
+        iconKey: 'monitor',
+        bgClass: 'bg-purple-50',
+        textClass: 'text-purple-600',
+        borderClass: 'border-purple-200',
+        headerBgClass: 'bg-purple-50/80 border-purple-200 text-purple-900',
+        badgeClass: 'bg-purple-100 text-purple-800 border-purple-200'
+      };
+    }
+
+    if (
+      ['ast-mm-015', 'ast-mm-016'].includes(id) ||
+      name.includes('laptop') ||
+      name.includes('macbook')
+    ) {
+      return {
+        typeGroup: 'Laptop Gaming Produksi & Operasional',
+        shortTypeLabel: 'Laptop Produksi & Operasional',
+        typeOrder: 320,
+        iconKey: 'monitor',
+        bgClass: 'bg-indigo-50',
+        textClass: 'text-indigo-600',
+        borderClass: 'border-indigo-200',
+        headerBgClass: 'bg-indigo-50/80 border-indigo-200 text-indigo-900',
+        badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-200'
+      };
+    }
+
+    if (
+      ['ast-mm-008', 'ast-mm-009', 'ast-mm-010', 'ast-mm-011', 'ast-mm-012', 'ast-mm-013'].includes(id) ||
+      name.includes('camcorder') ||
+      name.includes('remote control kamera') ||
+      name.includes('tripod kamera') ||
+      name.includes('wireless cam') ||
+      name.includes('memory cam')
+    ) {
+      return {
+        typeGroup: 'Camcorder, Tripod, Wireless Cam & Memory',
+        shortTypeLabel: 'Camcorder, Tripod & Wireless Cam',
+        typeOrder: 330,
+        iconKey: 'camera',
+        bgClass: 'bg-fuchsia-50',
+        textClass: 'text-fuchsia-600',
+        borderClass: 'border-fuchsia-200',
+        headerBgClass: 'bg-fuchsia-50/80 border-fuchsia-200 text-fuchsia-900',
+        badgeClass: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200'
+      };
+    }
+
+    if (
+      ['ast-mm-004', 'ast-mm-005', 'ast-mm-018', 'ast-mm-019', 'ast-mm-020'].includes(id) ||
+      name.includes('video capture') ||
+      name.includes('video switcher') ||
+      name.includes('video recorder') ||
+      name.includes('controller') ||
+      text.includes('stream deck')
+    ) {
+      return {
+        typeGroup: 'Video Switcher, Recorder, Capture Card & Controller',
+        shortTypeLabel: 'Switcher, Capture Card & Recorder',
+        typeOrder: 340,
+        iconKey: 'cpu',
+        bgClass: 'bg-violet-50',
+        textClass: 'text-violet-700',
+        borderClass: 'border-violet-200',
+        headerBgClass: 'bg-violet-50/80 border-violet-200 text-violet-900',
+        badgeClass: 'bg-violet-100 text-violet-800 border-violet-200'
+      };
+    }
+
+    if (
+      ['ast-mm-006', 'ast-mm-007', 'ast-mm-021'].includes(id) ||
+      name.includes('soundcard') ||
+      name.includes('clear com') ||
+      name.includes('intercom')
+    ) {
+      return {
+        typeGroup: 'Audio Soundcard & Clear Com Wireless Intercom',
+        shortTypeLabel: 'Soundcard & Clear Com Intercom',
+        typeOrder: 350,
+        iconKey: 'radio',
+        bgClass: 'bg-cyan-50',
+        textClass: 'text-cyan-700',
+        borderClass: 'border-cyan-200',
+        headerBgClass: 'bg-cyan-50/80 border-cyan-200 text-cyan-900',
+        badgeClass: 'bg-cyan-100 text-cyan-800 border-cyan-200'
+      };
+    }
+
+    if (
+      ['ast-mm-017', 'ast-mm-026'].includes(id) ||
+      name.includes('smart tv') ||
+      name.includes('green screen') ||
+      text.includes('godox')
+    ) {
+      return {
+        typeGroup: 'Smart TV Monitor, Green Screen & Studio Lighting',
+        shortTypeLabel: 'Smart TV, Green Screen & Studio LED',
+        typeOrder: 360,
+        iconKey: 'tv',
+        bgClass: 'bg-purple-50',
+        textClass: 'text-purple-700',
+        borderClass: 'border-purple-200',
+        headerBgClass: 'bg-purple-50/80 border-purple-200 text-purple-900',
+        badgeClass: 'bg-purple-100 text-purple-800 border-purple-200'
+      };
+    }
+
+    return {
+      typeGroup: 'Converter SDI/HDMI, Splitter, Network & Cabling FO',
+      shortTypeLabel: 'Converter, Splitter & Cabling FO/SDI',
+      typeOrder: 370,
+      iconKey: 'zap',
+      bgClass: 'bg-purple-50',
+      textClass: 'text-purple-600',
+      borderClass: 'border-purple-200',
+      headerBgClass: 'bg-purple-50/80 border-purple-200 text-purple-900',
+      badgeClass: 'bg-purple-100 text-purple-800 border-purple-200'
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 4. DIVISI VIDEOTRON / LED (Sheet: INVENTORY LED MAR 2024)
+  // ─────────────────────────────────────────────────────────────────────────
+  if (asset.division === 'Videotron') {
+    if (
+      id === 'ast-led-001' ||
+      name.includes('led visual') ||
+      name.includes('hybrid p3.9')
+    ) {
+      return {
+        typeGroup: 'Kabinet Panel LED Visual',
+        shortTypeLabel: 'Kabinet Panel LED P3.9',
+        typeOrder: 410,
+        iconKey: 'tv',
+        bgClass: 'bg-emerald-50',
+        textClass: 'text-emerald-600',
+        borderClass: 'border-emerald-200',
+        headerBgClass: 'bg-emerald-50/80 border-emerald-200 text-emerald-900',
+        badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200'
+      };
+    }
+
+    if (
+      id === 'ast-led-002' ||
+      name.includes('processor') ||
+      name.includes('novastar') ||
+      name.includes('vx6s')
+    ) {
+      return {
+        typeGroup: 'LED Video Processor',
+        shortTypeLabel: 'LED Video Processor',
+        typeOrder: 420,
+        iconKey: 'cpu',
+        bgClass: 'bg-emerald-50',
+        textClass: 'text-emerald-700',
+        borderClass: 'border-emerald-200',
+        headerBgClass: 'bg-emerald-50/80 border-emerald-200 text-emerald-900',
+        badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200'
+      };
+    }
+
+    if (
+      ['ast-led-004', 'ast-led-005', 'ast-led-006'].includes(id) ||
+      name.includes('bracket') ||
+      name.includes('rigging') ||
+      name.includes('hambalan') ||
+      name.includes('pemberat') ||
+      name.includes('hanging bar')
+    ) {
+      return {
+        typeGroup: 'Rigging, Bracket, Hambalan & Pemberat LED',
+        shortTypeLabel: 'Rigging, Bracket & Pemberat LED',
+        typeOrder: 430,
+        iconKey: 'layers',
+        bgClass: 'bg-teal-50',
+        textClass: 'text-teal-700',
+        borderClass: 'border-teal-200',
+        headerBgClass: 'bg-teal-50/80 border-teal-200 text-teal-900',
+        badgeClass: 'bg-teal-100 text-teal-800 border-teal-200'
+      };
+    }
+
+    return {
+      typeGroup: 'Panel Listrik, Kabel LAN Neutrik & HDMI Armored LED',
+      shortTypeLabel: 'Panel Listrik, LAN & HDMI Armored',
+      typeOrder: 440,
+      iconKey: 'zap',
+      bgClass: 'bg-emerald-50',
+      textClass: 'text-emerald-600',
+      borderClass: 'border-emerald-200',
+      headerBgClass: 'bg-emerald-50/80 border-emerald-200 text-emerald-900',
+      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200'
+    };
+  }
+
+  return {
+    typeGroup: 'Unit Inventaris Gudang Umum',
+    shortTypeLabel: 'Unit Inventaris Umum',
+    typeOrder: 999,
+    iconKey: 'package',
+    bgClass: 'bg-slate-100',
+    textClass: 'text-slate-700',
+    borderClass: 'border-slate-200',
+    headerBgClass: 'bg-slate-100 border-slate-200 text-slate-900',
+    badgeClass: 'bg-slate-200 text-slate-800 border-slate-300'
+  };
+}
+
+export interface InventoryTypeGroupBucket {
+  typeInfo: InventoryAssetTypeInfo;
+  assets: Asset[];
+}
+
+export function groupInventoryAssetsByType(assets: Asset[]): InventoryTypeGroupBucket[] {
+  const map = new Map<string, InventoryTypeGroupBucket>();
+  for (const asset of assets) {
+    const info = getInventoryAssetTypeInfo(asset);
+    const existing = map.get(info.typeGroup);
+    if (existing) {
+      existing.assets.push(asset);
+    } else {
+      map.set(info.typeGroup, { typeInfo: info, assets: [asset] });
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => a.typeInfo.typeOrder - b.typeInfo.typeOrder);
+}
+

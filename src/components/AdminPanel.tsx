@@ -27,7 +27,21 @@ import {
   OFFICIAL_ARMADA_SPREADSHEET_URL,
   OFFICIAL_INVENTORY_SPREADSHEET_URL
 } from '../types';
-import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, getMasterStaffList, getMasterFreelanceList, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc, filterMaintenanceHistoryByCurrentYear } from '../data';
+import {
+  STAFF_LIST,
+  QC_ITEMS_BY_DIVISION,
+  INITIAL_VEHICLES,
+  INITIAL_FREELANCE_WORKERS,
+  INITIAL_FLEET_DRIVERS,
+  getMasterStaffList,
+  getMasterFreelanceList,
+  normalizeVehiclesMaster,
+  formatServiceDateIndonesian,
+  sortMaintenanceHistoryDesc,
+  filterMaintenanceHistoryByCurrentYear,
+  getInventoryAssetTypeInfo,
+  groupInventoryAssetsByType
+} from '../data';
 import { getScheduleByKey, StaffScheduleRow, getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
 import {
   exportStaffToJson,
@@ -2833,7 +2847,8 @@ export default function AdminPanel({
                   <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase font-mono font-bold text-[10px]">
                     <th className="p-3.5">Kode Aset</th>
                     <th className="p-3.5">Nama Peralatan / Barang</th>
-                    <th className="p-3.5">Merk / Serial</th>
+                    <th className="p-3.5">Kelompok Type Alat</th>
+                    <th className="p-3.5">Merk / Spesifikasi & Nilai</th>
                     <th className="p-3.5">Divisi</th>
                     <th className="p-3.5">Lokasi Rak / Zona</th>
                     <th className="p-3.5">Kondisi Fisik</th>
@@ -2842,52 +2857,92 @@ export default function AdminPanel({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {assets
-                    .filter(a =>
-                      a.name.toLowerCase().includes(assetSearch.toLowerCase()) ||
-                      a.code.toLowerCase().includes(assetSearch.toLowerCase()) ||
-                      a.location.toLowerCase().includes(assetSearch.toLowerCase())
-                    )
-                    .map(a => (
-                      <tr key={a.id} className="hover:bg-slate-50/60">
-                        <td className="p-3.5 font-mono font-bold text-indigo-700">{a.code}</td>
-                        <td className="p-3.5 font-bold text-slate-900">{a.name}</td>
-                        <td className="p-3.5 text-slate-600">
-                          <div>{a.brand}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">SN: {a.serialNumber}</div>
-                        </td>
-                        <td className="p-3.5 font-semibold text-slate-600">{a.division}</td>
-                        <td className="p-3.5 font-medium text-slate-700">{a.location}</td>
-                        <td className="p-3.5">
-                          <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
-                            a.condition === 'Baik' ? 'bg-emerald-100 text-emerald-800' :
-                            a.condition === 'Rusak Ringan' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
-                          }`}>
-                            {a.condition}
-                          </span>
-                        </td>
-                        <td className="p-3.5 text-slate-500 font-mono text-[11px]">
-                          {a.repairHistory?.length || 0} servis
-                        </td>
-                        <td className="p-3.5 text-right space-x-1.5">
-                          <button
-                            onClick={() => handleOpenEditAsset(a)}
-                            className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 font-bold text-[11px]"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm('Hapus aset ini dari database gudang?')) onDeleteAsset(a.id);
-                            }}
-                            className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                  {(() => {
+                    const matchedAssets = assets.filter(a => {
+                      const q = assetSearch.toLowerCase();
+                      const tInfo = getInventoryAssetTypeInfo(a);
+                      return (
+                        a.name.toLowerCase().includes(q) ||
+                        a.code.toLowerCase().includes(q) ||
+                        a.location.toLowerCase().includes(q) ||
+                        a.brand.toLowerCase().includes(q) ||
+                        tInfo.typeGroup.toLowerCase().includes(q) ||
+                        tInfo.shortTypeLabel.toLowerCase().includes(q)
+                      );
+                    });
+
+                    const typeBuckets = groupInventoryAssetsByType(matchedAssets);
+
+                    return typeBuckets.map((bucket, bIdx) => (
+                      <React.Fragment key={bucket.typeInfo.typeGroup}>
+                        <tr className={`${bucket.typeInfo.headerBgClass} border-y border-slate-200`}>
+                          <td colSpan={9} className="px-4 py-2.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono font-black uppercase px-2 py-0.5 rounded bg-white/80 border border-slate-200">
+                                  TYPE {bIdx + 1}
+                                </span>
+                                <span className="text-xs font-extrabold tracking-tight">
+                                  {bucket.typeInfo.typeGroup}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${bucket.typeInfo.badgeClass}`}>
+                                  {bucket.assets.length} Kelompok Unit
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-mono font-bold opacity-80">
+                                Divisi: {bucket.assets[0]?.division || '-'}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        {bucket.assets.map(a => (
+                          <tr key={a.id} className="hover:bg-slate-50/60">
+                            <td className="p-3.5 font-mono font-bold text-indigo-700">{a.code}</td>
+                            <td className="p-3.5 font-bold text-slate-900">{a.name}</td>
+                            <td className="p-3.5">
+                              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${bucket.typeInfo.bgClass} ${bucket.typeInfo.textClass} ${bucket.typeInfo.borderClass}`}>
+                                {bucket.typeInfo.shortTypeLabel}
+                              </span>
+                            </td>
+                            <td className="p-3.5 text-slate-600">
+                              <div className="font-semibold text-slate-800">{a.brand}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">{a.serialNumber}</div>
+                            </td>
+                            <td className="p-3.5 font-semibold text-slate-600">{a.division}</td>
+                            <td className="p-3.5 font-medium text-slate-700">{a.location}</td>
+                            <td className="p-3.5">
+                              <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                a.condition === 'Baik' ? 'bg-emerald-100 text-emerald-800' :
+                                a.condition === 'Rusak Ringan' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {a.condition}
+                              </span>
+                            </td>
+                            <td className="p-3.5 text-slate-500 font-mono text-[11px]">
+                              {a.repairHistory?.length || 0} servis
+                            </td>
+                            <td className="p-3.5 text-right space-x-1.5">
+                              <button
+                                onClick={() => handleOpenEditAsset(a)}
+                                className="text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 font-bold text-[11px]"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm('Hapus aset ini dari database gudang?')) onDeleteAsset(a.id);
+                                }}
+                                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>

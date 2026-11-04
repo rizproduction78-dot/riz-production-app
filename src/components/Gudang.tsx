@@ -13,7 +13,19 @@ import {
   OFFICIAL_ARMADA_SPREADSHEET_URL,
   OFFICIAL_INVENTORY_SPREADSHEET_URL
 } from '../types';
-import { INITIAL_ASSETS, INITIAL_VEHICLES, INITIAL_FLEET_DRIVERS, normalizeVehiclesMaster, normalizeAssetsMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc, filterMaintenanceHistoryByCurrentYear } from '../data';
+import {
+  INITIAL_ASSETS,
+  INITIAL_VEHICLES,
+  INITIAL_FLEET_DRIVERS,
+  normalizeVehiclesMaster,
+  normalizeAssetsMaster,
+  formatServiceDateIndonesian,
+  sortMaintenanceHistoryDesc,
+  filterMaintenanceHistoryByCurrentYear,
+  getInventoryAssetTypeInfo,
+  groupInventoryAssetsByType,
+  InventoryTypeIconKey
+} from '../data';
 import {
   Package,
   ArrowDownLeft,
@@ -66,208 +78,48 @@ import {
 import { subscribeCloudCollection, saveCloudDoc, pushCollectionToCloud, deleteCloudDoc } from '../lib/cloudSync';
 import { checkVehicleDocExpiry, getVehicleExpiryAlerts } from '../utils/vehicleExpiryAlerts';
 
+function resolveInventoryTypeIcon(iconKey: InventoryTypeIconKey) {
+  switch (iconKey) {
+    case 'speaker':
+      return Volume2;
+    case 'sliders':
+      return Sliders;
+    case 'cpu':
+      return Cpu;
+    case 'music':
+      return Music;
+    case 'radio':
+      return Radio;
+    case 'mic':
+      return Mic;
+    case 'layers':
+      return Layers;
+    case 'zap':
+      return Zap;
+    case 'lightbulb':
+      return Lightbulb;
+    case 'sparkles':
+      return Sparkles;
+    case 'monitor':
+      return Monitor;
+    case 'camera':
+      return Camera;
+    case 'tv':
+      return Tv;
+    case 'video':
+      return Video;
+    default:
+      return Package;
+  }
+}
+
 function getInventoryUnitIconInfo(asset: Asset) {
-  const text = `${asset.code} ${asset.name} ${asset.brand} ${asset.serialNumber}`.toLowerCase();
-
-  if (asset.division === 'Audio') {
-    if (text.includes('mixer') || text.includes('stagebox') || text.includes('dl32') || text.includes('dl16') || text.includes('dlms') || text.includes('xilica') || text.includes('dcx') || text.includes('splitter')) {
-      return {
-        Icon: Sliders,
-        categoryLabel: 'Console & Processor',
-        bgClass: 'bg-indigo-50',
-        textClass: 'text-indigo-600',
-        borderClass: 'border-indigo-200'
-      };
-    }
-    if (text.includes('microphone') || text.includes('mic ') || text.includes('di-box') || text.includes('di-active') || text.includes('sennheiser') || text.includes('shure') || text.includes('samson')) {
-      return {
-        Icon: Mic,
-        categoryLabel: 'Microphone & DI-Box',
-        bgClass: 'bg-sky-50',
-        textClass: 'text-sky-600',
-        borderClass: 'border-sky-200'
-      };
-    }
-    if (text.includes('keyboard') || text.includes('drum') || text.includes('marshall') || text.includes('fender') || text.includes('ampeg') || text.includes('gallien') || text.includes('roland') || text.includes('pioneer') || text.includes('xdj') || text.includes('djm') || text.includes('cymbal')) {
-      return {
-        Icon: Music,
-        categoryLabel: 'Backline & Instrument',
-        bgClass: 'bg-violet-50',
-        textClass: 'text-violet-600',
-        borderClass: 'border-violet-200'
-      };
-    }
-    if (text.includes('stand ') || text.includes('takel') || text.includes('strap') || text.includes('rigging') || text.includes('booster')) {
-      return {
-        Icon: Layers,
-        categoryLabel: 'Stand & Rigging Audio',
-        bgClass: 'bg-slate-100',
-        textClass: 'text-slate-700',
-        borderClass: 'border-slate-300'
-      };
-    }
-    if (text.includes('cable') || text.includes('kabel') || text.includes('snake') || text.includes('panel') || text.includes('stabilizer') || text.includes('stavolt') || text.includes('ups')) {
-      return {
-        Icon: Zap,
-        categoryLabel: 'Cabling & Power Audio',
-        bgClass: 'bg-amber-50',
-        textClass: 'text-amber-700',
-        borderClass: 'border-amber-200'
-      };
-    }
-    return {
-      Icon: Volume2,
-      categoryLabel: 'Speaker & PA System',
-      bgClass: 'bg-blue-50',
-      textClass: 'text-blue-600',
-      borderClass: 'border-blue-200'
-    };
-  }
-
-  if (asset.division === 'Lighting') {
-    if (text.includes('grandma') || text.includes('avolites') || text.includes('quartz') || text.includes('dimmer') || text.includes('splitter dmx')) {
-      return {
-        Icon: Sliders,
-        categoryLabel: 'Lighting Console & DMX',
-        bgClass: 'bg-amber-50',
-        textClass: 'text-amber-700',
-        borderClass: 'border-amber-200'
-      };
-    }
-    if (text.includes('hazer') || text.includes('smoke') || text.includes('dry ice') || text.includes('co2')) {
-      return {
-        Icon: Sparkles,
-        categoryLabel: 'Special Effects (SFX)',
-        bgClass: 'bg-rose-50',
-        textClass: 'text-rose-600',
-        borderClass: 'border-rose-200'
-      };
-    }
-    if (text.includes('rigging') || text.includes('goalpost') || text.includes('tripod') || text.includes('stand')) {
-      return {
-        Icon: Layers,
-        categoryLabel: 'Rigging & Stand Lighting',
-        bgClass: 'bg-slate-100',
-        textClass: 'text-slate-700',
-        borderClass: 'border-slate-300'
-      };
-    }
-    if (text.includes('kabel') || text.includes('cable') || text.includes('panel')) {
-      return {
-        Icon: Zap,
-        categoryLabel: 'Power & DMX Cabling',
-        bgClass: 'bg-orange-50',
-        textClass: 'text-orange-700',
-        borderClass: 'border-orange-200'
-      };
-    }
-    return {
-      Icon: Lightbulb,
-      categoryLabel: 'Stage Lighting Fixture',
-      bgClass: 'bg-amber-50',
-      textClass: 'text-amber-600',
-      borderClass: 'border-amber-200'
-    };
-  }
-
-  if (asset.division === 'Multimedia') {
-    if (text.includes('pc streaming') || text.includes('laptop') || text.includes('macbook') || text.includes('workstation')) {
-      return {
-        Icon: Monitor,
-        categoryLabel: 'PC Workstation & Laptop',
-        bgClass: 'bg-purple-50',
-        textClass: 'text-purple-600',
-        borderClass: 'border-purple-200'
-      };
-    }
-    if (text.includes('camcorder') || text.includes('camera') || text.includes('nx100') || text.includes('mc2500') || text.includes('lumix') || text.includes('tripod kamera')) {
-      return {
-        Icon: Camera,
-        categoryLabel: 'Broadcast Camera & Tripod',
-        bgClass: 'bg-fuchsia-50',
-        textClass: 'text-fuchsia-600',
-        borderClass: 'border-fuchsia-200'
-      };
-    }
-    if (text.includes('atem') || text.includes('switcher') || text.includes('capture') || text.includes('elgato') || text.includes('soundcard') || text.includes('focusrite')) {
-      return {
-        Icon: Cpu,
-        categoryLabel: 'Switcher & Capture Card',
-        bgClass: 'bg-indigo-50',
-        textClass: 'text-indigo-600',
-        borderClass: 'border-indigo-200'
-      };
-    }
-    if (text.includes('hollyland') || text.includes('accsoon') || text.includes('clearcom') || text.includes('solidcom') || text.includes('modem') || text.includes('orbit')) {
-      return {
-        Icon: Radio,
-        categoryLabel: 'Wireless Video & Intercom',
-        bgClass: 'bg-cyan-50',
-        textClass: 'text-cyan-700',
-        borderClass: 'border-cyan-200'
-      };
-    }
-    if (text.includes('tv ') || text.includes('monitor') || text.includes('bracket')) {
-      return {
-        Icon: Tv,
-        categoryLabel: 'TV Monitor & Standing',
-        bgClass: 'bg-violet-50',
-        textClass: 'text-violet-600',
-        borderClass: 'border-violet-200'
-      };
-    }
-    return {
-      Icon: Video,
-      categoryLabel: 'Cabling SDI/HDMI & Multimedia',
-      bgClass: 'bg-purple-50',
-      textClass: 'text-purple-600',
-      borderClass: 'border-purple-200'
-    };
-  }
-
-  if (asset.division === 'Videotron') {
-    if (text.includes('novastar') || text.includes('processor') || text.includes('vx6s')) {
-      return {
-        Icon: Cpu,
-        categoryLabel: 'LED Video Processor',
-        bgClass: 'bg-emerald-50',
-        textClass: 'text-emerald-700',
-        borderClass: 'border-emerald-200'
-      };
-    }
-    if (text.includes('hanging bar') || text.includes('rigging') || text.includes('baseplate') || text.includes('tapak')) {
-      return {
-        Icon: Layers,
-        categoryLabel: 'Rigging & Hanging Bar LED',
-        bgClass: 'bg-teal-50',
-        textClass: 'text-teal-700',
-        borderClass: 'border-teal-200'
-      };
-    }
-    if (text.includes('kabel') || text.includes('lan') || text.includes('power')) {
-      return {
-        Icon: Zap,
-        categoryLabel: 'Data LAN & Power Link LED',
-        bgClass: 'bg-emerald-50',
-        textClass: 'text-emerald-600',
-        borderClass: 'border-emerald-200'
-      };
-    }
-    return {
-      Icon: Tv,
-      categoryLabel: 'Kabinet Panel LED P3.9',
-      bgClass: 'bg-emerald-50',
-      textClass: 'text-emerald-600',
-      borderClass: 'border-emerald-200'
-    };
-  }
-
+  const info = getInventoryAssetTypeInfo(asset);
+  const Icon = resolveInventoryTypeIcon(info.iconKey);
   return {
-    Icon: Package,
-    categoryLabel: 'Unit Inventaris Gudang',
-    bgClass: 'bg-slate-100',
-    textClass: 'text-slate-700',
-    borderClass: 'border-slate-200'
+    ...info,
+    Icon,
+    categoryLabel: info.shortTypeLabel
   };
 }
 
@@ -406,6 +258,7 @@ export default function Gudang({
 
   // Inventory arrangement filter & modal states
   const [inventoryDivisionFilter, setInventoryDivisionFilter] = useState<'ALL' | 'Audio' | 'Lighting' | 'Multimedia' | 'Videotron'>('ALL');
+  const [inventoryTypeFilter, setInventoryTypeFilter] = useState<string>('ALL');
   const [inventoryConditionFilter, setInventoryConditionFilter] = useState<'ALL' | 'Baik' | 'Rusak Ringan' | 'Rusak Berat'>('ALL');
   const [inventorySearch, setInventorySearch] = useState('');
   const [showAssetFormModal, setShowAssetFormModal] = useState(false);
@@ -1378,7 +1231,7 @@ export default function Gudang({
             </div>
           </div>
 
-          {/* SUSUNAN UNIT INVENTORY OVERVIEW DI MANAJEMEN GUDANG */}
+          {/* SUSUNAN UNIT INVENTORY OVERVIEW DI MANAJEMEN GUDANG (DIKELOMPOKKAN BERDASARKAN TYPE) */}
           <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
@@ -1387,13 +1240,13 @@ export default function Gudang({
                 </div>
                 <div>
                   <h2 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                    <span>Susunan Unit Inventory Gudang Resmi</span>
+                    <span>Susunan Unit Inventory Gudang Resmi (Per Divisi & Type Alat)</span>
                     <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 font-mono text-[10px] font-bold rounded-full">
                       {localAssets.length} Kelompok Unit
                     </span>
                   </h2>
                   <p className="text-[11px] text-slate-500">
-                    Klik kategori divisi di bawah untuk membuka rincian susunan unit inventory beserta ikon alat masing-masing.
+                    Klik divisi atau pilih langsung <strong>Type Alat</strong> di bawah untuk membuka daftar unit sesuai pengelompokan type-nya.
                   </p>
                 </div>
               </div>
@@ -1411,6 +1264,7 @@ export default function Gudang({
                   type="button"
                   onClick={() => {
                     setInventoryDivisionFilter('ALL');
+                    setInventoryTypeFilter('ALL');
                     setWarehouseSubTab('inventory');
                   }}
                   className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
@@ -1422,101 +1276,113 @@ export default function Gudang({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* 1. Audio / Sound */}
-              <button
-                type="button"
-                onClick={() => {
-                  setInventoryDivisionFilter('Audio');
-                  setWarehouseSubTab('inventory');
-                }}
-                className="p-3.5 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300 hover:shadow-sm transition-all text-left flex items-start gap-3 cursor-pointer group"
-              >
-                <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
-                  <Volume2 className="w-5 h-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-mono font-bold uppercase text-blue-600">DIVISI AUDIO / SOUND</span>
-                    <span className="text-[10px] font-mono font-extrabold bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
-                      {localAssets.filter(a => a.division === 'Audio').length} Unit
-                    </span>
-                  </div>
-                  <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">Speaker, Mixer & Backline</div>
-                  <div className="text-[10px] text-slate-500 mt-1 font-mono">Nilai: Rp 486.950.000</div>
-                </div>
-              </button>
+              {([
+                {
+                  divKey: 'Audio' as const,
+                  label: 'DIVISI AUDIO / SOUND',
+                  subTitle: 'Speaker, Mixer & Backline',
+                  valueText: 'Nilai: Rp 486.950.000',
+                  Icon: Volume2,
+                  cardClass: 'border-blue-100 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300',
+                  iconBoxClass: 'bg-blue-600 text-white',
+                  labelClass: 'text-blue-600',
+                  countBadgeClass: 'bg-blue-100 text-blue-800'
+                },
+                {
+                  divKey: 'Lighting' as const,
+                  label: 'DIVISI LIGHTING',
+                  subTitle: 'Moving Beam, Parled & SFX',
+                  valueText: 'Nilai: Rp 220.600.000',
+                  Icon: Lightbulb,
+                  cardClass: 'border-amber-100 bg-gradient-to-br from-amber-50/70 to-white hover:border-amber-300',
+                  iconBoxClass: 'bg-amber-500 text-white',
+                  labelClass: 'text-amber-700',
+                  countBadgeClass: 'bg-amber-100 text-amber-800'
+                },
+                {
+                  divKey: 'Multimedia' as const,
+                  label: 'DIVISI MULTIMEDIA',
+                  subTitle: 'PC vMix, Camcorder & Clearcom',
+                  valueText: 'Nilai: Rp 339.848.000',
+                  Icon: Video,
+                  cardClass: 'border-purple-100 bg-gradient-to-br from-purple-50/70 to-white hover:border-purple-300',
+                  iconBoxClass: 'bg-purple-600 text-white',
+                  labelClass: 'text-purple-700',
+                  countBadgeClass: 'bg-purple-100 text-purple-800'
+                },
+                {
+                  divKey: 'Videotron' as const,
+                  label: 'DIVISI VIDEOTRON / LED',
+                  subTitle: 'LED P3.9 60m (30 Box) & VX6s',
+                  valueText: '120 Panel + Rigging Set',
+                  Icon: Tv,
+                  cardClass: 'border-emerald-100 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300',
+                  iconBoxClass: 'bg-emerald-600 text-white',
+                  labelClass: 'text-emerald-700',
+                  countBadgeClass: 'bg-emerald-100 text-emerald-800'
+                }
+              ]).map(cfg => {
+                const divAssets = localAssets.filter(a => a.division === cfg.divKey);
+                const typeBuckets = groupInventoryAssetsByType(divAssets);
+                const CardIcon = cfg.Icon;
 
-              {/* 2. Lighting */}
-              <button
-                type="button"
-                onClick={() => {
-                  setInventoryDivisionFilter('Lighting');
-                  setWarehouseSubTab('inventory');
-                }}
-                className="p-3.5 rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50/70 to-white hover:border-amber-300 hover:shadow-sm transition-all text-left flex items-start gap-3 cursor-pointer group"
-              >
-                <div className="p-2.5 rounded-xl bg-amber-500 text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
-                  <Lightbulb className="w-5 h-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-mono font-bold uppercase text-amber-700">DIVISI LIGHTING</span>
-                    <span className="text-[10px] font-mono font-extrabold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
-                      {localAssets.filter(a => a.division === 'Lighting').length} Unit
-                    </span>
-                  </div>
-                  <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">Moving Beam, Parled & SFX</div>
-                  <div className="text-[10px] text-slate-500 mt-1 font-mono">Nilai: Rp 220.600.000</div>
-                </div>
-              </button>
+                return (
+                  <div
+                    key={cfg.divKey}
+                    className={`p-3.5 rounded-xl border ${cfg.cardClass} hover:shadow-sm transition-all flex flex-col justify-between gap-3`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInventoryDivisionFilter(cfg.divKey);
+                        setInventoryTypeFilter('ALL');
+                        setWarehouseSubTab('inventory');
+                      }}
+                      className="text-left flex items-start gap-3 cursor-pointer group w-full"
+                    >
+                      <div className={`p-2.5 rounded-xl ${cfg.iconBoxClass} shadow-xs shrink-0 group-hover:scale-105 transition-transform`}>
+                        <CardIcon className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className={`text-[10px] font-mono font-bold uppercase ${cfg.labelClass}`}>{cfg.label}</span>
+                          <span className={`text-[10px] font-mono font-extrabold ${cfg.countBadgeClass} px-1.5 py-0.5 rounded`}>
+                            {divAssets.length} Unit
+                          </span>
+                        </div>
+                        <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">{cfg.subTitle}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                          {typeBuckets.length} Kelompok Type • {cfg.valueText}
+                        </div>
+                      </div>
+                    </button>
 
-              {/* 3. Multimedia / Streaming */}
-              <button
-                type="button"
-                onClick={() => {
-                  setInventoryDivisionFilter('Multimedia');
-                  setWarehouseSubTab('inventory');
-                }}
-                className="p-3.5 rounded-xl border border-purple-100 bg-gradient-to-br from-purple-50/70 to-white hover:border-purple-300 hover:shadow-sm transition-all text-left flex items-start gap-3 cursor-pointer group"
-              >
-                <div className="p-2.5 rounded-xl bg-purple-600 text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
-                  <Video className="w-5 h-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-mono font-bold uppercase text-purple-700">DIVISI MULTIMEDIA</span>
-                    <span className="text-[10px] font-mono font-extrabold bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
-                      {localAssets.filter(a => a.division === 'Multimedia').length} Unit
-                    </span>
+                    {/* Quick Type Pills per Division */}
+                    <div className="pt-2 border-t border-slate-200/60 flex flex-wrap gap-1">
+                      {typeBuckets.map(bucket => {
+                        const TypeChipIcon = resolveInventoryTypeIcon(bucket.typeInfo.iconKey);
+                        return (
+                          <button
+                            key={bucket.typeInfo.typeGroup}
+                            type="button"
+                            onClick={() => {
+                              setInventoryDivisionFilter(cfg.divKey);
+                              setInventoryTypeFilter(bucket.typeInfo.typeGroup);
+                              setWarehouseSubTab('inventory');
+                            }}
+                            className={`px-2 py-0.5 rounded-md border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer hover:brightness-95 ${bucket.typeInfo.bgClass} ${bucket.typeInfo.textClass} ${bucket.typeInfo.borderClass}`}
+                            title={`Lihat Type: ${bucket.typeInfo.typeGroup}`}
+                          >
+                            <TypeChipIcon className="w-2.5 h-2.5 shrink-0" />
+                            <span className="truncate max-w-[115px]">{bucket.typeInfo.shortTypeLabel}</span>
+                            <span className="font-mono text-[9px] opacity-80">({bucket.assets.length})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">PC vMix, Camcorder & Clearcom</div>
-                  <div className="text-[10px] text-slate-500 mt-1 font-mono">Nilai: Rp 339.848.000</div>
-                </div>
-              </button>
-
-              {/* 4. Videotron / LED */}
-              <button
-                type="button"
-                onClick={() => {
-                  setInventoryDivisionFilter('Videotron');
-                  setWarehouseSubTab('inventory');
-                }}
-                className="p-3.5 rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300 hover:shadow-sm transition-all text-left flex items-start gap-3 cursor-pointer group"
-              >
-                <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
-                  <Tv className="w-5 h-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-700">DIVISI VIDEOTRON / LED</span>
-                    <span className="text-[10px] font-mono font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
-                      {localAssets.filter(a => a.division === 'Videotron').length} Unit
-                    </span>
-                  </div>
-                  <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">LED P3.9 60m (30 Box) & VX6s</div>
-                  <div className="text-[10px] text-slate-500 mt-1 font-mono">120 Panel + Rigging Set</div>
-                </div>
-              </button>
+                );
+              })}
             </div>
           </div>
 
@@ -1851,19 +1717,32 @@ export default function Gudang({
         </div>
       )}
 
-      {/* VIEW 1B: SUSUNAN UNIT INVENTORY GUDANG RESMI (DENGAN IKON PER DIVISI & ALAT) */}
+      {/* VIEW 1B: SUSUNAN UNIT INVENTORY GUDANG RESMI (DIKELOMPOKKAN BERDASARKAN DIVISI & TYPE ALAT) */}
       {warehouseSubTab === 'inventory' && (() => {
-        const filteredInventory = localAssets.filter(asset => {
+        const divisionScopedAssets = localAssets.filter(asset => {
           if (inventoryDivisionFilter !== 'ALL' && asset.division !== inventoryDivisionFilter) return false;
+          return true;
+        });
+
+        const availableTypeBuckets = groupInventoryAssetsByType(divisionScopedAssets);
+
+        const filteredInventory = divisionScopedAssets.filter(asset => {
+          if (inventoryTypeFilter !== 'ALL') {
+            const info = getInventoryAssetTypeInfo(asset);
+            if (info.typeGroup !== inventoryTypeFilter) return false;
+          }
           if (inventoryConditionFilter !== 'ALL' && asset.condition !== inventoryConditionFilter) return false;
           if (inventorySearch.trim()) {
             const q = inventorySearch.toLowerCase().trim();
+            const info = getInventoryAssetTypeInfo(asset);
             return (
               asset.code.toLowerCase().includes(q) ||
               asset.name.toLowerCase().includes(q) ||
               asset.brand.toLowerCase().includes(q) ||
               asset.serialNumber.toLowerCase().includes(q) ||
-              asset.location.toLowerCase().includes(q)
+              asset.location.toLowerCase().includes(q) ||
+              info.typeGroup.toLowerCase().includes(q) ||
+              info.shortTypeLabel.toLowerCase().includes(q)
             );
           }
           return true;
@@ -1924,14 +1803,14 @@ export default function Gudang({
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-extrabold text-slate-900">
-                        Susunan Unit Inventory Gudang Resmi
+                        Susunan Unit Inventory Gudang Resmi (Berdasarkan Type Alat)
                       </h2>
                       <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 font-mono text-xs font-bold rounded-full">
-                        {localAssets.length} Kelompok Unit
+                        {localAssets.length} Kelompok Unit • {availableTypeBuckets.length} Type Alat
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Susunan unit peralatan gudang berdasarkan divisi, spesifikasi, jumlah unit (QTY), nilai aset, dan kondisi aktual.
+                      Susunan unit peralatan gudang dikelompokkan berdasarkan <strong>Divisi</strong> dan <strong>Type Alat</strong> sesuai Google Sheet Inventaris Resmi.
                     </p>
                   </div>
                 </div>
@@ -1974,7 +1853,10 @@ export default function Gudang({
                 <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl overflow-x-auto no-scrollbar touch-scroll max-w-full">
                   <button
                     type="button"
-                    onClick={() => setInventoryDivisionFilter('ALL')}
+                    onClick={() => {
+                      setInventoryDivisionFilter('ALL');
+                      setInventoryTypeFilter('ALL');
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       inventoryDivisionFilter === 'ALL'
                         ? 'bg-indigo-600 text-white shadow-xs'
@@ -1990,7 +1872,10 @@ export default function Gudang({
 
                   <button
                     type="button"
-                    onClick={() => setInventoryDivisionFilter('Audio')}
+                    onClick={() => {
+                      setInventoryDivisionFilter('Audio');
+                      setInventoryTypeFilter('ALL');
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       inventoryDivisionFilter === 'Audio'
                         ? 'bg-blue-600 text-white shadow-xs'
@@ -2006,7 +1891,10 @@ export default function Gudang({
 
                   <button
                     type="button"
-                    onClick={() => setInventoryDivisionFilter('Lighting')}
+                    onClick={() => {
+                      setInventoryDivisionFilter('Lighting');
+                      setInventoryTypeFilter('ALL');
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       inventoryDivisionFilter === 'Lighting'
                         ? 'bg-amber-500 text-white shadow-xs'
@@ -2022,7 +1910,10 @@ export default function Gudang({
 
                   <button
                     type="button"
-                    onClick={() => setInventoryDivisionFilter('Multimedia')}
+                    onClick={() => {
+                      setInventoryDivisionFilter('Multimedia');
+                      setInventoryTypeFilter('ALL');
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       inventoryDivisionFilter === 'Multimedia'
                         ? 'bg-purple-600 text-white shadow-xs'
@@ -2038,7 +1929,10 @@ export default function Gudang({
 
                   <button
                     type="button"
-                    onClick={() => setInventoryDivisionFilter('Videotron')}
+                    onClick={() => {
+                      setInventoryDivisionFilter('Videotron');
+                      setInventoryTypeFilter('ALL');
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                       inventoryDivisionFilter === 'Videotron'
                         ? 'bg-emerald-600 text-white shadow-xs'
@@ -2059,7 +1953,7 @@ export default function Gudang({
                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      placeholder="Cari unit / kode / merk / spesifikasi..."
+                      placeholder="Cari unit / type / kode / merk..."
                       value={inventorySearch}
                       onChange={(e) => setInventorySearch(e.target.value)}
                       className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
@@ -2077,16 +1971,80 @@ export default function Gudang({
                   </select>
                 </div>
               </div>
+
+              {/* Filter Kelompok Berdasarkan Type Alat */}
+              <div className="pt-3 border-t border-slate-100 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Kelompok Berdasarkan Type Alat ({availableTypeBuckets.length} Type):</span>
+                  </span>
+                  {inventoryTypeFilter !== 'ALL' && (
+                    <button
+                      type="button"
+                      onClick={() => setInventoryTypeFilter('ALL')}
+                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
+                    >
+                      <X className="w-3 h-3" />
+                      <span>Tampilkan Semua Type</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setInventoryTypeFilter('ALL')}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                      inventoryTypeFilter === 'ALL'
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Boxes className="w-3 h-3" />
+                    <span>Semua Type</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${inventoryTypeFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {divisionScopedAssets.length}
+                    </span>
+                  </button>
+
+                  {availableTypeBuckets.map(bucket => {
+                    const TypeIcon = resolveInventoryTypeIcon(bucket.typeInfo.iconKey);
+                    const isSelected = inventoryTypeFilter === bucket.typeInfo.typeGroup;
+                    return (
+                      <button
+                        key={bucket.typeInfo.typeGroup}
+                        type="button"
+                        onClick={() => setInventoryTypeFilter(isSelected ? 'ALL' : bucket.typeInfo.typeGroup)}
+                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                            : `${bucket.typeInfo.bgClass} ${bucket.typeInfo.textClass} ${bucket.typeInfo.borderClass} hover:brightness-95`
+                        }`}
+                      >
+                        <TypeIcon className="w-3 h-3 shrink-0" />
+                        <span>{bucket.typeInfo.shortTypeLabel}</span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
+                          isSelected ? 'bg-indigo-800 text-white' : 'bg-white/80 text-slate-800'
+                        }`}>
+                          {bucket.assets.length}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
-            {/* Structured Division Sections & Unit Cards with Individual Equipment Icons */}
+            {/* Structured Division Sections -> Grouped by Equipment Type -> Unit Cards */}
             {activeDivisions.map(divCfg => {
               const divAssets = filteredInventory.filter(a => a.division === divCfg.key);
               if (divAssets.length === 0) return null;
               const DivIcon = divCfg.Icon;
+              const divTypeBuckets = groupInventoryAssetsByType(divAssets);
 
               return (
-                <div key={divCfg.key} className="space-y-4">
+                <div key={divCfg.key} className="space-y-5">
                   {/* Division Section Banner */}
                   <div className={`p-4 rounded-2xl bg-gradient-to-r ${divCfg.headerBg} text-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3`}>
                     <div className="flex items-center gap-3">
@@ -2094,10 +2052,10 @@ export default function Gudang({
                         <DivIcon className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-base font-black tracking-tight">{divCfg.title}</h3>
                           <span className="px-2 py-0.5 bg-white/20 rounded-full text-[10px] font-mono font-bold">
-                            {divAssets.length} Kelompok Unit
+                            {divTypeBuckets.length} Kelompok Type • {divAssets.length} Unit
                           </span>
                         </div>
                         <p className="text-[11px] text-white/85 font-mono mt-0.5">
@@ -2117,131 +2075,191 @@ export default function Gudang({
                     </div>
                   </div>
 
-                  {/* Grid of Inventory Units */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {divAssets.map(asset => {
-                      const { Icon: UnitIcon, categoryLabel, bgClass, textClass, borderClass } = getInventoryUnitIconInfo(asset);
-                      const isInService = asset.location.includes('SERVICE');
+                  {/* Equipment Type Sub-Groups inside Division */}
+                  <div className="space-y-5 pl-0 sm:pl-2">
+                    {divTypeBuckets.map((bucket, bucketIdx) => {
+                      const TypeGroupIcon = resolveInventoryTypeIcon(bucket.typeInfo.iconKey);
+                      const goodCount = bucket.assets.filter(a => a.condition === 'Baik').length;
+                      const issueCount = bucket.assets.length - goodCount;
 
                       return (
                         <div
-                          key={asset.id}
-                          className="bg-white rounded-xl border border-slate-200/90 hover:border-indigo-300 shadow-2xs hover:shadow-md transition-all p-4 flex flex-col justify-between gap-3"
+                          key={bucket.typeInfo.typeGroup}
+                          className="bg-slate-50/70 rounded-2xl border border-slate-200/90 p-4 space-y-3.5 shadow-2xs"
                         >
-                          <div className="space-y-2.5">
-                            {/* Top Row: Unit Specific Icon + Category + Code + Condition */}
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className={`p-2.5 rounded-xl border ${bgClass} ${textClass} ${borderClass} shrink-0`}>
-                                  <UnitIcon className="w-5 h-5" />
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] font-mono font-extrabold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
-                                      {asset.code}
-                                    </span>
-                                    <span className="text-[10px] font-semibold text-slate-400 truncate">
-                                      {categoryLabel}
-                                    </span>
-                                  </div>
-                                  <h4 className="text-xs font-extrabold text-slate-900 mt-1 leading-snug">
-                                    {asset.name}
-                                  </h4>
-                                </div>
-                              </div>
-
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase shrink-0 ${
-                                asset.condition === 'Baik'
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : asset.condition === 'Rusak Ringan'
-                                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                                  : 'bg-rose-50 text-rose-700 border border-rose-200'
-                              }`}>
-                                {asset.condition}
-                              </span>
-                            </div>
-
-                            {/* Details Box: Brand, Specs/QTY/Value, Location */}
-                            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 space-y-1.5 text-[11px]">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-slate-400 font-medium">Merek / Brand:</span>
-                                <span className="font-bold text-slate-800 text-right">{asset.brand}</span>
+                          {/* Equipment Type Group Header */}
+                          <div className={`p-3 rounded-xl border ${bucket.typeInfo.headerBgClass} flex flex-col sm:flex-row sm:items-center justify-between gap-2.5`}>
+                            <div className="flex items-center gap-2.5">
+                              <div className={`p-2 rounded-lg border bg-white shadow-2xs ${bucket.typeInfo.textClass} ${bucket.typeInfo.borderClass} shrink-0`}>
+                                <TypeGroupIcon className="w-4 h-4" />
                               </div>
                               <div>
-                                <span className="text-slate-400 font-medium block">Rincian Unit / QTY / Nilai Sheet:</span>
-                                <span className="font-mono text-[10px] font-semibold text-slate-700 leading-relaxed block mt-0.5">
-                                  {asset.serialNumber}
-                                </span>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-[10px] font-mono font-black uppercase tracking-wider opacity-75">
+                                    TYPE {bucketIdx + 1}:
+                                  </span>
+                                  <h4 className="text-xs sm:text-sm font-extrabold tracking-tight">
+                                    {bucket.typeInfo.typeGroup}
+                                  </h4>
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold border ${bucket.typeInfo.badgeClass}`}>
+                                    {bucket.assets.length} Kelompok Unit
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/70">
-                                <span className="text-slate-400 font-medium flex items-center gap-1">
-                                  <MapPin className="w-3 h-3 text-slate-400" />
-                                  <span>Lokasi:</span>
+                            </div>
+
+                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                              <span className="px-2 py-0.5 bg-white/80 border border-emerald-200 text-emerald-700 rounded-md text-[10px] font-mono font-bold">
+                                Baik: {goodCount}
+                              </span>
+                              {issueCount > 0 && (
+                                <span className="px-2 py-0.5 bg-amber-100/90 border border-amber-300 text-amber-900 rounded-md text-[10px] font-mono font-bold">
+                                  Catatan: {issueCount}
                                 </span>
-                                <span className={`font-bold text-right ${isInService ? 'text-rose-600' : 'text-slate-700'}`}>
-                                  {asset.location}
-                                </span>
-                              </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setInventoryTypeFilter(
+                                    inventoryTypeFilter === bucket.typeInfo.typeGroup ? 'ALL' : bucket.typeInfo.typeGroup
+                                  )
+                                }
+                                className="px-2.5 py-1 bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 rounded-lg text-[10px] font-bold transition-colors cursor-pointer"
+                              >
+                                {inventoryTypeFilter === bucket.typeInfo.typeGroup ? 'Semua Type' : 'Fokus Type Ini'}
+                              </button>
                             </div>
                           </div>
 
-                          {/* Card Footer Actions */}
-                          <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setWarehouseSubTab('scanner');
-                                setScanSearchInput(asset.code);
-                                setScannedAsset(asset);
-                                setScanMessage(`SUKSES: Unit ${asset.code} (${asset.name}) dipilih dari Susunan Inventory.`);
-                              }}
-                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                            >
-                              <Camera className="w-3 h-3" />
-                              <span>Scan / Cek</span>
-                            </button>
+                          {/* Grid of Inventory Units in this Type */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+                            {bucket.assets.map(asset => {
+                              const { Icon: UnitIcon, categoryLabel, bgClass, textClass, borderClass } = getInventoryUnitIconInfo(asset);
+                              const isInService = asset.location.includes('SERVICE');
 
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingAssetItem(asset);
-                                  setAssetFormState({
-                                    code: asset.code,
-                                    name: asset.name,
-                                    brand: asset.brand,
-                                    serialNumber: asset.serialNumber,
-                                    division: asset.division,
-                                    location: asset.location,
-                                    condition: asset.condition
-                                  });
-                                  setShowAssetFormModal(true);
-                                }}
-                                className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                                <span>Edit</span>
-                              </button>
-
-                              {onDeleteAsset && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (confirm(`Hapus unit "${asset.name}" (${asset.code}) dari daftar inventaris?`)) {
-                                      const next = localAssets.filter(a => a.id !== asset.id);
-                                      setLocalAssets(next);
-                                      localStorage.setItem('riz_assets', JSON.stringify(next));
-                                      onDeleteAsset(asset.id);
-                                      onLogActivity(currentUser.name, currentUser.role, `Menghapus unit inventaris: ${asset.code} - ${asset.name}`);
-                                    }
-                                  }}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                                  title="Hapus Unit"
+                              return (
+                                <div
+                                  key={asset.id}
+                                  className="bg-white rounded-xl border border-slate-200/90 hover:border-indigo-300 shadow-2xs hover:shadow-md transition-all p-4 flex flex-col justify-between gap-3"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
+                                  <div className="space-y-2.5">
+                                    {/* Top Row: Unit Specific Icon + Type Label + Code + Condition */}
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className={`p-2.5 rounded-xl border ${bgClass} ${textClass} ${borderClass} shrink-0`}>
+                                          <UnitIcon className="w-5 h-5" />
+                                        </div>
+                                        <div className="min-w-0">
+                                          <div className="flex flex-wrap items-center gap-1.5">
+                                            <span className="text-[10px] font-mono font-extrabold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
+                                              {asset.code}
+                                            </span>
+                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${bgClass} ${textClass} ${borderClass} truncate`}>
+                                              {categoryLabel}
+                                            </span>
+                                          </div>
+                                          <h5 className="text-xs font-extrabold text-slate-900 mt-1 leading-snug">
+                                            {asset.name}
+                                          </h5>
+                                        </div>
+                                      </div>
+
+                                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase shrink-0 ${
+                                        asset.condition === 'Baik'
+                                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                          : asset.condition === 'Rusak Ringan'
+                                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                          : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                      }`}>
+                                        {asset.condition}
+                                      </span>
+                                    </div>
+
+                                    {/* Details Box: Brand, Specs/QTY/Value, Location */}
+                                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 space-y-1.5 text-[11px]">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="text-slate-400 font-medium">Type / Merek:</span>
+                                        <span className="font-bold text-slate-800 text-right">{asset.brand}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-slate-400 font-medium block">Rincian Unit / QTY / Nilai Sheet:</span>
+                                        <span className="font-mono text-[10px] font-semibold text-slate-700 leading-relaxed block mt-0.5">
+                                          {asset.serialNumber}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/70">
+                                        <span className="text-slate-400 font-medium flex items-center gap-1">
+                                          <MapPin className="w-3 h-3 text-slate-400" />
+                                          <span>Lokasi:</span>
+                                        </span>
+                                        <span className={`font-bold text-right ${isInService ? 'text-rose-600' : 'text-slate-700'}`}>
+                                          {asset.location}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Card Footer Actions */}
+                                  <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setWarehouseSubTab('scanner');
+                                        setScanSearchInput(asset.code);
+                                        setScannedAsset(asset);
+                                        setScanMessage(`SUKSES: Unit ${asset.code} (${asset.name}) dipilih dari Susunan Inventory.`);
+                                      }}
+                                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                    >
+                                      <Camera className="w-3 h-3" />
+                                      <span>Scan / Cek</span>
+                                    </button>
+
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingAssetItem(asset);
+                                          setAssetFormState({
+                                            code: asset.code,
+                                            name: asset.name,
+                                            brand: asset.brand,
+                                            serialNumber: asset.serialNumber,
+                                            division: asset.division,
+                                            location: asset.location,
+                                            condition: asset.condition
+                                          });
+                                          setShowAssetFormModal(true);
+                                        }}
+                                        className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                        <span>Edit</span>
+                                      </button>
+
+                                      {onDeleteAsset && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (confirm(`Hapus unit "${asset.name}" (${asset.code}) dari daftar inventaris?`)) {
+                                              const next = localAssets.filter(a => a.id !== asset.id);
+                                              setLocalAssets(next);
+                                              localStorage.setItem('riz_assets', JSON.stringify(next));
+                                              onDeleteAsset(asset.id);
+                                              onLogActivity(currentUser.name, currentUser.role, `Menghapus unit inventaris: ${asset.code} - ${asset.name}`);
+                                            }
+                                          }}
+                                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                          title="Hapus Unit"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -2255,7 +2273,7 @@ export default function Gudang({
               <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-2">
                 <Boxes className="w-10 h-10 text-slate-300 mx-auto" />
                 <div className="text-sm font-bold text-slate-700">Tidak Ada Unit Inventory yang Cocok</div>
-                <p className="text-xs text-slate-400">Silakan ubah kata kunci pencarian atau filter divisi/kondisi di atas.</p>
+                <p className="text-xs text-slate-400">Silakan ubah kata kunci pencarian atau reset filter divisi / type alat di atas.</p>
               </div>
             )}
           </div>
