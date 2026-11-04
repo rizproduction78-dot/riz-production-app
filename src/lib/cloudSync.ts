@@ -249,6 +249,10 @@ export function clearDeletedId(collectionName: string, docId: string) {
 const OBSOLETE_LEGACY_IDS = new Set<string>([
   'dt-20261101-02',
   'dt-20261101-03',
+  'task-test-777',
+  'dr-test-999',
+  'lg-test-888',
+  'gsheet-finding-2021-09-21--_Cover2_lengkap',
   'find-20261101-kharo-2',
   'find-20261103-heri-1',
   'find-20261103-yudis-1',
@@ -559,7 +563,8 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
         staffName: effectiveStaffName,
         division: effectiveDivision,
         activity: item.activity !== undefined ? item.activity : (canonical?.activity || ''),
-        notes: item.notes !== undefined ? item.notes : (canonical?.notes || '')
+        notes: item.notes !== undefined ? item.notes : (canonical?.notes || ''),
+        rowDetails: Array.isArray(item.rowDetails) ? item.rowDetails : (Array.isArray(canonical?.rowDetails) ? canonical.rowDetails : undefined),
       };
       
       // Keep by ID so updates can happen correctly
@@ -641,7 +646,8 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
         staffName: effectiveStaffName,
         division: effectiveDivision,
         activity: item.activity !== undefined ? item.activity : (canonical?.activity || ''),
-        followUp: item.followUp !== undefined ? item.followUp : (canonical?.followUp || '')
+        followUp: item.followUp !== undefined ? item.followUp : (canonical?.followUp || ''),
+        rowDetails: Array.isArray(item.rowDetails) ? item.rowDetails : (Array.isArray(canonical?.rowDetails) ? canonical.rowDetails : undefined),
       };
       
       if (item.id) {

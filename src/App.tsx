@@ -341,7 +341,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v73_paired_rows_live_notif';
+  const REF_SYNC_KEY = 'riz_ref_synced_v74_unified_localhost_vercel';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
@@ -356,22 +356,8 @@ export default function App() {
             if (!item?.id) return;
             const idStr = String(item.id);
             const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
-            // Bersihkan entri google_sheet bulan Oktober & November lama yang belum pernah diedit user dan tidak ada di canonical
-            if (
-              !isUserEdited &&
-              (storageKey === 'riz_daily_reports_v2' || storageKey === 'riz_logbook_entries_v2') &&
-              item._source === 'google_sheet' &&
-              (String(item.date || '').startsWith('2026-10') || String(item.date || '').startsWith('2026-11')) &&
-              !map.has(idStr)
-            ) {
-              return;
-            }
-            if (
-              !isUserEdited &&
-              storageKey === 'riz_findings_v2' &&
-              (idStr.startsWith('gsheet-finding-2026-10') || idStr.startsWith('gsheet-finding-2026-11') || idStr.startsWith('gsheet-finding-2021-')) &&
-              !map.has(idStr)
-            ) {
+            // Bersihkan entri usang/test yang belum pernah diedit user dan tidak ada di canonical
+            if (!isUserEdited && !map.has(idStr)) {
               return;
             }
             const canonItem = map.get(idStr) as any;
@@ -407,6 +393,8 @@ export default function App() {
     localStorage.setItem('riz_master_staff_list', JSON.stringify(normalizeCollectionItems('master_staff', mergeById(STAFF_LIST, 'riz_master_staff_list'))));
     localStorage.setItem('riz_freelance_workers', JSON.stringify(normalizeCollectionItems('freelance_workers', mergeById(INITIAL_FREELANCE_WORKERS, 'riz_freelance_workers'))));
     localStorage.setItem('riz_master_vehicles', JSON.stringify(normalizeVehiclesMaster(mergeById(INITIAL_VEHICLES, 'riz_master_vehicles'))));
+    localStorage.removeItem('riz_notification_known_revisions_v4');
+    localStorage.removeItem('riz_notification_read_ids_v4');
     ALL_MONTHLY_SCHEDULES.forEach(sch => {
       if (!localStorage.getItem(`riz_schedule_${sch.key}`)) {
         localStorage.setItem(`riz_schedule_${sch.key}`, JSON.stringify(sch.rows));
@@ -417,6 +405,7 @@ export default function App() {
 
     // Hapus ID duplikat/usang dari penyimpanan Cloud
     ['dt-20261101-02', 'dt-20261101-03', 'task-test-777'].forEach(id => deleteCloudDoc('daily_tasks', id).catch(() => {}));
+    deleteCloudDoc('logbook_entries', 'lg-test-888').catch(() => {});
     [
       'find-20261101-kharo-2',
       'find-20261103-heri-1',

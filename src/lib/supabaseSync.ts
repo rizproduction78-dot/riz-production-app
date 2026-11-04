@@ -72,6 +72,7 @@ function formatForSupabase(collectionName: string, docId: string, data: Record<s
     updatedBy: 'System',
     ...(data._syncMeta || {}),
     ...(data._userEdited || data._syncMeta?._userEdited ? { _userEdited: true } : {}),
+    ...(Array.isArray(data.rowDetails) ? { rowDetails: data.rowDetails } : {}),
   };
 
   switch (collectionName) {
@@ -309,6 +310,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         division: row.division || 'Umum',
         activity: row.activity || '',
         notes: row.notes || '',
+        rowDetails: Array.isArray(syncMeta?.rowDetails) ? syncMeta.rowDetails : undefined,
         photoUrl: row.photo_url || undefined,
         photos: Array.isArray(row.photos) ? row.photos : undefined,
         status: row.status || 'Submitted',
@@ -328,6 +330,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         activity: row.activity || '',
         result: row.result || 'OK',
         followUp: row.follow_up || '',
+        rowDetails: Array.isArray(syncMeta?.rowDetails) ? syncMeta.rowDetails : undefined,
         status: row.status || 'Close',
         verification: row.verification || '',
         checklists: typeof row.checklists === 'object' && row.checklists !== null ? row.checklists : {},
