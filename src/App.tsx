@@ -70,7 +70,8 @@ import {
   Download,
   Smartphone,
   Share,
-  Folder
+  Folder,
+  Boxes
 } from 'lucide-react';
 import {
   subscribeCloudCollection,
@@ -213,6 +214,7 @@ export default function App() {
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional 5W & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional 5W & QC' },
         { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+        { id: 'gudang_inventory', label: 'Susunan Unit Inventory', icon: Boxes, category: 'Logistik & Fasilitas' },
         { id: 'armada', label: 'Kelola Armada', icon: Truck, category: 'Logistik & Fasilitas' },
         { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' },
         { id: 'kinerja_karyawan', label: 'Kinerja & KPI Karyawan', icon: TrendingUp, category: 'SDM & Evaluasi KPI' },
@@ -233,6 +235,7 @@ export default function App() {
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional 5W & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional 5W & QC' },
         { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+        { id: 'gudang_inventory', label: 'Susunan Unit Inventory', icon: Boxes, category: 'Logistik & Fasilitas' },
         { id: 'armada', label: 'Kelola Armada', icon: Truck, category: 'Logistik & Fasilitas' },
         { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' },
         { id: 'kinerja_karyawan', label: 'Kinerja & KPI Karyawan', icon: TrendingUp, category: 'SDM & Evaluasi KPI' },
@@ -253,6 +256,7 @@ export default function App() {
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional 5W & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional 5W & QC' },
         { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+        { id: 'gudang_inventory', label: 'Susunan Unit Inventory', icon: Boxes, category: 'Logistik & Fasilitas' },
         { id: 'armada', label: 'Kelola Armada', icon: Truck, category: 'Logistik & Fasilitas' },
         { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp, category: 'SDM & Evaluasi KPI' },
@@ -272,6 +276,8 @@ export default function App() {
         { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'Operasional 5W & QC' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional 5W & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional 5W & QC' },
+        { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+        { id: 'gudang_inventory', label: 'Susunan Unit Inventory', icon: Boxes, category: 'Logistik & Fasilitas' },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp, category: 'SDM & Evaluasi KPI' },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Evaluasi KPI' },
         { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' },
@@ -287,6 +293,8 @@ export default function App() {
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck, category: 'Operasional 5W & QC' },
         { id: 'log_task', label: 'Daily Task & QC Checklist', icon: ClipboardList, category: 'Operasional 5W & QC' },
         { id: 'findings', label: 'Temuan QC & WO', icon: AlertOctagon, category: 'Operasional 5W & QC' },
+        { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+        { id: 'gudang_inventory', label: 'Susunan Unit Inventory', icon: Boxes, category: 'Logistik & Fasilitas' },
         { id: 'kinerja_karyawan', label: 'Kinerja Saya', icon: TrendingUp, category: 'SDM & Evaluasi KPI' },
         { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Evaluasi KPI' },
         { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' }
@@ -300,6 +308,7 @@ export default function App() {
         { id: 'job_schedule', label: `Jadwal Penugasan (${currentUser.nickname || currentUser.name.split(' ')[0]})`, icon: Briefcase, category: 'Operasional 5W & QC' },
         { id: 'absensi_self', label: 'Absensi Harian', icon: UserCheck, category: 'Operasional 5W & QC' },
         { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+        { id: 'gudang_inventory', label: 'Susunan Unit Inventory', icon: Boxes, category: 'Logistik & Fasilitas' },
         { id: 'armada', label: 'Kelola Armada', icon: Truck, category: 'Logistik & Fasilitas' },
         { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList, category: 'Operasional 5W & QC' },
         { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp, category: 'SDM & Evaluasi KPI' },
@@ -312,6 +321,8 @@ export default function App() {
       { id: 'job_schedule', label: 'Jadwal Penugasan Kerja', icon: Briefcase, category: 'Operasional 5W & QC' },
       { id: 'absensi_self', label: 'Absensi Mandiri', icon: UserCheck, category: 'Operasional 5W & QC' },
       { id: 'log_task', label: 'Log Task / Daily Task', icon: ClipboardList, category: 'Operasional 5W & QC' },
+      { id: 'gudang', label: 'Manajemen Gudang', icon: Package, category: 'Logistik & Fasilitas' },
+      { id: 'gudang_inventory', label: 'Susunan Unit Inventory', icon: Boxes, category: 'Logistik & Fasilitas' },
       { id: 'kinerja_karyawan', label: 'Kinerja Karyawan', icon: TrendingUp, category: 'SDM & Evaluasi KPI' },
       { id: 'uji_kompetensi', label: 'Karir & Paspor Kompetensi', icon: Award, category: 'SDM & Evaluasi KPI' },
       { id: 'maintenance_dashboard', label: 'Monitoring Fasilitas', icon: Activity, category: 'Logistik & Fasilitas' }
@@ -1612,13 +1623,7 @@ export default function App() {
       currentUser.role === 'Team Leader'
     )
   );
-  const isGudangAuthorized = Boolean(
-    currentUser && (
-      isManagement ||
-      currentUser.division === 'Gudang' ||
-      currentUser.role === 'Gudang'
-    )
-  );
+  const isGudangAuthorized = Boolean(currentUser);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-800 font-sans">
@@ -2172,10 +2177,30 @@ export default function App() {
           <Gudang
             currentUser={currentUser}
             assets={assets}
+            onAddAsset={handleAddAsset}
+            onUpdateAsset={handleUpdateAsset}
+            onDeleteAsset={handleDeleteAsset}
             onUpdateAssetLocation={handleUpdateAssetLocation}
             onUpdateAssetCondition={handleUpdateAssetCondition}
             onAddFinding={handleAddFinding}
             onLogActivity={handleLogActivity}
+            forceSubTab="logs"
+            onNavigateTab={setActiveTab}
+          />
+        )}
+
+        {activeTab === 'gudang_inventory' && isGudangAuthorized && (
+          <Gudang
+            currentUser={currentUser}
+            assets={assets}
+            onAddAsset={handleAddAsset}
+            onUpdateAsset={handleUpdateAsset}
+            onDeleteAsset={handleDeleteAsset}
+            onUpdateAssetLocation={handleUpdateAssetLocation}
+            onUpdateAssetCondition={handleUpdateAssetCondition}
+            onAddFinding={handleAddFinding}
+            onLogActivity={handleLogActivity}
+            forceSubTab="inventory"
             onNavigateTab={setActiveTab}
           />
         )}
@@ -2184,6 +2209,9 @@ export default function App() {
           <Gudang
             currentUser={currentUser}
             assets={assets}
+            onAddAsset={handleAddAsset}
+            onUpdateAsset={handleUpdateAsset}
+            onDeleteAsset={handleDeleteAsset}
             onUpdateAssetLocation={handleUpdateAssetLocation}
             onUpdateAssetCondition={handleUpdateAssetCondition}
             onAddFinding={handleAddFinding}

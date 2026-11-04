@@ -258,6 +258,17 @@ const panelsToTest = [
     )
   },
   {
+    name: '11b. Manajemen Gudang — Susunan Unit Inventory (133 Kelompok Aset dengan Ikon Alat)',
+    render: () => renderToString(
+      <Gudang
+        currentUser={testAdminUser}
+        assets={INITIAL_ASSETS}
+        onLogActivity={dummyLogActivity}
+        forceSubTab="inventory"
+      />
+    )
+  },
+  {
     name: '12. KELOLA ARMADA & TATA KELOLA KENDARAAN (Tri-Party Governance, SPJ, P2H, RAB)',
     render: () => renderToString(
       <Gudang

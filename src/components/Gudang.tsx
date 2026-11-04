@@ -47,19 +47,241 @@ import {
   AlertTriangle,
   FileCheck,
   Users,
-  Phone
+  Phone,
+  Boxes,
+  Volume2,
+  Lightbulb,
+  Video,
+  Tv,
+  Mic,
+  Sliders,
+  Music,
+  Monitor,
+  Cpu,
+  Radio,
+  Zap,
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc, pushCollectionToCloud, deleteCloudDoc } from '../lib/cloudSync';
 import { checkVehicleDocExpiry, getVehicleExpiryAlerts } from '../utils/vehicleExpiryAlerts';
 
+function getInventoryUnitIconInfo(asset: Asset) {
+  const text = `${asset.code} ${asset.name} ${asset.brand} ${asset.serialNumber}`.toLowerCase();
+
+  if (asset.division === 'Audio') {
+    if (text.includes('mixer') || text.includes('stagebox') || text.includes('dl32') || text.includes('dl16') || text.includes('dlms') || text.includes('xilica') || text.includes('dcx') || text.includes('splitter')) {
+      return {
+        Icon: Sliders,
+        categoryLabel: 'Console & Processor',
+        bgClass: 'bg-indigo-50',
+        textClass: 'text-indigo-600',
+        borderClass: 'border-indigo-200'
+      };
+    }
+    if (text.includes('microphone') || text.includes('mic ') || text.includes('di-box') || text.includes('di-active') || text.includes('sennheiser') || text.includes('shure') || text.includes('samson')) {
+      return {
+        Icon: Mic,
+        categoryLabel: 'Microphone & DI-Box',
+        bgClass: 'bg-sky-50',
+        textClass: 'text-sky-600',
+        borderClass: 'border-sky-200'
+      };
+    }
+    if (text.includes('keyboard') || text.includes('drum') || text.includes('marshall') || text.includes('fender') || text.includes('ampeg') || text.includes('gallien') || text.includes('roland') || text.includes('pioneer') || text.includes('xdj') || text.includes('djm') || text.includes('cymbal')) {
+      return {
+        Icon: Music,
+        categoryLabel: 'Backline & Instrument',
+        bgClass: 'bg-violet-50',
+        textClass: 'text-violet-600',
+        borderClass: 'border-violet-200'
+      };
+    }
+    if (text.includes('stand ') || text.includes('takel') || text.includes('strap') || text.includes('rigging') || text.includes('booster')) {
+      return {
+        Icon: Layers,
+        categoryLabel: 'Stand & Rigging Audio',
+        bgClass: 'bg-slate-100',
+        textClass: 'text-slate-700',
+        borderClass: 'border-slate-300'
+      };
+    }
+    if (text.includes('cable') || text.includes('kabel') || text.includes('snake') || text.includes('panel') || text.includes('stabilizer') || text.includes('stavolt') || text.includes('ups')) {
+      return {
+        Icon: Zap,
+        categoryLabel: 'Cabling & Power Audio',
+        bgClass: 'bg-amber-50',
+        textClass: 'text-amber-700',
+        borderClass: 'border-amber-200'
+      };
+    }
+    return {
+      Icon: Volume2,
+      categoryLabel: 'Speaker & PA System',
+      bgClass: 'bg-blue-50',
+      textClass: 'text-blue-600',
+      borderClass: 'border-blue-200'
+    };
+  }
+
+  if (asset.division === 'Lighting') {
+    if (text.includes('grandma') || text.includes('avolites') || text.includes('quartz') || text.includes('dimmer') || text.includes('splitter dmx')) {
+      return {
+        Icon: Sliders,
+        categoryLabel: 'Lighting Console & DMX',
+        bgClass: 'bg-amber-50',
+        textClass: 'text-amber-700',
+        borderClass: 'border-amber-200'
+      };
+    }
+    if (text.includes('hazer') || text.includes('smoke') || text.includes('dry ice') || text.includes('co2')) {
+      return {
+        Icon: Sparkles,
+        categoryLabel: 'Special Effects (SFX)',
+        bgClass: 'bg-rose-50',
+        textClass: 'text-rose-600',
+        borderClass: 'border-rose-200'
+      };
+    }
+    if (text.includes('rigging') || text.includes('goalpost') || text.includes('tripod') || text.includes('stand')) {
+      return {
+        Icon: Layers,
+        categoryLabel: 'Rigging & Stand Lighting',
+        bgClass: 'bg-slate-100',
+        textClass: 'text-slate-700',
+        borderClass: 'border-slate-300'
+      };
+    }
+    if (text.includes('kabel') || text.includes('cable') || text.includes('panel')) {
+      return {
+        Icon: Zap,
+        categoryLabel: 'Power & DMX Cabling',
+        bgClass: 'bg-orange-50',
+        textClass: 'text-orange-700',
+        borderClass: 'border-orange-200'
+      };
+    }
+    return {
+      Icon: Lightbulb,
+      categoryLabel: 'Stage Lighting Fixture',
+      bgClass: 'bg-amber-50',
+      textClass: 'text-amber-600',
+      borderClass: 'border-amber-200'
+    };
+  }
+
+  if (asset.division === 'Multimedia') {
+    if (text.includes('pc streaming') || text.includes('laptop') || text.includes('macbook') || text.includes('workstation')) {
+      return {
+        Icon: Monitor,
+        categoryLabel: 'PC Workstation & Laptop',
+        bgClass: 'bg-purple-50',
+        textClass: 'text-purple-600',
+        borderClass: 'border-purple-200'
+      };
+    }
+    if (text.includes('camcorder') || text.includes('camera') || text.includes('nx100') || text.includes('mc2500') || text.includes('lumix') || text.includes('tripod kamera')) {
+      return {
+        Icon: Camera,
+        categoryLabel: 'Broadcast Camera & Tripod',
+        bgClass: 'bg-fuchsia-50',
+        textClass: 'text-fuchsia-600',
+        borderClass: 'border-fuchsia-200'
+      };
+    }
+    if (text.includes('atem') || text.includes('switcher') || text.includes('capture') || text.includes('elgato') || text.includes('soundcard') || text.includes('focusrite')) {
+      return {
+        Icon: Cpu,
+        categoryLabel: 'Switcher & Capture Card',
+        bgClass: 'bg-indigo-50',
+        textClass: 'text-indigo-600',
+        borderClass: 'border-indigo-200'
+      };
+    }
+    if (text.includes('hollyland') || text.includes('accsoon') || text.includes('clearcom') || text.includes('solidcom') || text.includes('modem') || text.includes('orbit')) {
+      return {
+        Icon: Radio,
+        categoryLabel: 'Wireless Video & Intercom',
+        bgClass: 'bg-cyan-50',
+        textClass: 'text-cyan-700',
+        borderClass: 'border-cyan-200'
+      };
+    }
+    if (text.includes('tv ') || text.includes('monitor') || text.includes('bracket')) {
+      return {
+        Icon: Tv,
+        categoryLabel: 'TV Monitor & Standing',
+        bgClass: 'bg-violet-50',
+        textClass: 'text-violet-600',
+        borderClass: 'border-violet-200'
+      };
+    }
+    return {
+      Icon: Video,
+      categoryLabel: 'Cabling SDI/HDMI & Multimedia',
+      bgClass: 'bg-purple-50',
+      textClass: 'text-purple-600',
+      borderClass: 'border-purple-200'
+    };
+  }
+
+  if (asset.division === 'Videotron') {
+    if (text.includes('novastar') || text.includes('processor') || text.includes('vx6s')) {
+      return {
+        Icon: Cpu,
+        categoryLabel: 'LED Video Processor',
+        bgClass: 'bg-emerald-50',
+        textClass: 'text-emerald-700',
+        borderClass: 'border-emerald-200'
+      };
+    }
+    if (text.includes('hanging bar') || text.includes('rigging') || text.includes('baseplate') || text.includes('tapak')) {
+      return {
+        Icon: Layers,
+        categoryLabel: 'Rigging & Hanging Bar LED',
+        bgClass: 'bg-teal-50',
+        textClass: 'text-teal-700',
+        borderClass: 'border-teal-200'
+      };
+    }
+    if (text.includes('kabel') || text.includes('lan') || text.includes('power')) {
+      return {
+        Icon: Zap,
+        categoryLabel: 'Data LAN & Power Link LED',
+        bgClass: 'bg-emerald-50',
+        textClass: 'text-emerald-600',
+        borderClass: 'border-emerald-200'
+      };
+    }
+    return {
+      Icon: Tv,
+      categoryLabel: 'Kabinet Panel LED P3.9',
+      bgClass: 'bg-emerald-50',
+      textClass: 'text-emerald-600',
+      borderClass: 'border-emerald-200'
+    };
+  }
+
+  return {
+    Icon: Package,
+    categoryLabel: 'Unit Inventaris Gudang',
+    bgClass: 'bg-slate-100',
+    textClass: 'text-slate-700',
+    borderClass: 'border-slate-200'
+  };
+}
+
 interface GudangProps {
   currentUser: Staff;
   assets: Asset[];
+  onAddAsset?: (asset: Omit<Asset, 'id' | 'repairHistory'>) => void;
+  onUpdateAsset?: (id: string, updated: Partial<Asset>) => void;
+  onDeleteAsset?: (id: string) => void;
   onUpdateAssetLocation?: (id: string, newLocation: string) => void;
   onUpdateAssetCondition?: (id: string, condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat') => void;
   onAddFinding?: (finding: Omit<import('../types').Finding, 'id' | 'dateCreated'>) => void;
   onLogActivity: (username: string, role: string, action: string) => void;
-  forceSubTab?: 'logs' | 'scanner' | 'armada_governance';
+  forceSubTab?: 'logs' | 'inventory' | 'scanner' | 'armada_governance';
   onNavigateTab?: (tab: string) => void;
   // Shared lifted state from App.tsx
   driverList?: FleetDriver[];
@@ -79,6 +301,9 @@ interface GudangProps {
 export default function Gudang({
   currentUser,
   assets,
+  onAddAsset,
+  onUpdateAsset,
+  onDeleteAsset,
   onUpdateAssetLocation,
   onUpdateAssetCondition,
   onAddFinding,
@@ -168,8 +393,8 @@ export default function Gudang({
 
   const isAdminDivision = true; // Allow viewing and managing fleet/armada
 
-  // Tab views within warehouse: 'logs' | 'scanner' | 'armada_governance'
-  const [warehouseSubTab, setWarehouseSubTab] = useState<'logs' | 'scanner' | 'armada_governance'>(() => {
+  // Tab views within warehouse: 'logs' | 'inventory' | 'scanner' | 'armada_governance'
+  const [warehouseSubTab, setWarehouseSubTab] = useState<'logs' | 'inventory' | 'scanner' | 'armada_governance'>(() => {
     return forceSubTab || 'logs';
   });
 
@@ -178,6 +403,96 @@ export default function Gudang({
       setWarehouseSubTab(forceSubTab);
     }
   }, [forceSubTab]);
+
+  // Inventory arrangement filter & modal states
+  const [inventoryDivisionFilter, setInventoryDivisionFilter] = useState<'ALL' | 'Audio' | 'Lighting' | 'Multimedia' | 'Videotron'>('ALL');
+  const [inventoryConditionFilter, setInventoryConditionFilter] = useState<'ALL' | 'Baik' | 'Rusak Ringan' | 'Rusak Berat'>('ALL');
+  const [inventorySearch, setInventorySearch] = useState('');
+  const [showAssetFormModal, setShowAssetFormModal] = useState(false);
+  const [editingAssetItem, setEditingAssetItem] = useState<Asset | null>(null);
+  const [assetFormState, setAssetFormState] = useState<{
+    code: string;
+    name: string;
+    brand: string;
+    serialNumber: string;
+    division: import('../types').Division;
+    location: string;
+    condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat';
+  }>({
+    code: '',
+    name: '',
+    brand: '',
+    serialNumber: '',
+    division: 'Audio',
+    location: 'Gudang Utama RIZ - Zona Audio',
+    condition: 'Baik'
+  });
+
+  const handleSaveAssetInventory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assetFormState.name.trim() || !assetFormState.code.trim()) {
+      alert('Kode Aset dan Nama Unit wajib diisi!');
+      return;
+    }
+
+    if (editingAssetItem) {
+      const updatedAsset: Asset = {
+        ...editingAssetItem,
+        code: assetFormState.code.trim().toUpperCase(),
+        name: assetFormState.name.trim(),
+        brand: assetFormState.brand.trim() || 'Standard',
+        serialNumber: assetFormState.serialNumber.trim() || '-',
+        division: assetFormState.division,
+        location: assetFormState.location.trim() || 'Gudang Utama RIZ',
+        condition: assetFormState.condition,
+        _syncMeta: {
+          updatedAt: new Date().toISOString(),
+          updatedBy: currentUser.name
+        }
+      };
+      const next = localAssets.map(a => a.id === editingAssetItem.id ? updatedAsset : a);
+      setLocalAssets(next);
+      localStorage.setItem('riz_assets', JSON.stringify(next));
+      saveCloudDoc('assets', editingAssetItem.id, updatedAsset, currentUser.name);
+      if (onUpdateAsset) onUpdateAsset(editingAssetItem.id, updatedAsset);
+      onLogActivity(currentUser.name, currentUser.role, `Memperbarui unit inventaris gudang: ${updatedAsset.code} - ${updatedAsset.name}`);
+    } else {
+      const newAsset: Asset = {
+        id: 'ast-custom-' + Date.now(),
+        code: assetFormState.code.trim().toUpperCase(),
+        name: assetFormState.name.trim(),
+        brand: assetFormState.brand.trim() || 'Standard',
+        serialNumber: assetFormState.serialNumber.trim() || '-',
+        division: assetFormState.division,
+        location: assetFormState.location.trim() || 'Gudang Utama RIZ',
+        condition: assetFormState.condition,
+        repairHistory: [],
+        _syncMeta: {
+          updatedAt: new Date().toISOString(),
+          updatedBy: currentUser.name
+        }
+      };
+      const next = [newAsset, ...localAssets];
+      setLocalAssets(next);
+      localStorage.setItem('riz_assets', JSON.stringify(next));
+      saveCloudDoc('assets', newAsset.id, newAsset, currentUser.name);
+      if (onAddAsset) {
+        onAddAsset({
+          code: newAsset.code,
+          name: newAsset.name,
+          brand: newAsset.brand,
+          serialNumber: newAsset.serialNumber,
+          division: newAsset.division,
+          location: newAsset.location,
+          condition: newAsset.condition
+        });
+      }
+      onLogActivity(currentUser.name, currentUser.role, `Menambahkan unit inventaris gudang baru: ${newAsset.code} - ${newAsset.name}`);
+    }
+
+    setShowAssetFormModal(false);
+    setEditingAssetItem(null);
+  };
 
   // Subtab inside Armada Governance: 'trips' | 'vehicles' | 'drivers' | 'costs'
   const [fleetSection, setFleetSection] = useState<'trips' | 'vehicles' | 'drivers' | 'costs'>('trips');
@@ -940,12 +1255,29 @@ export default function Gudang({
         {/* Action Toggle Tabs */}
         <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg self-start overflow-x-auto no-scrollbar touch-scroll max-w-full">
           <button
-            onClick={() => setWarehouseSubTab('logs')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+            onClick={() => {
+              setWarehouseSubTab('logs');
+              if (onNavigateTab) onNavigateTab('gudang');
+            }}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
               warehouseSubTab === 'logs' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            Aktivitas Log Gudang
+            <Package className="w-3.5 h-3.5" />
+            <span>Aktivitas Log Gudang</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setWarehouseSubTab('inventory');
+              if (onNavigateTab) onNavigateTab('gudang_inventory');
+            }}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              warehouseSubTab === 'inventory' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+            }`}
+          >
+            <Boxes className="w-3.5 h-3.5" />
+            <span>Susunan Unit Inventory ({localAssets.length})</span>
           </button>
           
           <button
@@ -954,11 +1286,12 @@ export default function Gudang({
               setScanMessage('');
               setScannedAsset(null);
             }}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
               warehouseSubTab === 'scanner' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-950'
             }`}
           >
-            Scan Asset (Barcode/QR)
+            <Camera className="w-3.5 h-3.5" />
+            <span>Scan Asset (Barcode/QR)</span>
           </button>
 
           {isAdminDivision && (
@@ -1042,6 +1375,148 @@ export default function Gudang({
               <div className="font-extrabold text-xl text-slate-800 mt-1">
                 {warehouseLogs.filter(l => l.type === 'Servis Masuk').reduce((acc, curr) => acc + curr.qty, 0)} Unit
               </div>
+            </div>
+          </div>
+
+          {/* SUSUNAN UNIT INVENTORY OVERVIEW DI MANAJEMEN GUDANG */}
+          <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 shrink-0">
+                  <Boxes className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                    <span>Susunan Unit Inventory Gudang Resmi</span>
+                    <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 font-mono text-[10px] font-bold rounded-full">
+                      {localAssets.length} Kelompok Unit
+                    </span>
+                  </h2>
+                  <p className="text-[11px] text-slate-500">
+                    Klik kategori divisi di bawah untuk membuka rincian susunan unit inventory beserta ikon alat masing-masing.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={OFFICIAL_INVENTORY_SPREADSHEET_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Sheet Resmi ↗</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInventoryDivisionFilter('ALL');
+                    setWarehouseSubTab('inventory');
+                  }}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Boxes className="w-3.5 h-3.5" />
+                  <span>Buka Semua Unit ({localAssets.length})</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* 1. Audio / Sound */}
+              <button
+                type="button"
+                onClick={() => {
+                  setInventoryDivisionFilter('Audio');
+                  setWarehouseSubTab('inventory');
+                }}
+                className="p-3.5 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300 hover:shadow-sm transition-all text-left flex items-start gap-3 cursor-pointer group"
+              >
+                <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                  <Volume2 className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-mono font-bold uppercase text-blue-600">DIVISI AUDIO / SOUND</span>
+                    <span className="text-[10px] font-mono font-extrabold bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
+                      {localAssets.filter(a => a.division === 'Audio').length} Unit
+                    </span>
+                  </div>
+                  <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">Speaker, Mixer & Backline</div>
+                  <div className="text-[10px] text-slate-500 mt-1 font-mono">Nilai: Rp 486.950.000</div>
+                </div>
+              </button>
+
+              {/* 2. Lighting */}
+              <button
+                type="button"
+                onClick={() => {
+                  setInventoryDivisionFilter('Lighting');
+                  setWarehouseSubTab('inventory');
+                }}
+                className="p-3.5 rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50/70 to-white hover:border-amber-300 hover:shadow-sm transition-all text-left flex items-start gap-3 cursor-pointer group"
+              >
+                <div className="p-2.5 rounded-xl bg-amber-500 text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                  <Lightbulb className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-mono font-bold uppercase text-amber-700">DIVISI LIGHTING</span>
+                    <span className="text-[10px] font-mono font-extrabold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
+                      {localAssets.filter(a => a.division === 'Lighting').length} Unit
+                    </span>
+                  </div>
+                  <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">Moving Beam, Parled & SFX</div>
+                  <div className="text-[10px] text-slate-500 mt-1 font-mono">Nilai: Rp 220.600.000</div>
+                </div>
+              </button>
+
+              {/* 3. Multimedia / Streaming */}
+              <button
+                type="button"
+                onClick={() => {
+                  setInventoryDivisionFilter('Multimedia');
+                  setWarehouseSubTab('inventory');
+                }}
+                className="p-3.5 rounded-xl border border-purple-100 bg-gradient-to-br from-purple-50/70 to-white hover:border-purple-300 hover:shadow-sm transition-all text-left flex items-start gap-3 cursor-pointer group"
+              >
+                <div className="p-2.5 rounded-xl bg-purple-600 text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                  <Video className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-mono font-bold uppercase text-purple-700">DIVISI MULTIMEDIA</span>
+                    <span className="text-[10px] font-mono font-extrabold bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
+                      {localAssets.filter(a => a.division === 'Multimedia').length} Unit
+                    </span>
+                  </div>
+                  <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">PC vMix, Camcorder & Clearcom</div>
+                  <div className="text-[10px] text-slate-500 mt-1 font-mono">Nilai: Rp 339.848.000</div>
+                </div>
+              </button>
+
+              {/* 4. Videotron / LED */}
+              <button
+                type="button"
+                onClick={() => {
+                  setInventoryDivisionFilter('Videotron');
+                  setWarehouseSubTab('inventory');
+                }}
+                className="p-3.5 rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300 hover:shadow-sm transition-all text-left flex items-start gap-3 cursor-pointer group"
+              >
+                <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                  <Tv className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-mono font-bold uppercase text-emerald-700">DIVISI VIDEOTRON / LED</span>
+                    <span className="text-[10px] font-mono font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+                      {localAssets.filter(a => a.division === 'Videotron').length} Unit
+                    </span>
+                  </div>
+                  <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">LED P3.9 60m (30 Box) & VX6s</div>
+                  <div className="text-[10px] text-slate-500 mt-1 font-mono">120 Panel + Rigging Set</div>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -1375,6 +1850,417 @@ export default function Gudang({
 
         </div>
       )}
+
+      {/* VIEW 1B: SUSUNAN UNIT INVENTORY GUDANG RESMI (DENGAN IKON PER DIVISI & ALAT) */}
+      {warehouseSubTab === 'inventory' && (() => {
+        const filteredInventory = localAssets.filter(asset => {
+          if (inventoryDivisionFilter !== 'ALL' && asset.division !== inventoryDivisionFilter) return false;
+          if (inventoryConditionFilter !== 'ALL' && asset.condition !== inventoryConditionFilter) return false;
+          if (inventorySearch.trim()) {
+            const q = inventorySearch.toLowerCase().trim();
+            return (
+              asset.code.toLowerCase().includes(q) ||
+              asset.name.toLowerCase().includes(q) ||
+              asset.brand.toLowerCase().includes(q) ||
+              asset.serialNumber.toLowerCase().includes(q) ||
+              asset.location.toLowerCase().includes(q)
+            );
+          }
+          return true;
+        });
+
+        const divisionConfigs = [
+          {
+            key: 'Audio' as const,
+            title: 'Divisi Audio / Sound System',
+            sheetName: 'Inventory SOUND MAR 2024',
+            totalValueText: 'Total Nilai Inventaris: Rp 486.950.000',
+            Icon: Volume2,
+            headerBg: 'from-blue-600 to-indigo-700',
+            badgeBg: 'bg-blue-50 text-blue-700 border-blue-200'
+          },
+          {
+            key: 'Lighting' as const,
+            title: 'Divisi Lighting & Special Effects',
+            sheetName: 'Inventory LIGHTING MAR 2024',
+            totalValueText: 'Total Nilai Inventaris: Rp 220.600.000',
+            Icon: Lightbulb,
+            headerBg: 'from-amber-500 to-orange-600',
+            badgeBg: 'bg-amber-50 text-amber-800 border-amber-200'
+          },
+          {
+            key: 'Multimedia' as const,
+            title: 'Divisi Multimedia & Live Streaming',
+            sheetName: 'INVENTORY STREEMING MAR 2024',
+            totalValueText: 'Total Nilai Inventaris: Rp 339.848.000',
+            Icon: Video,
+            headerBg: 'from-purple-600 to-violet-700',
+            badgeBg: 'bg-purple-50 text-purple-700 border-purple-200'
+          },
+          {
+            key: 'Videotron' as const,
+            title: 'Divisi Videotron & LED Display',
+            sheetName: 'INVENTORY LED MAR 2024',
+            totalValueText: 'LED Hybrid P3.9 60 Meter (30 Box / 120 Panel) + VX6s',
+            Icon: Tv,
+            headerBg: 'from-emerald-600 to-teal-700',
+            badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+          }
+        ];
+
+        const activeDivisions = inventoryDivisionFilter === 'ALL'
+          ? divisionConfigs
+          : divisionConfigs.filter(d => d.key === inventoryDivisionFilter);
+
+        return (
+          <div className="space-y-6">
+            {/* Top Summary & Action Bar */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div className="flex items-start gap-3">
+                  <div className="p-3 bg-indigo-600 text-white rounded-xl shadow-xs shrink-0">
+                    <Boxes className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-lg font-extrabold text-slate-900">
+                        Susunan Unit Inventory Gudang Resmi
+                      </h2>
+                      <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 font-mono text-xs font-bold rounded-full">
+                        {localAssets.length} Kelompok Unit
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Susunan unit peralatan gudang berdasarkan divisi, spesifikasi, jumlah unit (QTY), nilai aset, dan kondisi aktual.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <a
+                    href={OFFICIAL_INVENTORY_SPREADSHEET_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                    <span>Buka Google Sheet Inventaris ↗</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingAssetItem(null);
+                      setAssetFormState({
+                        code: `AST-AUD-${String(localAssets.length + 1).padStart(3, '0')}`,
+                        name: '',
+                        brand: '',
+                        serialNumber: 'QTY: 1 Unit',
+                        division: inventoryDivisionFilter === 'ALL' ? 'Audio' : inventoryDivisionFilter,
+                        location: 'Gudang Utama RIZ',
+                        condition: 'Baik'
+                      });
+                      setShowAssetFormModal(true);
+                    }}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah Unit Inventory</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Division Filter Pills with Distinct Icons */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl overflow-x-auto no-scrollbar touch-scroll max-w-full">
+                  <button
+                    type="button"
+                    onClick={() => setInventoryDivisionFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                      inventoryDivisionFilter === 'ALL'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <Boxes className="w-3.5 h-3.5" />
+                    <span>Semua Divisi</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${inventoryDivisionFilter === 'ALL' ? 'bg-indigo-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {localAssets.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInventoryDivisionFilter('Audio')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                      inventoryDivisionFilter === 'Audio'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                    <span>Audio / Sound</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${inventoryDivisionFilter === 'Audio' ? 'bg-blue-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {localAssets.filter(a => a.division === 'Audio').length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInventoryDivisionFilter('Lighting')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                      inventoryDivisionFilter === 'Lighting'
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <Lightbulb className="w-3.5 h-3.5" />
+                    <span>Lighting</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${inventoryDivisionFilter === 'Lighting' ? 'bg-amber-700 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {localAssets.filter(a => a.division === 'Lighting').length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInventoryDivisionFilter('Multimedia')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                      inventoryDivisionFilter === 'Multimedia'
+                        ? 'bg-purple-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>Multimedia / Streaming</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${inventoryDivisionFilter === 'Multimedia' ? 'bg-purple-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {localAssets.filter(a => a.division === 'Multimedia').length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setInventoryDivisionFilter('Videotron')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                      inventoryDivisionFilter === 'Videotron'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <Tv className="w-3.5 h-3.5" />
+                    <span>Videotron / LED</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${inventoryDivisionFilter === 'Videotron' ? 'bg-emerald-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {localAssets.filter(a => a.division === 'Videotron').length}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Search & Condition Filter */}
+                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Cari unit / kode / merk / spesifikasi..."
+                      value={inventorySearch}
+                      onChange={(e) => setInventorySearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
+                    />
+                  </div>
+                  <select
+                    value={inventoryConditionFilter}
+                    onChange={(e) => setInventoryConditionFilter(e.target.value as any)}
+                    className="px-3 py-1.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  >
+                    <option value="ALL">Semua Kondisi ({localAssets.length})</option>
+                    <option value="Baik">Kondisi Baik ({localAssets.filter(a => a.condition === 'Baik').length})</option>
+                    <option value="Rusak Ringan">Rusak Ringan / Catatan ({localAssets.filter(a => a.condition === 'Rusak Ringan').length})</option>
+                    <option value="Rusak Berat">Rusak Berat / Hilang ({localAssets.filter(a => a.condition === 'Rusak Berat').length})</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Structured Division Sections & Unit Cards with Individual Equipment Icons */}
+            {activeDivisions.map(divCfg => {
+              const divAssets = filteredInventory.filter(a => a.division === divCfg.key);
+              if (divAssets.length === 0) return null;
+              const DivIcon = divCfg.Icon;
+
+              return (
+                <div key={divCfg.key} className="space-y-4">
+                  {/* Division Section Banner */}
+                  <div className={`p-4 rounded-2xl bg-gradient-to-r ${divCfg.headerBg} text-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3`}>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-white/15 backdrop-blur-xs rounded-xl border border-white/20 shrink-0">
+                        <DivIcon className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-black tracking-tight">{divCfg.title}</h3>
+                          <span className="px-2 py-0.5 bg-white/20 rounded-full text-[10px] font-mono font-bold">
+                            {divAssets.length} Kelompok Unit
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-white/85 font-mono mt-0.5">
+                          Tab Sheet: {divCfg.sheetName} • {divCfg.totalValueText}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] font-mono font-bold">
+                      <span className="px-2.5 py-1 bg-white/15 rounded-lg">
+                        Baik: {divAssets.filter(a => a.condition === 'Baik').length}
+                      </span>
+                      {divAssets.filter(a => a.condition !== 'Baik').length > 0 && (
+                        <span className="px-2.5 py-1 bg-rose-500/40 border border-white/20 rounded-lg">
+                          Catatan/Servis: {divAssets.filter(a => a.condition !== 'Baik').length}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Grid of Inventory Units */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {divAssets.map(asset => {
+                      const { Icon: UnitIcon, categoryLabel, bgClass, textClass, borderClass } = getInventoryUnitIconInfo(asset);
+                      const isInService = asset.location.includes('SERVICE');
+
+                      return (
+                        <div
+                          key={asset.id}
+                          className="bg-white rounded-xl border border-slate-200/90 hover:border-indigo-300 shadow-2xs hover:shadow-md transition-all p-4 flex flex-col justify-between gap-3"
+                        >
+                          <div className="space-y-2.5">
+                            {/* Top Row: Unit Specific Icon + Category + Code + Condition */}
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`p-2.5 rounded-xl border ${bgClass} ${textClass} ${borderClass} shrink-0`}>
+                                  <UnitIcon className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-mono font-extrabold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
+                                      {asset.code}
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-slate-400 truncate">
+                                      {categoryLabel}
+                                    </span>
+                                  </div>
+                                  <h4 className="text-xs font-extrabold text-slate-900 mt-1 leading-snug">
+                                    {asset.name}
+                                  </h4>
+                                </div>
+                              </div>
+
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase shrink-0 ${
+                                asset.condition === 'Baik'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : asset.condition === 'Rusak Ringan'
+                                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                  : 'bg-rose-50 text-rose-700 border border-rose-200'
+                              }`}>
+                                {asset.condition}
+                              </span>
+                            </div>
+
+                            {/* Details Box: Brand, Specs/QTY/Value, Location */}
+                            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 space-y-1.5 text-[11px]">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-slate-400 font-medium">Merek / Brand:</span>
+                                <span className="font-bold text-slate-800 text-right">{asset.brand}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-medium block">Rincian Unit / QTY / Nilai Sheet:</span>
+                                <span className="font-mono text-[10px] font-semibold text-slate-700 leading-relaxed block mt-0.5">
+                                  {asset.serialNumber}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/70">
+                                <span className="text-slate-400 font-medium flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-slate-400" />
+                                  <span>Lokasi:</span>
+                                </span>
+                                <span className={`font-bold text-right ${isInService ? 'text-rose-600' : 'text-slate-700'}`}>
+                                  {asset.location}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Card Footer Actions */}
+                          <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setWarehouseSubTab('scanner');
+                                setScanSearchInput(asset.code);
+                                setScannedAsset(asset);
+                                setScanMessage(`SUKSES: Unit ${asset.code} (${asset.name}) dipilih dari Susunan Inventory.`);
+                              }}
+                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Camera className="w-3 h-3" />
+                              <span>Scan / Cek</span>
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingAssetItem(asset);
+                                  setAssetFormState({
+                                    code: asset.code,
+                                    name: asset.name,
+                                    brand: asset.brand,
+                                    serialNumber: asset.serialNumber,
+                                    division: asset.division,
+                                    location: asset.location,
+                                    condition: asset.condition
+                                  });
+                                  setShowAssetFormModal(true);
+                                }}
+                                className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                                <span>Edit</span>
+                              </button>
+
+                              {onDeleteAsset && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (confirm(`Hapus unit "${asset.name}" (${asset.code}) dari daftar inventaris?`)) {
+                                      const next = localAssets.filter(a => a.id !== asset.id);
+                                      setLocalAssets(next);
+                                      localStorage.setItem('riz_assets', JSON.stringify(next));
+                                      onDeleteAsset(asset.id);
+                                      onLogActivity(currentUser.name, currentUser.role, `Menghapus unit inventaris: ${asset.code} - ${asset.name}`);
+                                    }
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Hapus Unit"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {filteredInventory.length === 0 && (
+              <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-2">
+                <Boxes className="w-10 h-10 text-slate-300 mx-auto" />
+                <div className="text-sm font-bold text-slate-700">Tidak Ada Unit Inventory yang Cocok</div>
+                <p className="text-xs text-slate-400">Silakan ubah kata kunci pencarian atau filter divisi/kondisi di atas.</p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* VIEW 2: BARCODE & QR SCANNER SIMULATOR FOR SCAN ASSET */}
       {warehouseSubTab === 'scanner' && (
@@ -3542,6 +4428,149 @@ export default function Gudang({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* MODAL TAMBAH / EDIT UNIT INVENTORY GUDANG */}
+      {showAssetFormModal && (
+        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50">
+          <form
+            onSubmit={handleSaveAssetInventory}
+            className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-5 space-y-4 max-h-[90dvh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                  <Boxes className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">
+                    {editingAssetItem ? 'Edit Unit Inventory Gudang' : 'Tambah Unit Inventory Baru'}
+                  </h3>
+                  <p className="text-[10px] text-slate-500">Master Inventaris Peralatan PT. Riz Production Multi Kreasi</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAssetFormModal(false);
+                  setEditingAssetItem(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Kode Unit Aset *</label>
+                  <input
+                    type="text"
+                    required
+                    value={assetFormState.code}
+                    onChange={(e) => setAssetFormState({ ...assetFormState, code: e.target.value })}
+                    placeholder="AST-AUD-071"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono font-bold text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Divisi Unit *</label>
+                  <select
+                    value={assetFormState.division}
+                    onChange={(e) => setAssetFormState({ ...assetFormState, division: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800"
+                  >
+                    <option value="Audio">Audio / Sound</option>
+                    <option value="Lighting">Lighting</option>
+                    <option value="Multimedia">Multimedia / Streaming</option>
+                    <option value="Videotron">Videotron / LED</option>
+                    <option value="Gudang">Gudang</option>
+                    <option value="Service">Service</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nama Unit & Jumlah (QTY) *</label>
+                <input
+                  type="text"
+                  required
+                  value={assetFormState.name}
+                  onChange={(e) => setAssetFormState({ ...assetFormState, name: e.target.value })}
+                  placeholder="Contoh: Line Array Speaker Audiocenter Avanda 210A (12 Unit)"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Merek / Brand</label>
+                  <input
+                    type="text"
+                    value={assetFormState.brand}
+                    onChange={(e) => setAssetFormState({ ...assetFormState, brand: e.target.value })}
+                    placeholder="Contoh: AUDIOCENTER"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Kondisi Fisik</label>
+                  <select
+                    value={assetFormState.condition}
+                    onChange={(e) => setAssetFormState({ ...assetFormState, condition: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800"
+                  >
+                    <option value="Baik">Baik (Siap Pakai)</option>
+                    <option value="Rusak Ringan">Rusak Ringan (Perlu Servis)</option>
+                    <option value="Rusak Berat">Rusak Berat / Hilang</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Rincian Nomor Urut / QTY / Nilai / Remark</label>
+                <input
+                  type="text"
+                  value={assetFormState.serialNumber}
+                  onChange={(e) => setAssetFormState({ ...assetFormState, serialNumber: e.target.value })}
+                  placeholder="No. 1-12 • QTY: 12 Unit • Nilai: Rp 140.000.000"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Lokasi Penyimpanan Gudang</label>
+                <input
+                  type="text"
+                  value={assetFormState.location}
+                  onChange={(e) => setAssetFormState({ ...assetFormState, location: e.target.value })}
+                  placeholder="Gudang Utama RIZ - Zona Audio"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAssetFormModal(false);
+                  setEditingAssetItem(null);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all cursor-pointer shadow-xs"
+              >
+                {editingAssetItem ? 'Simpan Perubahan' : 'Simpan Unit Baru'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
