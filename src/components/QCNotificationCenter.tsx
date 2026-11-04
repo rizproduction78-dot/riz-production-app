@@ -134,14 +134,20 @@ const STRICT_FINDING_TERMS = [
   'dead pixel',
   'ilang jalur',
   'hilang jalur',
+  'ganti jalur',
   'kena ic',
+  'ganti ic warna',
   'mati total',
   'led merah mati',
+  'red mati',
   'warm separo',
+  'red separo',
   'separo',
   'suara serak',
   'serak',
+  'suara kecil',
   'error',
+  'eror',
   'rusak',
   'hilang',
   'los 1 unit',
@@ -150,11 +156,38 @@ const STRICT_FINDING_TERMS = [
   'minus breket',
   'blm clear',
   'belum clear',
+  'belum normal',
+  'masih bermasalah',
+  'bermasalah',
+  'minta ganti',
+  'ga bisa ngisi',
+  'tidak bisa ngisi',
+  'ga bisa input',
+  'twiter mati',
+  'tweeter mati',
+  'twitwe kecil',
+  'mesin mati',
+  'tidak komplite',
+  'pcb bengkok',
+  'servise berat',
+  'service berat',
   'kirim ke pib',
   'modul rusak',
   'korslet',
+  'konslet',
   'bocor'
 ];
+
+function extractDateFromId(idStr?: string): string | undefined {
+  if (!idStr) return undefined;
+  const m = String(idStr).match(/(20\d{2})-?(\d{2})-?(\d{2})/);
+  if (!m) return undefined;
+  const [, yyyy, mm, dd] = m;
+  if (Number(mm) >= 1 && Number(mm) <= 12 && Number(dd) >= 1 && Number(dd) <= 31) {
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return undefined;
+}
 
 export default function QCNotificationCenter({
   dailyReports = [],
@@ -304,18 +337,34 @@ export default function QCNotificationCenter({
     // 1. INPUT DAILY TASK
     dailyTasks.forEach(task => {
       if (!task || !task.title) return;
-      const taskDate = task.createdAt ? task.createdAt.split('T')[0] : '';
-      if (filterMonth && taskDate && !taskDate.startsWith(filterMonth) && (!task.dueDate || !task.dueDate.startsWith(filterMonth))) return;
       const id = task.id || `task-${task.createdAt || Date.now()}-${task.title}`;
+      const idDate = extractDateFromId(id);
+      const dueDateClean = task.dueDate ? String(task.dueDate).split('T')[0] : '';
+      const createdDateClean = task.createdAt ? String(task.createdAt).split('T')[0] : '';
+      const dateVal = idDate || dueDateClean || createdDateClean || new Date().toISOString().split('T')[0];
+
+      if (filterMonth && !dateVal.startsWith(filterMonth)) return;
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
-      const dateVal = task.createdAt ? task.createdAt.split('T')[0] : new Date().toISOString().split('T')[0];
-      const timeVal = task.createdAt && task.createdAt.includes('T') ? task.createdAt.split('T')[1].slice(0, 5) : undefined;
+      const syncUpdatedBy = (task as any)._syncMeta?.updatedBy;
+      const isSyncTimestamp =
+        Boolean(idDate) ||
+        createdDateClean !== dateVal ||
+        syncUpdatedBy === 'Supabase Cloud Sync' ||
+        syncUpdatedBy === 'System Canonical Sync';
+      const timeVal =
+        !isSyncTimestamp && task.createdAt && task.createdAt.includes('T')
+          ? task.createdAt.split('T')[1].slice(0, 5)
+          : undefined;
       const staffVal = task.assignedName || task.assignedTo || 'Tim Lapangan';
-      const actVal = `${task.description || task.title}${task.dueDate ? ` • Target: ${task.dueDate}` : ''} [Status: ${task.status}]`;
+      const effectiveTargetDate = dueDateClean || dateVal;
+      const actVal = `${task.description || task.title}${effectiveTargetDate ? ` • Target: ${effectiveTargetDate}` : ''} [Status: ${task.status}]`;
 
       if (checkIsDuplicate(dateVal, staffVal, task.title)) return;
+
+      const lowerTaskText = `${task.title || ''} ${task.description || ''} ${(task as any).notes || ''}`.toLowerCase();
+      const isTaskKendala = STRICT_FINDING_TERMS.some(t => lowerTaskText.includes(t));
 
       list.push({
         id,
@@ -326,8 +375,8 @@ export default function QCNotificationCenter({
         category: 'Daily Task',
         title: `Input Daily Task: ${task.title}`,
         activity: actVal,
-        qcResult: task.status === 'Done' ? 'OK' : 'INFO',
-        timestamp: parseSafeTimestamp(task.createdAt, timeVal, task.id),
+        qcResult: isTaskKendala ? 'NG' : (task.status === 'Done' ? 'OK' : 'INFO'),
+        timestamp: parseSafeTimestamp(dateVal, timeVal, task.id),
         source: 'Daily Task Kanban',
         targetTab: 'log_task'
       });
@@ -336,13 +385,14 @@ export default function QCNotificationCenter({
     // 2. INPUT DAILY LOG (Laporan Harian Staf & Checklist Logbook QC)
     dailyReports.forEach(rep => {
       if (!rep || !rep.activity || rep.activity === '-' || String(rep.activity).trim() === '') return;
-      if (filterMonth && rep.date && !rep.date.startsWith(filterMonth)) return;
       const id = rep.id || `rep-${rep.date}-${rep.staffName}-${rep.activity.slice(0, 10)}`;
+      const dateVal = extractDateFromId(id) || (rep.date ? String(rep.date).slice(0, 10) : '');
+      if (!dateVal || (filterMonth && !dateVal.startsWith(filterMonth))) return;
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
       const staffVal = rep.staffName || 'Staff';
-      if (checkIsDuplicate(rep.date, staffVal, rep.activity)) return;
+      if (checkIsDuplicate(dateVal, staffVal, rep.activity)) return;
 
       const lowerAct = String(rep.activity).toLowerCase();
       const lowerNotes = String(rep.notes || '').toLowerCase();
@@ -350,7 +400,7 @@ export default function QCNotificationCenter({
 
       list.push({
         id,
-        date: rep.date,
+        date: dateVal,
         staffName: staffVal,
         division: rep.division || 'Umum',
         category: 'Daily Log',
@@ -358,7 +408,7 @@ export default function QCNotificationCenter({
         activity: rep.activity,
         notes: rep.notes && rep.notes !== '-' ? rep.notes : undefined,
         qcResult: isKendala ? 'NG' : 'OK',
-        timestamp: parseSafeTimestamp(rep.date, undefined, rep.id),
+        timestamp: parseSafeTimestamp(dateVal, undefined, rep.id),
         source: rep._source === 'google_sheet' ? 'Google Sheet Sync' : 'Input Aplikasi',
         targetTab: 'log_task'
       });
@@ -366,18 +416,19 @@ export default function QCNotificationCenter({
 
     logbookEntries.forEach(log => {
       if (!log || !log.activity) return;
-      if (filterMonth && log.date && !log.date.startsWith(filterMonth)) return;
       const id = log.id || `qc-${log.date}-${log.staffName}-${log.activity.slice(0, 10)}`;
+      const dateVal = extractDateFromId(id) || (log.date ? String(log.date).slice(0, 10) : '');
+      if (!dateVal || (filterMonth && !dateVal.startsWith(filterMonth))) return;
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
       const staffVal = log.staffName || 'Teknisi QC';
-      if (checkIsDuplicate(log.date, staffVal, log.activity)) return;
+      if (checkIsDuplicate(dateVal, staffVal, log.activity)) return;
 
       const isNg = log.result === 'NG';
       list.push({
         id,
-        date: log.date,
+        date: dateVal,
         time: log.time,
         staffName: staffVal,
         division: log.division || 'Umum',
@@ -386,7 +437,7 @@ export default function QCNotificationCenter({
         activity: log.activity,
         notes: log.followUp && log.followUp !== '-' ? log.followUp : undefined,
         qcResult: isNg ? 'NG' : 'OK',
-        timestamp: parseSafeTimestamp(log.date, log.time, log.id),
+        timestamp: parseSafeTimestamp(dateVal, log.time, log.id),
         source: 'Form QC Onhouse',
         targetTab: 'log_task'
       });
@@ -395,12 +446,12 @@ export default function QCNotificationCenter({
     // 3. TEMUAN UNIT BERMASALAH OLEH SEMUA DIVISI (Findings Audio, Lighting, Videotron, Multimedia, Service, Gudang)
     findings.forEach(f => {
       if (!f || !f.issue) return;
-      if (filterMonth && f.dateCreated && !f.dateCreated.startsWith(filterMonth) && (!f.targetDate || !f.targetDate.startsWith(filterMonth))) return;
       const id = f.id || `find-${f.dateCreated}-${f.equipment}-${f.issue.slice(0, 10)}`;
+      const dateVal = extractDateFromId(id) || (f.dateCreated ? String(f.dateCreated).slice(0, 10) : new Date().toISOString().split('T')[0]);
+      if (filterMonth && !dateVal.startsWith(filterMonth)) return;
       if (seenIds.has(id)) return;
       seenIds.add(id);
 
-      const dateVal = f.dateCreated || new Date().toISOString().split('T')[0];
       const staffVal = f.pic || 'Teknisi';
       if (checkIsDuplicate(dateVal, staffVal, f.issue)) return;
 

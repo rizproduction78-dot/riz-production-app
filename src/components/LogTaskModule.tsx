@@ -8,7 +8,7 @@ import { PrintHeader } from './PrintHeader';
 import { Staff, Division, DailyReport as DailyReportType, DailyTask, Finding, LogbookEntry, WorkOrder, OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL } from '../types';
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, getMasterStaffList } from '../data';
 import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';
-import { saveCloudDoc, deleteCloudDoc, subscribeCloudCollection } from '../lib/cloudSync';
+import { saveCloudDoc, deleteCloudDoc, subscribeCloudCollection, normalizeCollectionItems } from '../lib/cloudSync';
 import { getStaffDivisions, isStaffInDivision } from '../utils/kpiCalculator';
 import { getActiveMonthKey, formatMonthLabel } from '../data/staffSchedules';
 import { compressImageFile } from '../utils/imageUtils';
@@ -146,7 +146,7 @@ export default function LogTaskModule({
         }
       } catch (e) {}
     }
-    return Array.from(map.values());
+    return normalizeCollectionItems('daily_tasks', Array.from(map.values()));
   });
   const [cloudSynced, setCloudSynced] = useState<boolean>(false);
 
@@ -554,6 +554,12 @@ export default function LogTaskModule({
 
   const [filterByActiveMonth, setFilterByActiveMonth] = useState<boolean>(true);
 
+  const getTaskDateStr = (t: DailyTask): string => {
+    const idMatch = String(t.id || '').match(/(20\d{2})-?(\d{2})-?(\d{2})/);
+    if (idMatch) return `${idMatch[1]}-${idMatch[2]}-${idMatch[3]}`;
+    return String(t.dueDate || t.createdAt || '').slice(0, 10);
+  };
+
   const filteredTasks = tasks.filter(t => {
     const matchSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -562,7 +568,7 @@ export default function LogTaskModule({
       ? (filterDivision === 'All' || t.division === filterDivision || (isDualStaffName(t.assignedName) && (filterDivision === 'Videotron' || filterDivision === 'Service')))
       : (t.division === currentUser.division || userDivs.includes(t.division) || t.assignedName === currentUser.name || t.createdBy === currentUser.name || (isDualStaffName(currentUser.name) && (t.division === 'Videotron' || t.division === 'Service')));
     const matchPri = filterPriority === 'All' || t.priority === filterPriority;
-    const tDate = String(t.createdAt || t.dueDate || '').slice(0, 7);
+    const tDate = getTaskDateStr(t).slice(0, 7);
     const matchMonth = !filterByActiveMonth || activeMonth === 'all' || !activeMonth || !tDate
       ? true
       : tDate === activeMonth;
@@ -593,8 +599,8 @@ export default function LogTaskModule({
       const prioOrder: Record<string, number> = { 'Tinggi': 1, 'Sedang': 2, 'Rendah': 3 };
       return (prioOrder[a.priority] || 99) - (prioOrder[b.priority] || 99);
     } else {
-      const dateA = String(a.createdAt || a.dueDate || '').slice(0, 10);
-      const dateB = String(b.dueDate || a.createdAt || '').slice(0, 10);
+      const dateA = getTaskDateStr(a);
+      const dateB = getTaskDateStr(b);
       if (dateA !== dateB) return dateB.localeCompare(dateA);
       return b.id.localeCompare(a.id, undefined, { numeric: true });
     }

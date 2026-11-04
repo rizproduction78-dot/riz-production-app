@@ -340,7 +340,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference (100% authentic multi-month tabulation & Official Armada)
-  const REF_SYNC_KEY = 'riz_ref_synced_v67_november_gsheet_7916507_full_commit';
+  const REF_SYNC_KEY = 'riz_ref_synced_v69_vercel_supabase_full_parity';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
@@ -350,11 +350,21 @@ export default function App() {
         if (Array.isArray(existing)) {
           existing.forEach((item: any) => {
             if (!item?.id) return;
+            const idStr = String(item.id);
             // Bersihkan entri google_sheet bulan Oktober & November lama yang nomor barisnya berubah agar digantikan data kanonikal terbaru
             if (
               (storageKey === 'riz_daily_reports_v2' || storageKey === 'riz_logbook_entries_v2') &&
               item._source === 'google_sheet' &&
               (String(item.date || '').startsWith('2026-10') || String(item.date || '').startsWith('2026-11'))
+            ) {
+              return;
+            }
+            if (storageKey === 'riz_daily_tasks_v2' && idStr.startsWith('dt-')) {
+              return;
+            }
+            if (
+              (storageKey === 'riz_findings_v2' || storageKey === 'riz_work_orders_v2') &&
+              (idStr.startsWith('find-202611') || idStr.startsWith('wo-202611'))
             ) {
               return;
             }
@@ -367,11 +377,13 @@ export default function App() {
         return canonical;
       }
     };
-    localStorage.setItem('riz_findings_v2', JSON.stringify(mergeById(INITIAL_FINDINGS, 'riz_findings_v2')));
-    localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(mergeById(INITIAL_DAILY_TASKS, 'riz_daily_tasks_v2')));
-    localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(mergeById(INITIAL_LOGBOOK_ENTRIES, 'riz_logbook_entries_v2')));
-    localStorage.setItem('riz_daily_reports_v2', JSON.stringify(mergeById(INITIAL_DAILY_REPORTS, 'riz_daily_reports_v2')));
-    localStorage.setItem('riz_work_orders_v2', JSON.stringify(mergeById(INITIAL_WORK_ORDERS, 'riz_work_orders_v2')));
+    const mergedDailyTasks = normalizeCollectionItems('daily_tasks', mergeById(INITIAL_DAILY_TASKS, 'riz_daily_tasks_v2'));
+    localStorage.setItem('riz_findings_v2', JSON.stringify(normalizeCollectionItems('findings', mergeById(INITIAL_FINDINGS, 'riz_findings_v2'))));
+    localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(mergedDailyTasks));
+    localStorage.setItem('riz_daily_tasks', JSON.stringify(mergedDailyTasks));
+    localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(normalizeCollectionItems('logbook_entries', mergeById(INITIAL_LOGBOOK_ENTRIES, 'riz_logbook_entries_v2'))));
+    localStorage.setItem('riz_daily_reports_v2', JSON.stringify(normalizeCollectionItems('daily_reports', mergeById(INITIAL_DAILY_REPORTS, 'riz_daily_reports_v2'))));
+    localStorage.setItem('riz_work_orders_v2', JSON.stringify(normalizeCollectionItems('work_orders', mergeById(INITIAL_WORK_ORDERS, 'riz_work_orders_v2'))));
     localStorage.setItem('riz_master_staff_list', JSON.stringify(STAFF_LIST));
     localStorage.setItem('riz_freelance_workers', JSON.stringify(INITIAL_FREELANCE_WORKERS));
     localStorage.setItem('riz_master_vehicles', JSON.stringify(INITIAL_VEHICLES));
@@ -390,6 +402,11 @@ export default function App() {
     localStorage.removeItem('riz_deleted_ids_master_vehicles');
 
     localStorage.setItem(REF_SYNC_KEY, 'true');
+
+    // Hapus ID duplikat/usang dari penyimpanan Cloud
+    ['dt-20261101-02', 'dt-20261101-03'].forEach(id => deleteCloudDoc('daily_tasks', id).catch(() => {}));
+    ['find-20261101-kharo-2', 'find-20261103-heri-1', 'find-20261103-yudis-1', 'find-20261104-butonk-1'].forEach(id => deleteCloudDoc('findings', id).catch(() => {}));
+    ['wo-20261101-kharo-2', 'wo-20261103-heri-1', 'wo-20261103-yudis-1', 'wo-20261104-butonk-1'].forEach(id => deleteCloudDoc('work_orders', id).catch(() => {}));
 
     // Simpan Wahyudin (Unyim) resmi ke Cloud master_staff
     saveCloudDoc('master_staff', 'staff-unyin', {
@@ -570,7 +587,7 @@ export default function App() {
         }
       } catch (e) {}
     }
-    return Array.from(map.values());
+    return normalizeCollectionItems('daily_tasks', Array.from(map.values()));
   });
 
   const [findings, setFindings] = useState<Finding[]>(() => {

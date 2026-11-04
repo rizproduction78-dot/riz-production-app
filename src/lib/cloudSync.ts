@@ -7,7 +7,7 @@
  * Powered by Unified Local Storage, BroadcastChannel, Supabase, and Google Sheets Synchronization.
  */
 
-import { normalizeStaffMaster, normalizeVehiclesMaster, STAFF_LIST, getMasterStaffList } from '../data';
+import { normalizeStaffMaster, normalizeVehiclesMaster, STAFF_LIST, getMasterStaffList, INITIAL_DAILY_TASKS } from '../data';
 import { isStaffMatch } from '../utils/kpiCalculator';
 import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
 import {
@@ -246,16 +246,104 @@ export function clearDeletedId(collectionName: string, docId: string) {
   } catch (e) {}
 }
 
+const OBSOLETE_LEGACY_IDS = new Set<string>([
+  'dt-20261101-02',
+  'dt-20261101-03',
+  'find-20261101-kharo-2',
+  'find-20261103-heri-1',
+  'find-20261103-yudis-1',
+  'find-20261104-butonk-1',
+  'wo-20261101-kharo-2',
+  'wo-20261103-heri-1',
+  'wo-20261103-yudis-1',
+  'wo-20261104-butonk-1',
+  'rep-20261101-kharo-1-0',
+  'rep-20261101-kharo-2-0',
+  'rep-20261101-kharo-3-0',
+  'rep-20261102-unyim-1-0',
+  'rep-20261103-yudis-1-0',
+  'rep-20261103-heri-1-0',
+  'rep-20261103-heri-2-0',
+  'rep-20261104-butonk-1-0',
+  'log-20261101-kharo-1-0',
+  'log-20261101-kharo-2-0',
+  'log-20261101-kharo-3-0',
+  'log-20261102-unyim-1-0',
+  'log-20261103-yudis-1-0',
+  'log-20261103-heri-1-0',
+  'log-20261103-heri-2-0',
+  'log-20261104-butonk-1-0',
+]);
+
+function extractDateFromRecordId(id?: string): string | undefined {
+  if (!id) return undefined;
+  const m = String(id).match(/(20\d{2})-?(\d{2})-?(\d{2})/);
+  if (!m) return undefined;
+  const [, yyyy, mm, dd] = m;
+  if (Number(mm) >= 1 && Number(mm) <= 12 && Number(dd) >= 1 && Number(dd) <= 31) {
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return undefined;
+}
+
 // Helper to normalize and enforce canonical data integrity across all devices & caches
 export function normalizeCollectionItems<T = any>(collectionName: string, rawItems: T[]): T[] {
   if (!Array.isArray(rawItems)) return [];
 
-  let items = [...rawItems];
+  let items = rawItems.filter((it: any) => !it || !OBSOLETE_LEGACY_IDS.has(String(it.id || '')));
 
   // Special normalization for master_staff: full canonical deduplication,
   // Wahyu as Owner, Unyim as Staff Audio, and excluding non-inhouse freelancers
   if (collectionName === 'master_staff') {
     return normalizeStaffMaster(items) as unknown as T[];
+  }
+
+  // Special normalization for daily_tasks: preserve exact operational dates (createdAt & dueDate)
+  // and prevent Supabase row.created_at (sync timestamp) from overwriting task dates
+  if (collectionName === 'daily_tasks') {
+    const canonicalMap = new Map<string, any>(INITIAL_DAILY_TASKS.map(t => [t.id, t]));
+    const map = new Map<string, any>();
+    items.forEach((item: any) => {
+      if (!item || !item.id) return;
+      const rawId = String(item.id);
+      const canonical = canonicalMap.get(rawId);
+      const idDate = extractDateFromRecordId(rawId);
+
+      let effectiveDueDate = item.dueDate ? String(item.dueDate).slice(0, 10) : (canonical?.dueDate || idDate);
+      let effectiveCreatedAt = item.createdAt ? String(item.createdAt) : (canonical?.createdAt || effectiveDueDate);
+
+      if (canonical) {
+        effectiveCreatedAt = canonical.createdAt;
+        effectiveDueDate = canonical.dueDate || canonical.createdAt;
+      } else if (idDate) {
+        effectiveCreatedAt = idDate;
+        effectiveDueDate = effectiveDueDate || idDate;
+      } else if (effectiveDueDate && effectiveCreatedAt && effectiveCreatedAt.includes('T')) {
+        const createdDatePart = effectiveCreatedAt.slice(0, 10);
+        if (
+          createdDatePart !== effectiveDueDate ||
+          item._syncMeta?.updatedBy === 'Supabase Cloud Sync' ||
+          item._syncMeta?.updatedBy === 'System Canonical Sync'
+        ) {
+          effectiveCreatedAt = effectiveDueDate;
+        }
+      }
+
+      map.set(rawId, {
+        ...(canonical || {}),
+        ...item,
+        ...(canonical ? {
+          title: canonical.title,
+          description: canonical.description,
+          division: canonical.division,
+          assignedName: canonical.assignedName,
+          priority: canonical.priority,
+        } : {}),
+        createdAt: effectiveCreatedAt,
+        dueDate: effectiveDueDate,
+      });
+    });
+    return Array.from(map.values()) as T[];
   }
 
   // Special normalization for findings: deduplicate by ID and content (equipment + issue)
@@ -264,7 +352,8 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     const getSemanticKey = (item: any): string => {
       const eq = String(item.equipment || '').toLowerCase();
       const iss = String(item.issue || '').toLowerCase();
-      const dateStr = String(item.dateCreated || item.date || item.targetDate || '').trim();
+      const idDate = extractDateFromRecordId(item.id);
+      const dateStr = idDate || String(item.dateCreated || item.date || item.targetDate || '').trim().slice(0, 10);
       const isSep2026 = !dateStr || dateStr.startsWith('2026-09');
       const dateSuffix = isSep2026 ? '' : `_${dateStr}`;
       const combined = `${eq} ${iss}`;
@@ -319,19 +408,23 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
 
     sortedItems.forEach((item: any) => {
       if (!item) return;
-      const semKey = getSemanticKey(item);
+      const idDate = extractDateFromRecordId(item.id);
+      const normalizedItem = idDate
+        ? { ...item, dateCreated: idDate, date: idDate }
+        : item;
+      const semKey = getSemanticKey(normalizedItem);
       const existing = map.get(semKey);
       if (!existing) {
-        map.set(semKey, item);
+        map.set(semKey, normalizedItem);
       } else {
         // Jika existing bukan 'fd-' tapi item baru adalah 'fd-', ganti dengan yang canonical!
-        if (String(item.id || '').startsWith('fd-')) {
+        if (String(normalizedItem.id || '').startsWith('fd-')) {
           map.set(semKey, {
-            ...item,
+            ...normalizedItem,
             // Pertahankan status lock atau approval jika sebelumnya sudah diubah user
-            status: existing.status === 'Close' ? 'Close' : item.status,
-            approvedBy: existing.approvedBy || item.approvedBy,
-            approvedAt: existing.approvedAt || item.approvedAt
+            status: existing.status === 'Close' ? 'Close' : normalizedItem.status,
+            approvedBy: existing.approvedBy || normalizedItem.approvedBy,
+            approvedAt: existing.approvedAt || normalizedItem.approvedAt
           });
         }
       }
@@ -449,9 +542,11 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
   if (collectionName === 'work_orders') {
     const cleaned = items.map((w: any) => {
       if (!w) return w;
+      const idStr = String(w.id || `wo-${Date.now()}`);
+      const idDate = extractDateFromRecordId(idStr);
       return {
         ...w,
-        id: String(w.id || `wo-${Date.now()}`),
+        id: idStr,
         title: String(w.title || 'Work Order'),
         description: String(w.description || w.notes || ''),
         pic: String(w.pic || 'Team Service'),
@@ -459,7 +554,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
         deadline: String(w.deadline || ''),
         progress: typeof w.progress === 'number' ? w.progress : (w.status === 'Completed' ? 100 : 0),
         status: w.status || 'Pending',
-        dateCreated: String(w.dateCreated || new Date().toISOString().split('T')[0])
+        dateCreated: String(idDate || w.dateCreated || new Date().toISOString().split('T')[0])
       };
     });
 

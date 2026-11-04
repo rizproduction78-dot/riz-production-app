@@ -37,7 +37,30 @@ const COLLECTION_CACHE_KEY_MAP: Record<string, string> = {
   fleet_assignments: 'riz_fleet_assignments',
   maintenance_schedules: 'riz_schedules',
   activities: 'riz_activities',
+  'schedule_2026-09': 'riz_schedule_2026-09',
+  'schedule_2026-10': 'riz_schedule_2026-10',
+  'schedule_2026-11': 'riz_schedule_2026-11',
+  'schedule_2026-12': 'riz_schedule_2026-12',
+  work_schedule: 'riz_work_schedule',
+  custom_qc_checklists: 'riz_custom_qc_checklists',
+  staff_competencies: 'riz_staff_electrical_competencies',
+  career_records: 'riz_career_pipeline_records',
 };
+
+/**
+ * Extract canonical YYYY-MM-DD date from deterministic record IDs
+ * (e.g., dt-20261103-02, rep-20261101-..., fd-20261102-..., wo-20261104-...)
+ */
+function extractCanonicalDateFromId(id?: string): string | undefined {
+  if (!id) return undefined;
+  const m = String(id).match(/(20\d{2})-?(\d{2})-?(\d{2})/);
+  if (!m) return undefined;
+  const [, yyyy, mm, dd] = m;
+  if (Number(mm) >= 1 && Number(mm) <= 12 && Number(dd) >= 1 && Number(dd) <= 31) {
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return undefined;
+}
 
 /**
  * Format document data for PostgreSQL schema
@@ -147,10 +170,11 @@ function formatForSupabase(collectionName: string, docId: string, data: Record<s
         updated_at: new Date().toISOString(),
       };
 
-    case 'findings':
+    case 'findings': {
+      const idDate = extractCanonicalDateFromId(rowId);
       return {
         id: rowId,
-        date_created: data.dateCreated || data.date || new Date().toISOString().slice(0, 10),
+        date_created: idDate || data.dateCreated || data.date || new Date().toISOString().slice(0, 10),
         equipment: data.equipment || '',
         asset_code: data.assetCode || null,
         division: data.division || 'Umum',
@@ -167,8 +191,10 @@ function formatForSupabase(collectionName: string, docId: string, data: Record<s
         sync_meta: syncMeta,
         updated_at: new Date().toISOString(),
       };
+    }
 
-    case 'work_orders':
+    case 'work_orders': {
+      const idDate = extractCanonicalDateFromId(rowId);
       return {
         id: rowId,
         title: data.title || data.equipment || 'Work Order',
@@ -180,28 +206,37 @@ function formatForSupabase(collectionName: string, docId: string, data: Record<s
         status: data.status || 'Pending',
         pic: data.pic || '',
         progress: typeof data.progress === 'number' ? data.progress : 0,
-        date_created: data.dateCreated || new Date().toISOString().slice(0, 10),
-        deadline: data.deadline || new Date().toISOString().slice(0, 10),
+        date_created: idDate || data.dateCreated || new Date().toISOString().slice(0, 10),
+        deadline: data.deadline || idDate || new Date().toISOString().slice(0, 10),
         completed_at: data.completedAt || null,
         sync_meta: syncMeta,
         updated_at: new Date().toISOString(),
       };
+    }
 
-    case 'daily_tasks':
+    case 'daily_tasks': {
+      const idDate = extractCanonicalDateFromId(rowId);
+      const effectiveDueDate = data.dueDate ? String(data.dueDate).slice(0, 10) : (idDate || null);
+      const effectiveCreatedAt = idDate || (data.createdAt ? String(data.createdAt).slice(0, 10) : effectiveDueDate);
       return {
         id: rowId,
         title: data.title || '',
         division: data.division || 'Umum',
         assigned_to: data.assignedTo || null,
         assigned_name: data.assignedName || '',
-        due_date: data.dueDate || null,
+        due_date: effectiveDueDate,
         status: data.status || 'Todo',
         priority: data.priority === 'Tinggi' ? 'High' : data.priority === 'Rendah' ? 'Low' : (data.priority || 'Normal'),
         notes: data.notes || data.description || '',
         created_by: data.createdBy || 'System',
-        sync_meta: syncMeta,
+        sync_meta: {
+          ...syncMeta,
+          createdAt: effectiveCreatedAt,
+          dueDate: effectiveDueDate,
+        },
         updated_at: new Date().toISOString(),
       };
+    }
 
     case 'attendance_logs':
       return {
@@ -261,10 +296,11 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         _syncMeta: syncMeta
       };
 
-    case 'daily_reports':
+    case 'daily_reports': {
+      const idDate = extractCanonicalDateFromId(row.id);
       return {
         id: row.id,
-        date: row.date,
+        date: row.date || idDate || '',
         staffName: row.staff_name || '',
         division: row.division || 'Umum',
         activity: row.activity || '',
@@ -275,11 +311,13 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         _source: row.source || 'supabase',
         _syncMeta: syncMeta
       };
+    }
 
-    case 'logbook_entries':
+    case 'logbook_entries': {
+      const idDate = extractCanonicalDateFromId(row.id);
       return {
         id: row.id,
-        date: row.date,
+        date: row.date || idDate || '',
         division: row.division || 'Umum',
         staffName: row.staff_name || '',
         activity: row.activity || '',
@@ -293,8 +331,11 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         _source: row.source || 'supabase',
         _syncMeta: syncMeta
       };
+    }
 
-    case 'findings':
+    case 'findings': {
+      const idDate = extractCanonicalDateFromId(row.id);
+      const effectiveDateCreated = idDate || row.date_created || (row.created_at ? String(row.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10));
       return {
         id: row.id,
         equipment: row.equipment || '',
@@ -306,8 +347,8 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         status: row.status || 'Open',
         pic: row.pic || '',
         targetDate: row.target_date || '',
-        dateCreated: row.date_created || (row.created_at ? String(row.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10)),
-        date: row.date_created || (row.created_at ? String(row.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10)),
+        dateCreated: effectiveDateCreated,
+        date: effectiveDateCreated,
         actionPlan: row.action_plan || undefined,
         costEstimate: typeof row.cost_estimate === 'number' ? row.cost_estimate : 0,
         photoUrl: row.photo_url || undefined,
@@ -315,8 +356,11 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         _source: 'supabase',
         _syncMeta: syncMeta
       };
+    }
 
-    case 'work_orders':
+    case 'work_orders': {
+      const idDate = extractCanonicalDateFromId(row.id);
+      const effectiveDateCreated = idDate || row.date_created || (row.created_at ? String(row.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10));
       return {
         id: row.id,
         title: row.title || 'Work Order',
@@ -328,28 +372,39 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         status: row.status || 'Pending',
         pic: row.pic || '',
         progress: typeof row.progress === 'number' ? row.progress : 0,
-        dateCreated: row.date_created || (row.created_at ? String(row.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10)),
+        dateCreated: effectiveDateCreated,
         deadline: row.deadline || '',
         completedAt: row.completed_at || undefined,
         _syncMeta: syncMeta
       };
+    }
 
-    case 'daily_tasks':
+    case 'daily_tasks': {
+      const idDate = extractCanonicalDateFromId(row.id);
+      const metaCreatedAt = row.sync_meta?.createdAt ? String(row.sync_meta.createdAt).slice(0, 10) : undefined;
+      const dueDateVal = row.due_date ? String(row.due_date).slice(0, 10) : (idDate || undefined);
+      // Jangan pernah menimpa tanggal tugas dengan row.created_at database Supabase!
+      const effectiveCreatedAt =
+        idDate ||
+        metaCreatedAt ||
+        dueDateVal ||
+        (row.created_at ? String(row.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10));
       return {
         id: row.id,
         title: row.title || '',
         division: row.division || 'Umum',
         assignedTo: row.assigned_to || undefined,
         assignedName: row.assigned_name || '',
-        dueDate: row.due_date || undefined,
+        dueDate: dueDateVal || effectiveCreatedAt,
         status: row.status || 'Pending',
         priority: row.priority === 'High' ? 'Tinggi' : row.priority === 'Low' ? 'Rendah' : (row.priority || 'Sedang'),
         notes: row.notes || '',
         description: row.notes || '',
         createdBy: row.created_by || 'System',
-        createdAt: row.created_at || new Date().toISOString(),
+        createdAt: effectiveCreatedAt,
         _syncMeta: syncMeta
       };
+    }
 
     case 'attendance_logs':
       return {
@@ -448,7 +503,20 @@ export async function pushCollectionToSupabase(
 
   const tableName = TABLE_MAP[collectionName];
   if (!tableName) {
-    return { success: false, count: 0, error: `Tabel untuk ${collectionName} tidak ditemukan` };
+    try {
+      const { error } = await supabase.from('system_configs').upsert({
+        key: collectionName,
+        data: items,
+        updated_by: 'System',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' });
+      if (error) {
+        return { success: false, count: 0, error: error.message };
+      }
+      return { success: true, count: items.length };
+    } catch (err: any) {
+      return { success: false, count: 0, error: err.message || String(err) };
+    }
   }
 
   try {
@@ -492,9 +560,25 @@ export async function pullCollectionFromSupabase<T = any>(collectionName: string
       }
       rows = data || [];
     } else {
-      const { data, error } = await supabase.from('system_configs').select('*').eq('key', collectionName).maybeSingle();
-      if (!error && data && Array.isArray(data.data)) {
-        rows = data.data;
+      const { data: bulkData, error: bulkErr } = await supabase.from('system_configs').select('*').eq('key', collectionName).maybeSingle();
+      if (!bulkErr && bulkData && Array.isArray(bulkData.data)) {
+        rows = [...bulkData.data];
+      }
+      const { data: singleDocs, error: singleErr } = await supabase.from('system_configs').select('*').like('key', `${collectionName}_%`);
+      if (!singleErr && Array.isArray(singleDocs) && singleDocs.length > 0) {
+        const rowMap = new Map<string, any>();
+        rows.forEach((r, idx) => {
+          const rid = String(r?.id || r?.no || r?.code || `idx-${idx}`);
+          rowMap.set(rid, r);
+        });
+        singleDocs.forEach(docRow => {
+          if (docRow && docRow.data && typeof docRow.data === 'object') {
+            const d = docRow.data;
+            const did = String(d?.id || d?.no || d?.code || docRow.key.replace(`${collectionName}_`, ''));
+            rowMap.set(did, d);
+          }
+        });
+        rows = Array.from(rowMap.values());
       }
     }
 
@@ -583,6 +667,15 @@ export async function pullAllCollectionsFromSupabase(): Promise<void> {
     'findings',
     'work_orders',
     'attendance_logs',
+    'master_vehicles',
+    'warehouse_logs',
+    'freelance_workers',
+    'fleet_drivers',
+    'fleet_assignments',
+    'schedule_2026-09',
+    'schedule_2026-10',
+    'schedule_2026-11',
+    'schedule_2026-12',
   ];
 
   await Promise.allSettled(

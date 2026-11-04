@@ -8,6 +8,9 @@
  */
 
 import { assert } from 'console';
+import { formatFromSupabase } from '../src/lib/supabaseSync';
+import { normalizeCollectionItems } from '../src/lib/cloudSync';
+import { INITIAL_DAILY_TASKS } from '../src/data';
 
 function runNotificationTests() {
   console.log('========================================================');
@@ -164,6 +167,37 @@ function runNotificationTests() {
   console.log(`- Nilai unreadCount setelah Tandai Dibaca: ${finalUnreadCount}`);
   assert(finalUnreadCount === 0, 'unreadCount HARUS bernilai 0 setelah tandai dibaca!');
   console.log('✓ PASS: unreadCount 100% bersih bernilai 0, bahkan untuk data di masa depan / jam 12:00.\n');
+
+  console.log('[TEST 5] Anti-Overwrite Tanggal Notifikasi (Tidak Boleh Sama Semua 2026-11-04 • 07:18)');
+  const simulatedSupabaseRows = INITIAL_DAILY_TASKS.map(t => ({
+    id: t.id,
+    title: t.title,
+    division: t.division,
+    assigned_name: t.assignedName,
+    due_date: t.dueDate,
+    status: t.status,
+    priority: t.priority,
+    notes: t.description,
+    created_by: t.createdBy,
+    created_at: '2026-11-04T07:18:22.123Z' // Simulasi timestamp batch insert Supabase yang sama semua
+  }));
+
+  const formattedTasks = simulatedSupabaseRows.map(r => formatFromSupabase('daily_tasks', r));
+  const normalizedTasks = normalizeCollectionItems('daily_tasks', formattedTasks as any);
+  const novTasks = normalizedTasks.filter((t: any) => String(t.createdAt || '').startsWith('2026-11'));
+  const distinctNovDates = Array.from(new Set(novTasks.map((t: any) => t.createdAt))).sort();
+  console.log(`- Jumlah Daily Task November 2026: ${novTasks.length}`);
+  console.log(`- Tanggal unik Daily Task November 2026: ${distinctNovDates.join(', ')}`);
+  assert(novTasks.length === 8, `Harus tepat 8 Daily Task November 2026, ditemukan ${novTasks.length}`);
+  assert(
+    JSON.stringify(distinctNovDates) === JSON.stringify(['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04']),
+    'Tanggal Daily Task November harus terdistribusi presisi pada 2026-11-01, 2026-11-02, 2026-11-03, dan 2026-11-04!'
+  );
+  assert(
+    novTasks.every((t: any) => !String(t.createdAt).includes('07:18')),
+    'Tidak boleh ada Daily Task yang tercemar jam sync 07:18!'
+  );
+  console.log('✓ PASS: Tanggal Daily Task presisi sesuai tanggal aktual masing-masing (tidak sama semua).\n');
 
   console.log('========================================================');
   console.log('  SEMUA SKENARIO TEST NOTIFIKASI LULUS DENGAN SEMPURNA!  ');
