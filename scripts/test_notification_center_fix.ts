@@ -249,7 +249,7 @@ function runNotificationTests() {
   );
   console.log('✓ PASS: Tidak ada duplikasi kartu Temuan Unit Bermasalah di Pusat Notifikasi.\n');
 
-  console.log('[TEST 7] Anti-Duplikasi & Akurasi Teks Daily Report November 2026');
+  console.log('[TEST 7] Anti-Duplikasi & Akurasi Teks Aktual Live Google Sheet November 2026');
   const dirtyReportsInput = [
     {
       id: 'rep-20261104-staff-iwan-44',
@@ -257,22 +257,38 @@ function runNotificationTests() {
       staffName: 'Iwan Kurniawan',
       division: 'Audio',
       activity: 'Ganti twitter DB No 15',
-      notes: 'Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi unit sudah OK',
+      notes: 'Rekon-Kit Twitter masih bermasalah, suara kecil',
       status: 'Submitted',
       _source: 'google_sheet'
     },
-    ...INITIAL_DAILY_REPORTS.map(r =>
-      r.id === 'rep-20261104-staff-iwan-45'
-        ? { ...r, notes: r.notes.replace(/Kondisi OK/g, 'Kondisi unit sudah OK') }
-        : r
-    )
+    ...INITIAL_DAILY_REPORTS
   ];
   const cleanReports = normalizeCollectionItems('daily_reports', dirtyReportsInput as any);
   const novReports = cleanReports.filter((r: any) => String(r.date || '').startsWith('2026-11'));
   const iwanNov4 = novReports.find((r: any) => r.id === 'rep-20261104-staff-iwan-45');
   assert(novReports.length === 8, `Harus tepat 8 Daily Report di November 2026, ditemukan ${novReports.length}`);
-  assert(iwanNov4 && !String(iwanNov4.notes).includes('Kondisi unit sudah OK'), 'Teks notes Iwan Kurniawan harus "Kondisi OK" sesuai Google Sheet resmi');
-  console.log('✓ PASS: Daily Report November 2026 bebas duplikat dan 100% akurat sesuai Google Sheet.\n');
+  assert(
+    iwanNov4 && String(iwanNov4.activity).includes('Service Bracket Drum TAMA'),
+    'Teks activity Iwan Kurniawan harus mencakup "Service Bracket Drum TAMA" sesuai Google Sheet resmi'
+  );
+  assert(
+    iwanNov4 && String(iwanNov4.notes).includes('Kondisi unit sudah OK'),
+    'Teks notes Iwan Kurniawan harus mencakup "Kondisi unit sudah OK" sesuai Google Sheet resmi'
+  );
+
+  // Uji jika baris di Google Sheet diedit secara live (_syncedAt terbaru), tidak boleh tertimpa oleh data statis
+  const liveEditedSheetReport = {
+    ...iwanNov4,
+    notes: `${iwanNov4!.notes}\nUpdate Live Baru`,
+    _syncedAt: new Date(Date.now() + 10000).toISOString()
+  };
+  const afterLiveSync = normalizeCollectionItems('daily_reports', [...INITIAL_DAILY_REPORTS, liveEditedSheetReport] as any);
+  const syncedIwan = afterLiveSync.find((r: any) => r.id === 'rep-20261104-staff-iwan-45');
+  assert(
+    syncedIwan && String(syncedIwan.notes).includes('Update Live Baru'),
+    'Update live dari Google Sheet (_syncedAt) WAJIB menang dan tidak boleh ditimpa oleh canonical statis!'
+  );
+  console.log('✓ PASS: Daily Report November 2026 bebas duplikat dan 100% aktual mengikuti Google Sheet live.\n');
 
   console.log('========================================================');
   console.log('  SEMUA SKENARIO TEST NOTIFIKASI LULUS DENGAN SEMPURNA!  ');

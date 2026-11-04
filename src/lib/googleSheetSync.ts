@@ -20,7 +20,7 @@ import {
 } from '../data';
 import { getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
 import { isStaffMatch } from '../utils/kpiCalculator';
-import { parseDailySheet, SheetRow, extractNormalizedDailySheetRows, OFFICIAL_GSHEET_TABS } from './dailySheetParser';
+import { parseDailySheet, SheetRow, ParsedEntry, extractNormalizedDailySheetRows, OFFICIAL_GSHEET_TABS } from './dailySheetParser';
 import Papa from 'papaparse';
 
 export const DEFAULT_SPREADSHEET_ID = '1WJ_0WvX_K8te7rZZXR3mTkwZ1kPnm_VA';
@@ -1051,6 +1051,8 @@ export interface GvizPullResult {
   newReportsCount: number;
   newFindingsCount: number;
   skippedCount: number;
+  parsedEntries?: ParsedEntry[];
+  monthKey?: string;
 }
 
 /**
@@ -1080,8 +1082,9 @@ export async function pullDailyLogFromGviz(
     };
   }
 
-  const csvUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
-  const jsonUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+  const cacheBust = Date.now();
+  const csvUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}&_t=${cacheBust}`;
+  const jsonUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}&_t=${cacheBust}`;
 
   let newReports = 0;
   let newFindings = 0;
@@ -1147,17 +1150,25 @@ export async function pullDailyLogFromGviz(
 
     const cachedReportsRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('riz_daily_reports_v2') : null;
     const cachedReportsMap = new Map<string, any>();
+    const cachedReportsByDateStaffMap = new Map<string, any>();
     if (cachedReportsRaw) {
       try {
         const parsed = JSON.parse(cachedReportsRaw);
         if (Array.isArray(parsed)) {
-          parsed.forEach((r: any) => { if (r?.id) cachedReportsMap.set(r.id, r); });
+          parsed.forEach((r: any) => {
+            if (r?.id) cachedReportsMap.set(r.id, r);
+            if (r?.date && r?.staffName && (r._source === 'google_sheet' || String(r.id || '').startsWith('rep-'))) {
+              cachedReportsByDateStaffMap.set(`${r.date}_${r.staffName}`, r);
+            }
+          });
         }
       } catch {}
     }
 
     // Daftarkan seluruh finding yang sudah ada (dari INITIAL_FINDINGS + localStorage) berdasarkan (date, pic)
-    // agar pullDailyLogFromGviz tidak pernah membuat duplikat gsheet-finding-* untuk staf & tanggal yang sama
+    // agar pullDailyLogFromGviz tidak pernah membuat duplikat gsheet-finding-* untuk staf & tanggal yang sama,
+    // namun tetap dapat meng-update finding yang ada jika baris di Google Sheet diedit.
+    const existingFindingsByStaffDateMap = new Map<string, any>();
     const registerExistingFinding = (f: any) => {
       if (!f) return;
       if (f.id) existingReportIds.add(String(f.id));
@@ -1165,7 +1176,13 @@ export async function pullDailyLogFromGviz(
       const staffObj = STAFF_LIST.find(s => isStaffMatch(s, f.pic));
       const fPicNorm = (staffObj ? staffObj.name : String(f.pic || '')).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
       if (fDate && fPicNorm) {
-        existingReportIds.add(`dedup_date_staff_${fDate}_${fPicNorm}`);
+        const key = `dedup_date_staff_${fDate}_${fPicNorm}`;
+        existingReportIds.add(key);
+        const current = existingFindingsByStaffDateMap.get(key);
+        // Prioritaskan entri fd-* sebagai target update
+        if (!current || String(f.id || '').startsWith('fd-')) {
+          existingFindingsByStaffDateMap.set(key, f);
+        }
       }
     };
     INITIAL_FINDINGS.forEach(registerExistingFinding);
@@ -1179,12 +1196,15 @@ export async function pullDailyLogFromGviz(
       } catch {}
     }
 
+    const nowSyncIso = new Date().toISOString();
+
     for (const entry of parsedEntries) {
       // 1. Simpan Daily Report: Baru atau jika ada perubahan teks di Google Sheet
-      const existing = cachedReportsMap.get(entry.id);
+      const existing = cachedReportsMap.get(entry.id) || cachedReportsByDateStaffMap.get(`${entry.date}_${entry.staffName}`);
       const isNew = !existingReportIds.has(entry.id) && !existing;
       const isModified = Boolean(
         existing && (
+          existing.id !== entry.id ||
           (existing.activity || '').trim() !== (entry.activity || '').trim() ||
           (existing.notes || '').trim() !== (entry.notes || '').trim() ||
           (existing.division || '') !== (entry.division || '') ||
@@ -1204,7 +1224,7 @@ export async function pullDailyLogFromGviz(
           notes: entry.notes || '',
           status: 'Submitted',
           _source: 'google_sheet',
-          _syncedAt: new Date().toISOString()
+          _syncedAt: nowSyncIso
         };
         await onSaveDailyReport(entry.id, reportDoc);
         existingReportIds.add(entry.id);
@@ -1213,10 +1233,10 @@ export async function pullDailyLogFromGviz(
         skipped++;
       }
 
-      // 2. Simpan LogbookEntry QC HANYA jika isQc === true
+      // 2. Simpan / Update LogbookEntry QC HANYA jika isQc === true
       if (entry.isQc && onSaveLogbookEntry) {
         const logDedupKey = `log-${entry.id}`;
-        if (!existingReportIds.has(logDedupKey)) {
+        if (!existingReportIds.has(logDedupKey) || isModified) {
           const isNg = isFindingRemark(entry.notes);
           const logDoc = {
             id: logDedupKey,
@@ -1235,14 +1255,14 @@ export async function pullDailyLogFromGviz(
               }
             },
             _source: 'google_sheet',
-            _syncedAt: new Date().toISOString()
+            _syncedAt: nowSyncIso
           };
           await onSaveLogbookEntry(logDedupKey, logDoc);
           existingReportIds.add(logDedupKey);
         }
       }
 
-      // 3. Simpan Finding jika kolom remark mengindikasikan masalah
+      // 3. Simpan / Update Finding jika kolom remark mengindikasikan masalah
       if (entry.notes && isFindingRemark(entry.notes)) {
         const remarkNorm = entry.notes.trim().toLowerCase().substring(0, 30);
         const remarkLower = entry.notes.trim().toLowerCase();
@@ -1345,9 +1365,20 @@ export async function pullDailyLogFromGviz(
         const semKeyNorm = getSemanticKey(equipName, remarkIssue, entry.date);
         const staffDateKey = `dedup_date_staff_${entry.date}_${picNorm}`;
 
-        const findingKey = `gsheet-finding-${entry.date}-${entry.staffId || picNorm}`;
+        const existingFindingForStaffDate = existingFindingsByStaffDateMap.get(staffDateKey);
+        const findingKey = existingFindingForStaffDate?.id || `gsheet-finding-${entry.date}-${entry.staffId || picNorm}`;
 
-        if (
+        if (existingFindingForStaffDate && isModified && !existingFindingForStaffDate._userEdited) {
+          const updatedFindingDoc = {
+            ...existingFindingForStaffDate,
+            id: existingFindingForStaffDate.id,
+            issue: remarkIssue,
+            _source: 'google_sheet',
+            _syncedAt: nowSyncIso
+          };
+          await onSaveFinding(existingFindingForStaffDate.id, updatedFindingDoc);
+          newFindings++;
+        } else if (
           !existingReportIds.has(findingKey) &&
           !existingReportIds.has(staffDateKey) &&
           !existingReportIds.has(remarkNorm) &&
@@ -1365,7 +1396,7 @@ export async function pullDailyLogFromGviz(
             dateCreated: entry.date,
             division: findingDiv,
             _source: 'google_sheet',
-            _syncedAt: new Date().toISOString()
+            _syncedAt: nowSyncIso
           };
           await onSaveFinding(findingKey, findingDoc);
           existingReportIds.add(findingKey);
@@ -1380,17 +1411,19 @@ export async function pullDailyLogFromGviz(
     // Simpan timestamp pull terakhir
     try {
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(DAILY_LOG_LAST_PULL_KEY, new Date().toISOString());
+        localStorage.setItem(DAILY_LOG_LAST_PULL_KEY, nowSyncIso);
       }
     } catch (e) {}
 
     return {
       success: true,
       message: `Sinkronisasi berhasil! ${newReports} laporan harian + ${newFindings} temuan baru diimpor dari Google Sheet.${skipped > 0 ? ` (${skipped} data sudah ada, dilewati)` : ''}`,
-      timestamp: new Date().toISOString(),
+      timestamp: nowSyncIso,
       newReportsCount: newReports,
       newFindingsCount: newFindings,
-      skippedCount: skipped
+      skippedCount: skipped,
+      parsedEntries,
+      monthKey: fallbackMonthKey
     };
   } catch (error: any) {
     return {

@@ -656,7 +656,7 @@ export const INITIAL_DAILY_TASKS: DailyTask[] = [
   {
     id: 'dt-20261103-03',
     title: 'Service 8 Kabinet LED (6 Dead Pixel, 1 IC Warna, 1 Jalur)',
-    description: 'servise 8 kabinet led\n- 6 kabinet ganti dead pixel\n-1 kabinet ganti ic warna\n- 1 kabinet ganti jalur\nREMARK:\n2 unit minta ganti reciving card',
+    description: 'servise 8 kabinet led\n- 6 kabinet ganti dead pixel\n-1 kabinet ganti ic warna\n- 1 kabinet ganti jalur\nREMARK:\n2 unit minta ganti recieving card',
     division: 'Videotron',
     priority: 'Tinggi',
     status: 'In Progress',
@@ -668,8 +668,8 @@ export const INITIAL_DAILY_TASKS: DailyTask[] = [
   },
   {
     id: 'dt-20261104-01',
-    title: 'Ganti Tweeter & Speaker DB Tech (No. 5, 15, 18) & Proses Test Unit DB Tech Maintenance',
-    description: 'Ganti twitter DB No 15\nGanti twitter DB No 18\nGanti twitter DB No 5\nGanti Speaker DB no 5\nProses Test Unit DB tech maintenance\nREMARK:\nRekon-Kit Twitter DB No 15 masih bermasalah, suara kecil. DB No 18 & No 5 Kondisi OK. Service ulang, DB no 15 belum normal.',
+    title: 'Ganti Tweeter & Speaker DB Tech (No. 5, 15, 18), Test Unit DB Tech & Service Bracket Drum TAMA',
+    description: 'Ganti twitter DB No 15\nGanti twitter DB No 18\nGanti twitter DB No 5\nGanti Speaker DB no 5\nProses  Test Unit DB tech maintenance\nService Bracket Drum TAMA\nREMARK:\nRekon-Kit Twitter masih bermasalah, suara kecil\nKondisi unit sudah OK\nKondisi unit sudah OK\nKondisi unit sudah OK\nService ulang, DB no 15 belum normal\nKondisi unit sudah OK',
     division: 'Audio',
     priority: 'Tinggi',
     status: 'In Progress',

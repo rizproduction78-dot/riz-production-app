@@ -173,15 +173,16 @@
 |  |  |  | 25-26-27-28-29-30-31-32-33-34-35 |  |  | No. 19 - Warm Separo |
 |  |  |  | 36-37-38-39-40-41-42-43-44-45-46 |  |  | No. 33 - Red Separo |
 |  |  |  | 47-48 |  |  |  |
-| 03 November 2026 | kharo |  |  | servise 8 kabinet led |  | 2 unit minta ganti reciving card |
+| 03 November 2026 | kharo |  |  | servise 8 kabinet led |  | 2 unit minta ganti recieving card |
 |  |  |  |  | - 6 kabinet ganti dead pixel |  |  |
 |  |  |  |  | -1 kabinet ganti ic warna |  |  |
 |  |  |  |  | - 1 kabinet ganti jalur |  |  |
 | 04 November 2026 | Butonk | Ganti twitter DB No 15 |  |  |  | Rekon-Kit Twitter masih bermasalah, suara kecil |
-|  |  | Ganti twitter DB No 18 |  |  |  | Kondisi OK |
-|  |  | Ganti twitter DB No 5 |  |  |  | Kondisi OK |
-|  |  | Ganti Speaker DB no 5 |  |  |  | Kondisi OK |
+|  |  | Ganti twitter DB No 18 |  |  |  | Kondisi unit sudah OK |
+|  |  | Ganti twitter DB No 5 |  |  |  | Kondisi unit sudah OK |
+|  |  | Ganti Speaker DB no 5 |  |  |  | Kondisi unit sudah OK |
 |  |  | Proses  Test Unit DB tech maintenance |  |  |  | Service ulang, DB no 15 belum normal |
+|  |  | Service Bracket Drum TAMA |  |  |  | Kondisi unit sudah OK |
 
 ## Desember 2026 (GID: 368237370)
 

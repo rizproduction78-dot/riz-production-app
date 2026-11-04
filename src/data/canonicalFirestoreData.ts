@@ -4715,7 +4715,7 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "staffName": "Mulyana",
     "division": "Videotron",
     "activity": "servise 8 kabinet led\n- 6 kabinet ganti dead pixel\n-1 kabinet ganti ic warna\n- 1 kabinet ganti jalur",
-    "notes": "2 unit minta ganti reciving card",
+    "notes": "2 unit minta ganti recieving card",
     "status": "Submitted",
     "_source": "google_sheet"
   },
@@ -4724,8 +4724,8 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "date": "2026-11-04",
     "staffName": "Iwan Kurniawan",
     "division": "Audio",
-    "activity": "Ganti twitter DB No 15\nGanti twitter DB No 18\nGanti twitter DB No 5\nGanti Speaker DB no 5\nProses  Test Unit DB tech maintenance",
-    "notes": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi OK\nKondisi OK\nKondisi OK\nService ulang, DB no 15 belum normal",
+    "activity": "Ganti twitter DB No 15\nGanti twitter DB No 18\nGanti twitter DB No 5\nGanti Speaker DB no 5\nProses  Test Unit DB tech maintenance\nService Bracket Drum TAMA",
+    "notes": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi unit sudah OK\nKondisi unit sudah OK\nKondisi unit sudah OK\nService ulang, DB no 15 belum normal\nKondisi unit sudah OK",
     "status": "Submitted",
     "_source": "google_sheet"
   }
@@ -10658,15 +10658,15 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "date": "2026-11-04",
     "division": "Audio",
     "staffName": "Iwan Kurniawan",
-    "activity": "Ganti twitter DB No 15\nGanti twitter DB No 18\nGanti twitter DB No 5\nGanti Speaker DB no 5\nProses  Test Unit DB tech maintenance",
+    "activity": "Ganti twitter DB No 15\nGanti twitter DB No 18\nGanti twitter DB No 5\nGanti Speaker DB no 5\nProses  Test Unit DB tech maintenance\nService Bracket Drum TAMA",
     "result": "NG",
-    "followUp": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi OK\nKondisi OK\nKondisi OK\nService ulang, DB no 15 belum normal",
+    "followUp": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi unit sudah OK\nKondisi unit sudah OK\nKondisi unit sudah OK\nService ulang, DB no 15 belum normal\nKondisi unit sudah OK",
     "status": "Open",
     "verification": "Auto-Synced",
     "checklists": {
       "Ganti twitter DB No 15\nGanti twitter DB ": {
         "status": "NG",
-        "notes": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi OK\nKondisi OK\nKondisi OK\nService ulang, DB no 15 belum normal"
+        "notes": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi unit sudah OK\nKondisi unit sudah OK\nKondisi unit sudah OK\nService ulang, DB no 15 belum normal\nKondisi unit sudah OK"
       }
     },
     "_source": "google_sheet"
@@ -11727,8 +11727,8 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "division": "Videotron",
     "status": "Open",
     "pic": "Mulyana",
-    "targetDate": "2026-11-07",
-    "issue": "Service 8 kabinet LED (6 kabinet ganti dead pixel, 1 kabinet ganti IC warna, 1 kabinet ganti jalur) — 2 unit minta ganti receiving card",
+    "targetDate": "2026-11-03",
+    "issue": "servise 8 kabinet led (- 6 kabinet ganti dead pixel, -1 kabinet ganti ic warna, - 1 kabinet ganti jalur): 2 unit minta ganti recieving card",
     "_source": "google_sheet",
     "equipment": "8 Kabinet LED Videotron (2 Unit Receiving Card)",
     "priority": "Tinggi"
@@ -11739,8 +11739,8 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "division": "Audio",
     "status": "Open",
     "pic": "Iwan Kurniawan",
-    "targetDate": "2026-11-08",
-    "issue": "Ganti twitter DB No 15: Rekon-Kit Twitter masih bermasalah, suara kecil. Service ulang, DB no 15 belum normal (DB No 18 & DB No 5 kondisi OK)",
+    "targetDate": "2026-11-04",
+    "issue": "Ganti twitter DB No 15: Rekon-Kit Twitter masih bermasalah, suara kecil | Proses Test Unit DB tech maintenance: Service ulang, DB no 15 belum normal (DB No 18, DB No 5, Speaker DB No 5 & Bracket Drum TAMA: Kondisi unit sudah OK)",
     "_source": "google_sheet",
     "equipment": "Speaker Monitor DB Tech No. 15 (Audio)",
     "priority": "Tinggi"
@@ -12199,7 +12199,7 @@ export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder[] = [
     "title": "Service 8 Kabinet LED (6 Dead Pixel, 1 IC Warna, 1 Jalur) & Ganti 2 Unit Receiving Card",
     "division": "Videotron",
     "deadline": "2026-11-07",
-    "description": "[Temuan QC ID: fd-20261103-kharo-kabinet-led] servise 8 kabinet led (- 6 kabinet ganti dead pixel, -1 kabinet ganti ic warna, - 1 kabinet ganti jalur) — Remark: 2 unit minta ganti reciving card",
+    "description": "[Temuan QC ID: fd-20261103-kharo-kabinet-led] servise 8 kabinet led (- 6 kabinet ganti dead pixel, -1 kabinet ganti ic warna, - 1 kabinet ganti jalur) — Remark: 2 unit minta ganti recieving card",
     "status": "In Progress",
     "progress": 75,
     "priority": "Tinggi",
@@ -12210,11 +12210,11 @@ export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder[] = [
     "id": "wo-20261104-butonk-db-maintenance",
     "dateCreated": "2026-11-04",
     "findingId": "fd-20261104-butonk-db15",
-    "equipment": "Speaker Monitor DB Tech No. 5, No. 15 & No. 18 (Audio)",
-    "title": "Ganti Tweeter & Speaker DB Tech No. 5, No. 18 (OK) & Service Ulang Rekon-Kit DB Tech No. 15",
+    "equipment": "Speaker Monitor DB Tech No. 5, No. 15, No. 18 & Bracket Drum TAMA (Audio)",
+    "title": "Ganti Tweeter & Speaker DB Tech No. 5, No. 18, Bracket Drum TAMA (OK) & Service Ulang Rekon-Kit DB Tech No. 15",
     "division": "Audio",
     "deadline": "2026-11-08",
-    "description": "[Temuan QC ID: fd-20261104-butonk-db15] Ganti twitter DB No 15 (Rekon-Kit Twitter masih bermasalah, suara kecil), Ganti twitter DB No 18 (Kondisi OK), Ganti twitter DB No 5 (Kondisi OK), Ganti Speaker DB no 5 (Kondisi OK), Proses Test Unit DB tech maintenance (Service ulang, DB no 15 belum normal)",
+    "description": "[Temuan QC ID: fd-20261104-butonk-db15] Ganti twitter DB No 15 (Rekon-Kit Twitter masih bermasalah, suara kecil), Ganti twitter DB No 18 (Kondisi unit sudah OK), Ganti twitter DB No 5 (Kondisi unit sudah OK), Ganti Speaker DB no 5 (Kondisi unit sudah OK), Proses Test Unit DB tech maintenance (Service ulang, DB no 15 belum normal), Service Bracket Drum TAMA (Kondisi unit sudah OK)",
     "status": "In Progress",
     "progress": 75,
     "priority": "Tinggi",

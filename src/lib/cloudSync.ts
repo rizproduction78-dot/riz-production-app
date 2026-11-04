@@ -431,6 +431,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const canonical = canonicalFindingsMap.get(rawId);
       const idDate = extractDateFromRecordId(rawId);
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
+      const isLiveSynced = Boolean(item._syncedAt);
 
       let normalizedItem = idDate && !isUserEdited
         ? { ...item, dateCreated: idDate, date: idDate }
@@ -441,12 +442,12 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
           ...canonical,
           ...normalizedItem,
           id: canonical.id,
-          equipment: canonical.equipment,
-          issue: canonical.issue,
-          priority: canonical.priority,
-          targetDate: canonical.targetDate,
+          equipment: (isLiveSynced && normalizedItem.equipment) ? normalizedItem.equipment : canonical.equipment,
+          issue: (isLiveSynced && normalizedItem.issue) ? normalizedItem.issue : canonical.issue,
+          priority: normalizedItem.priority || canonical.priority,
+          targetDate: normalizedItem.targetDate || canonical.targetDate,
           dateCreated: canonical.dateCreated,
-          division: canonical.division,
+          division: normalizedItem.division || canonical.division,
           pic: canonical.pic,
           status: normalizedItem.status === 'Close' ? 'Close' : canonical.status,
         };
@@ -484,19 +485,24 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     return normalizeVehiclesMaster(items) as unknown as T[];
   }
 
-  // Special normalization for daily_reports: no strict note concatenation
+  // Special normalization for daily_reports: preserve literal Google Sheet text and prioritize live _syncedAt / user-edited
   if (collectionName === 'daily_reports') {
     const map = new Map<string, any>();
     const semanticSet = new Set<string>();
+    const staffDateSheetSet = new Set<string>();
     const canonicalReportsMap = new Map<string, any>((INITIAL_DAILY_REPORTS || []).map((r: any) => [String(r.id), r]));
 
-    // Sort so that user-edited & canonical IDs are processed BEFORE shifted-row or gsheet- IDs
+    // Sort: 1. User-edited, 2. Latest _syncedAt (live Google Sheet pull), 3. Canonical ID, 4. Non-gsheet-
     const sortedItems = [...items].sort((a: any, b: any) => {
       const aId = String(a?.id || '');
       const bId = String(b?.id || '');
       const aEdited = a?._userEdited || a?._syncMeta?._userEdited ? 1 : 0;
       const bEdited = b?._userEdited || b?._syncMeta?._userEdited ? 1 : 0;
       if (aEdited !== bEdited) return bEdited - aEdited;
+
+      const aSynced = a?._syncedAt ? new Date(a._syncedAt).getTime() : 0;
+      const bSynced = b?._syncedAt ? new Date(b._syncedAt).getTime() : 0;
+      if (aSynced !== bSynced) return bSynced - aSynced;
 
       const aCanon = canonicalReportsMap.has(aId) ? 1 : 0;
       const bCanon = canonicalReportsMap.has(bId) ? 1 : 0;
@@ -520,20 +526,22 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
       const canonical = canonicalReportsMap.get(rawId);
 
-      // Abaikan entri duplikat pergeseran nomor baris (shifted-row) dari Oktober/November jika bukan ID kanonikal
-      if (!canonical && !isUserEdited && (rawId.startsWith('rep-202610') || rawId.startsWith('rep-202611'))) {
-        const staffObjCheck = allKnownStaff.find(s => isStaffMatch(s, item.staffName)) || STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
-        const checkStaffName = staffObjCheck ? staffObjCheck.name : String(item.staffName || '').trim();
-        const hasCanonicalForSameStaffDate = (INITIAL_DAILY_REPORTS || []).some(
-          (cr: any) => cr.date === item.date && cr.staffName === checkStaffName
-        );
-        if (hasCanonicalForSameStaffDate) return;
-      }
-
       const staffObj = allKnownStaff.find(s => isStaffMatch(s, item.staffName)) || STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
       const effectiveStaffName = staffObj ? staffObj.name : String(item.staffName || '').trim();
       if (!effectiveStaffName) return; // Drop entries without staff name
+
+      // Deduplicate October/November/December 2026 Google Sheet entries by (date, staffName)
+      // Because sortedItems places _userEdited and newest _syncedAt first (then canonical),
+      // any live Google Sheet edit or row-shift automatically wins and old shifted-row duplicates are dropped.
+      const isOctNovDecSheetRep =
+        !isUserEdited &&
+        (rawId.startsWith('rep-202610') || rawId.startsWith('rep-202611') || rawId.startsWith('rep-202612'));
+      if (isOctNovDecSheetRep) {
+        const staffDateKey = `${item.date}_${effectiveStaffName}`;
+        if (staffDateSheetSet.has(staffDateKey)) return;
+        staffDateSheetSet.add(staffDateKey);
+      }
 
       const effectiveDivision = (item.division && item.division !== 'Umum')
         ? item.division
@@ -545,15 +553,13 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (!isCustomAppId && semanticSet.has(semanticKey)) return; // Semantic dedup for external/gsheet rows
       if (!isCustomAppId) semanticSet.add(semanticKey);
 
-      const rawNotes = String(item.notes !== undefined ? item.notes : (canonical?.notes || ''));
-      const cleanedNotes = rawNotes.replace(/Kondisi unit sudah OK/g, 'Kondisi OK');
-
       const normalizedItem = {
         ...(canonical && !isUserEdited ? canonical : {}),
         ...item,
         staffName: effectiveStaffName,
         division: effectiveDivision,
-        notes: canonical && !isUserEdited ? canonical.notes : cleanedNotes
+        activity: item.activity !== undefined ? item.activity : (canonical?.activity || ''),
+        notes: item.notes !== undefined ? item.notes : (canonical?.notes || '')
       };
       
       // Keep by ID so updates can happen correctly
@@ -564,19 +570,24 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     return Array.from(map.values()) as T[];
   }
 
-  // Special normalization for logbook_entries: no strict note concatenation
+  // Special normalization for logbook_entries: preserve literal Google Sheet text and prioritize live _syncedAt / user-edited
   if (collectionName === 'logbook_entries') {
     const map = new Map<string, any>();
     const semanticSet = new Set<string>();
+    const staffDateSheetSet = new Set<string>();
     const canonicalLogsMap = new Map<string, any>((INITIAL_LOGBOOK_ENTRIES || []).map((l: any) => [String(l.id), l]));
 
-    // Sort so that user-edited & canonical IDs are processed BEFORE shifted-row or gsheet- IDs
+    // Sort: 1. User-edited, 2. Latest _syncedAt (live Google Sheet pull), 3. Canonical ID, 4. Non-gsheet-
     const sortedItems = [...items].sort((a: any, b: any) => {
       const aId = String(a?.id || '');
       const bId = String(b?.id || '');
       const aEdited = a?._userEdited || a?._syncMeta?._userEdited ? 1 : 0;
       const bEdited = b?._userEdited || b?._syncMeta?._userEdited ? 1 : 0;
       if (aEdited !== bEdited) return bEdited - aEdited;
+
+      const aSynced = a?._syncedAt ? new Date(a._syncedAt).getTime() : 0;
+      const bSynced = b?._syncedAt ? new Date(b._syncedAt).getTime() : 0;
+      if (aSynced !== bSynced) return bSynced - aSynced;
 
       const aCanon = canonicalLogsMap.has(aId) ? 1 : 0;
       const bCanon = canonicalLogsMap.has(bId) ? 1 : 0;
@@ -600,20 +611,19 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
       const canonical = canonicalLogsMap.get(rawId);
 
-      // Abaikan entri duplikat pergeseran nomor baris (shifted-row) dari Oktober/November jika bukan ID kanonikal
-      if (!canonical && !isUserEdited && (rawId.startsWith('log-rep-202610') || rawId.startsWith('log-rep-202611'))) {
-        const staffObjCheck = allKnownStaff.find(s => isStaffMatch(s, item.staffName)) || STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
-        const checkStaffName = staffObjCheck ? staffObjCheck.name : String(item.staffName || '').trim();
-        const hasCanonicalForSameStaffDate = (INITIAL_LOGBOOK_ENTRIES || []).some(
-          (cl: any) => cl.date === item.date && cl.staffName === checkStaffName
-        );
-        if (hasCanonicalForSameStaffDate) return;
-      }
-
       const staffObj = allKnownStaff.find(s => isStaffMatch(s, item.staffName)) || STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
       const effectiveStaffName = staffObj ? staffObj.name : String(item.staffName || '').trim();
       if (!effectiveStaffName) return; // Drop entries without staff name
+
+      const isOctNovDecSheetLog =
+        !isUserEdited &&
+        (rawId.startsWith('log-rep-202610') || rawId.startsWith('log-rep-202611') || rawId.startsWith('log-rep-202612'));
+      if (isOctNovDecSheetLog) {
+        const staffDateKey = `${item.date}_${effectiveStaffName}`;
+        if (staffDateSheetSet.has(staffDateKey)) return;
+        staffDateSheetSet.add(staffDateKey);
+      }
 
       const effectiveDivision = (item.division && item.division !== 'Umum')
         ? item.division
@@ -625,15 +635,13 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (!isCustomAppId && semanticSet.has(semanticKey)) return; // Semantic dedup for external/gsheet rows
       if (!isCustomAppId) semanticSet.add(semanticKey);
 
-      const rawFollowUp = String(item.followUp !== undefined ? item.followUp : (canonical?.followUp || ''));
-      const cleanedFollowUp = rawFollowUp.replace(/Kondisi unit sudah OK/g, 'Kondisi OK');
-
       const normalizedItem = {
         ...(canonical && !isUserEdited ? canonical : {}),
         ...item,
         staffName: effectiveStaffName,
         division: effectiveDivision,
-        followUp: canonical && !isUserEdited ? canonical.followUp : cleanedFollowUp
+        activity: item.activity !== undefined ? item.activity : (canonical?.activity || ''),
+        followUp: item.followUp !== undefined ? item.followUp : (canonical?.followUp || '')
       };
       
       if (item.id) {

@@ -125,6 +125,8 @@ export interface NotificationItem {
   notes?: string;
   qcResult: 'OK' | 'NG' | 'INFO';
   timestamp: number;
+  updatedAtMs?: number;
+  revisionKey?: string;
   source: string;
   targetTab: string;
 }
@@ -243,7 +245,7 @@ export default function QCNotificationCenter({
     }
   });
 
-  const knownItemIdsRef = useRef<Set<string>>(new Set<string>());
+  const knownRevisionsRef = useRef<Map<string, string>>(new Map<string, string>());
   const isInitialLoadRef = useRef<boolean>(true);
   const mountTimeRef = useRef<number>(Date.now());
 
@@ -311,6 +313,27 @@ export default function QCNotificationCenter({
     return isNaN(baseVal) ? Date.now() : baseVal;
   };
 
+  // Ekstraksi waktu sinkronisasi/update aktual untuk deteksi notifikasi masuk secara live
+  const parseLiveUpdateTimestamp = (rawItem: any, fallbackTs: number): number => {
+    if (!rawItem) return fallbackTs;
+    const syncedAt = rawItem._syncedAt;
+    if (syncedAt && typeof syncedAt === 'string') {
+      const parsed = new Date(syncedAt).getTime();
+      if (!isNaN(parsed)) return parsed;
+    }
+    const metaUpdated = rawItem._syncMeta?.updatedAt;
+    const metaBy = rawItem._syncMeta?.updatedBy;
+    if (metaUpdated && typeof metaUpdated === 'string' && metaBy !== 'System Canonical Sync' && metaBy !== 'BatchSync') {
+      const parsed = new Date(metaUpdated).getTime();
+      if (!isNaN(parsed)) return parsed;
+    }
+    return fallbackTs;
+  };
+
+  const buildRevisionKey = (id: string, activity: string, notes?: string, qcResult?: string): string => {
+    return `${id}::${String(activity || '').trim()}::${String(notes || '').trim()}::${qcResult || ''}`;
+  };
+
   // Menggabungkan HANYA 4 SUMBER INPUT OPERASIONAL RESMI:
   // 1. Daily Task
   // 2. Daily Log (Daily Report & Logbook QC)
@@ -365,6 +388,8 @@ export default function QCNotificationCenter({
 
       const lowerTaskText = `${task.title || ''} ${task.description || ''} ${(task as any).notes || ''}`.toLowerCase();
       const isTaskKendala = STRICT_FINDING_TERMS.some(t => lowerTaskText.includes(t));
+      const taskQcResult: 'OK' | 'NG' | 'INFO' = isTaskKendala ? 'NG' : (task.status === 'Done' ? 'OK' : 'INFO');
+      const taskBaseTs = parseSafeTimestamp(dateVal, timeVal, task.id);
 
       list.push({
         id,
@@ -375,8 +400,10 @@ export default function QCNotificationCenter({
         category: 'Daily Task',
         title: `Input Daily Task: ${task.title}`,
         activity: actVal,
-        qcResult: isTaskKendala ? 'NG' : (task.status === 'Done' ? 'OK' : 'INFO'),
-        timestamp: parseSafeTimestamp(dateVal, timeVal, task.id),
+        qcResult: taskQcResult,
+        timestamp: taskBaseTs,
+        updatedAtMs: parseLiveUpdateTimestamp(task, taskBaseTs),
+        revisionKey: buildRevisionKey(id, actVal, undefined, taskQcResult),
         source: 'Daily Task Kanban',
         targetTab: 'log_task'
       });
@@ -397,6 +424,9 @@ export default function QCNotificationCenter({
       const lowerAct = String(rep.activity).toLowerCase();
       const lowerNotes = String(rep.notes || '').toLowerCase();
       const isKendala = STRICT_FINDING_TERMS.some(t => lowerAct.includes(t) || lowerNotes.includes(t));
+      const repQcResult: 'OK' | 'NG' = isKendala ? 'NG' : 'OK';
+      const repNotes = rep.notes && rep.notes !== '-' ? rep.notes : undefined;
+      const repBaseTs = parseSafeTimestamp(dateVal, undefined, rep.id);
 
       list.push({
         id,
@@ -406,9 +436,11 @@ export default function QCNotificationCenter({
         category: 'Daily Log',
         title: `Daily Log: ${staffVal}`,
         activity: rep.activity,
-        notes: rep.notes && rep.notes !== '-' ? rep.notes : undefined,
-        qcResult: isKendala ? 'NG' : 'OK',
-        timestamp: parseSafeTimestamp(dateVal, undefined, rep.id),
+        notes: repNotes,
+        qcResult: repQcResult,
+        timestamp: repBaseTs,
+        updatedAtMs: parseLiveUpdateTimestamp(rep, repBaseTs),
+        revisionKey: buildRevisionKey(id, rep.activity, repNotes, repQcResult),
         source: rep._source === 'google_sheet' ? 'Google Sheet Sync' : 'Input Aplikasi',
         targetTab: 'log_task'
       });
@@ -426,6 +458,9 @@ export default function QCNotificationCenter({
       if (checkIsDuplicate(dateVal, staffVal, log.activity)) return;
 
       const isNg = log.result === 'NG';
+      const logQcResult: 'OK' | 'NG' = isNg ? 'NG' : 'OK';
+      const logNotes = log.followUp && log.followUp !== '-' ? log.followUp : undefined;
+      const logBaseTs = parseSafeTimestamp(dateVal, log.time, log.id);
       list.push({
         id,
         date: dateVal,
@@ -435,9 +470,11 @@ export default function QCNotificationCenter({
         category: 'Daily Log',
         title: `Daily Log QC ${log.division} (${log.result})`,
         activity: log.activity,
-        notes: log.followUp && log.followUp !== '-' ? log.followUp : undefined,
-        qcResult: isNg ? 'NG' : 'OK',
-        timestamp: parseSafeTimestamp(dateVal, log.time, log.id),
+        notes: logNotes,
+        qcResult: logQcResult,
+        timestamp: logBaseTs,
+        updatedAtMs: parseLiveUpdateTimestamp(log, logBaseTs),
+        revisionKey: buildRevisionKey(id, log.activity, logNotes, logQcResult),
         source: 'Form QC Onhouse',
         targetTab: 'log_task'
       });
@@ -471,6 +508,10 @@ export default function QCNotificationCenter({
       if (checkIsDuplicate(dateVal, staffVal, f.issue)) return;
       seenIds.add(id);
 
+      const findAct = `${f.issue}${f.targetDate ? ` • Target: ${f.targetDate}` : ''} [Status: ${f.status}]`;
+      const findNotes = f.priority ? `Prioritas: ${f.priority}` : undefined;
+      const findBaseTs = parseSafeTimestamp(dateVal, undefined, f.id);
+
       list.push({
         id,
         date: dateVal,
@@ -478,10 +519,12 @@ export default function QCNotificationCenter({
         division: f.division || 'Semua Divisi',
         category: 'Temuan Unit Bermasalah',
         title: `Temuan Unit: ${f.equipment} (${f.division || 'Umum'})`,
-        activity: `${f.issue}${f.targetDate ? ` • Target: ${f.targetDate}` : ''} [Status: ${f.status}]`,
-        notes: f.priority ? `Prioritas: ${f.priority}` : undefined,
+        activity: findAct,
+        notes: findNotes,
         qcResult: 'NG',
-        timestamp: parseSafeTimestamp(dateVal, undefined, f.id),
+        timestamp: findBaseTs,
+        updatedAtMs: parseLiveUpdateTimestamp(f, findBaseTs),
+        revisionKey: buildRevisionKey(id, findAct, findNotes, 'NG'),
         source: 'Log Temuan Kerusakan',
         targetTab: 'findings'
       });
@@ -504,6 +547,10 @@ export default function QCNotificationCenter({
 
       if (checkIsDuplicate(dateVal, staffVal, activity)) return;
 
+      const whNotes = log.notes && log.notes !== '-' ? log.notes : undefined;
+      const whQcResult: 'OK' | 'INFO' = isReceived ? 'OK' : 'INFO';
+      const whBaseTs = parseSafeTimestamp(dateVal, undefined, log.id);
+
       list.push({
         id,
         date: dateVal,
@@ -512,9 +559,11 @@ export default function QCNotificationCenter({
         category: 'Mutasi Unit Gudang',
         title,
         activity,
-        notes: log.notes && log.notes !== '-' ? log.notes : undefined,
-        qcResult: isReceived ? 'OK' : 'INFO',
-        timestamp: parseSafeTimestamp(dateVal, undefined, log.id),
+        notes: whNotes,
+        qcResult: whQcResult,
+        timestamp: whBaseTs,
+        updatedAtMs: parseLiveUpdateTimestamp(log, whBaseTs),
+        revisionKey: buildRevisionKey(id, activity, whNotes, whQcResult),
         source: 'Manajemen Logistik Gudang',
         targetTab: 'gudang'
       });
@@ -571,46 +620,68 @@ export default function QCNotificationCenter({
     });
   }, [dailyReports, logbookEntries, findings, dailyTasks, warehouseLogs, activeMonth, effectiveVehicles]);
 
-  // Deteksi penambahan data input secara live dalam sesi aktif untuk memicu Toast
+  // Deteksi penambahan atau perubahan data input secara live dalam sesi aktif untuk memicu Toast & Unread Badge
   useEffect(() => {
     if (notifications.length === 0) return;
 
-    // Grace period inisialisasi: dalam 4 detik pertama sejak komponen di-mount,
-    // daftarkan seluruh ID tanpa memicu popup toast untuk mencegah popup palsu dari data historis/async fetch
-    const isSettling = Date.now() - mountTimeRef.current < 4000;
+    // Grace period inisialisasi: dalam 3.5 detik pertama sejak komponen di-mount,
+    // daftarkan seluruh ID dan revisi konten tanpa memicu popup toast palsu saat reload
+    const isSettling = Date.now() - mountTimeRef.current < 3500;
     if (isInitialLoadRef.current || isSettling) {
-      notifications.forEach(n => knownItemIdsRef.current.add(n.id));
+      notifications.forEach(n => {
+        knownRevisionsRef.current.set(n.id, n.revisionKey || n.id);
+      });
       if (!isSettling) {
         isInitialLoadRef.current = false;
       }
       return;
     }
 
-    // Hanya cari item yang benar-benar baru masuk ke sesi aktif (belum pernah tercatat di knownItemIdsRef)
-    const freshNewItems = notifications.filter(n => !knownItemIdsRef.current.has(n.id));
-    if (freshNewItems.length > 0) {
-      freshNewItems.forEach(n => knownItemIdsRef.current.add(n.id));
+    // Cari item yang benar-benar baru masuk ATAU yang kontennya baru saja berubah di Google Sheet / aplikasi
+    const freshOrUpdatedItems: Array<{ item: NotificationItem; isUpdatedRevision: boolean }> = [];
+    notifications.forEach(n => {
+      const rev = n.revisionKey || n.id;
+      const prevRev = knownRevisionsRef.current.get(n.id);
+      if (prevRev === undefined) {
+        freshOrUpdatedItems.push({ item: n, isUpdatedRevision: false });
+      } else if (prevRev !== rev) {
+        freshOrUpdatedItems.push({ item: n, isUpdatedRevision: true });
+      }
+      knownRevisionsRef.current.set(n.id, rev);
+    });
 
-      // Cari kandidat yang belum pernah di-dismiss, belum pernah dibaca,
-      // bukan dokumen berkala armada (yang tampil di banner/drawer),
-      // dan timestamp-nya baru (kurang dari 60 detik lalu)
-      const toastCandidate = freshNewItems.find(n => {
+    if (freshOrUpdatedItems.length > 0) {
+      // Jika ada item yang direvisi (diedit di Google Sheet / aplikasi), hapus ID lama dari daftar sudah dibaca
+      // agar indikator unread badge langsung menyala kembali
+      const revisedIds = freshOrUpdatedItems.filter(x => x.isUpdatedRevision).map(x => x.item.id);
+      if (revisedIds.length > 0) {
+        setReadIds(prev => {
+          const next = new Set<string>(prev);
+          revisedIds.forEach(id => next.delete(id));
+          saveStoredReadIds(next);
+          return next;
+        });
+      }
+
+      const toastEntry = freshOrUpdatedItems.find(({ item: n, isUpdatedRevision }) => {
         if (n.id.startsWith('veh-doc-')) return false;
-        if (dismissedToastIds.has(n.id)) return false;
-        if (readIds.has(n.id)) return false;
-        if (lastReadTimestamp > 0 && n.timestamp <= lastReadTimestamp) return false;
-        const isRecent = Math.abs(Date.now() - n.timestamp) < 60_000;
+        const revKey = n.revisionKey || n.id;
+        if (dismissedToastIds.has(revKey)) return false;
+        if (!isUpdatedRevision && readIds.has(revKey)) return false;
+        const effectiveEventTs = n.updatedAtMs || n.timestamp;
+        const isRecent = isUpdatedRevision || Math.abs(Date.now() - effectiveEventTs) < 120_000;
         return isRecent;
       });
 
-      if (toastCandidate && !isMobileHeader) {
+      if (toastEntry && !isMobileHeader) {
+        const toastCandidate = toastEntry.item;
+        const toastRevKey = toastCandidate.revisionKey || toastCandidate.id;
         setLiveToast(toastCandidate);
         const timer = setTimeout(() => {
           setLiveToast(null);
-          // Simpan ke dismissed agar tidak pernah memicu toast lagi
           setDismissedToastIds(prev => {
             const next = new Set<string>(prev);
-            next.add(toastCandidate.id);
+            next.add(toastRevKey);
             saveStoredDismissedToastIds(next);
             return next;
           });
@@ -620,10 +691,14 @@ export default function QCNotificationCenter({
     }
   }, [notifications, isMobileHeader, dismissedToastIds, readIds, lastReadTimestamp]);
 
-  // Cek apakah notifikasi berstatus belum dibaca
+  // Cek apakah notifikasi berstatus belum dibaca (mendukung deteksi revisi baru dari Google Sheet)
   const isItemUnread = (item: NotificationItem): boolean => {
-    if (readIds.has(item.id)) return false;
-    if (lastReadTimestamp > 0 && item.timestamp <= lastReadTimestamp) return false;
+    const revKey = item.revisionKey || item.id;
+    if (readIds.has(revKey)) return false;
+    const effectiveTs = item.updatedAtMs || item.timestamp;
+    if (readIds.has(item.id) && effectiveTs <= lastReadTimestamp) return false;
+    if (lastReadTimestamp > 0 && effectiveTs <= lastReadTimestamp && readIds.has(item.id)) return false;
+    if (lastReadTimestamp > 0 && effectiveTs <= lastReadTimestamp && item.timestamp <= lastReadTimestamp) return false;
     return true;
   };
 
@@ -706,15 +781,18 @@ export default function QCNotificationCenter({
     }
     if (liveToast) {
       const toastId = liveToast.id;
+      const toastRev = liveToast.revisionKey || toastId;
       setDismissedToastIds(prev => {
         const next = new Set<string>(prev);
         next.add(toastId);
+        next.add(toastRev);
         saveStoredDismissedToastIds(next);
         return next;
       });
       setReadIds(prev => {
         const next = new Set<string>(prev);
         next.add(toastId);
+        next.add(toastRev);
         saveStoredReadIds(next);
         return next;
       });
@@ -728,15 +806,18 @@ export default function QCNotificationCenter({
     e.stopPropagation();
     if (liveToast) {
       const toastId = liveToast.id;
+      const toastRev = liveToast.revisionKey || toastId;
       setDismissedToastIds(prev => {
         const next = new Set<string>(prev);
         next.add(toastId);
+        next.add(toastRev);
         saveStoredDismissedToastIds(next);
         return next;
       });
       setReadIds(prev => {
         const next = new Set<string>(prev);
         next.add(toastId);
+        next.add(toastRev);
         saveStoredReadIds(next);
         return next;
       });
@@ -752,8 +833,11 @@ export default function QCNotificationCenter({
       e.stopPropagation();
     }
     setIsOpen(true);
-    // Saat drawer dibuka, tandai semua notifikasi saat ini sebagai sudah dibaca
-    const maxTimestamp = notifications.reduce((max, n) => Math.max(max, n.timestamp || 0), Date.now());
+    // Saat drawer dibuka, tandai semua notifikasi & revisi saat ini sebagai sudah dibaca
+    const maxTimestamp = notifications.reduce(
+      (max, n) => Math.max(max, n.timestamp || 0, n.updatedAtMs || 0),
+      Date.now()
+    );
     const newReadTime = Math.max(Date.now(), maxTimestamp) + 1000;
     setLastReadTimestamp(newReadTime);
     try {
@@ -762,14 +846,23 @@ export default function QCNotificationCenter({
     } catch {}
     setReadIds(prev => {
       const next = new Set<string>(prev);
-      notifications.forEach(n => next.add(n.id));
+      notifications.forEach(n => {
+        next.add(n.id);
+        if (n.revisionKey) next.add(n.revisionKey);
+      });
       saveStoredReadIds(next);
       return next;
     });
     setDismissedToastIds(prev => {
       const next = new Set<string>(prev);
-      notifications.forEach(n => next.add(n.id));
-      if (liveToast) next.add(liveToast.id);
+      notifications.forEach(n => {
+        next.add(n.id);
+        if (n.revisionKey) next.add(n.revisionKey);
+      });
+      if (liveToast) {
+        next.add(liveToast.id);
+        if (liveToast.revisionKey) next.add(liveToast.revisionKey);
+      }
       saveStoredDismissedToastIds(next);
       return next;
     });
@@ -782,7 +875,10 @@ export default function QCNotificationCenter({
       e.preventDefault();
       e.stopPropagation();
     }
-    const maxTimestamp = notifications.reduce((max, n) => Math.max(max, n.timestamp || 0), Date.now());
+    const maxTimestamp = notifications.reduce(
+      (max, n) => Math.max(max, n.timestamp || 0, n.updatedAtMs || 0),
+      Date.now()
+    );
     const newReadTime = Math.max(Date.now(), maxTimestamp) + 1000;
     setLastReadTimestamp(newReadTime);
     try {
@@ -791,14 +887,23 @@ export default function QCNotificationCenter({
     } catch {}
     setReadIds(prev => {
       const next = new Set<string>(prev);
-      notifications.forEach(n => next.add(n.id));
+      notifications.forEach(n => {
+        next.add(n.id);
+        if (n.revisionKey) next.add(n.revisionKey);
+      });
       saveStoredReadIds(next);
       return next;
     });
     setDismissedToastIds(prev => {
       const next = new Set<string>(prev);
-      notifications.forEach(n => next.add(n.id));
-      if (liveToast) next.add(liveToast.id);
+      notifications.forEach(n => {
+        next.add(n.id);
+        if (n.revisionKey) next.add(n.revisionKey);
+      });
+      if (liveToast) {
+        next.add(liveToast.id);
+        if (liveToast.revisionKey) next.add(liveToast.revisionKey);
+      }
       saveStoredDismissedToastIds(next);
       return next;
     });
@@ -810,12 +915,14 @@ export default function QCNotificationCenter({
     setReadIds(prev => {
       const next = new Set<string>(prev);
       next.add(item.id);
+      if (item.revisionKey) next.add(item.revisionKey);
       saveStoredReadIds(next);
       return next;
     });
     setDismissedToastIds(prev => {
       const next = new Set<string>(prev);
       next.add(item.id);
+      if (item.revisionKey) next.add(item.revisionKey);
       saveStoredDismissedToastIds(next);
       return next;
     });

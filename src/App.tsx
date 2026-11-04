@@ -341,7 +341,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v71_clean_nov_findings_and_reports';
+  const REF_SYNC_KEY = 'riz_ref_synced_v72_live_gsheet_actual_sync';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
@@ -355,8 +355,7 @@ export default function App() {
           existing.forEach((item: any) => {
             if (!item?.id) return;
             const idStr = String(item.id);
-            const hasStaleKondisi = String(item.notes || item.followUp || '').includes('Kondisi unit sudah OK');
-            const isUserEdited = Boolean((item._userEdited || item._syncMeta?._userEdited) && !hasStaleKondisi);
+            const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
             // Bersihkan entri google_sheet bulan Oktober & November lama yang belum pernah diedit user dan tidak ada di canonical
             if (
               !isUserEdited &&
@@ -377,10 +376,16 @@ export default function App() {
             }
             const canonItem = map.get(idStr) as any;
             if (canonItem) {
-              if (hasStaleKondisi) {
-                map.set(idStr, canonItem);
-              } else {
+              if (isUserEdited) {
                 map.set(idStr, { ...canonItem, ...item });
+              } else {
+                map.set(idStr, {
+                  ...item,
+                  ...canonItem,
+                  ...(item.status === 'Close' || item.status === 'Completed' ? { status: item.status } : {}),
+                  ...(item.approvedBy ? { approvedBy: item.approvedBy } : {}),
+                  ...(item.approvedAt ? { approvedAt: item.approvedAt } : {}),
+                });
               }
             } else {
               map.set(idStr, item);
@@ -838,15 +843,16 @@ export default function App() {
         async (id, docData) => {
           const { getDeletedIds } = await import('./lib/cloudSync');
           if (getDeletedIds('findings').has(id)) return;
-          if (existingIds.has(id)) return;
 
-          // Cek dari teks issue yang persis sama atau sudah pernah diedit user
+          // Cek apakah sudah pernah diedit user atau apakah teks issue persis sama
           const currentFindingsRaw = localStorage.getItem('riz_findings_v2');
           if (currentFindingsRaw) {
             try {
               const currentList = JSON.parse(currentFindingsRaw);
-              if (Array.isArray(currentList) && currentList.some((f: any) => f.issue === docData.issue || f.id === id)) {
-                return;
+              if (Array.isArray(currentList)) {
+                const existing = currentList.find((f: any) => f.id === id);
+                if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
+                if (existing && existing.issue === docData.issue) return;
               }
             } catch {}
           }
@@ -885,6 +891,39 @@ export default function App() {
           const merged = normalizeCollectionItems('daily_reports', Array.from(map.values()));
           try { localStorage.setItem('riz_daily_reports_v2', JSON.stringify(merged)); } catch (_e) {}
           return merged as any;
+        });
+
+        // Sinkronkan juga DailyTask kanban (dt-YYYYMMDD-*) yang berpasangan dengan laporan Google Sheet
+        setDailyTasks(prev => {
+          let changed = false;
+          const updated = prev.map(t => {
+            if (!t || !String(t.id || '').startsWith('dt-2026')) return t;
+            if ((t as any)._userEdited || (t as any)._syncMeta?._userEdited) return t;
+            const taskDate = String(t.dueDate || t.createdAt || '').slice(0, 10);
+            const matchedRep = newReportDocs.find(
+              r => r.date === taskDate && String(r.staffName || '').toLowerCase() === String(t.assignedName || '').toLowerCase()
+            );
+            if (!matchedRep) return t;
+            const newDesc = matchedRep.notes
+              ? `${matchedRep.activity}\nREMARK:\n${matchedRep.notes}`
+              : matchedRep.activity;
+            if (t.description === newDesc) return t;
+            changed = true;
+            const nextTask = {
+              ...t,
+              description: newDesc,
+              _syncedAt: matchedRep._syncedAt
+            };
+            saveCloudDoc('daily_tasks', nextTask.id, nextTask, 'System Auto-Sync').catch(() => {});
+            return nextTask;
+          });
+          if (!changed) return prev;
+          const merged = normalizeCollectionItems('daily_tasks', updated);
+          try {
+            localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(merged));
+            localStorage.setItem('riz_daily_tasks', JSON.stringify(merged));
+          } catch (_e) {}
+          return merged;
         });
       }
       if (newLogDocs.length > 0) {
