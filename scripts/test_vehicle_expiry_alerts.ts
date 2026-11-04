@@ -16,6 +16,7 @@ import {
   EXPIRY_ALERT_THRESHOLD_DAYS
 } from '../src/utils/vehicleExpiryAlerts';
 import { VehicleMaster } from '../src/types';
+import { INITIAL_VEHICLES, normalizeVehiclesMaster, formatServiceDateIndonesian } from '../src/data';
 
 function runVehicleExpiryTests() {
   console.log('================================================================');
@@ -141,6 +142,32 @@ function runVehicleExpiryTests() {
   console.log(`  3. [${alerts[2].docType}] ${alerts[2].policeNumber}: ${alerts[2].urgencyLabel} (${alerts[2].daysRemaining} hari)`);
 
   console.log('✓ PASS: getVehicleExpiryAlerts mengembalikan alert terurut & akurat 100%.\n');
+
+  console.log('[TEST 5] Verifikasi 7 Unit Armada Resmi Google Sheet RIZ-PRODUCTION');
+  assert(INITIAL_VEHICLES.length === 7, 'Harus terdapat tepat 7 unit armada resmi');
+  const expectedPlates = ['F 8433 BF', 'F 8446 BF', 'F 8569 BH', 'F 8594 BH', 'F 8942 BG', 'B 2673 TVI', 'F 2215 EO'];
+  expectedPlates.forEach((plate, idx) => {
+    assert(INITIAL_VEHICLES[idx].policeNumber === plate, `Unit ${idx + 1} harus ${plate}`);
+  });
+  const normalized = normalizeVehiclesMaster([
+    { id: 'old-fake', name: 'Fake Truck', policeNumber: 'B 9331 JXQ' },
+    { id: 'veh-1', name: 'Old Carry', policeNumber: 'F 8433 BF', kirExpiry: '2026-09-30' }
+  ]);
+  assert(normalized.length === 7, 'normalizeVehiclesMaster harus menghapus plat fiktif B 9331 JXQ dan mempertahankan 7 unit resmi');
+  const v8433 = normalized.find(v => v.policeNumber === 'F 8433 BF');
+  assert(v8433?.kirExpiry === '2027-02-26', 'KIR F 8433 BF harus disinkronkan ke tanggal resmi 2027-02-26');
+  assert(v8433?.maintenanceHistory?.[0]?.date === '2026-08-20', 'Riwayat servis F 8433 BF paling atas harus tanggal terkini 2026-08-20 (20 Agustus 2026)');
+  assert(v8433?.maintenanceHistory?.[v8433.maintenanceHistory.length - 1]?.date === '2024-05-07', 'Riwayat servis F 8433 BF paling bawah harus tanggal terlama 2024-05-07');
+  assert(formatServiceDateIndonesian('2026-08-20') === '20 Agustus 2026', 'Format tanggal Indonesia harus "20 Agustus 2026"');
+
+  // Pastikan seluruh 7 unit tersusun descending (terkini paling atas)
+  normalized.forEach(v => {
+    const hist = v.maintenanceHistory || [];
+    for (let i = 1; i < hist.length; i++) {
+      assert(hist[i - 1].date >= hist[i].date, `Riwayat servis ${v.policeNumber} harus berurutan dari tanggal terkini paling atas (${hist[i - 1].date} >= ${hist[i].date})`);
+    }
+  });
+  console.log('✓ PASS: 7 Unit Armada Resmi & Riwayat Servis Terkini Paling Atas terverifikasi 100%.\n');
 
   console.log('================================================================');
   console.log('  SEMUA PENGUJIAN MASA BERLAKU STNK & KIR LULUS SEMPURNA (100%)');

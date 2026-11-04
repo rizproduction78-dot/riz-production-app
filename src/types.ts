@@ -13,6 +13,10 @@ export const OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL = "https://drive.google
 export const OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_URL = "https://drive.google.com/drive/folders/1hBGpse_uG9bbeMNqc0qdbMydLTt0uDuq";
 export const OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID = "1hBGpse_uG9bbeMNqc0qdbMydLTt0uDuq";
 
+// Sumber Resmi Google Sheet Data Unit Armada & Riwayat Servis PT. Riz Production Multi Kreasi
+export const OFFICIAL_ARMADA_SPREADSHEET_ID = "1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs";
+export const OFFICIAL_ARMADA_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs/edit?usp=sharing";
+
 // Alamat Resmi & Koordinat GPS Kantor / Gudang PT. Riz Production Multi Kreasi
 export const OFFICIAL_COMPANY_ADDRESS = "Jl. Alternatif Jl. Tugu Wates No.78, RT.02/RW.13, Kedungbadak, Tanah Sareal, Kota Bogor, Jawa Barat 16164";
 export const OFFICIAL_COMPANY_PLUS_CODE = "CRR3+82 Kedungbadak, Bogor City, West Java";
@@ -69,6 +73,7 @@ export interface WorkSchedule {
 export interface VehicleMaster {
   id: string;
   name: string;
+  unitCode?: string; // Kode unit armada internal (misal: 011, 012, 013, 014)
   ownership: 'Internal' | 'Sewa Mitra';
   policeNumber: string;
   vehicleType: string;
@@ -76,8 +81,11 @@ export interface VehicleMaster {
   cbmCapacity: number; // m3
   odometerKM: number;
   stnkTaxExpiry: string; // YYYY-MM-DD
-  kirExpiry: string; // YYYY-MM-DD
+  kirExpiry: string; // YYYY-MM-DD (atau '-' untuk kendaraan non-KIR)
   status: 'Siap Operasi' | 'Dalam Perjalanan' | 'Maintenance / Servis';
+  sheetGid?: string; // GID tab Google Sheet resmi
+  totalMaintenanceCost?: number; // Total akumulasi biaya servis & sparepart (Rp)
+  maintenanceHistory?: VehicleMaintenanceRecord[]; // Riwayat servis resmi dari Google Sheet
   _syncedAt?: string; // Timestamp sinkronisasi cloud
   _syncMeta?: {
     updatedAt: string;

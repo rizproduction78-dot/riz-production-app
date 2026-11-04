@@ -3,7 +3,7 @@ import { DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
 /**
  * DATA KANONIKAL RESMI CLOUD FIRESTORE & GOOGLE SHEET PT. RIZ PRODUCTION MULTI KREASI
  * Disinkronkan langsung dari Cloud Firestore (wh-logbook-2026).
- * Total: 295 Daily Reports | 240 Logbook Entries | 47 Findings | 16 Work Orders
+ * Total: 300 Daily Reports | 244 Logbook Entries | 59 Findings | 26 Work Orders
  */
 
 export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
@@ -4664,7 +4664,7 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "date": "2026-11-02",
     "staffName": "Wahyudin",
     "division": "Audio",
-    "activity": "bersih\" dl 32\nno 1\nno 2\nno 3\nno 4\nmixer HD",
+    "activity": "bersih\" dl 32\nDL 32 no 1\nDL 32 no 2\nDL 32 no 3\nDL 32 no 4\nmixer HD no 1",
     "notes": "CEK NYALA AMAN\nOK\nOK\nOK\nOK\nOK",
     "status": "Submitted",
     "_source": "google_sheet"
@@ -4675,7 +4675,57 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "staffName": "Muhamad Rahmat",
     "division": "Audio",
     "activity": "-cleaning dl251\n-cleaning marani mir4801\n-cek all kabel LAN\n-cleaning mixer HD967",
-    "notes": "-BERSIH\n-BERSIH\n-ALL terkonectsi dgn  baik\n-BERSIH",
+    "notes": "-BERSIH\n-BERSIH\n-ALL terkoneksi dgn  baik",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261102-staff-mulyadi-14",
+    "date": "2026-11-02",
+    "staffName": "Mulyadi",
+    "division": "Multimedia",
+    "activity": "Cek UPS\nCleaning Rak Kantor\nCleaning Tas Kamera\nCek Box 1 Perlenk, SDI, HDMI",
+    "notes": "Udah Ga bisa ngisi",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261103-staff-yudish-18",
+    "date": "2026-11-03",
+    "staffName": "Yudishtira Purnama A",
+    "division": "Audio",
+    "activity": "cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD\nEWD no. 5 - 8\nEWD no. 9 - 12\nEWD no. 15 - 16\nEWD no. 17 - 18\nSLXD no. 1 - 4\nSLXD no. 5 - 8\nQLXD no 9 - 12\ncleaning and check kelengkapan IEM Sennheisser G4\nno. 1 - 8\nrepack WHM QLXD menjadi 2 box ukuran 2U ( baru )\nmassing2 menjadi 2 WHM dalam 1 box",
+    "notes": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event\nIEM semua dalam kondisi normal, kelengkapan oke.\nDistributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U.",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261103-staff-heri-30",
+    "date": "2026-11-03",
+    "staffName": "Heri",
+    "division": "Lighting",
+    "activity": "-Rapih2 Kabel Bekas Pakai Perbok\n-Benerin Kabel Power 4x2.5 (25M)\n-Cleaning All Beam 450\nNo. 1-2-3-4-5-6-7-8-9-10-11-12-13\n14-15-16-17-18-19-20-21-22-23-24\n-Cleaning All Parled Trf A64\nNo. 1-2-3-4-5-6-7-8-9-10-11-12-13\n14-15-16-17-18-19-20-21-22-23-24\n25-26-27-28-29-30-31-32-33-34-35\n36-37-38-39-40-41-42-43-44-45-46\n47-48",
+    "notes": "- Rapih Sesuai Tulisan Dibok\n- Sudah Kepasang Kembali Steker Nya\n-Bersih & Normal\n- Bersih & Normal KECUALI NO. 5-12-19-33 Eror\nNo. 5 - Warm Separo\nNo. 12 - Red Mati 1 Mata\nNo. 19 - Warm Separo\nNo. 33 - Red Separo",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261103-staff-mulyana-41",
+    "date": "2026-11-03",
+    "staffName": "Mulyana",
+    "division": "Videotron",
+    "activity": "servise 8 kabinet led\n- 6 kabinet ganti dead pixel\n-1 kabinet ganti ic warna\n- 1 kabinet ganti jalur",
+    "notes": "2 unit minta ganti reciving card",
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261104-staff-iwan-45",
+    "date": "2026-11-04",
+    "staffName": "Iwan Kurniawan",
+    "division": "Audio",
+    "activity": "Ganti twitter DB No 15\nGanti twitter DB No 18\nGanti twitter DB No 5\nGanti Speaker DB no 5\nProses  Test Unit DB tech maintenance",
+    "notes": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi OK\nKondisi OK\nKondisi OK\nService ulang, DB no 15 belum normal",
     "status": "Submitted",
     "_source": "google_sheet"
   }
@@ -10447,13 +10497,13 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "division": "Audio",
     "staffName": "Iwan Kurniawan",
     "activity": "cek unit monitor DB15",
-    "result": "OK",
+    "result": "NG",
     "followUp": "-DB NO15 twitwe kecil/lemah",
-    "status": "Close",
+    "status": "Open",
     "verification": "Auto-Synced",
     "checklists": {
       "cek unit monitor DB15": {
-        "status": "OK",
+        "status": "NG",
         "notes": "-DB NO15 twitwe kecil/lemah"
       }
     },
@@ -10518,13 +10568,13 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "date": "2026-11-02",
     "division": "Audio",
     "staffName": "Wahyudin",
-    "activity": "bersih\" dl 32\nno 1\nno 2\nno 3\nno 4\nmixer HD",
+    "activity": "bersih\" dl 32\nDL 32 no 1\nDL 32 no 2\nDL 32 no 3\nDL 32 no 4\nmixer HD no 1",
     "result": "OK",
     "followUp": "CEK NYALA AMAN\nOK\nOK\nOK\nOK\nOK",
     "status": "Close",
     "verification": "Auto-Synced",
     "checklists": {
-      "bersih\" dl 32\nno 1\nno 2\nno 3\nno 4\nmixer ": {
+      "bersih\" dl 32\nDL 32 no 1\nDL 32 no 2\nDL 3": {
         "status": "OK",
         "notes": "CEK NYALA AMAN\nOK\nOK\nOK\nOK\nOK"
       }
@@ -10538,13 +10588,85 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "staffName": "Muhamad Rahmat",
     "activity": "-cleaning dl251\n-cleaning marani mir4801\n-cek all kabel LAN\n-cleaning mixer HD967",
     "result": "OK",
-    "followUp": "-BERSIH\n-BERSIH\n-ALL terkonectsi dgn  baik\n-BERSIH",
+    "followUp": "-BERSIH\n-BERSIH\n-ALL terkoneksi dgn  baik",
     "status": "Close",
     "verification": "Auto-Synced",
     "checklists": {
       "-cleaning dl251\n-cleaning marani mir4801": {
         "status": "OK",
-        "notes": "-BERSIH\n-BERSIH\n-ALL terkonectsi dgn  baik\n-BERSIH"
+        "notes": "-BERSIH\n-BERSIH\n-ALL terkoneksi dgn  baik"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261102-staff-mulyadi-14",
+    "date": "2026-11-02",
+    "division": "Multimedia",
+    "staffName": "Mulyadi",
+    "activity": "Cek UPS\nCleaning Rak Kantor\nCleaning Tas Kamera\nCek Box 1 Perlenk, SDI, HDMI",
+    "result": "NG",
+    "followUp": "Udah Ga bisa ngisi",
+    "status": "Open",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "Cek UPS\nCleaning Rak Kantor\nCleaning Tas": {
+        "status": "NG",
+        "notes": "Udah Ga bisa ngisi"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261103-staff-yudish-18",
+    "date": "2026-11-03",
+    "division": "Audio",
+    "staffName": "Yudishtira Purnama A",
+    "activity": "cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD\nEWD no. 5 - 8\nEWD no. 9 - 12\nEWD no. 15 - 16\nEWD no. 17 - 18\nSLXD no. 1 - 4\nSLXD no. 5 - 8\nQLXD no 9 - 12\ncleaning and check kelengkapan IEM Sennheisser G4\nno. 1 - 8\nrepack WHM QLXD menjadi 2 box ukuran 2U ( baru )\nmassing2 menjadi 2 WHM dalam 1 box",
+    "result": "OK",
+    "followUp": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event\nIEM semua dalam kondisi normal, kelengkapan oke.\nDistributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U.",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "cleaning and check kelengkapan WHM EWD d": {
+        "status": "OK",
+        "notes": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event\nIEM semua dalam kondisi normal, kelengkapan oke.\nDistributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U."
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261103-staff-heri-30",
+    "date": "2026-11-03",
+    "division": "Lighting",
+    "staffName": "Heri",
+    "activity": "-Rapih2 Kabel Bekas Pakai Perbok\n-Benerin Kabel Power 4x2.5 (25M)\n-Cleaning All Beam 450\nNo. 1-2-3-4-5-6-7-8-9-10-11-12-13\n14-15-16-17-18-19-20-21-22-23-24\n-Cleaning All Parled Trf A64\nNo. 1-2-3-4-5-6-7-8-9-10-11-12-13\n14-15-16-17-18-19-20-21-22-23-24\n25-26-27-28-29-30-31-32-33-34-35\n36-37-38-39-40-41-42-43-44-45-46\n47-48",
+    "result": "NG",
+    "followUp": "- Rapih Sesuai Tulisan Dibok\n- Sudah Kepasang Kembali Steker Nya\n-Bersih & Normal\n- Bersih & Normal KECUALI NO. 5-12-19-33 Eror\nNo. 5 - Warm Separo\nNo. 12 - Red Mati 1 Mata\nNo. 19 - Warm Separo\nNo. 33 - Red Separo",
+    "status": "Open",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "-Rapih2 Kabel Bekas Pakai Perbok\n-Beneri": {
+        "status": "NG",
+        "notes": "- Rapih Sesuai Tulisan Dibok\n- Sudah Kepasang Kembali Steker Nya\n-Bersih & Normal\n- Bersih & Normal KECUALI NO. 5-12-19-33 Eror\nNo. 5 - Warm Separo\nNo. 12 - Red Mati 1 Mata\nNo. 19 - Warm Separo\nNo. 33 - Red Separo"
+      }
+    },
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261104-staff-iwan-45",
+    "date": "2026-11-04",
+    "division": "Audio",
+    "staffName": "Iwan Kurniawan",
+    "activity": "Ganti twitter DB No 15\nGanti twitter DB No 18\nGanti twitter DB No 5\nGanti Speaker DB no 5\nProses  Test Unit DB tech maintenance",
+    "result": "NG",
+    "followUp": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi OK\nKondisi OK\nKondisi OK\nService ulang, DB no 15 belum normal",
+    "status": "Open",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "Ganti twitter DB No 15\nGanti twitter DB ": {
+        "status": "NG",
+        "notes": "Rekon-Kit Twitter masih bermasalah, suara kecil\nKondisi OK\nKondisi OK\nKondisi OK\nService ulang, DB no 15 belum normal"
       }
     },
     "_source": "google_sheet"
@@ -11478,6 +11600,150 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "_source": "google_sheet",
     "equipment": "Tripot Custom (Lighting)",
     "priority": "Sedang"
+  },
+  {
+    "id": "fd-20261003-kharo-pcb-bengkok",
+    "dateCreated": "2026-10-03",
+    "division": "Videotron",
+    "status": "Open",
+    "pic": "Mulyana",
+    "targetDate": "2026-10-06",
+    "issue": "1 modul PCB bengkok saat repair 1 kabinet ganti IC warna + ganti dead pixel",
+    "_source": "google_sheet",
+    "equipment": "Modul Kabinet LED Videotron (1 Modul PCB Bengkok)",
+    "priority": "Sedang"
+  },
+  {
+    "id": "fd-20261007-wigi-box-led",
+    "dateCreated": "2026-10-07",
+    "division": "Videotron",
+    "status": "Open",
+    "pic": "Dedi Agus Wigiantoro",
+    "targetDate": "2026-10-12",
+    "issue": "Box No. 03 full service dead pixel, Box No. 25 terdapat 5 kabinet dead pixel (3 box kondisi baik No. 02, 12, 27)",
+    "_source": "google_sheet",
+    "equipment": "Box LED Videotron No. 03 & No. 25",
+    "priority": "Tinggi"
+  },
+  {
+    "id": "fd-20261009-kharo-2box-rusak-berat",
+    "dateCreated": "2026-10-09",
+    "division": "Videotron",
+    "status": "Open",
+    "pic": "Mulyana",
+    "targetDate": "2026-10-16",
+    "issue": "1 box 4 kabinet on progress, 2 box rusak berat: Kerusakan ganti IC warna, ilang jalur, ganti konektor output sama ngacing",
+    "_source": "google_sheet",
+    "equipment": "2 Box Kabinet LED Videotron (Rusak Berat)",
+    "priority": "Tinggi"
+  },
+  {
+    "id": "fd-20261010-butonk-iem-g3-sn",
+    "dateCreated": "2026-10-10",
+    "division": "Audio",
+    "status": "Open",
+    "pic": "Iwan Kurniawan",
+    "targetDate": "2026-10-15",
+    "issue": "Note: Sennheiser G3 yang isi 4 Serial Number (SN) nya rusak ga bisa input",
+    "_source": "google_sheet",
+    "equipment": "Headset / IEM Sennheiser G3 (Box Isi 4)",
+    "priority": "Sedang"
+  },
+  {
+    "id": "fd-20261014-kharo-led-strip",
+    "dateCreated": "2026-10-14",
+    "division": "Videotron",
+    "status": "Open",
+    "pic": "Mulyana",
+    "targetDate": "2026-10-20",
+    "issue": "1 box kabinet LED status masih service berat, 1 rol (5m) LED strip status error saat cek 50 meter LED strip",
+    "_source": "google_sheet",
+    "equipment": "1 Box Kabinet LED & 1 Roll (5m) LED Strip",
+    "priority": "Sedang"
+  },
+  {
+    "id": "fd-20261026-unyim-db18",
+    "dateCreated": "2026-10-26",
+    "division": "Audio",
+    "status": "Close",
+    "pic": "Wahyudin",
+    "targetDate": "2026-11-04",
+    "issue": "DB No. 18 tweeter mati saat cek unit monitor DB18 (Telah diganti tweeter DB No. 18 oleh Butonk pada 4 Nov 2026 — Kondisi OK)",
+    "_source": "google_sheet",
+    "equipment": "Speaker Monitor DB Tech No. 18",
+    "priority": "Tinggi"
+  },
+  {
+    "id": "fd-20261026-butonk-db15",
+    "dateCreated": "2026-10-26",
+    "division": "Audio",
+    "status": "Open",
+    "pic": "Iwan Kurniawan",
+    "targetDate": "2026-11-04",
+    "issue": "DB No. 15 tweeter kecil / lemah saat cek unit monitor DB15",
+    "_source": "google_sheet",
+    "equipment": "Speaker Monitor DB Tech No. 15",
+    "priority": "Tinggi"
+  },
+  {
+    "id": "fd-20261026-mboh-lvx15",
+    "dateCreated": "2026-10-26",
+    "division": "Audio",
+    "status": "Open",
+    "pic": "Muhamad Rahmat",
+    "targetDate": "2026-11-02",
+    "issue": "Mesin mati / dalam pengecekan Mang Damri saat cek unit monitor LVX15",
+    "_source": "google_sheet",
+    "equipment": "Speaker Monitor dBTechnologies LVX15",
+    "priority": "Tinggi"
+  },
+  {
+    "id": "fd-20261102-jay-ups",
+    "dateCreated": "2026-11-02",
+    "division": "Multimedia",
+    "status": "Open",
+    "pic": "Mulyadi",
+    "targetDate": "2026-11-05",
+    "issue": "Udah Ga bisa ngisi (UPS tidak dapat mengisi/menyimpan daya baterai saat pengecekan)",
+    "_source": "google_sheet",
+    "equipment": "UPS Multimedia",
+    "priority": "Tinggi"
+  },
+  {
+    "id": "fd-20261103-heri-parled-trfa64",
+    "dateCreated": "2026-11-03",
+    "division": "Lighting",
+    "status": "Open",
+    "pic": "Heri",
+    "targetDate": "2026-11-07",
+    "issue": "Bersih & Normal KECUALI NO. 5-12-19-33 Eror: No. 5 - Warm Separo, No. 12 - Red Mati 1 Mata, No. 19 - Warm Separo, No. 33 - Red Separo",
+    "_source": "google_sheet",
+    "equipment": "Parled TRF A64 No. 5, 12, 19, 33 (Lighting)",
+    "priority": "Sedang"
+  },
+  {
+    "id": "fd-20261103-kharo-kabinet-led",
+    "dateCreated": "2026-11-03",
+    "division": "Videotron",
+    "status": "Open",
+    "pic": "Mulyana",
+    "targetDate": "2026-11-07",
+    "issue": "Service 8 kabinet LED (6 kabinet ganti dead pixel, 1 kabinet ganti IC warna, 1 kabinet ganti jalur) — 2 unit minta ganti receiving card",
+    "_source": "google_sheet",
+    "equipment": "8 Kabinet LED Videotron (2 Unit Receiving Card)",
+    "priority": "Tinggi"
+  },
+  {
+    "id": "fd-20261104-butonk-db15",
+    "dateCreated": "2026-11-04",
+    "division": "Audio",
+    "status": "Open",
+    "pic": "Iwan Kurniawan",
+    "targetDate": "2026-11-08",
+    "issue": "Ganti twitter DB No 15: Rekon-Kit Twitter masih bermasalah, suara kecil. Service ulang, DB no 15 belum normal (DB No 18 & DB No 5 kondisi OK)",
+    "_source": "google_sheet",
+    "equipment": "Speaker Monitor DB Tech No. 15 (Audio)",
+    "priority": "Tinggi"
   }
 ];
 
@@ -11811,6 +12077,148 @@ export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder[] = [
     "progress": 100,
     "priority": "Tinggi",
     "pic": "Mulyana",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261008-heri-pompa-smoke1",
+    "dateCreated": "2026-10-08",
+    "title": "Ganti Pompa Smoke Machine No. 1",
+    "division": "Lighting",
+    "deadline": "2026-10-08",
+    "description": "Ganti Pompa Smoke No. 1 — Kondisi Sudah Normal (OKE)",
+    "status": "Completed",
+    "progress": 100,
+    "priority": "Sedang",
+    "pic": "Heri",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261010-opik-butonk-service",
+    "dateCreated": "2026-10-10",
+    "title": "Service Headset 2 Unit & Service Kabel Legrand 1 Unit",
+    "division": "Audio",
+    "deadline": "2026-10-10",
+    "description": "Service Headset 2 Unit (Opik - Beres) dan Service kabel Legran 1 Unit (Butonk - Beres)",
+    "status": "Completed",
+    "progress": 100,
+    "priority": "Sedang",
+    "pic": "Taufik Diana",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261014-endin-lampu-beam10",
+    "dateCreated": "2026-10-14",
+    "title": "Ganti Lampu Moving Head Beam No. 10",
+    "division": "Lighting",
+    "deadline": "2026-10-14",
+    "description": "Ganti Lampu Beam No. 10 — Sudah Normal lagi Beam No. 10",
+    "status": "Completed",
+    "progress": 100,
+    "priority": "Sedang",
+    "pic": "Heri",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261026-damri-lvx15",
+    "dateCreated": "2026-10-26",
+    "findingId": "fd-20261026-mboh-lvx15",
+    "equipment": "Speaker Monitor dBTechnologies LVX15",
+    "title": "Pengecekan & Perbaikan Mesin Monitor LVX15 Mati",
+    "division": "Service",
+    "deadline": "2026-11-02",
+    "description": "Cek unit monitor LVX15: mesin mati / dalam pengecekan Mang Damri",
+    "status": "In Progress",
+    "progress": 50,
+    "priority": "Tinggi",
+    "pic": "Damri",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261101-kharo-led-strip",
+    "dateCreated": "2026-11-01",
+    "equipment": "12 Roll LED Strip & Power Supply LED Strip",
+    "title": "Cek & Service 12 Roll LED Strip + Buat Dudukan Power Supply LED Strip",
+    "division": "Videotron",
+    "deadline": "2026-11-01",
+    "description": "- cek & servise 12 roll led strip (Bagus)\n- buat dudukan power suplly led strip (Done)",
+    "status": "Completed",
+    "progress": 100,
+    "priority": "Sedang",
+    "pic": "Mulyana",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261102-jay-ups",
+    "dateCreated": "2026-11-02",
+    "findingId": "fd-20261102-jay-ups",
+    "equipment": "UPS Multimedia",
+    "title": "Pengecekan & Perbaikan / Ganti Baterai UPS Multimedia",
+    "division": "Multimedia",
+    "deadline": "2026-11-05",
+    "description": "[Temuan QC ID: fd-20261102-jay-ups] Cek UPS Multimedia: Udah Ga bisa ngisi",
+    "status": "Pending",
+    "progress": 0,
+    "priority": "Tinggi",
+    "pic": "Mulyadi",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261103-heri-kabel-power",
+    "dateCreated": "2026-11-03",
+    "equipment": "Kabel Power 4x2.5 (25M)",
+    "title": "Perbaikan Kabel Power 4x2.5 (25M) — Pemasangan Steker",
+    "division": "Lighting",
+    "deadline": "2026-11-03",
+    "description": "- Rapih2 Kabel Bekas Pakai Perbok (Rapih Sesuai Tulisan Dibok)\n- Benerin Kabel Power 4x2.5 (25M) (Sudah Kepasang Kembali Steker Nya)",
+    "status": "Completed",
+    "progress": 100,
+    "priority": "Sedang",
+    "pic": "Heri",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261103-heri-parled-trfa64",
+    "dateCreated": "2026-11-03",
+    "findingId": "fd-20261103-heri-parled-trfa64",
+    "equipment": "Parled TRF A64 No. 5, 12, 19, 33 (Lighting)",
+    "title": "Service Parled TRF A64 No. 5, 12, 19, 33 (Warm Separo & Red Mati 1 Mata / Separo)",
+    "division": "Lighting",
+    "deadline": "2026-11-07",
+    "description": "[Temuan QC ID: fd-20261103-heri-parled-trfa64] Cleaning All Parled Trf A64 No. 1-48: Bersih & Normal KECUALI NO. 5-12-19-33 Eror (No. 5 - Warm Separo, No. 12 - Red Mati 1 Mata, No. 19 - Warm Separo, No. 33 - Red Separo)",
+    "status": "Pending",
+    "progress": 0,
+    "priority": "Sedang",
+    "pic": "Heri",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261103-kharo-kabinet-led",
+    "dateCreated": "2026-11-03",
+    "findingId": "fd-20261103-kharo-kabinet-led",
+    "equipment": "8 Kabinet LED Videotron (2 Unit Receiving Card)",
+    "title": "Service 8 Kabinet LED (6 Dead Pixel, 1 IC Warna, 1 Jalur) & Ganti 2 Unit Receiving Card",
+    "division": "Videotron",
+    "deadline": "2026-11-07",
+    "description": "[Temuan QC ID: fd-20261103-kharo-kabinet-led] servise 8 kabinet led (- 6 kabinet ganti dead pixel, -1 kabinet ganti ic warna, - 1 kabinet ganti jalur) — Remark: 2 unit minta ganti reciving card",
+    "status": "In Progress",
+    "progress": 75,
+    "priority": "Tinggi",
+    "pic": "Mulyana",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261104-butonk-db-maintenance",
+    "dateCreated": "2026-11-04",
+    "findingId": "fd-20261104-butonk-db15",
+    "equipment": "Speaker Monitor DB Tech No. 5, No. 15 & No. 18 (Audio)",
+    "title": "Ganti Tweeter & Speaker DB Tech No. 5, No. 18 (OK) & Service Ulang Rekon-Kit DB Tech No. 15",
+    "division": "Audio",
+    "deadline": "2026-11-08",
+    "description": "[Temuan QC ID: fd-20261104-butonk-db15] Ganti twitter DB No 15 (Rekon-Kit Twitter masih bermasalah, suara kecil), Ganti twitter DB No 18 (Kondisi OK), Ganti twitter DB No 5 (Kondisi OK), Ganti Speaker DB no 5 (Kondisi OK), Proses Test Unit DB tech maintenance (Service ulang, DB no 15 belum normal)",
+    "status": "In Progress",
+    "progress": 75,
+    "priority": "Tinggi",
+    "pic": "Iwan Kurniawan",
     "_source": "google_sheet"
   }
 ];

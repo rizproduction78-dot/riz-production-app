@@ -528,6 +528,151 @@ export const INITIAL_DAILY_TASKS: DailyTask[] = [
     dueDate: '2026-09-09',
     createdAt: '2026-09-09',
     createdBy: 'Buluk'
+  },
+  // Official Oktober 2026 Tasks (GID: 1340328886)
+  {
+    id: 'dt-20261002-01',
+    title: 'Repair 3 Kabinet IC Warna + Ganti Dead Pixel & Cek 11 Modul Kabinet',
+    description: '1. repair 3 kabinet ic warna + ganti dead pixel 2 kabinet clear (Aman)\n2. cek 11 modul kabinet (2 modul ilang jalur ic, 3 modul ilang jalur pixel, 3 modul kena ic warna, 1 modul arus konslet)\n3. copot ic buat kanibal\n4. sortir masking',
+    division: 'Videotron',
+    priority: 'Tinggi',
+    status: 'Done',
+    assignedTo: 'staff-mulyana',
+    assignedName: 'Mulyana',
+    dueDate: '2026-10-02',
+    createdAt: '2026-10-02',
+    createdBy: 'Mulyana'
+  },
+  {
+    id: 'dt-20261019-01',
+    title: 'Maintenance & Pengecekan Unit Sub / Avanda 210',
+    description: 'Membersihkan / pengecekan unit sub dan avanda210 yg disewa kondisi bersih dan aman.',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-rahmat',
+    assignedName: 'Muhamad Rahmat, Taufik Diana, Iwan Kurniawan, Ramdani, Wahyudin',
+    dueDate: '2026-10-19',
+    createdAt: '2026-10-19',
+    createdBy: 'Muhamad Rahmat'
+  },
+  {
+    id: 'dt-20261026-01',
+    title: 'Cek Unit Monitor DB18, DB15, LVX15 & Cleaning All Hazer',
+    description: '- Unyim: cek unit monitor DB18 (-DB NO18 twiter mati)\n- Butonk: cek unit monitor DB15 (-DB NO15 twitwe kecil/lemah)\n- Mboh: cek unit monitor LVX15 (-mesin mati /dalam penegecekan mang damri)\n- Heri: Cek unit & Cleaning All Hazer (Kondisi Oke Semua)',
+    division: 'Audio',
+    priority: 'Tinggi',
+    status: 'Done',
+    assignedTo: 'staff-rahmat',
+    assignedName: 'Wahyudin, Iwan Kurniawan, Muhamad Rahmat, Heri',
+    dueDate: '2026-10-26',
+    createdAt: '2026-10-26',
+    createdBy: 'Muhamad Rahmat'
+  },
+  // Official November 2026 Tasks (GID: 7916507)
+  {
+    id: 'dt-20261101-01',
+    title: 'Cek & Service 12 Roll LED Strip + Buat Dudukan Power Supply LED Strip',
+    description: '- cek & servise 12 roll led strip\n- buat dudukan power suplly led strip\nREMARK:\n- Bagus\n- Done',
+    division: 'Videotron',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-mulyana',
+    assignedName: 'Mulyana',
+    dueDate: '2026-11-01',
+    createdAt: '2026-11-01',
+    createdBy: 'Mulyana'
+  },
+  {
+    id: 'dt-20261102-01',
+    title: 'Bersih-Bersih & Cek Nyala Stagebox DL32 (No. 1-4) & Mixer Midas HD No. 1',
+    description: 'bersih" dl 32\nDL 32 no 1\nDL 32 no 2\nDL 32 no 3\nDL 32 no 4\nmixer HD no 1\nREMARK:\nCEK NYALA AMAN — OK semua',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-unyin',
+    assignedName: 'Wahyudin',
+    dueDate: '2026-11-02',
+    createdAt: '2026-11-02',
+    createdBy: 'Wahyudin'
+  },
+  {
+    id: 'dt-20261102-02',
+    title: 'Cleaning DL251, Marani MIR480I, Mixer HD967 & Cek All Kabel LAN',
+    description: '-cleaning dl251 (-BERSIH)\n-cleaning marani mir4801 (-BERSIH)\n-cek all kabel LAN (-ALL terkoneksi dgn baik)\n-cleaning mixer HD967',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-rahmat',
+    assignedName: 'Muhamad Rahmat',
+    dueDate: '2026-11-02',
+    createdAt: '2026-11-02',
+    createdBy: 'Muhamad Rahmat'
+  },
+  {
+    id: 'dt-20261102-03',
+    title: 'Cek UPS, Cleaning Rak Kantor, Tas Kamera & Cek Box 1 Perlenk, SDI, HDMI',
+    description: 'Cek UPS\nCleaning Rak Kantor\nCleaning Tas Kamera\nCek Box 1 Perlenk, SDI, HDMI\nREMARK:\nUdah Ga bisa ngisi (UPS)',
+    division: 'Multimedia',
+    priority: 'Tinggi',
+    status: 'In Progress',
+    assignedTo: 'staff-mulyadi',
+    assignedName: 'Mulyadi',
+    dueDate: '2026-11-02',
+    createdAt: '2026-11-02',
+    createdBy: 'Mulyadi'
+  },
+  {
+    id: 'dt-20261103-01',
+    title: 'Cleaning & Check Kelengkapan WHM EWD, Shure SLXD-QLXD, IEM G4 & Repack Box 2U',
+    description: 'cleaning and check kelengkapan WHM EWD (no. 5-8, 9-12, 15-16, 17-18) dan Shure SLXD (no. 1-4, 5-8) - QLXD (no. 9-12)\ncleaning and check kelengkapan IEM Sennheisser G4 no. 1 - 8\nrepack WHM QLXD menjadi 2 box ukuran 2U (baru) masing2 menjadi 2 WHM dalam 1 box\nREMARK:\nWHM & IEM semua dalam kondisi normal, lengkap dan siap dipakai untuk event.',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-yudish',
+    assignedName: 'Yudishtira Purnama A',
+    dueDate: '2026-11-03',
+    createdAt: '2026-11-03',
+    createdBy: 'Yudishtira Purnama A'
+  },
+  {
+    id: 'dt-20261103-02',
+    title: 'Rapih Kabel Perbok, Benerin Kabel Power 4x2.5 (25M), Cleaning All Beam 450 (1-24) & Parled Trf A64 (1-48)',
+    description: '-Rapih2 Kabel Bekas Pakai Perbok (- Rapih Sesuai Tulisan Dibok)\n-Benerin Kabel Power 4x2.5 (25M) (- Sudah Kepasang Kembali Steker Nya)\n-Cleaning All Beam 450 No. 1-24 (-Bersih & Normal)\n-Cleaning All Parled Trf A64 No. 1-48 (- Bersih & Normal KECUALI NO. 5-12-19-33 Eror: No. 5 Warm Separo, No. 12 Red Mati 1 Mata, No. 19 Warm Separo, No. 33 Red Separo)',
+    division: 'Lighting',
+    priority: 'Sedang',
+    status: 'In Progress',
+    assignedTo: 'staff-heri',
+    assignedName: 'Heri',
+    dueDate: '2026-11-03',
+    createdAt: '2026-11-03',
+    createdBy: 'Heri'
+  },
+  {
+    id: 'dt-20261103-03',
+    title: 'Service 8 Kabinet LED (6 Dead Pixel, 1 IC Warna, 1 Jalur)',
+    description: 'servise 8 kabinet led\n- 6 kabinet ganti dead pixel\n-1 kabinet ganti ic warna\n- 1 kabinet ganti jalur\nREMARK:\n2 unit minta ganti reciving card',
+    division: 'Videotron',
+    priority: 'Tinggi',
+    status: 'In Progress',
+    assignedTo: 'staff-mulyana',
+    assignedName: 'Mulyana',
+    dueDate: '2026-11-03',
+    createdAt: '2026-11-03',
+    createdBy: 'Mulyana'
+  },
+  {
+    id: 'dt-20261104-01',
+    title: 'Ganti Tweeter & Speaker DB Tech (No. 5, 15, 18) & Proses Test Unit DB Tech Maintenance',
+    description: 'Ganti twitter DB No 15\nGanti twitter DB No 18\nGanti twitter DB No 5\nGanti Speaker DB no 5\nProses Test Unit DB tech maintenance\nREMARK:\nRekon-Kit Twitter DB No 15 masih bermasalah, suara kecil. DB No 18 & No 5 Kondisi OK. Service ulang, DB no 15 belum normal.',
+    division: 'Audio',
+    priority: 'Tinggi',
+    status: 'In Progress',
+    assignedTo: 'staff-iwan',
+    assignedName: 'Iwan Kurniawan',
+    dueDate: '2026-11-04',
+    createdAt: '2026-11-04',
+    createdBy: 'Iwan Kurniawan'
   }
 ];
 
@@ -1961,146 +2106,608 @@ export const INITIAL_FLEET_DRIVERS: FleetDriver[] = [
   }
 ];
 
-// Master Inventaris Armada Kendaraan Resmi PT RIZ-PRODUCTION
+// Master Inventaris Armada Kendaraan Resmi PT RIZ-PRODUCTION (Sumber: Google Sheet 1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs)
+// Riwayat servis disusun berurutan dari tanggal, bulan, tahun aktual terkini (paling atas) ke terlama
 export const INITIAL_VEHICLES: VehicleMaster[] = [
   {
     "id": "veh-1",
-    "name": "SUZUKI CARRY",
+    "name": "Pick Up Suzuki Carry / 011",
+    "unitCode": "011",
+    "ownership": "Internal",
+    "policeNumber": "F 8433 BF",
+    "vehicleType": "Pick Up Operasional (011)",
     "tonnageCapacity": 1,
+    "cbmCapacity": 1.5,
+    "odometerKM": 10000,
+    "stnkTaxExpiry": "2027-09-01",
+    "kirExpiry": "2027-02-26",
+    "status": "Siap Operasi",
+    "sheetGid": "1966942424",
+    "totalMaintenanceCost": 6445565,
+    "maintenanceHistory": [
+      {
+        "id": "vm-8433-8",
+        "vehicleId": "veh-1",
+        "date": "2026-08-20",
+        "type": "Ganti Oli",
+        "description": "Filter Oli (Rp 43.694), Ecstar 10W-40 (Rp 307.433 + Jasa Rp 162.000), Xlerator Engine Flush (Rp 106.000), Belt Water Pump (Rp 59.009 + Jasa Rp 74.595)",
+        "cost": 752731,
+        "technician": "Bengkel Resmi Suzuki"
+      },
+      {
+        "id": "vm-8433-7",
+        "vehicleId": "veh-1",
+        "date": "2026-05-26",
+        "type": "Perbaikan",
+        "description": "Ganti AKI GS (Tukar Aki Lama Shop&Drive)",
+        "cost": 680010,
+        "technician": "Shop&Drive"
+      },
+      {
+        "id": "vm-8433-6",
+        "vehicleId": "veh-1",
+        "date": "2026-03-10",
+        "type": "Ganti Ban",
+        "description": "Ganti Ban 2 Pcs (Dunlop)",
+        "cost": 1320000,
+        "technician": "Vendor Ban"
+      },
+      {
+        "id": "vm-8433-5",
+        "vehicleId": "veh-1",
+        "date": "2026-01-09",
+        "type": "Service Rutin",
+        "description": "Perawatan Berkala (Rp 350.000), Oil Filter (Rp 33.333), Ecstar 10W-40 (Rp 233.333), Xlerator Engine Conditioner (Rp 115.766), Xlerator Engine Flush (Rp 81.532), Catalitic Cleaner (Rp 300.000) + Cost Work (Rp 122.536)",
+        "cost": 1236500,
+        "technician": "Bengkel Resmi Suzuki"
+      },
+      {
+        "id": "vm-8433-4",
+        "vehicleId": "veh-1",
+        "date": "2025-07-02",
+        "type": "Ganti Ban",
+        "description": "Ganti Ban 1 Pcs (Hankook)",
+        "cost": 475000,
+        "technician": "Vendor Ban"
+      },
+      {
+        "id": "vm-8433-3",
+        "vehicleId": "veh-1",
+        "date": "2025-07-02",
+        "type": "Service Rutin",
+        "description": "Ecstar Grease MP3 (Rp 9.010), Throttle Body Cleaner (Rp 95.495), Ecstar Brake Cleaner (Rp 55.405), Oil Cleaner 325ML (Rp 72.072), Turbo Carbon Cleaner (Rp 220.000) + Cost Work (Rp 49.163)",
+        "cost": 496100,
+        "technician": "Bengkel Resmi Suzuki"
+      },
+      {
+        "id": "vm-8433-2",
+        "vehicleId": "veh-1",
+        "date": "2025-01-02",
+        "type": "Ganti Oli",
+        "description": "Ganti Oli Mesin + Transmisi (Rp 65.100), Spark Plug KR6A-10 (Rp 149.548), Ecstar MT 75W-80 (Rp 163.514), Ecstar MT75W-90 GL (Rp 171.172), Oil Cleaner 325 ML (Rp 72.072), Part Degreaser (Rp 83.784), Engine Conditioner (Rp 95.495) + Cost Work (Rp 88.075)",
+        "cost": 888760,
+        "technician": "Bengkel Resmi Suzuki"
+      },
+      {
+        "id": "vm-8433-1",
+        "vehicleId": "veh-1",
+        "date": "2024-05-07",
+        "type": "Service Rutin",
+        "description": "Oil Cleaner 325Ml (Rp 72.072), Part Degreaser (Rp 83.784), Engine Conditioner (Rp 96.364), Spooring (Rp 150.000), Baud Chamber (Rp 150.000) + Cost Work & PPN (Rp 44.244)",
+        "cost": 596464,
+        "technician": "Bengkel Resmi Suzuki",
+        "notes": "Spooring & Baud Chamber"
+      }
+    ],
     "_syncMeta": {
       "deviceOS": "macOS",
       "deviceType": "Desktop",
-      "updatedBy": "BatchSync",
-      "updatedAt": "2026-10-01T08:18:54.508Z",
+      "updatedBy": "OfficialSheetSync",
+      "updatedAt": "2026-11-04T06:45:00.000Z",
       "browser": "Chrome"
-    },
-    "cbmCapacity": 1.5,
-    "stnkTaxExpiry": "2027-09-01",
-    "status": "Siap Operasi",
-    "odometerKM": 5000,
-    "kirExpiry": "2026-09-30",
-    "vehicleType": "Truk Box CDD (6 Roda)",
-    "policeNumber": "F 8446 BF",
-    "ownership": "Internal"
+    }
   },
   {
     "id": "veh-2",
-    "kirExpiry": "2026-10-12",
-    "policeNumber": "F 8433 BF",
-    "status": "Siap Operasi",
-    "tonnageCapacity": 1,
-    "vehicleType": "Truk Box CDE Engkel (4 Roda)",
+    "name": "Pick Up Suzuki Carry / 012",
+    "unitCode": "012",
     "ownership": "Internal",
+    "policeNumber": "F 8446 BF",
+    "vehicleType": "Pick Up Operasional (012)",
+    "tonnageCapacity": 1,
     "cbmCapacity": 1.5,
-    "name": "SUZUKI CARRY",
+    "odometerKM": 65000,
     "stnkTaxExpiry": "2027-09-01",
+    "kirExpiry": "2027-03-08",
+    "status": "Siap Operasi",
+    "sheetGid": "154320656",
+    "totalMaintenanceCost": 8735077,
+    "maintenanceHistory": [
+      {
+        "id": "vm-8446-6",
+        "vehicleId": "veh-2",
+        "date": "2026-09-08",
+        "type": "Service Rutin",
+        "description": "Jasa Perawatan Berkala 65.000 KM (Rp 182.280), Gasket, Oil Filter, VBelt WaterPump, Ecstar 10W-40 SL 3.6L, Air Accu 1000ML, Oil Cleanser 325Ml, Part Degreaser + PPN",
+        "cost": 800085,
+        "technician": "Bengkel Resmi Suzuki"
+      },
+      {
+        "id": "vm-8446-5",
+        "vehicleId": "veh-2",
+        "date": "2026-09-08",
+        "type": "Ganti Ban",
+        "description": "Ganti Ban 1 Pcs (Dunlop)",
+        "cost": 710000,
+        "technician": "Vendor Ban"
+      },
+      {
+        "id": "vm-8446-4",
+        "vehicleId": "veh-2",
+        "date": "2026-03-06",
+        "type": "Ganti Ban",
+        "description": "Ganti Ban 3 Pcs (Dunlop)",
+        "cost": 1980000,
+        "technician": "Vendor Ban"
+      },
+      {
+        "id": "vm-8446-3",
+        "vehicleId": "veh-2",
+        "date": "2025-01-15",
+        "type": "Perbaikan",
+        "description": "Overhaul Kopling, Perawatan Berkala, Seal Crankshaft Rear Oil, Bearing, Oil Filter, Cover Assy Clutch, Disc Comp Clutch, Clip Clutch Release, Bearing Release, Cable Assy, Ecstar 10W-40 SL, Ecstar Gear Oil, Brake Cleanser, Engine Conditioner, Engine Flush, Catalitic Cleaner, Engine Treatment",
+        "cost": 4489026,
+        "technician": "Bengkel Resmi Suzuki"
+      },
+      {
+        "id": "vm-8446-2",
+        "vehicleId": "veh-2",
+        "date": "2025-01-02",
+        "type": "Ganti Oli",
+        "description": "Ecstar Grease MP3 1pcs (Rp 4.505), Ecstar MT 75W-80 1L 2pcs (Rp 218.018), Xlerator Engine Conditioner (Rp 115.766), Xlerator Engine Flush (Rp 81.532) + Cost Work (Rp 46.180)",
+        "cost": 466001,
+        "technician": "Bengkel Resmi Suzuki"
+      },
+      {
+        "id": "vm-8446-1",
+        "vehicleId": "veh-2",
+        "date": "2024-05-08",
+        "type": "Service Rutin",
+        "description": "Ecstar Grease MP3 2Pcs (Rp 9.010), Oil Cleanser 325Ml (Rp 72.072), Part Degreaser (Rp 83.784), Engine Conditioner 330GMS (Rp 96.364) + Cost Work (Rp 28.735)",
+        "cost": 289965,
+        "technician": "Bengkel Resmi Suzuki"
+      }
+    ],
     "_syncMeta": {
-      "updatedAt": "2026-10-01T08:18:54.511Z",
-      "browser": "Chrome",
-      "updatedBy": "BatchSync",
       "deviceOS": "macOS",
-      "deviceType": "Desktop"
-    },
-    "odometerKM": 10000
+      "deviceType": "Desktop",
+      "updatedBy": "OfficialSheetSync",
+      "updatedAt": "2026-11-04T06:45:00.000Z",
+      "browser": "Chrome"
+    }
   },
   {
     "id": "veh-3",
+    "name": "Pick Up Suzuki Carry / 013",
+    "unitCode": "013",
     "ownership": "Internal",
-    "kirExpiry": "2027-01-20",
-    "status": "Siap Operasi",
-    "cbmCapacity": 1.5,
-    "name": "SUZUKI CARRY",
-    "stnkTaxExpiry": "2027-06-01",
+    "policeNumber": "F 8569 BH",
+    "vehicleType": "Pick Up Operasional (013)",
     "tonnageCapacity": 1,
+    "cbmCapacity": 1.5,
+    "odometerKM": 10000,
+    "stnkTaxExpiry": "2027-06-01",
+    "kirExpiry": "2026-12-10",
+    "status": "Siap Operasi",
+    "sheetGid": "179065953",
+    "totalMaintenanceCost": 1515970,
+    "maintenanceHistory": [
+      {
+        "id": "vm-8569-2",
+        "vehicleId": "veh-3",
+        "date": "2026-08-26",
+        "type": "Perbaikan",
+        "description": "Ganti Kopling Set: Bearing Input Shaft (Rp 44.595), Cover Assy Clutch (Rp 495.946), Disc Comp Clutch (Rp 432.883), Bearing Clutch Release (Rp 244.595), Ecstar Grease MP3 (Rp 10.810), OH Kopling (Rp 416.640) — Total Ganti Kopling Set",
+        "cost": 1515970,
+        "technician": "Bengkel Resmi Suzuki"
+      },
+      {
+        "id": "vm-8569-1",
+        "vehicleId": "veh-3",
+        "date": "2026-06-03",
+        "type": "Service Rutin",
+        "description": "Pengecekan & Perbaikan Kopling (Service 1.000 KM - Free Service)",
+        "cost": 0,
+        "technician": "Bengkel Resmi Suzuki"
+      }
+    ],
     "_syncMeta": {
       "deviceOS": "macOS",
-      "updatedBy": "BatchSync",
-      "browser": "Chrome",
       "deviceType": "Desktop",
-      "updatedAt": "2026-10-01T08:18:54.511Z"
-    },
-    "odometerKM": 10000,
-    "vehicleType": "Blindvan Logistik",
-    "policeNumber": "F 8569 BH"
+      "updatedBy": "OfficialSheetSync",
+      "updatedAt": "2026-11-04T06:45:00.000Z",
+      "browser": "Chrome"
+    }
   },
   {
     "id": "veh-4",
-    "odometerKM": 12000,
-    "stnkTaxExpiry": "2027-06-01",
-    "kirExpiry": "2026-10-28",
+    "name": "Pick Up Suzuki Carry / 014",
+    "unitCode": "014",
     "ownership": "Internal",
-    "status": "Siap Operasi",
-    "vehicleType": "Pick-Up Box",
-    "name": "SUZUKI CARRY ",
     "policeNumber": "F 8594 BH",
+    "vehicleType": "Pick Up Operasional (014)",
     "tonnageCapacity": 1,
     "cbmCapacity": 1.5,
+    "odometerKM": 10000,
+    "stnkTaxExpiry": "2027-06-01",
+    "kirExpiry": "2026-12-15",
+    "status": "Siap Operasi",
+    "sheetGid": "560717247",
+    "totalMaintenanceCost": 0,
+    "maintenanceHistory": [
+      {
+        "id": "vm-8594-1",
+        "vehicleId": "veh-4",
+        "date": "2026-06-02",
+        "type": "Service Rutin",
+        "description": "Pengecekan Fungsi Mobil (Service 1.000 KM - Free Service)",
+        "cost": 0,
+        "technician": "Bengkel Resmi Suzuki"
+      }
+    ],
     "_syncMeta": {
-      "updatedBy": "BatchSync",
-      "deviceType": "Desktop",
       "deviceOS": "macOS",
-      "updatedAt": "2026-10-01T08:18:54.512Z",
+      "deviceType": "Desktop",
+      "updatedBy": "OfficialSheetSync",
+      "updatedAt": "2026-11-04T06:45:00.000Z",
       "browser": "Chrome"
     }
   },
   {
     "id": "veh-5",
-    "tonnageCapacity": 0.6,
+    "name": "Truk Engkel Mitsubishi Canter PS 110",
+    "ownership": "Internal",
+    "policeNumber": "F 8942 BG",
+    "vehicleType": "Truk Engkel PS 110",
+    "tonnageCapacity": 3,
+    "cbmCapacity": 12,
+    "odometerKM": 145000,
+    "stnkTaxExpiry": "2027-05-01",
+    "kirExpiry": "2027-03-01",
+    "status": "Siap Operasi",
+    "sheetGid": "744126287",
+    "totalMaintenanceCost": 14164000,
+    "maintenanceHistory": [
+      {
+        "id": "veh-8942-9",
+        "vehicleId": "veh-5",
+        "date": "2026-09-28",
+        "type": "Ganti Oli",
+        "description": "Ganti Oli (Rimula)",
+        "cost": 560000,
+        "technician": "Internal"
+      },
+      {
+        "id": "vm-8942-8",
+        "vehicleId": "veh-5",
+        "date": "2026-08-25",
+        "type": "Perbaikan",
+        "description": "Cover Spion LH (Hilang) Rp 60.000, Ganti Lampu Depan H4 1 Pcs Rp 70.000",
+        "cost": 130000,
+        "technician": "Internal"
+      },
+      {
+        "id": "vm-8942-7",
+        "vehicleId": "veh-5",
+        "date": "2026-06-08",
+        "type": "Ganti Oli",
+        "description": "Ganti Oli (Rimula)",
+        "cost": 490000,
+        "technician": "Agus"
+      },
+      {
+        "id": "vm-8942-6",
+        "vehicleId": "veh-5",
+        "date": "2026-02-10",
+        "type": "Ganti Oli",
+        "description": "Ganti Oli (Rimula)",
+        "cost": 495000,
+        "technician": "Agus"
+      },
+      {
+        "id": "vm-8942-5",
+        "vehicleId": "veh-5",
+        "date": "2025-11-04",
+        "type": "Service Rutin",
+        "description": "Oli Rimula 2 Galon (Rp 540.000), Filter Oli (Rp 110.000), Shock Front 2 (Rp 560.000), Water Outlet (Rp 250.000), Tutup Radiator (Rp 60.000), Selang Radiator (Rp 125.000), Bohlam 3 Pcs (Rp 39.000), Gemuk Rotori 2 (Rp 100.000) + Jasa Periksa Rem & Kelistrikan (Rp 600.000)",
+        "cost": 2384000,
+        "technician": "Woyo"
+      },
+      {
+        "id": "vm-8942-4",
+        "vehicleId": "veh-5",
+        "date": "2025-09-16",
+        "type": "Perbaikan",
+        "description": "Pedal Kopling 1 Set Specia (Rp 750.000), Master Rem Atas Dalam (Rp 150.000), Minyak Rem Preston (Rp 85.000), Pen Pedal Kopling (Rp 75.000), Switch Brake Kopling (Rp 100.000), Bohlam Bemper (Rp 5.000), Mur 12 (Rp 30.000), Tutup Oli 16\" (Rp 215.000) + Jasa Central Master Kopling (Rp 550.000)",
+        "cost": 1960000,
+        "technician": "Woyo"
+      },
+      {
+        "id": "vm-8942-3",
+        "vehicleId": "veh-5",
+        "date": "2025-08-08",
+        "type": "Perbaikan",
+        "description": "1 AS Jantan (Rp 250.000), Join Kopel Matsuba (Rp 275.000), Flang Join (Rp 275.000), Baut Yoke Ulir (Rp 175.000), Batang Spion (Rp 265.000), Spion Bulat 6\" (Rp 50.000), Baut Soloy Saringan (Rp 180.000), 4 Baut Kopel (Rp 40.000), 2 Kepala Aki (Rp 25.000), Potong Sambung Kopel 2 Sisi Bubut (Rp 400.000) + Jasa Bongkar Pasang Tangki Solar (Rp 550.000)",
+        "cost": 2485000,
+        "technician": "Agus & Woyo"
+      },
+      {
+        "id": "vm-8942-2",
+        "vehicleId": "veh-5",
+        "date": "2025-08-01",
+        "type": "Perbaikan",
+        "description": "12 Pcs Baut Roda Depan T200 L/R (Rp 360.000), 2 Unit Tromol Depan L/R (Rp 1.250.000) + Jasa (Rp 300.000)",
+        "cost": 1910000,
+        "technician": "Agus"
+      },
+      {
+        "id": "vm-8942-1",
+        "vehicleId": "veh-5",
+        "date": "2025-07-29",
+        "type": "Perbaikan",
+        "description": "4 Pcs Per Pirodo Front (Rp 540.000), 4 Gentong Rem Front Luar (Rp 700.000), 2 Laher Belakang Dalam (Rp 400.000), 4 Sil Roda Belakang (Rp 450.000), 1 Pompa Solar Pull Pam (Rp 275.000), Silen (Rp 30.000), Minyak Rem Preston (Rp 85.000), 8 Pcs Bohlam 24W (Rp 40.000), Filter Udara (Rp 190.000), 2 Gemuk TOP1 (Rp 150.000), Oli Gardan (Rp 90.000) + Jasa (Rp 800.000)",
+        "cost": 3750000,
+        "technician": "Agus & Woyo"
+      }
+    ],
     "_syncMeta": {
       "deviceOS": "macOS",
       "deviceType": "Desktop",
-      "updatedBy": "BatchSync",
-      "browser": "Chrome",
-      "updatedAt": "2026-10-01T08:18:54.512Z"
-    },
-    "name": "DAIHATSU LUXIO  Operasional",
-    "cbmCapacity": 2.8,
-    "odometerKM": 52100,
-    "ownership": "Internal",
-    "vehicleType": "Mobil Kru / Operasional",
-    "status": "Siap Operasi",
-    "policeNumber": "B 2673 TVI",
-    "stnkTaxExpiry": "2026-12-01",
-    "kirExpiry": "2027-04-14"
+      "updatedBy": "OfficialSheetSync",
+      "updatedAt": "2026-11-04T06:45:00.000Z",
+      "browser": "Chrome"
+    }
   },
   {
     "id": "veh-6",
-    "vehicleType": "Truk Wingbox Tronton",
-    "stnkTaxExpiry": "2027-01-01",
-    "_syncMeta": {
-      "updatedAt": "2026-10-01T08:18:54.512Z",
-      "updatedBy": "BatchSync",
-      "deviceType": "Desktop",
-      "deviceOS": "macOS",
-      "browser": "Chrome"
-    },
-    "tonnageCapacity": 3,
-    "name": "Truk CANTER PS 110",
-    "status": "Siap Operasi",
+    "name": "Daihatsu Luxio Operasional",
     "ownership": "Internal",
-    "cbmCapacity": 7,
-    "kirExpiry": "2027-01-15",
-    "policeNumber": "F 8942 BG",
-    "odometerKM": 145000
+    "policeNumber": "B 2673 TVI",
+    "vehicleType": "Mobil Kru / Operasional",
+    "tonnageCapacity": 0.6,
+    "cbmCapacity": 2.8,
+    "odometerKM": 52100,
+    "stnkTaxExpiry": "2026-12-01",
+    "kirExpiry": "-",
+    "status": "Siap Operasi",
+    "sheetGid": "2000397466",
+    "totalMaintenanceCost": 8540000,
+    "maintenanceHistory": [
+      {
+        "id": "vm-2673-10",
+        "vehicleId": "veh-6",
+        "date": "2026-10-23",
+        "type": "Perbaikan",
+        "description": "Mogok Gigi Transmisi ga mau maju dan mundur (22 Oktober 2026): Ganti Oli Gardan 8 Liter + Filter (Rp 1.700.000)",
+        "cost": 1700000,
+        "technician": "Bengkel Transmisi"
+      },
+      {
+        "id": "vm-2673-9",
+        "vehicleId": "veh-6",
+        "date": "2026-10-07",
+        "type": "Ganti Oli",
+        "description": "Ganti Oli HX-6 Shell (Rp 380.000), Jasa Pasang Wiper Belakang (Rp 20.000)",
+        "cost": 400000,
+        "technician": "Agus"
+      },
+      {
+        "id": "vm-2673-8",
+        "vehicleId": "veh-6",
+        "date": "2026-08-25",
+        "type": "Perbaikan",
+        "description": "Ganti Lampu Utama (Rp 75.000), Pengisian Minyak Rem (Rp 35.000)",
+        "cost": 110000,
+        "technician": "Agus"
+      },
+      {
+        "id": "vm-2673-7",
+        "vehicleId": "veh-6",
+        "date": "2026-06-08",
+        "type": "Ganti Oli",
+        "description": "Ganti Oli HX-6 SHELL (Rp 380.000), Ganti Filter Oli (Rp 50.000), Ganti Bohlam Foglamp Kiri (Rp 60.000)",
+        "cost": 490000,
+        "technician": "Agus"
+      },
+      {
+        "id": "vm-2673-6",
+        "vehicleId": "veh-6",
+        "date": "2026-04-12",
+        "type": "Service Rutin",
+        "description": "Ganti Tutup Radiator (Rp 65.000), Service Kuras Radiator (Rp 200.000)",
+        "cost": 265000,
+        "technician": "Agus"
+      },
+      {
+        "id": "vm-2673-5",
+        "vehicleId": "veh-6",
+        "date": "2026-01-27",
+        "type": "Ganti Oli",
+        "description": "Ganti Oli HX-6 SHELL (Rp 320.000), Motor Washer Wiper (Rp 135.000)",
+        "cost": 455000,
+        "technician": "Agus"
+      },
+      {
+        "id": "vm-2673-4",
+        "vehicleId": "veh-6",
+        "date": "2026-01-13",
+        "type": "Perbaikan",
+        "description": "Service Radiator (Rp 350.000), Ganti Selang Water Pump (Rp 250.000), Ganti Selang Bypass (Rp 100.000), Ganti Upper Tank (Rp 350.000) - Garansi 3 Bulan",
+        "cost": 1050000,
+        "technician": "Agus"
+      },
+      {
+        "id": "vm-2673-3",
+        "vehicleId": "veh-6",
+        "date": "2026-01-03",
+        "type": "Perbaikan",
+        "description": "Service Double Blower AC (Yoyo AC Jl. Baru, Garansi 3 Bulan)",
+        "cost": 1400000,
+        "technician": "Agus / Yoyo AC"
+      },
+      {
+        "id": "vm-2673-2",
+        "vehicleId": "veh-6",
+        "date": "2025-11-04",
+        "type": "Perbaikan",
+        "description": "Service Dinamo Starter (Rp 250.000), Biaya Storing + Pengecekan Pekalongan (Rp 250.000)",
+        "cost": 500000,
+        "technician": "Agus"
+      },
+      {
+        "id": "vm-2673-1",
+        "vehicleId": "veh-6",
+        "date": "2025-11-03",
+        "type": "Service Rutin",
+        "description": "Tune Up + Ganti Oli dan Filter (Rp 1.210.000), Ganti AKI GS Tukar Aki Lama Shop&Drive (Rp 960.000)",
+        "cost": 2170000,
+        "technician": "Agus"
+      }
+    ],
+    "_syncMeta": {
+      "deviceOS": "macOS",
+      "deviceType": "Desktop",
+      "updatedBy": "OfficialSheetSync",
+      "updatedAt": "2026-11-04T06:45:00.000Z",
+      "browser": "Chrome"
+    }
   },
   {
     "id": "veh-7",
-    "stnkTaxExpiry": "2026-11-30",
-    "kirExpiry": "2026-11-15",
-    "name": "Truk CDD Long Mitra Logistik",
-    "vehicleType": "Truk CDD Long Box",
-    "ownership": "Sewa Mitra",
+    "name": "Motor Honda Beat Operasional",
+    "ownership": "Internal",
+    "policeNumber": "F 2215 EO",
+    "vehicleType": "Motor Operasional",
+    "tonnageCapacity": 0.1,
+    "cbmCapacity": 0.2,
+    "odometerKM": 15000,
+    "stnkTaxExpiry": "2027-08-01",
+    "kirExpiry": "-",
     "status": "Siap Operasi",
-    "policeNumber": "B 9331 JXQ",
-    "odometerKM": 98000,
-    "tonnageCapacity": 6,
+    "sheetGid": "489515035",
+    "totalMaintenanceCost": 307000,
+    "maintenanceHistory": [
+      {
+        "id": "vm-2215-1",
+        "vehicleId": "veh-7",
+        "date": "2026-11-03",
+        "type": "Service Rutin",
+        "description": "Tune Up: Oli MPX 0,8L (Rp 80.000), Oli Gardan (Rp 22.000), Filter Udara (Rp 60.000), Kampas Rem Depan (Rp 45.000), Seal Master Rem Depan (Rp 50.000), Service Injection (Rp 50.000)",
+        "cost": 307000,
+        "technician": "Agus"
+      }
+    ],
     "_syncMeta": {
-      "deviceType": "Desktop",
-      "browser": "Chrome",
       "deviceOS": "macOS",
-      "updatedBy": "Seno Subroto",
-      "updatedAt": "2026-09-13T16:05:47.685Z"
-    },
-    "cbmCapacity": 28
+      "deviceType": "Desktop",
+      "updatedBy": "OfficialSheetSync",
+      "updatedAt": "2026-11-04T06:45:00.000Z",
+      "browser": "Chrome"
+    }
   }
 ];
+
+export const INITIAL_VEHICLE_MAINTENANCE_RECORDS: VehicleMaintenanceRecord[] = INITIAL_VEHICLES.flatMap(
+  (v) => v.maintenanceHistory || []
+);
+
+const INDONESIAN_MONTH_NAMES = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+/**
+ * Memformat tanggal YYYY-MM-DD menjadi format tanggal, bulan, tahun Bahasa Indonesia (contoh: "20 Agustus 2026")
+ */
+export function formatServiceDateIndonesian(isoDate?: string): string {
+  if (!isoDate) return '-';
+  const clean = isoDate.trim().slice(0, 10);
+  const parts = clean.split('-');
+  if (parts.length !== 3) return isoDate;
+  const year = Number(parts[0]);
+  const monthIdx = Number(parts[1]) - 1;
+  const day = Number(parts[2]);
+  if (!year || monthIdx < 0 || monthIdx > 11 || !day) return isoDate;
+  return `${day} ${INDONESIAN_MONTH_NAMES[monthIdx]} ${year}`;
+}
+
+/**
+ * Mengurutkan riwayat servis dari tanggal, bulan, tahun aktual terkini (paling atas) ke terlama
+ */
+export function sortMaintenanceHistoryDesc(records?: VehicleMaintenanceRecord[]): VehicleMaintenanceRecord[] {
+  if (!Array.isArray(records)) return [];
+  return [...records].sort((a, b) => String(b?.date || '').localeCompare(String(a?.date || '')));
+}
+
+/**
+ * Menormalisasi daftar kendaraan armada dari LocalStorage / Cloud agar selalu sinkron
+ * dengan 7 unit resmi Google Sheet PT. Riz Production Multi Kreasi.
+ */
+export function normalizeVehiclesMaster(rawList: any[]): VehicleMaster[] {
+  const FAKE_PLATES = ['B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
+  const canonicalByPlate = new Map<string, VehicleMaster>();
+  INITIAL_VEHICLES.forEach(v => {
+    canonicalByPlate.set(v.policeNumber.toUpperCase().trim(), {
+      ...v,
+      maintenanceHistory: sortMaintenanceHistoryDesc(v.maintenanceHistory)
+    });
+  });
+
+  const resultByPlate = new Map<string, VehicleMaster>();
+  // Masukkan 7 unit resmi sebagai basis utama
+  INITIAL_VEHICLES.forEach(v => {
+    resultByPlate.set(v.policeNumber.toUpperCase().trim(), {
+      ...v,
+      maintenanceHistory: sortMaintenanceHistoryDesc(v.maintenanceHistory)
+    });
+  });
+
+  if (Array.isArray(rawList)) {
+    const flat = rawList.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
+    flat.forEach(item => {
+      if (!item || typeof item !== 'object') return;
+      const plate = String(item.policeNumber || '').toUpperCase().trim();
+      if (!plate || FAKE_PLATES.includes(plate)) return;
+
+      const canonical = canonicalByPlate.get(plate);
+      if (canonical) {
+        // Pertahankan status operasional / odometer bila baru diupdate user, tetapi paksakan data resmi STNK, KIR, Nama, Tipe, & Riwayat Servis Terkini Paling Atas
+        resultByPlate.set(plate, {
+          ...item,
+          id: canonical.id,
+          name: canonical.name,
+          unitCode: canonical.unitCode,
+          ownership: canonical.ownership,
+          policeNumber: canonical.policeNumber,
+          vehicleType: canonical.vehicleType,
+          tonnageCapacity: canonical.tonnageCapacity,
+          cbmCapacity: canonical.cbmCapacity,
+          odometerKM: Math.max(Number(item.odometerKM || 0), canonical.odometerKM),
+          stnkTaxExpiry: canonical.stnkTaxExpiry,
+          kirExpiry: canonical.kirExpiry,
+          status: item.status || canonical.status,
+          sheetGid: canonical.sheetGid,
+          totalMaintenanceCost: canonical.totalMaintenanceCost,
+          maintenanceHistory: sortMaintenanceHistoryDesc(canonical.maintenanceHistory)
+        });
+      } else {
+        resultByPlate.set(plate, {
+          ...(item as VehicleMaster),
+          maintenanceHistory: sortMaintenanceHistoryDesc((item as VehicleMaster).maintenanceHistory)
+        });
+      }
+    });
+  }
+
+  return Array.from(resultByPlate.values());
+}

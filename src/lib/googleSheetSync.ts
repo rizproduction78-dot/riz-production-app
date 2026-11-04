@@ -894,9 +894,10 @@ export const DAILY_LOG_LAST_PULL_KEY = 'riz_daily_log_last_pull';
 
 /** Keyword pada kolom REMARK yang menandakan temuan/masalah */
 const FINDING_KEYWORDS = [
-  'harus service', 'service', 'rusak', 'kendala', 'masalah',
-  'error', 'mati', 'tidak berfungsi', 'ganti', 'perbaikan',
-  'repair', 'tidak ok', 'ng', 'perlu'
+  'harus service', 'service', 'servise', 'rusak', 'kendala', 'masalah',
+  'error', 'eror', 'mati', 'tidak berfungsi', 'ganti', 'perbaikan',
+  'repair', 'tidak ok', 'ng', 'perlu', 'ga bisa', 'gabisa', 'tidak bisa',
+  'belum normal', 'separo', 'lemah', 'bengkok', ' tidak komplite'
 ];
 
 /** Mapping nama panggilan staf dari Google Sheet ke nama canonical di STAFF_LIST */
@@ -1023,7 +1024,11 @@ export function isFindingRemark(remark: string): boolean {
     'siap pakai'
   ];
   const hasSafe = safeKeywords.some(kw => lower.includes(kw));
-  const hasExplicitDamage = ['rusak', 'service', 'perbaikan', 'mati', 'error', 'putus', 'serak', 'bongkar'].some(kw => lower.includes(kw));
+  const hasExplicitDamage = [
+    'rusak', 'service', 'servise', 'perbaikan', 'mati', 'error', 'eror',
+    'putus', 'serak', 'bongkar', 'bermasalah', 'belum normal', 'separo',
+    'ga bisa', 'gabisa', 'tidak bisa', 'lemah', 'bengkok'
+  ].some(kw => lower.includes(kw));
   
   if (hasSafe && !hasExplicitDamage) return false;
 
@@ -1101,10 +1106,14 @@ export async function pullDailyLogFromGviz(
 
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[1]);
+      const rawCols: any[] = parsed?.table?.cols || [];
+      const colLabels = rawCols.map((col: any) => String(col?.label || '').trim());
+      const hasHeaderInCols = colLabels.some(lbl => lbl.toLowerCase().includes('tanggal') || lbl.toLowerCase().includes('crew'));
       const rawRows: any[] = parsed?.table?.rows || [];
-      rawCellMatrix = rawRows.map(row => 
-        (row.c || []).map((cell: any) => String(cell?.f || cell?.v || ''))
+      const rowsMatrix = rawRows.map(row => 
+        (row.c || []).map((cell: any) => String(cell?.f ?? cell?.v ?? ''))
       );
+      rawCellMatrix = hasHeaderInCols ? [colLabels, ...rowsMatrix] : rowsMatrix;
     } else {
       // Fallback pipeline: fetch direct CSV export via gviz endpoint
       const csvUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
@@ -1250,38 +1259,43 @@ export async function pullDailyLogFromGviz(
           }
         }
 
-        const getSemanticKey = (eq: string, iss: string): string => {
+        const getSemanticKey = (eq: string, iss: string, dateStr?: string): string => {
           const combined = `${eq} ${iss}`.toLowerCase();
+          const isSep2026 = !dateStr || dateStr.startsWith('2026-09');
+          const dateSuffix = isSep2026 ? '' : `_${dateStr}`;
           if (combined.includes('ampeg') || combined.includes('svt-4') || (combined.includes('ptc') && combined.includes('amplifier'))) {
-            return 'sem_ampeg_ptc';
+            return `sem_ampeg_ptc${dateSuffix}`;
           }
           if (combined.includes('takel') || (combined.includes('rigging') && combined.includes('los'))) {
-            return 'sem_takel_los';
+            return `sem_takel_los${dateSuffix}`;
           }
           if (combined.includes('sm57') || (combined.includes('sm58') && combined.includes('rusak 4'))) {
-            return 'sem_sm57_inventory';
+            return `sem_sm57_inventory${dateSuffix}`;
           }
           if (combined.includes('parled') || combined.includes('par led')) {
-            if (combined.includes('13') || combined.includes('merah mati')) {
-              return 'sem_parled_13_merah';
+            if (isSep2026) {
+              if (combined.includes('13') || combined.includes('merah mati')) {
+                return 'sem_parled_13_merah';
+              }
+              if (combined.includes('19') || combined.includes('20') || combined.includes('27')) {
+                return 'sem_parled_warm_19_20_27';
+              }
+              if (combined.includes('12') || combined.includes('25') || combined.includes('29') || combined.includes('32')) {
+                return 'sem_parled_warm_12_25_29_3_32';
+              }
             }
-            if (combined.includes('19') || combined.includes('20') || combined.includes('27')) {
-              return 'sem_parled_warm_19_20_27';
-            }
-            if (combined.includes('12') || combined.includes('25') || combined.includes('29') || combined.includes('32')) {
-              return 'sem_parled_warm_12_25_29_3_32';
-            }
+            return `sem_parled_${dateStr}_${iss.replace(/[^a-z0-9]/g, '').substring(0, 30)}`;
           }
           if (combined.includes('smoke') || combined.includes('smok')) {
-            return 'sem_smoke_machine_03';
+            return `sem_smoke_machine_03${dateSuffix}`;
           }
-          if (combined.includes('dbtech') || (combined.includes('modul amplifier') && combined.includes('serak'))) {
+          if (isSep2026 && (combined.includes('dbtech') || (combined.includes('modul amplifier') && combined.includes('serak')))) {
             return 'sem_dbtech_no18';
           }
-          if (combined.includes('kabinet') || combined.includes('videotron') || combined.includes('box kerusakan') || combined.includes('dead pixel')) {
+          if (isSep2026 && (combined.includes('kabinet') || combined.includes('videotron') || combined.includes('box kerusakan') || combined.includes('dead pixel'))) {
             return 'sem_videotron_kabinet_box';
           }
-          return `dedup_${eq.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}_${iss.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+          return `dedup_${dateStr || ''}_${eq.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}_${iss.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
         };
 
         const remarkIssue = entry.notes.trim();
@@ -1290,7 +1304,7 @@ export async function pullDailyLogFromGviz(
         const issNorm = remarkIssue.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const picNorm = entry.staffName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const contentKeyNorm = `dedup_${eqNorm}_${issNorm}_${picNorm}`;
-        const semKeyNorm = getSemanticKey(equipName, remarkIssue);
+        const semKeyNorm = getSemanticKey(equipName, remarkIssue, entry.date);
 
         const findingKey = `gsheet-finding-${entry.date}-${remarkKey}`;
 

@@ -256,3 +256,16 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
     - **URL Folder Resmi:** `https://drive.google.com/drive/folders/1hBGpse_uG9bbeMNqc0qdbMydLTt0uDuq`
     - **Folder ID:** `1hBGpse_uG9bbeMNqc0qdbMydLTt0uDuq`
     - **Fungsi:** Tempat penyimpanan, backup cadangan, ekspor, dan penarikan/impor data resmi seluruh master personil: Data Staf Karyawan Tetap dan Database Kru Freelance & Mitra PT. Riz Production Multi Kreasi. Tautan akses langsung dan opsi simpan/tarik data wajib selalu tersedia pada modul Master Personel (Admin Panel).
+
+18. **Komit Mutlak: Sumber Resmi Data Unit Armada & Riwayat Servis PT. Riz Production Multi Kreasi:**
+    - **URL Google Sheet Armada Resmi:** `https://docs.google.com/spreadsheets/d/1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs/edit?usp=sharing` (Mirror: `1h7hFqtn3E-dw2mo3ygzj9PLZw1gPQTHt`)
+    - **Spreadsheet ID Resmi:** `1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs`
+    - **Daftar 7 Unit Armada Internal Resmi (`INITIAL_VEHICLES`):**
+      1. **Pick Up Suzuki Carry / 011 (`F 8433 BF`)** — GID `1966942424` | Pajak STNK: `2027-09-01` (September) | KIR: `2027-02-26` (26 Feb '27) | Total Riwayat Servis: Rp 6.445.565 (8 catatan, terkini paling atas: `20 Agustus 2026`).
+      2. **Pick Up Suzuki Carry / 012 (`F 8446 BF`)** — GID `154320656` | Pajak STNK: `2027-09-01` (September) | KIR: `2027-03-08` (8 Maret '27) | Total Riwayat Servis: Rp 8.735.077 (6 catatan, terkini paling atas: `8 September 2026`).
+      3. **Pick Up Suzuki Carry / 013 (`F 8569 BH`)** — GID `179065953` | Pajak STNK: `2027-06-01` (Juni) | KIR: `2026-12-10` (10 Des '26) | Total Riwayat Servis: Rp 1.515.970 (2 catatan, terkini paling atas: `26 Agustus 2026`).
+      4. **Pick Up Suzuki Carry / 014 (`F 8594 BH`)** — GID `560717247` | Pajak STNK: `2027-06-01` (Juni) | KIR: `2026-12-15` (15 Des '26) | Total Riwayat Servis: Rp 0 (1 catatan Free Service 1.000 KM, `2 Juni 2026`).
+      5. **Truk Engkel Mitsubishi Canter PS 110 (`F 8942 BG`)** — GID `744126287` | Pajak STNK: `2027-05-01` (Mei) | KIR: `2027-03-01` (Maret 2027) | Total Riwayat Servis: Rp 14.164.000 (9 catatan, terkini paling atas: `28 September 2026`).
+      6. **Daihatsu Luxio Operasional (`B 2673 TVI`)** — GID `2000397466` | Pajak STNK: `2026-12-01` (Desember) | KIR: `-` (Non-KIR) | Total Riwayat Servis: Rp 8.540.000 (10 catatan, terkini paling atas: `23 Oktober 2026`).
+      7. **Motor Honda Beat Operasional (`F 2215 EO`)** — GID `489515035` | Pajak STNK: `2027-08-01` (Agustus) | KIR: `-` (Non-KIR) | Total Riwayat Servis: Rp 307.000 (1 catatan, terkini paling atas: `3 November 2026`).
+    - **Aturan Urutan & Sinkronisasi Armada:** Seluruh riwayat servis resmi (`maintenanceHistory`) wajib disusun dari **tanggal, bulan, tahun aktual terkini di posisi paling atas** (descending) menggunakan `sortMaintenanceHistoryDesc` dan `formatServiceDateIndonesian` di `src/data.ts`. Fungsi `normalizeVehiclesMaster` wajib menjaga keutuhan 7 unit armada resmi ini di seluruh cache `localStorage` (`riz_master_vehicles`) dan Cloud Sync (`master_vehicles`), serta memblokir plat fiktif/usang (`B 9331 JXQ`, dll.).

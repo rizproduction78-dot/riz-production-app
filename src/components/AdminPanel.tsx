@@ -23,9 +23,10 @@ import {
   DailyReport, 
   LogbookEntry,
   OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_URL,
-  OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID
+  OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID,
+  OFFICIAL_ARMADA_SPREADSHEET_URL
 } from '../types';
-import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, getMasterStaffList, getMasterFreelanceList } from '../data';
+import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, getMasterStaffList, getMasterFreelanceList, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc } from '../data';
 import { getScheduleByKey, StaffScheduleRow, getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
 import {
   exportStaffToJson,
@@ -954,17 +955,7 @@ export default function AdminPanel({
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const flat = parsed.flatMap(item => (item && Array.isArray(item.list)) ? item.list : [item]);
-          let valid = flat.filter(v => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
-          const FAKE_PLATES = ['B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
-          valid = valid.filter(v => !FAKE_PLATES.includes(v.policeNumber));
-          const seen = new Set();
-          valid = valid.filter(v => {
-            if (seen.has(v.policeNumber)) return false;
-            seen.add(v.policeNumber);
-            return true;
-          });
-          if (valid.length > 0) return valid;
+          return normalizeVehiclesMaster(parsed);
         }
       }
     } catch (e) {}
@@ -3099,9 +3090,28 @@ export default function AdminPanel({
                             <tr key={v.id || v.policeNumber} className="hover:bg-slate-50/60">
                               <td className="p-3.5">
                                 <div className="font-bold text-slate-900">{v.name || 'Unit Armada'}</div>
-                                <span className="font-mono text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-700">
-                                  {v.policeNumber || '-'}
-                                </span>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                  <span className="font-mono text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-700">
+                                    {v.policeNumber || '-'}
+                                  </span>
+                                  <a
+                                    href={v.sheetGid ? `https://docs.google.com/spreadsheets/d/1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs/edit?gid=${v.sheetGid}#gid=${v.sheetGid}` : OFFICIAL_ARMADA_SPREADSHEET_URL}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[10px] text-indigo-600 hover:underline font-mono font-bold"
+                                  >
+                                    Sheet Servis ({v.maintenanceHistory?.length || 0}x • Rp {(v.totalMaintenanceCost || 0).toLocaleString('id-ID')}) ↗
+                                  </a>
+                                </div>
+                                {v.maintenanceHistory && v.maintenanceHistory.length > 0 && (() => {
+                                  const sorted = sortMaintenanceHistoryDesc(v.maintenanceHistory);
+                                  const latest = sorted[0];
+                                  return (
+                                    <div className="text-[10px] text-slate-500 mt-1 font-mono">
+                                      Servis Terkini: <strong className="text-slate-700">{formatServiceDateIndonesian(latest.date)}</strong> ({latest.type} • Rp {(latest.cost || 0).toLocaleString('id-ID')})
+                                    </div>
+                                  );
+                                })()}
                               </td>
                               <td className="p-3.5">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${

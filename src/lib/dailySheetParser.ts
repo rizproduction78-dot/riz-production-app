@@ -256,8 +256,8 @@ export function normalizeCrewName(raw: string): string {
     .replace(/\s+/g, ' '); // normalisasi multi-spasi
 }
 
-// Kata kunci QC: mendeteksi inspeksi teknis lapangan (qc, inspeksi, checklist, onhouse, p2h, cek, check, pengecekan, uji, testing)
-const QC_KEYWORDS = ['qc', 'inspeksi', 'checklist', 'onhouse', 'p2h', 'cek', 'check', 'pengecekan', 'uji', 'testing'];
+// Kata kunci QC: mendeteksi inspeksi teknis lapangan (qc, inspeksi, checklist, onhouse, p2h, cek, check, pengecekan, uji, testing, test unit)
+const QC_KEYWORDS = ['qc', 'inspeksi', 'checklist', 'onhouse', 'p2h', 'cek', 'check', 'pengecekan', 'uji', 'testing', 'test unit', 'kecuali no.'];
 
 export function checkIsQc(text: string): boolean {
   if (!text) return false;
@@ -410,7 +410,10 @@ export function extractNormalizedDailySheetRows(rawRows: string[][]): SheetRow[]
   for (let r = 0; r < rawRows.length; r++) {
     const row = rawRows[r];
     if (!Array.isArray(row)) continue;
-    const idx = row.findIndex(cell => String(cell || '').trim().toLowerCase() === 'tanggal');
+    const idx = row.findIndex(cell => {
+      const s = String(cell || '').trim().toLowerCase();
+      return s === 'tanggal' || s.endsWith('tanggal');
+    });
     if (idx !== -1) {
       headerRowIdx = r;
       colTanggal = idx;

@@ -135,14 +135,18 @@ export default function LogTaskModule({
 
   // Tasks state (synced with local storage & cloud broadcast)
   const [tasks, setTasks] = useState<DailyTask[]>(() => {
+    const map = new Map<string, DailyTask>();
+    (initialTasks || []).forEach(t => { if (t?.id) map.set(t.id, t); });
     const saved = localStorage.getItem('riz_daily_tasks_v2') || localStorage.getItem('riz_daily_tasks');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          parsed.forEach((t: DailyTask) => { if (t?.id) map.set(t.id, t); });
+        }
       } catch (e) {}
     }
-    return (initialTasks && initialTasks.length > 0) ? initialTasks : [];
+    return Array.from(map.values());
   });
   const [cloudSynced, setCloudSynced] = useState<boolean>(false);
 

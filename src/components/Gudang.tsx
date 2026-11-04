@@ -9,9 +9,10 @@ import {
   FleetBudgetRAB,
   VehicleMaster,
   ManifestCargoItem,
-  FleetDriver
+  FleetDriver,
+  OFFICIAL_ARMADA_SPREADSHEET_URL
 } from '../types';
-import { INITIAL_ASSETS, INITIAL_VEHICLES, INITIAL_FLEET_DRIVERS } from '../data';
+import { INITIAL_ASSETS, INITIAL_VEHICLES, INITIAL_FLEET_DRIVERS, normalizeVehiclesMaster, formatServiceDateIndonesian, sortMaintenanceHistoryDesc } from '../data';
 import {
   Package,
   ArrowDownLeft,
@@ -138,19 +139,7 @@ export default function Gudang({
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const flat = parsed.flatMap((item: any) => (item && Array.isArray(item.list)) ? item.list : [item]);
-          let valid = flat.filter((v: any) => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
-          // Remove fake data
-          const FAKE_PLATES = ['B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
-          valid = valid.filter((v: any) => !FAKE_PLATES.includes(v.policeNumber));
-          // Deduplicate by policeNumber
-          const seen = new Set();
-          valid = valid.filter((v: any) => {
-            if (seen.has(v.policeNumber)) return false;
-            seen.add(v.policeNumber);
-            return true;
-          });
-          if (valid.length > 0) return valid;
+          return normalizeVehiclesMaster(parsed);
         }
       }
     } catch (e) {}
@@ -543,9 +532,7 @@ export default function Gudang({
       'master_vehicles',
       'riz_master_vehicles',
       (rawItems) => {
-        const flat = (rawItems || []).flatMap(item => (item && Array.isArray((item as any).list)) ? (item as any).list : [item]);
-        const valid = flat.filter((v): v is VehicleMaster => Boolean(v && typeof v === 'object' && (v.name || v.policeNumber)));
-        setLocalVehicles(valid.length > 0 ? valid : INITIAL_VEHICLES);
+        setLocalVehicles(normalizeVehiclesMaster(rawItems || []));
       },
       INITIAL_VEHICLES
     );
@@ -2044,7 +2031,50 @@ export default function Gudang({
                             </span>
                           </div>
                         </div>
+                        {typeof v.totalMaintenanceCost === 'number' && (
+                          <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                            <span className="text-slate-500 font-sans text-[10px]">Total Riwayat Servis:</span>
+                            <span className="font-bold text-indigo-700">
+                              Rp {v.totalMaintenanceCost.toLocaleString('id-ID')} ({v.maintenanceHistory?.length || 0}x)
+                            </span>
+                          </div>
+                        )}
                       </div>
+
+                      {v.maintenanceHistory && v.maintenanceHistory.length > 0 && (() => {
+                        const sortedHistory = sortMaintenanceHistoryDesc(v.maintenanceHistory);
+                        return (
+                          <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 space-y-1.5 max-h-40 overflow-y-auto">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                              <span>Riwayat Servis Resmi ({sortedHistory.length})</span>
+                              <a
+                                href={v.sheetGid ? `https://docs.google.com/spreadsheets/d/1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs/edit?gid=${v.sheetGid}#gid=${v.sheetGid}` : OFFICIAL_ARMADA_SPREADSHEET_URL}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-indigo-600 hover:underline font-mono text-[9px]"
+                              >
+                                Buka Sheet ↗
+                              </a>
+                            </div>
+                            {sortedHistory.map((mh, idx) => (
+                              <div key={mh.id || idx} className="text-[10px] border-t border-slate-200/70 pt-1.5">
+                                <div className="flex justify-between items-center font-mono font-bold text-slate-800">
+                                  <span className="flex items-center gap-1">
+                                    <span>{formatServiceDateIndonesian(mh.date)} ({mh.date}) • {mh.type}</span>
+                                    {idx === 0 && (
+                                      <span className="px-1 py-0.2 rounded bg-emerald-100 text-emerald-700 font-sans text-[8px] font-extrabold uppercase">
+                                        Terkini
+                                      </span>
+                                    )}
+                                  </span>
+                                  <span className="shrink-0 ml-1">Rp {(mh.cost || 0).toLocaleString('id-ID')}</span>
+                                </div>
+                                <div className="text-slate-500 line-clamp-2 mt-0.5">{mh.description}</div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
 
                     <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                       <button

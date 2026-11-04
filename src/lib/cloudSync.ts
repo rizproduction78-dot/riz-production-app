@@ -7,7 +7,7 @@
  * Powered by Unified Local Storage, BroadcastChannel, Supabase, and Google Sheets Synchronization.
  */
 
-import { normalizeStaffMaster, STAFF_LIST, getMasterStaffList } from '../data';
+import { normalizeStaffMaster, normalizeVehiclesMaster, STAFF_LIST, getMasterStaffList } from '../data';
 import { isStaffMatch } from '../utils/kpiCalculator';
 import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
 import {
@@ -264,42 +264,48 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     const getSemanticKey = (item: any): string => {
       const eq = String(item.equipment || '').toLowerCase();
       const iss = String(item.issue || '').toLowerCase();
+      const dateStr = String(item.dateCreated || item.date || item.targetDate || '').trim();
+      const isSep2026 = !dateStr || dateStr.startsWith('2026-09');
+      const dateSuffix = isSep2026 ? '' : `_${dateStr}`;
       const combined = `${eq} ${iss}`;
 
       if (combined.includes('ampeg') || combined.includes('svt-4') || (combined.includes('ptc') && combined.includes('amplifier'))) {
-        return 'sem_ampeg_ptc';
+        return `sem_ampeg_ptc${dateSuffix}`;
       }
       if (combined.includes('takel') || combined.includes('rigging') && combined.includes('los')) {
-        return 'sem_takel_los';
+        return `sem_takel_los${dateSuffix}`;
       }
       if (combined.includes('sm57') || (combined.includes('sm58') && combined.includes('rusak 4'))) {
-        return 'sem_sm57_inventory';
+        return `sem_sm57_inventory${dateSuffix}`;
       }
       if (combined.includes('parled') || combined.includes('par led')) {
-        if (combined.includes('13') || combined.includes('merah mati')) {
-          return 'sem_parled_13_merah';
+        if (isSep2026) {
+          if (combined.includes('13') || combined.includes('merah mati')) {
+            return 'sem_parled_13_merah';
+          }
+          if (combined.includes('19') || combined.includes('20') || combined.includes('27')) {
+            return 'sem_parled_warm_19_20_27';
+          }
+          if (combined.includes('12') || combined.includes('25') || combined.includes('29') || combined.includes('32')) {
+            return 'sem_parled_warm_12_25_29_3_32';
+          }
         }
-        if (combined.includes('19') || combined.includes('20') || combined.includes('27')) {
-          return 'sem_parled_warm_19_20_27';
-        }
-        if (combined.includes('12') || combined.includes('25') || combined.includes('29') || combined.includes('32')) {
-          return 'sem_parled_warm_12_25_29_3_32';
-        }
+        return `sem_parled_${dateStr}_${iss.replace(/[^a-z0-9]/g, '').substring(0, 30)}`;
       }
       if (combined.includes('smoke') || combined.includes('smok')) {
-        return 'sem_smoke_machine_03';
+        return `sem_smoke_machine_03${dateSuffix}`;
       }
-      if (combined.includes('dbtech') || (combined.includes('modul amplifier') && combined.includes('serak'))) {
+      if (isSep2026 && (combined.includes('dbtech') || (combined.includes('modul amplifier') && combined.includes('serak')))) {
         return 'sem_dbtech_no18';
       }
-      if (combined.includes('kabinet') || combined.includes('videotron') || combined.includes('box kerusakan') || combined.includes('dead pixel')) {
+      if (isSep2026 && (combined.includes('kabinet') || combined.includes('videotron') || combined.includes('box kerusakan') || combined.includes('dead pixel'))) {
         return 'sem_videotron_kabinet_box';
       }
 
       // Fallback: exact alphanumeric signature
       const eqNorm = eq.replace(/[^a-z0-9]/g, '');
       const issNorm = iss.replace(/[^a-z0-9]/g, '').substring(0, 40);
-      return `generic_${eqNorm}_${issNorm}`;
+      return `generic_${dateSuffix}_${eqNorm}_${issNorm}`;
     };
 
     const map = new Map<string, any>();
@@ -335,17 +341,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
   }
 
   if (collectionName === 'master_vehicles') {
-    const FAKE_PLATES = ['B 9142 SXZ', 'B 9804 UYA', 'B 2319 POX', 'B 9043 TQB', 'B 1874 RIZ', 'B 9552 KTN', 'B 9331 JXQ'];
-    const cleaned = items.filter((v: any) => v && v.policeNumber && !FAKE_PLATES.includes(v.policeNumber));
-    
-    // Deduplicate incoming cloud data
-    const seen = new Set();
-    const deduped = cleaned.filter((v: any) => {
-      if (seen.has(v.policeNumber)) return false;
-      seen.add(v.policeNumber);
-      return true;
-    });
-    return deduped as T[];
+    return normalizeVehiclesMaster(items) as unknown as T[];
   }
 
   // Special normalization for daily_reports: no strict note concatenation
@@ -375,7 +371,9 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const effectiveStaffName = staffObj ? staffObj.name : String(item.staffName || '').trim();
       if (!effectiveStaffName) return; // Drop entries without staff name
 
-      const effectiveDivision = staffObj ? staffObj.division : (item.division || 'Umum');
+      const effectiveDivision = (item.division && item.division !== 'Umum')
+        ? item.division
+        : (staffObj ? staffObj.division : 'Umum');
       const normActivity = String(item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
       const isCustomAppId = rawId.startsWith('dr-') && !rawId.startsWith('dr-test');
       const semanticKey = isCustomAppId ? rawId : `${item.date}_${effectiveStaffName}_${normActivity}`;
@@ -424,7 +422,9 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const effectiveStaffName = staffObj ? staffObj.name : String(item.staffName || '').trim();
       if (!effectiveStaffName) return; // Drop entries without staff name
 
-      const effectiveDivision = staffObj ? staffObj.division : (item.division || 'Umum');
+      const effectiveDivision = (item.division && item.division !== 'Umum')
+        ? item.division
+        : (staffObj ? staffObj.division : 'Umum');
       const normActivity = String(item.equipment || item.activity || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 30);
       const isCustomAppId = rawId.startsWith('lg-') && !rawId.startsWith('lg-test');
       const semanticKey = isCustomAppId ? rawId : `${item.date}_${effectiveStaffName}_${normActivity}`;

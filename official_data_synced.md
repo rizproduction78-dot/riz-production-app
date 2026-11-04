@@ -137,15 +137,51 @@
 | 1 November 2026 | - Kharo |  |  | - cek & servise 12 roll led strip |  | - Bagus |
 |  |  |  |  | - buat dudukan power suplly led strip |  | - Done |
 | 2 November 2026 | - Unyim | bersih" dl 32 |  |  |  | CEK NYALA AMAN |
-|  |  | no 1 |  |  |  | OK |
-|  |  | no 2 |  |  |  | OK |
-|  |  | no 3 |  |  |  | OK |
-|  |  | no 4 |  |  |  | OK |
-|  |  | mixer HD |  |  |  | OK |
-| 2 November 2026 | mboh | -cleaning dl251 |  |  |  | -BERSIH |
+|  |  | DL 32 no 1 |  |  |  | OK |
+|  |  | DL 32 no 2 |  |  |  | OK |
+|  |  | DL 32 no 3 |  |  |  | OK |
+|  |  | DL 32 no 4 |  |  |  | OK |
+|  |  | mixer HD no 1 |  |  |  | OK |
+|  | - Mboh | -cleaning dl251 |  |  |  | -BERSIH |
 |  |  | -cleaning marani mir4801 |  |  |  | -BERSIH |
-|  |  | -cek all kabel LAN |  |  |  | -ALL terkonectsi dgn  baik |
-|  |  | -cleaning mixer HD967 |  |  |  | -BERSIH |
+|  |  | -cek all kabel LAN |  |  |  | -ALL terkoneksi dgn  baik |
+|  |  | -cleaning mixer HD967 |  |  |  |  |
+|  | - Jay |  |  |  | Cek UPS | Udah Ga bisa ngisi |
+|  |  |  |  |  | Cleaning Rak Kantor |  |
+|  |  |  |  |  | Cleaning Tas Kamera |  |
+|  |  |  |  |  | Cek Box 1 Perlenk, SDI, HDMI |  |
+| 3 November 2026 | Yudish | cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD |  |  |  | WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event |
+|  |  | EWD no. 5 - 8 |  |  |  |  |
+|  |  | EWD no. 9 - 12 |  |  |  |  |
+|  |  | EWD no. 15 - 16 |  |  |  |  |
+|  |  | EWD no. 17 - 18 |  |  |  |  |
+|  |  | SLXD no. 1 - 4 |  |  |  |  |
+|  |  | SLXD no. 5 - 8 |  |  |  |  |
+|  |  | QLXD no 9 - 12 |  |  |  |  |
+|  |  | cleaning and check kelengkapan IEM Sennheisser G4 |  |  |  | IEM semua dalam kondisi normal, kelengkapan oke. |
+|  |  | no. 1 - 8 |  |  |  |  |
+|  |  | repack WHM QLXD menjadi 2 box ukuran 2U ( baru ) |  |  |  | Distributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U. |
+|  |  | massing2 menjadi 2 WHM dalam 1 box |  |  |  |  |
+| 3 November 2026 | -Heri |  | -Rapih2 Kabel Bekas Pakai Perbok |  |  | - Rapih Sesuai Tulisan Dibok |
+|  |  |  | -Benerin Kabel Power 4x2.5 (25M) |  |  | - Sudah Kepasang Kembali Steker Nya |
+|  |  |  | -Cleaning All Beam 450 |  |  | -Bersih & Normal |
+|  |  |  | No. 1-2-3-4-5-6-7-8-9-10-11-12-13 |  |  |  |
+|  |  |  | 14-15-16-17-18-19-20-21-22-23-24 |  |  |  |
+|  |  |  | -Cleaning All Parled Trf A64 |  |  | - Bersih & Normal KECUALI NO. 5-12-19-33 Eror |
+|  |  |  | No. 1-2-3-4-5-6-7-8-9-10-11-12-13 |  |  | No. 5 - Warm Separo |
+|  |  |  | 14-15-16-17-18-19-20-21-22-23-24 |  |  | No. 12 - Red Mati 1 Mata |
+|  |  |  | 25-26-27-28-29-30-31-32-33-34-35 |  |  | No. 19 - Warm Separo |
+|  |  |  | 36-37-38-39-40-41-42-43-44-45-46 |  |  | No. 33 - Red Separo |
+|  |  |  | 47-48 |  |  |  |
+| 03 November 2026 | kharo |  |  | servise 8 kabinet led |  | 2 unit minta ganti reciving card |
+|  |  |  |  | - 6 kabinet ganti dead pixel |  |  |
+|  |  |  |  | -1 kabinet ganti ic warna |  |  |
+|  |  |  |  | - 1 kabinet ganti jalur |  |  |
+| 04 November 2026 | Butonk | Ganti twitter DB No 15 |  |  |  | Rekon-Kit Twitter masih bermasalah, suara kecil |
+|  |  | Ganti twitter DB No 18 |  |  |  | Kondisi OK |
+|  |  | Ganti twitter DB No 5 |  |  |  | Kondisi OK |
+|  |  | Ganti Speaker DB no 5 |  |  |  | Kondisi OK |
+|  |  | Proses  Test Unit DB tech maintenance |  |  |  | Service ulang, DB no 15 belum normal |
 
 ## Desember 2026 (GID: 368237370)
 
