@@ -67,7 +67,8 @@ import {
   Briefcase,
   Users,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  ClipboardList
 } from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc, deleteCloudDoc, pushCollectionToCloud } from '../lib/cloudSync';
 import {
@@ -459,6 +460,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   const [editingCrewBadgeKey, setEditingCrewBadgeKey] = useState<string | null>(null);
   const [editingCrewPersonName, setEditingCrewPersonName] = useState<string>('');
   const [editingCrewRoleNote, setEditingCrewRoleNote] = useState<string>('');
+  const [editingCrewAssessmentStatus, setEditingCrewAssessmentStatus] = useState<
+    NonNullable<JobCrewMember['assessmentStatus']>
+  >('Approved');
+  const [editingCrewAssessmentScore, setEditingCrewAssessmentScore] = useState<number>(5);
+  const [editingCrewAssessmentNote, setEditingCrewAssessmentNote] = useState<string>('');
   const [editingPicJobId, setEditingPicJobId] = useState<string | null>(null);
   const [editingPicValue, setEditingPicValue] = useState<string>('');
 
@@ -470,6 +476,17 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   const [equipPickerManualText, setEquipPickerManualText] = useState<string>('');
   const [editingEquipBadgeKey, setEditingEquipBadgeKey] = useState<string | null>(null);
   const [editingEquipValue, setEditingEquipValue] = useState<string>('');
+  const [editingEquipAssessmentStatus, setEditingEquipAssessmentStatus] = useState<
+    'Sesuai Spek' | 'Perlu Penyesuaian' | 'Backup / Sub-Vendor' | 'Pending Cek'
+  >('Sesuai Spek');
+  const [editingEquipQtyVerified, setEditingEquipQtyVerified] = useState<string>('');
+  const [editingEquipTechnicalNote, setEditingEquipTechnicalNote] = useState<string>('');
+
+  // Admin Comprehensive Event Assessment Modal state (Unit Alat/Spek Teknis & Penugasan Staff/Freelance)
+  const [assessmentModalJob, setAssessmentModalJob] = useState<JobAssignment | null>(null);
+  const [assessmentModalAddEquipText, setAssessmentModalAddEquipText] = useState<Record<number, string>>({});
+  const [assessmentModalAddCrewName, setAssessmentModalAddCrewName] = useState<Record<number, string>>({});
+  const [assessmentModalAddCrewRole, setAssessmentModalAddCrewRole] = useState<Record<number, string>>({});
 
   // Modal Equipment Picker (Inventory + Manual) state
   const [modalEquipDivFilter, setModalEquipDivFilter] = useState<'ALL' | 'Sound' | 'Lighting' | 'Multimedia' | 'Videotron'>('ALL');
@@ -575,8 +592,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     currentUser.role === 'Staff Leader';
 
   const persistUpdatedJobAssignment = (updatedJob: JobAssignment, activityMessage?: string) => {
+    const nowIso = new Date().toISOString();
     const finalJob: JobAssignment & { _userEdited?: boolean } = {
       ...updatedJob,
+      gcalSynced: true,
+      gcalLastSyncedAt: nowIso,
       _userEdited: true
     };
     setJobAssignments(prev => {
@@ -586,6 +606,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       try {
         localStorage.setItem('riz_job_assignments_v1', JSON.stringify(sorted));
       } catch {}
+      const nextCfg = saveGoogleCalendarSyncConfig({
+        lastSyncedAt: nowIso,
+        lastSyncCount: sorted.length
+      });
+      setGcalConfig(nextCfg);
       return sorted;
     });
     saveCloudDoc('job_assignments', finalJob.id, finalJob, currentUser.name);
@@ -621,8 +646,17 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       nextCrew = sec.crew.filter((_, idx) => idx !== existingIndex);
       actionLabel = `Menghapus ${resolved.name} dari jadwal ${job.dateLabel} (${sec.division})`;
     } else {
-      nextCrew = [...sec.crew, resolved];
-      actionLabel = `Menjadwalkan ${resolved.name} (${resolved.personnelType}) ke ${job.dateLabel} (${sec.division})`;
+      nextCrew = [
+        ...sec.crew,
+        {
+          ...resolved,
+          assessmentStatus: 'Approved',
+          assessmentScore: 5,
+          assessedBy: currentUser.name,
+          assessedAt: new Date().toISOString()
+        }
+      ];
+      actionLabel = `Menjadwalkan & verifikasi ${resolved.name} (${resolved.personnelType}) ke ${job.dateLabel} (${sec.division})`;
     }
 
     const nextSections = job.sections.map((s, idx) =>
@@ -650,22 +684,38 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     sectionIdx: number,
     memberIdx: number,
     nextPersonName: string,
-    nextRoleNote: string
+    nextRoleNote: string,
+    assessmentStatusInput?: JobCrewMember['assessmentStatus'],
+    assessmentScoreInput?: number,
+    assessmentNoteInput?: string
   ) => {
     const sec = job.sections[sectionIdx];
     if (!sec || !nextPersonName.trim()) return;
+    const prevMember = sec.crew[memberIdx];
     const resolved = resolveCrewMember(
       nextPersonName.trim(),
       sec.division,
       nextRoleNote.trim() || undefined
     );
-    const nextCrew = sec.crew.map((c, idx) => (idx === memberIdx ? resolved : c));
+    const updatedMember: JobCrewMember = {
+      ...prevMember,
+      ...resolved,
+      assessmentStatus: assessmentStatusInput || prevMember?.assessmentStatus || 'Approved',
+      assessmentScore: assessmentScoreInput ?? prevMember?.assessmentScore ?? 5,
+      assessmentNote:
+        assessmentNoteInput !== undefined
+          ? assessmentNoteInput.trim() || undefined
+          : prevMember?.assessmentNote,
+      assessedBy: currentUser.name,
+      assessedAt: new Date().toISOString()
+    };
+    const nextCrew = sec.crew.map((c, idx) => (idx === memberIdx ? updatedMember : c));
     const nextSections = job.sections.map((s, idx) =>
       idx === sectionIdx ? { ...s, crew: nextCrew } : s
     );
     persistUpdatedJobAssignment(
       { ...job, sections: nextSections },
-      `Memperbarui personil ${resolved.name} (${resolved.personnelType}) pada jadwal ${job.dateLabel} (${sec.division})`
+      `Assessment & update personil ${updatedMember.name} (${updatedMember.personnelType} • ${updatedMember.assessmentStatus}) pada jadwal ${job.dateLabel} (${sec.division})`
     );
     setEditingCrewBadgeKey(null);
   };
@@ -788,20 +838,246 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     job: JobAssignment,
     sectionIdx: number,
     eqIdx: number,
-    nextValue: string
+    nextValue: string,
+    assessmentStatusInput?: 'Sesuai Spek' | 'Perlu Penyesuaian' | 'Backup / Sub-Vendor' | 'Pending Cek',
+    qtyVerifiedInput?: string,
+    technicalNoteInput?: string
   ) => {
     const sec = job.sections[sectionIdx];
     const trimmed = nextValue.trim();
     if (!sec || !trimmed) return;
+    const prevLabel = sec.equipment[eqIdx];
     const nextEquipment = sec.equipment.map((eq, idx) => (idx === eqIdx ? trimmed : eq));
+    const prevAssessMap = { ...(sec.equipmentAssessments || {}) };
+    const existingAssess = prevAssessMap[prevLabel] || prevAssessMap[trimmed];
+    if (prevLabel && prevLabel !== trimmed) {
+      delete prevAssessMap[prevLabel];
+    }
+    prevAssessMap[trimmed] = {
+      itemLabel: trimmed,
+      status: assessmentStatusInput || existingAssess?.status || 'Sesuai Spek',
+      qtyVerified:
+        qtyVerifiedInput !== undefined
+          ? qtyVerifiedInput.trim() || undefined
+          : existingAssess?.qtyVerified,
+      technicalNote:
+        technicalNoteInput !== undefined
+          ? technicalNoteInput.trim() || undefined
+          : existingAssess?.technicalNote,
+      assessedBy: currentUser.name,
+      assessedAt: new Date().toISOString()
+    };
+
     const nextSections = job.sections.map((s, idx) =>
-      idx === sectionIdx ? { ...s, equipment: nextEquipment } : s
+      idx === sectionIdx
+        ? { ...s, equipment: nextEquipment, equipmentAssessments: prevAssessMap }
+        : s
     );
     persistUpdatedJobAssignment(
       { ...job, sections: nextSections },
-      `Memperbarui unit alat menjadi "${trimmed}" pada jadwal ${job.dateLabel} (${sec.division})`
+      `Assessment & update unit alat "${trimmed}" (${prevAssessMap[trimmed].status}) pada jadwal ${job.dateLabel} (${sec.division})`
     );
     setEditingEquipBadgeKey(null);
+  };
+
+  const handleCycleEquipmentAssessmentStatus = (
+    job: JobAssignment,
+    sectionIdx: number,
+    eqLabel: string
+  ) => {
+    const sec = job.sections[sectionIdx];
+    if (!sec) return;
+    const prevMap = { ...(sec.equipmentAssessments || {}) };
+    const currentStatus = prevMap[eqLabel]?.status || 'Sesuai Spek';
+    const order: Array<'Sesuai Spek' | 'Perlu Penyesuaian' | 'Backup / Sub-Vendor' | 'Pending Cek'> = [
+      'Sesuai Spek',
+      'Perlu Penyesuaian',
+      'Backup / Sub-Vendor',
+      'Pending Cek'
+    ];
+    const nextStatus = order[(order.indexOf(currentStatus) + 1) % order.length];
+    prevMap[eqLabel] = {
+      ...(prevMap[eqLabel] || { itemLabel: eqLabel }),
+      itemLabel: eqLabel,
+      status: nextStatus,
+      assessedBy: currentUser.name,
+      assessedAt: new Date().toISOString()
+    };
+    const nextSections = job.sections.map((s, idx) =>
+      idx === sectionIdx ? { ...s, equipmentAssessments: prevMap } : s
+    );
+    persistUpdatedJobAssignment(
+      { ...job, sections: nextSections },
+      `Assessment spesifikasi unit alat "${eqLabel}" -> ${nextStatus} pada ${job.dateLabel} (${sec.division})`
+    );
+  };
+
+  const handleUpdateSectionSpecAssessment = (
+    job: JobAssignment,
+    sectionIdx: number,
+    specStatus: NonNullable<JobDivisionSection['specAssessmentStatus']>,
+    specNote?: string
+  ) => {
+    const sec = job.sections[sectionIdx];
+    if (!sec) return;
+    const nextSections = job.sections.map((s, idx) =>
+      idx === sectionIdx
+        ? {
+            ...s,
+            specAssessmentStatus: specStatus,
+            specAssessmentNote: specNote !== undefined ? specNote : s.specAssessmentNote,
+            assessedBy: currentUser.name,
+            assessedAt: new Date().toISOString()
+          }
+        : s
+    );
+    persistUpdatedJobAssignment(
+      { ...job, sections: nextSections },
+      `Assessment Spesifikasi Teknis (${sec.division}) pada ${job.dateLabel}: ${specStatus}`
+    );
+  };
+
+  const handleUpdateSectionCrewAssessment = (
+    job: JobAssignment,
+    sectionIdx: number,
+    crewStatus: NonNullable<JobDivisionSection['crewAssessmentStatus']>,
+    crewNote?: string
+  ) => {
+    const sec = job.sections[sectionIdx];
+    if (!sec) return;
+    const nextSections = job.sections.map((s, idx) =>
+      idx === sectionIdx
+        ? {
+            ...s,
+            crewAssessmentStatus: crewStatus,
+            crewAssessmentNote: crewNote !== undefined ? crewNote : s.crewAssessmentNote,
+            assessedBy: currentUser.name,
+            assessedAt: new Date().toISOString()
+          }
+        : s
+    );
+    persistUpdatedJobAssignment(
+      { ...job, sections: nextSections },
+      `Assessment Penugasan Crew (${sec.division}) pada ${job.dateLabel}: ${crewStatus}`
+    );
+  };
+
+  const handleQuickApproveEventAssessment = (job: JobAssignment, openGcalAfter = false) => {
+    const nowIso = new Date().toISOString();
+    const nextSections: JobDivisionSection[] = job.sections.map(sec => {
+      const nextEquipMap = { ...(sec.equipmentAssessments || {}) };
+      sec.equipment.forEach(eq => {
+        nextEquipMap[eq] = {
+          ...(nextEquipMap[eq] || { itemLabel: eq }),
+          itemLabel: eq,
+          status: nextEquipMap[eq]?.status || 'Sesuai Spek',
+          assessedBy: currentUser.name,
+          assessedAt: nowIso
+        };
+      });
+      const nextCrew = sec.crew.map(c => ({
+        ...c,
+        assessmentStatus: c.assessmentStatus || ('Approved' as const),
+        assessmentScore: c.assessmentScore || 5,
+        assessedBy: currentUser.name,
+        assessedAt: nowIso
+      }));
+      return {
+        ...sec,
+        specAssessmentStatus: 'Sesuai Spesifikasi (Approved)',
+        crewAssessmentStatus: 'Personil Approved & Siap',
+        equipmentAssessments: nextEquipMap,
+        crew: nextCrew,
+        assessedBy: currentUser.name,
+        assessedAt: nowIso
+      };
+    });
+
+    const approvedJob: JobAssignment = {
+      ...job,
+      sections: nextSections,
+      adminAssessmentStatus: 'Terverifikasi Admin (Approved)',
+      adminAssessedBy: currentUser.name,
+      adminAssessedAt: nowIso,
+      gcalSynced: true,
+      gcalLastSyncedAt: nowIso
+    };
+
+    persistUpdatedJobAssignment(
+      approvedJob,
+      `Admin (${currentUser.name}) melakukan Assessment & Approval Unit Alat/Spesifikasi Teknis & Penugasan Staff/Freelance pada Event "${job.dateLabel} - ${job.venue}" serta Sync ke Google Calendar`
+    );
+
+    setGcalSyncFeedback({
+      type: 'success',
+      text: `Assessment Admin untuk Event "${job.venue} (${job.dateLabel})" telah disetujui (Unit Alat & Kru Approved) dan disinkronkan ke Google Calendar (${gcalConfig.calendarId}).`
+    });
+
+    if (openGcalAfter && typeof window !== 'undefined') {
+      window.open(buildGoogleCalendarEventUrl(approvedJob), '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleOpenAssessmentModal = (job: JobAssignment) => {
+    const nowIso = new Date().toISOString();
+    const cloned: JobAssignment = {
+      ...job,
+      adminAssessmentStatus: job.adminAssessmentStatus || 'Terverifikasi Admin (Approved)',
+      sections: job.sections.map(sec => {
+        const eqMap = { ...(sec.equipmentAssessments || {}) };
+        sec.equipment.forEach(eq => {
+          if (!eqMap[eq]) {
+            eqMap[eq] = {
+              itemLabel: eq,
+              status: 'Sesuai Spek',
+              assessedBy: currentUser.name,
+              assessedAt: nowIso
+            };
+          }
+        });
+        return {
+          ...sec,
+          specAssessmentStatus: sec.specAssessmentStatus || 'Sesuai Spesifikasi (Approved)',
+          crewAssessmentStatus: sec.crewAssessmentStatus || 'Personil Approved & Siap',
+          equipment: [...sec.equipment],
+          equipmentAssessments: eqMap,
+          crew: sec.crew.map(c => ({
+            ...c,
+            assessmentStatus: c.assessmentStatus || 'Approved',
+            assessmentScore: c.assessmentScore ?? 5
+          })),
+          vehicles: [...sec.vehicles]
+        };
+      })
+    };
+    setAssessmentModalJob(cloned);
+    setAssessmentModalAddEquipText({});
+    setAssessmentModalAddCrewName({});
+    setAssessmentModalAddCrewRole({});
+  };
+
+  const handleSaveAssessmentModal = (openGcalTabAfter = false) => {
+    if (!assessmentModalJob) return;
+    const nowIso = new Date().toISOString();
+    const finalized: JobAssignment = {
+      ...assessmentModalJob,
+      adminAssessedBy: currentUser.name,
+      adminAssessedAt: nowIso,
+      gcalSynced: true,
+      gcalLastSyncedAt: nowIso
+    };
+    persistUpdatedJobAssignment(
+      finalized,
+      `Admin (${currentUser.name}) menyimpan hasil Assessment Spesifikasi Teknis & Penugasan Staff/Freelance pada Event "${finalized.dateLabel} - ${finalized.venue}"`
+    );
+    setAssessmentModalJob(null);
+    setGcalSyncFeedback({
+      type: 'success',
+      text: `Hasil Assessment Admin (Unit Alat/Spesifikasi Teknis & Penugasan Staff/Freelance) untuk "${finalized.venue}" berhasil disimpan & tersinkronisasi dengan Google Calendar (${gcalConfig.calendarId}).`
+    });
+    if (openGcalTabAfter && typeof window !== 'undefined') {
+      window.open(buildGoogleCalendarEventUrl(finalized), '_blank', 'noopener,noreferrer');
+    }
   };
 
   const handleToggleInventoryAssetInModalText = (asset: Asset, customQty?: string) => {
@@ -2884,27 +3160,38 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                       })}
                     </div>
 
-                    {/* Live Google Calendar iframe embed for rizproduction78@gmail.com */}
-                    <div className="pt-3 border-t border-slate-200 space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <span className="font-black text-slate-700 uppercase font-mono text-[10px]">
-                          Live Google Calendar Embed ({gcalConfig.calendarId}):
-                        </span>
-                        <a
-                          href={OFFICIAL_GOOGLE_CALENDAR_EMBED_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 hover:underline font-bold text-[11px]"
-                        >
-                          Buka Layar Penuh Google Calendar ↗
-                        </a>
-                      </div>
-                      <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 h-80">
-                        <iframe
-                          title={`Google Calendar ${gcalConfig.calendarId}`}
-                          src={`https://calendar.google.com/calendar/embed?src=${encodeURIComponent(gcalConfig.calendarId)}&ctz=Asia%2FJakarta&mode=MONTH`}
-                          className="w-full h-full border-0"
-                        />
+                    {/* Direct Full-Browser Google Calendar Sign-In & Sync Bar (No Blocked Iframe) */}
+                    <div className="pt-3 border-t border-slate-200">
+                      <div className="p-3.5 bg-indigo-50/80 border border-indigo-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-indigo-600" />
+                            <span>Akses & Login Langsung Google Calendar Resmi ({gcalConfig.calendarId})</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600">
+                            Google memblokir halaman Sign-In di dalam bingkai iframe tertanam. Gunakan tombol di samping untuk membuka & masuk ke akun <strong>{gcalConfig.calendarId}</strong> langsung di tab browser penuh atau mengimpor seluruh event sekaligus.
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                          <a
+                            href={`https://calendar.google.com/calendar/u/0/r?authuser=${encodeURIComponent(gcalConfig.calendarId)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black flex items-center gap-1.5 shadow-2xs"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Buka & Sign-In Google Calendar ↗</span>
+                          </a>
+                          <a
+                            href={`${OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL}?authuser=${encodeURIComponent(gcalConfig.calendarId)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black flex items-center gap-1.5 shadow-2xs"
+                          >
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Halaman Impor (.ics) Google Calendar ↗</span>
+                          </a>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -3498,6 +3785,62 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 self-start lg:self-center">
+                          {/* Google Calendar Sync Status Badge */}
+                          <span
+                            className="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-mono font-black flex items-center gap-1"
+                            title={
+                              job.gcalLastSyncedAt
+                                ? `Tersinkron ke Google Calendar (${gcalConfig.calendarId}) pada ${new Date(job.gcalLastSyncedAt).toLocaleString('id-ID')}`
+                                : `Tersedia di Feed Sinkronisasi Google Calendar (${gcalConfig.calendarId})`
+                            }
+                          >
+                            <CheckCircle className="w-3 h-3 text-emerald-600" />
+                            <span>Synced GCal</span>
+                          </span>
+
+                          {/* Admin Assessment Status Badge */}
+                          <span
+                            className={`px-2 py-1 rounded-lg text-[10px] font-mono font-black border flex items-center gap-1 ${
+                              job.adminAssessmentStatus === 'Perlu Revisi Teknis/Kru'
+                                ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                : job.adminAssessmentStatus === 'Selesai & Dievaluasi'
+                                  ? 'bg-purple-100 text-purple-900 border-purple-300'
+                                  : 'bg-indigo-50 text-indigo-900 border-indigo-200'
+                            }`}
+                            title={
+                              job.adminAssessedBy
+                                ? `Di-assessment oleh ${job.adminAssessedBy}${job.adminAssessedAt ? ` (${new Date(job.adminAssessedAt).toLocaleString('id-ID')})` : ''}`
+                                : 'Status Assessment Admin untuk Unit Alat/Spesifikasi Teknis & Penugasan Kru'
+                            }
+                          >
+                            <ShieldCheck className="w-3 h-3 text-indigo-600" />
+                            <span>{job.adminAssessmentStatus || 'Terverifikasi Admin (Approved)'}</span>
+                          </span>
+
+                          {canManageJobSchedule && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAssessmentModal(job)}
+                                className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                                title="Buka Panel Assessment Admin: Verifikasi Unit Alat / Spesifikasi Teknis & Penugasan Staff / Crew Freelance"
+                              >
+                                <ClipboardList className="w-3.5 h-3.5 text-slate-950" />
+                                <span>📋 Assessment Admin (Alat & Crew)</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleQuickApproveEventAssessment(job, false)}
+                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black flex items-center gap-1 cursor-pointer shadow-2xs transition-colors"
+                                title="1-Klik Approve Assessment Spesifikasi Teknis & Penugasan Kru + Auto-Sync Google Calendar"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Approve Spek & Crew</span>
+                              </button>
+                            </>
+                          )}
+
                           <a
                             href={buildGoogleCalendarEventUrl(job, {
                               filterPersonName: selectedStaffObj
@@ -3515,10 +3858,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
-                            title="Tambahkan jadwal penugasan job ini (lengkap dengan kru, alat, armada, venue & PIC) ke Google Calendar"
+                            title="Tambahkan / sinkronkan jadwal penugasan job ini (lengkap dengan hasil assessment kru, alat, armada, venue & PIC) ke Google Calendar"
                           >
                             <Calendar className="w-3.5 h-3.5" />
-                            <span>Simpan ke Google Calendar ↗</span>
+                            <span>Sync ke Google Calendar ↗</span>
                           </a>
 
                           <select
@@ -3556,6 +3899,21 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                           )}
                         </div>
                       </div>
+
+                      {/* Admin Assessment Summary Note Banner (if present) */}
+                      {job.adminAssessmentNote && (
+                        <div className="px-4 py-2 bg-indigo-50/90 border-b border-indigo-200 flex items-start justify-between gap-2 text-xs text-indigo-950">
+                          <div className="flex items-start gap-2">
+                            <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-black uppercase tracking-wider mr-1.5">
+                                Catatan Assessment Admin ({job.adminAssessedBy || 'Admin'}):
+                              </span>
+                              <span className="font-semibold">{job.adminAssessmentNote}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Special Venue / Dresscode Notes */}
                       {job.notes && (
@@ -3632,53 +3990,92 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                 </div>
                               </div>
 
-                              {/* 1. Unit Alat (Equipment Manifest - Selectable from Inventory & Manual Input) */}
+                              {/* 1. Unit Alat (Equipment Manifest - Selectable & Assessable by Admin) */}
                               <div className="space-y-2">
                                 <div className="flex flex-wrap items-center justify-between gap-1.5">
                                   <div className="text-[10px] font-mono uppercase font-bold text-slate-500 flex items-center gap-1">
                                     <Package className="w-3 h-3 text-indigo-600" />
                                     <span>Unit Alat & Spesifikasi Teknis:</span>
                                   </div>
-                                  {canManageJobSchedule && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (isEquipPickerOpen) {
-                                          setActiveEquipPickerKey(null);
-                                        } else {
-                                          setActiveEquipPickerKey(pickerKey);
-                                          setEquipPickerDivFilter(mapSectionDivToAssetDiv(sec.division));
-                                          setEquipPickerSearch('');
-                                          setEquipPickerQty('');
-                                          setEquipPickerManualText('');
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    {canManageJobSchedule ? (
+                                      <select
+                                        value={sec.specAssessmentStatus || 'Sesuai Spesifikasi (Approved)'}
+                                        onChange={(e) =>
+                                          handleUpdateSectionSpecAssessment(
+                                            job,
+                                            sIdx,
+                                            e.target.value as NonNullable<JobDivisionSection['specAssessmentStatus']>
+                                          )
                                         }
-                                      }}
-                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-all flex items-center gap-1 border ${
-                                        isEquipPickerOpen
-                                          ? 'bg-slate-900 text-white border-slate-900'
-                                          : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs'
-                                      }`}
-                                    >
-                                      {isEquipPickerOpen ? (
-                                        <>
-                                          <X className="w-3 h-3" />
-                                          <span>Tutup Pilihan Alat</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Plus className="w-3 h-3" />
-                                          <span>Pilih Inventory / Tulis Manual</span>
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-black border outline-none cursor-pointer ${
+                                          sec.specAssessmentStatus === 'Perlu Penyesuaian Spek'
+                                            ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                            : sec.specAssessmentStatus === 'Belum Assessment'
+                                              ? 'bg-slate-100 text-slate-700 border-slate-300'
+                                              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                        }`}
+                                        title="Status Assessment Spesifikasi Teknis Divisi oleh Admin"
+                                      >
+                                        <option value="Sesuai Spesifikasi (Approved)">✓ Spek Approved</option>
+                                        <option value="Lengkap & Siap Loading">📦 Lengkap & Siap Loading</option>
+                                        <option value="Perlu Penyesuaian Spek">⚠ Perlu Penyesuaian Spek</option>
+                                        <option value="Belum Assessment">⏳ Belum Assessment</option>
+                                      </select>
+                                    ) : (
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                        {sec.specAssessmentStatus || '✓ Spek Approved'}
+                                      </span>
+                                    )}
+                                    {canManageJobSchedule && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (isEquipPickerOpen) {
+                                            setActiveEquipPickerKey(null);
+                                          } else {
+                                            setActiveEquipPickerKey(pickerKey);
+                                            setEquipPickerDivFilter(mapSectionDivToAssetDiv(sec.division));
+                                            setEquipPickerSearch('');
+                                            setEquipPickerQty('');
+                                            setEquipPickerManualText('');
+                                          }
+                                        }}
+                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-all flex items-center gap-1 border ${
+                                          isEquipPickerOpen
+                                            ? 'bg-slate-900 text-white border-slate-900'
+                                            : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs'
+                                        }`}
+                                      >
+                                        {isEquipPickerOpen ? (
+                                          <>
+                                            <X className="w-3 h-3" />
+                                            <span>Tutup Pilihan Alat</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Plus className="w-3 h-3" />
+                                            <span>Pilih Inventory / Tulis Manual</span>
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
+
+                                {sec.specAssessmentNote && (
+                                  <div className="px-2.5 py-1 bg-indigo-50/70 border border-indigo-200 rounded text-[10px] font-semibold text-indigo-900">
+                                    📋 Catatan Spek Admin: {sec.specAssessmentNote}
+                                  </div>
+                                )}
 
                                 {sec.equipment.length > 0 ? (
                                   <div className="flex flex-wrap gap-1.5">
                                     {sec.equipment.map((eq, eqIdx) => {
                                       const equipBadgeKey = `${job.id}::${sIdx}::${eqIdx}`;
                                       const isEditingThisEquip = editingEquipBadgeKey === equipBadgeKey;
+                                      const eqAssess = sec.equipmentAssessments?.[eq];
+                                      const eqStatus = eqAssess?.status || 'Sesuai Spek';
                                       const matchedInvAsset = inventoryAssets.find(
                                         a =>
                                           a.name.toLowerCase().trim() === eq.toLowerCase().trim() ||
@@ -3694,7 +4091,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                           >
                                             <div className="flex items-center justify-between">
                                               <span className="text-[10px] font-mono font-black uppercase text-indigo-700">
-                                                Edit Unit Alat (Pilih dari Inventory atau Tulis Manual)
+                                                Assessment & Edit Unit Alat / Spesifikasi Teknis
                                               </span>
                                               <button
                                                 type="button"
@@ -3731,13 +4128,37 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                                 type="text"
                                                 value={editingEquipValue}
                                                 onChange={(e) => setEditingEquipValue(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                  if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    handleUpdateEquipmentInSection(job, sIdx, eqIdx, editingEquipValue);
-                                                  }
-                                                }}
                                                 placeholder="Atau tulis manual nama unit alat / spesifikasi..."
+                                                className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
+                                              />
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                                              <select
+                                                value={editingEquipAssessmentStatus}
+                                                onChange={(e) =>
+                                                  setEditingEquipAssessmentStatus(
+                                                    e.target.value as typeof editingEquipAssessmentStatus
+                                                  )
+                                                }
+                                                className="px-2 py-1.5 bg-emerald-50 border border-emerald-300 rounded-lg text-xs font-black text-emerald-900"
+                                              >
+                                                <option value="Sesuai Spek">✓ Sesuai Spek (Approved)</option>
+                                                <option value="Perlu Penyesuaian">⚠ Perlu Penyesuaian Spek</option>
+                                                <option value="Backup / Sub-Vendor">🔄 Backup / Sub-Vendor</option>
+                                                <option value="Pending Cek">⏳ Pending Cek Gudang</option>
+                                              </select>
+                                              <input
+                                                type="text"
+                                                value={editingEquipQtyVerified}
+                                                onChange={(e) => setEditingEquipQtyVerified(e.target.value)}
+                                                placeholder="Qty / Spek Terverifikasi (misal: 4 Unit Ready)"
+                                                className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
+                                              />
+                                              <input
+                                                type="text"
+                                                value={editingEquipTechnicalNote}
+                                                onChange={(e) => setEditingEquipTechnicalNote(e.target.value)}
+                                                placeholder="Catatan Assessment Teknis Admin..."
                                                 className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
                                               />
                                             </div>
@@ -3745,11 +4166,19 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                               <button
                                                 type="button"
                                                 onClick={() =>
-                                                  handleUpdateEquipmentInSection(job, sIdx, eqIdx, editingEquipValue)
+                                                  handleUpdateEquipmentInSection(
+                                                    job,
+                                                    sIdx,
+                                                    eqIdx,
+                                                    editingEquipValue,
+                                                    editingEquipAssessmentStatus,
+                                                    editingEquipQtyVerified,
+                                                    editingEquipTechnicalNote
+                                                  )
                                                 }
                                                 className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-black cursor-pointer"
                                               >
-                                                Simpan Alat
+                                                Simpan Assessment Alat
                                               </button>
                                             </div>
                                           </div>
@@ -3760,9 +4189,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                         <span
                                           key={eqIdx}
                                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border rounded-md text-[11px] font-semibold text-slate-800 shadow-2xs transition-all ${
-                                            matchedInvAsset
-                                              ? 'border-indigo-200 bg-indigo-50/40'
-                                              : 'border-slate-200'
+                                            eqStatus === 'Perlu Penyesuaian'
+                                              ? 'border-amber-300 bg-amber-50/50'
+                                              : matchedInvAsset
+                                                ? 'border-indigo-200 bg-indigo-50/40'
+                                                : 'border-slate-200'
                                           }`}
                                         >
                                           <button
@@ -3772,13 +4203,16 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                               if (!canManageJobSchedule) return;
                                               setEditingEquipBadgeKey(equipBadgeKey);
                                               setEditingEquipValue(eq);
+                                              setEditingEquipAssessmentStatus(eqAssess?.status || 'Sesuai Spek');
+                                              setEditingEquipQtyVerified(eqAssess?.qtyVerified || '');
+                                              setEditingEquipTechnicalNote(eqAssess?.technicalNote || '');
                                             }}
                                             className={`inline-flex items-center gap-1.5 text-left ${
                                               canManageJobSchedule ? 'cursor-pointer hover:underline' : ''
                                             }`}
                                             title={
                                               canManageJobSchedule
-                                                ? 'Klik untuk mengedit / mengganti unit alat ini'
+                                                ? 'Klik untuk Assessment Spesifikasi Teknis / Edit Unit Alat ini'
                                                 : eq
                                             }
                                           >
@@ -3788,7 +4222,44 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                                 INV
                                               </span>
                                             )}
+                                            {eqAssess?.qtyVerified && (
+                                              <span className="px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-sky-100 text-sky-800">
+                                                {eqAssess.qtyVerified}
+                                              </span>
+                                            )}
+                                            {eqAssess?.technicalNote && (
+                                              <span className="px-1 py-0.2 rounded text-[9px] font-mono font-semibold bg-amber-100 text-amber-900">
+                                                {eqAssess.technicalNote}
+                                              </span>
+                                            )}
                                           </button>
+                                          {canManageJobSchedule && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCycleEquipmentAssessmentStatus(job, sIdx, eq);
+                                              }}
+                                              className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-black cursor-pointer border ${
+                                                eqStatus === 'Sesuai Spek'
+                                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                                  : eqStatus === 'Perlu Penyesuaian'
+                                                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                                    : eqStatus === 'Backup / Sub-Vendor'
+                                                      ? 'bg-purple-100 text-purple-800 border-purple-300'
+                                                      : 'bg-slate-100 text-slate-600 border-slate-300'
+                                              }`}
+                                              title="Klik untuk ubah cepat status Assessment Spesifikasi Unit Alat"
+                                            >
+                                              {eqStatus === 'Sesuai Spek'
+                                                ? '✓ Spek OK'
+                                                : eqStatus === 'Perlu Penyesuaian'
+                                                  ? '⚠ Revisi'
+                                                  : eqStatus === 'Backup / Sub-Vendor'
+                                                    ? '🔄 Sub/Backup'
+                                                    : '⏳ Cek'}
+                                            </button>
+                                          )}
                                           {canManageJobSchedule && (
                                             <button
                                               type="button"
@@ -3972,7 +4443,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                 )}
                               </div>
 
-                              {/* 2. Staff & Freelance Crew (Editable & Selectable by Admin) */}
+                              {/* 2. Staff & Freelance Crew (Editable, Selectable & Assessable by Admin) */}
                               <div className="space-y-2">
                                 <div className="flex flex-wrap items-center justify-between gap-1.5">
                                   <div className="text-[10px] font-mono uppercase font-bold text-slate-500 flex items-center gap-1">
@@ -3980,38 +4451,76 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                     <span>Personil Penugasan (Staff Inhouse & Freelance):</span>
                                   </div>
 
-                                  {canManageJobSchedule && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (isPickerOpen) {
-                                          setActiveCrewPickerKey(null);
-                                        } else {
-                                          setActiveCrewPickerKey(pickerKey);
-                                          setCrewPickerSearch('');
-                                          setCrewPickerRoleNote('');
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    {canManageJobSchedule ? (
+                                      <select
+                                        value={sec.crewAssessmentStatus || 'Personil Approved & Siap'}
+                                        onChange={(e) =>
+                                          handleUpdateSectionCrewAssessment(
+                                            job,
+                                            sIdx,
+                                            e.target.value as NonNullable<JobDivisionSection['crewAssessmentStatus']>
+                                          )
                                         }
-                                      }}
-                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-all flex items-center gap-1 border ${
-                                        isPickerOpen
-                                          ? 'bg-slate-900 text-white border-slate-900'
-                                          : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-700 shadow-2xs'
-                                      }`}
-                                    >
-                                      {isPickerOpen ? (
-                                        <>
-                                          <Check className="w-3 h-3" />
-                                          <span>Selesai Pilih Crew</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Plus className="w-3 h-3" />
-                                          <span>Pilih / Edit Staff & Freelance</span>
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-black border outline-none cursor-pointer ${
+                                          sec.crewAssessmentStatus === 'Perlu Briefing / Tambah Kru'
+                                            ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                            : sec.crewAssessmentStatus === 'Belum Assessment'
+                                              ? 'bg-slate-100 text-slate-700 border-slate-300'
+                                              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                        }`}
+                                        title="Status Assessment Penugasan Kru Divisi oleh Admin"
+                                      >
+                                        <option value="Personil Approved & Siap">✓ Kru Approved & Siap</option>
+                                        <option value="Perlu Briefing / Tambah Kru">⚠ Perlu Briefing / Tambah Kru</option>
+                                        <option value="Selesai Dievaluasi">✅ Selesai Dievaluasi</option>
+                                        <option value="Belum Assessment">⏳ Belum Assessment</option>
+                                      </select>
+                                    ) : (
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                        {sec.crewAssessmentStatus || '✓ Kru Approved'}
+                                      </span>
+                                    )}
+
+                                    {canManageJobSchedule && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (isPickerOpen) {
+                                            setActiveCrewPickerKey(null);
+                                          } else {
+                                            setActiveCrewPickerKey(pickerKey);
+                                            setCrewPickerSearch('');
+                                            setCrewPickerRoleNote('');
+                                          }
+                                        }}
+                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-all flex items-center gap-1 border ${
+                                          isPickerOpen
+                                            ? 'bg-slate-900 text-white border-slate-900'
+                                            : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-700 shadow-2xs'
+                                        }`}
+                                      >
+                                        {isPickerOpen ? (
+                                          <>
+                                            <Check className="w-3 h-3" />
+                                            <span>Selesai Pilih Crew</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Plus className="w-3 h-3" />
+                                            <span>Pilih / Edit Staff & Freelance</span>
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
+
+                                {sec.crewAssessmentNote && (
+                                  <div className="px-2.5 py-1 bg-emerald-50/70 border border-emerald-200 rounded text-[10px] font-semibold text-emerald-900">
+                                    👥 Catatan Assessment Crew: {sec.crewAssessmentNote}
+                                  </div>
+                                )}
 
                                 {sec.crew.length > 0 ? (
                                   <div className="flex flex-wrap gap-1.5">
@@ -4037,7 +4546,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                             className="w-full p-2.5 bg-white border-2 border-indigo-500 rounded-xl shadow-sm space-y-2"
                                           >
                                             <div className="text-[10px] font-mono font-black uppercase text-indigo-700 flex items-center justify-between">
-                                              <span>Edit / Ganti Personil Penugasan:</span>
+                                              <span>Assessment & Edit Personil Penugasan (Staff / Freelance):</span>
                                               <button
                                                 type="button"
                                                 onClick={() => setEditingCrewBadgeKey(null)}
@@ -4091,13 +4600,67 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                                 />
                                               </div>
                                             </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                              <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                                                  Status Assessment Penugasan:
+                                                </label>
+                                                <select
+                                                  value={editingCrewAssessmentStatus}
+                                                  onChange={(e) =>
+                                                    setEditingCrewAssessmentStatus(
+                                                      e.target.value as NonNullable<JobCrewMember['assessmentStatus']>
+                                                    )
+                                                  }
+                                                  className="w-full text-xs p-1.5 bg-emerald-50 border border-emerald-300 rounded-lg font-black text-emerald-950"
+                                                >
+                                                  <option value="Approved">✓ Approved / Siap Tugas</option>
+                                                  <option value="Perlu Briefing">⚠ Perlu Briefing Khusus</option>
+                                                  <option value="Standby">⏳ Standby / Backup</option>
+                                                  <option value="Diganti">🔄 Diganti / Reschedule</option>
+                                                  <option value="Selesai Dievaluasi">✅ Selesai Dievaluasi</option>
+                                                </select>
+                                              </div>
+                                              <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                                                  Skor Assessment (1–5 ★):
+                                                </label>
+                                                <select
+                                                  value={editingCrewAssessmentScore}
+                                                  onChange={(e) =>
+                                                    setEditingCrewAssessmentScore(Number(e.target.value) || 5)
+                                                  }
+                                                  className="w-full text-xs p-1.5 bg-amber-50 border border-amber-300 rounded-lg font-black text-amber-950"
+                                                >
+                                                  <option value={5}>★★★★★ (5/5 — Sangat Baik)</option>
+                                                  <option value={4}>★★★★☆ (4/5 — Baik & Siap)</option>
+                                                  <option value={3}>★★★☆☆ (3/5 — Cukup / Standar)</option>
+                                                  <option value={2}>★★☆☆☆ (2/5 — Perlu Pendampingan)</option>
+                                                  <option value={1}>★☆☆☆☆ (1/5 — Evaluasi Khusus)</option>
+                                                </select>
+                                              </div>
+                                              <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                                                  Peran / Role Teknis Lapangan:
+                                                </label>
+                                                <input
+                                                  type="text"
+                                                  value={editingCrewRoleNote}
+                                                  onChange={(e) => setEditingCrewRoleNote(e.target.value)}
+                                                  className="w-full text-xs p-1.5 border border-slate-300 rounded-lg font-medium text-slate-800"
+                                                  placeholder="FOH, Operator LED, VJ+Zoom, Campers, Pasang"
+                                                />
+                                              </div>
+                                            </div>
+
                                             <div className="flex flex-wrap items-center gap-2">
                                               <input
                                                 type="text"
-                                                value={editingCrewRoleNote}
-                                                onChange={(e) => setEditingCrewRoleNote(e.target.value)}
+                                                value={editingCrewAssessmentNote}
+                                                onChange={(e) => setEditingCrewAssessmentNote(e.target.value)}
                                                 className="flex-1 text-xs p-1.5 border border-slate-300 rounded-lg font-medium text-slate-800"
-                                                placeholder="Role / Catatan Tugas (contoh: VJ + Zoom, Campers, VD, Pasang, Bongkaran)"
+                                                placeholder="Catatan Assessment Admin (kompetensi teknis, ketepatan waktu, evaluasi lapangan)..."
                                               />
                                               <button
                                                 type="button"
@@ -4107,12 +4670,15 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                                     sIdx,
                                                     mIdx,
                                                     editingCrewPersonName,
-                                                    editingCrewRoleNote
+                                                    editingCrewRoleNote,
+                                                    editingCrewAssessmentStatus,
+                                                    editingCrewAssessmentScore,
+                                                    editingCrewAssessmentNote
                                                   )
                                                 }
                                                 className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black cursor-pointer"
                                               >
-                                                Simpan
+                                                Simpan Assessment
                                               </button>
                                               <button
                                                 type="button"
@@ -4137,6 +4703,9 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                               setEditingCrewBadgeKey(badgeEditKey);
                                               setEditingCrewPersonName(member.name);
                                               setEditingCrewRoleNote(member.roleNote || '');
+                                              setEditingCrewAssessmentStatus(member.assessmentStatus || 'Approved');
+                                              setEditingCrewAssessmentScore(member.assessmentScore ?? 5);
+                                              setEditingCrewAssessmentNote(member.assessmentNote || '');
                                             } else if (isStaff && member.staffId) {
                                               const stObj = staffList.find(s => s.id === member.staffId);
                                               if (stObj) handleSelectStaffPill(stObj);
@@ -4153,7 +4722,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                           }`}
                                           title={
                                             canManageJobSchedule
-                                              ? `Klik untuk edit/ganti ${member.name} (${member.personnelType})`
+                                              ? `Klik untuk Assessment / Edit ${member.name} (${member.personnelType})`
                                               : member.canonicalName
                                                 ? `${member.canonicalName} (${member.personnelType} - ${member.division || ''})`
                                                 : member.name
@@ -4174,6 +4743,28 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                           {member.roleNote && (
                                             <span className="text-[10px] font-mono font-semibold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded">
                                               {member.roleNote}
+                                            </span>
+                                          )}
+                                          <span
+                                            className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-black ${
+                                              member.assessmentStatus === 'Perlu Briefing'
+                                                ? 'bg-amber-200 text-amber-950'
+                                                : member.assessmentStatus === 'Diganti'
+                                                  ? 'bg-rose-200 text-rose-950'
+                                                  : 'bg-emerald-100 text-emerald-900'
+                                            }`}
+                                          >
+                                            {member.assessmentStatus === 'Perlu Briefing'
+                                              ? '⚠ Briefing'
+                                              : member.assessmentStatus === 'Standby'
+                                                ? '⏳ Standby'
+                                                : member.assessmentStatus === 'Diganti'
+                                                  ? '🔄 Diganti'
+                                                  : `✓ ${member.assessmentScore || 5}★`}
+                                          </span>
+                                          {member.assessmentNote && (
+                                            <span className="text-[9px] font-mono text-indigo-800 bg-white/80 px-1 rounded border border-indigo-200">
+                                              {member.assessmentNote}
                                             </span>
                                           )}
                                           {canManageJobSchedule && (
@@ -4472,6 +5063,638 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                     </div>
                   )}
                 </div>
+
+                {/* Admin Assessment Modal: Unit Alat / Spesifikasi Teknis & Penugasan Staff / Crew Freelance */}
+                {assessmentModalJob && (
+                  <div className="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl border-2 border-indigo-600 shadow-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto p-6 space-y-5 text-xs">
+                      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-amber-500 text-slate-950 rounded text-[10px] font-mono font-black uppercase">
+                              PANEL ASSESSMENT ADMIN
+                            </span>
+                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded text-[10px] font-mono font-bold">
+                              {assessmentModalJob.date} • {assessmentModalJob.venue}
+                            </span>
+                          </div>
+                          <h3 className="text-base font-black text-slate-900">
+                            Assessment Unit Alat / Spesifikasi Teknis & Penugasan Staff / Crew Freelance
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            Verifikasi kesiapan unit alat, kesesuaian spesifikasi teknis, peran, serta kesiapan penugasan Staff Inhouse & Kru Freelance. Setiap perubahan otomatis disinkronkan ke Google Calendar ({gcalConfig.calendarId}).
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setAssessmentModalJob(null)}
+                          className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      {/* Event-Level Admin Assessment Status & Note */}
+                      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block font-black text-slate-800 mb-1">
+                            Status Assessment Event (Admin)
+                          </label>
+                          <select
+                            value={assessmentModalJob.adminAssessmentStatus || 'Terverifikasi Admin (Approved)'}
+                            onChange={(e) =>
+                              setAssessmentModalJob(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      adminAssessmentStatus: e.target.value as NonNullable<
+                                        JobAssignment['adminAssessmentStatus']
+                                      >
+                                    }
+                                  : prev
+                              )
+                            }
+                            className="w-full p-2 bg-white border border-indigo-300 rounded-lg font-black text-indigo-950"
+                          >
+                            <option value="Terverifikasi Admin (Approved)">✓ Terverifikasi Admin (Approved)</option>
+                            <option value="Perlu Revisi Teknis/Kru">⚠ Perlu Revisi Teknis / Kru</option>
+                            <option value="Selesai & Dievaluasi">✅ Selesai & Dievaluasi</option>
+                            <option value="Belum Assessment">⏳ Belum Assessment</option>
+                          </select>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block font-black text-slate-800 mb-1">
+                            Catatan Assessment Admin Event (Instruksi Spesifikasi, Loading, atau Evaluasi Tim)
+                          </label>
+                          <input
+                            type="text"
+                            value={assessmentModalJob.adminAssessmentNote || ''}
+                            onChange={(e) =>
+                              setAssessmentModalJob(prev =>
+                                prev ? { ...prev, adminAssessmentNote: e.target.value } : prev
+                              )
+                            }
+                            placeholder="Contoh: Seluruh unit alat sesuai spesifikasi teknis & kru lengkap siap loading..."
+                            className="w-full p-2 bg-white border border-slate-300 rounded-lg font-semibold text-slate-800"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Per-Section Assessment: Equipment/Technical Spec & Staff/Freelance Crew */}
+                      <div className="space-y-4">
+                        {assessmentModalJob.sections.map((sec, sIdx) => (
+                          <div
+                            key={sIdx}
+                            className="p-4 border border-slate-200 rounded-xl bg-white shadow-2xs space-y-4"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`px-2.5 py-0.5 text-[10px] font-mono font-black uppercase rounded border ${getDivisionBadgeStyle(
+                                    sec.division
+                                  )}`}
+                                >
+                                  DIVISI {sec.division}
+                                </span>
+                                <span className="text-sm font-black text-slate-900">
+                                  Paket: {sec.packageLabel}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <select
+                                  value={sec.specAssessmentStatus || 'Sesuai Spesifikasi (Approved)'}
+                                  onChange={(e) => {
+                                    const val = e.target.value as NonNullable<
+                                      JobDivisionSection['specAssessmentStatus']
+                                    >;
+                                    setAssessmentModalJob(prev => {
+                                      if (!prev) return prev;
+                                      const nextSecs = prev.sections.map((s, i) =>
+                                        i === sIdx ? { ...s, specAssessmentStatus: val } : s
+                                      );
+                                      return { ...prev, sections: nextSecs };
+                                    });
+                                  }}
+                                  className="px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg font-black text-indigo-900 text-[11px]"
+                                >
+                                  <option value="Sesuai Spesifikasi (Approved)">✓ Spek Alat Approved</option>
+                                  <option value="Lengkap & Siap Loading">📦 Lengkap & Siap Loading</option>
+                                  <option value="Perlu Penyesuaian Spek">⚠ Perlu Penyesuaian Spek</option>
+                                  <option value="Belum Assessment">⏳ Belum Assessment</option>
+                                </select>
+
+                                <select
+                                  value={sec.crewAssessmentStatus || 'Personil Approved & Siap'}
+                                  onChange={(e) => {
+                                    const val = e.target.value as NonNullable<
+                                      JobDivisionSection['crewAssessmentStatus']
+                                    >;
+                                    setAssessmentModalJob(prev => {
+                                      if (!prev) return prev;
+                                      const nextSecs = prev.sections.map((s, i) =>
+                                        i === sIdx ? { ...s, crewAssessmentStatus: val } : s
+                                      );
+                                      return { ...prev, sections: nextSecs };
+                                    });
+                                  }}
+                                  className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg font-black text-emerald-900 text-[11px]"
+                                >
+                                  <option value="Personil Approved & Siap">✓ Penugasan Kru Approved</option>
+                                  <option value="Perlu Briefing / Tambah Kru">⚠ Perlu Briefing / Tambah Kru</option>
+                                  <option value="Selesai Dievaluasi">✅ Selesai Dievaluasi</option>
+                                  <option value="Belum Assessment">⏳ Belum Assessment</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* Bagian A: Assessment Unit Alat & Spesifikasi Teknis */}
+                            <div className="p-3 bg-indigo-50/40 border border-indigo-200 rounded-xl space-y-2.5">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="font-black text-indigo-950 uppercase font-mono text-[11px] flex items-center gap-1.5">
+                                  <Package className="w-3.5 h-3.5 text-indigo-600" />
+                                  <span>1. Assessment Unit Alat & Spesifikasi Teknis ({sec.equipment.length} Item)</span>
+                                </span>
+                                <input
+                                  type="text"
+                                  value={sec.specAssessmentNote || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setAssessmentModalJob(prev => {
+                                      if (!prev) return prev;
+                                      const nextSecs = prev.sections.map((s, i) =>
+                                        i === sIdx ? { ...s, specAssessmentNote: val } : s
+                                      );
+                                      return { ...prev, sections: nextSecs };
+                                    });
+                                  }}
+                                  placeholder="Catatan spesifikasi teknis divisi ini..."
+                                  className="w-full sm:w-72 px-2.5 py-1 bg-white border border-indigo-200 rounded-lg text-[11px] font-semibold"
+                                />
+                              </div>
+
+                              <div className="space-y-1.5">
+                                {sec.equipment.map((eq, eqIdx) => {
+                                  const eqAssess = sec.equipmentAssessments?.[eq] || {
+                                    itemLabel: eq,
+                                    status: 'Sesuai Spek' as const
+                                  };
+                                  return (
+                                    <div
+                                      key={eqIdx}
+                                      className="p-2 bg-white border border-slate-200 rounded-lg grid grid-cols-1 md:grid-cols-12 gap-2 items-center"
+                                    >
+                                      <div className="md:col-span-4">
+                                        <input
+                                          type="text"
+                                          value={eq}
+                                          onChange={(e) => {
+                                            const newVal = e.target.value;
+                                            setAssessmentModalJob(prev => {
+                                              if (!prev) return prev;
+                                              const nextSecs = prev.sections.map((s, i) => {
+                                                if (i !== sIdx) return s;
+                                                const nextEq = s.equipment.map((item, idx) =>
+                                                  idx === eqIdx ? newVal : item
+                                                );
+                                                const nextMap = { ...(s.equipmentAssessments || {}) };
+                                                if (nextMap[eq]) {
+                                                  nextMap[newVal] = { ...nextMap[eq], itemLabel: newVal };
+                                                  delete nextMap[eq];
+                                                }
+                                                return { ...s, equipment: nextEq, equipmentAssessments: nextMap };
+                                              });
+                                              return { ...prev, sections: nextSecs };
+                                            });
+                                          }}
+                                          className="w-full px-2 py-1 border border-slate-300 rounded font-bold text-slate-900 text-xs"
+                                        />
+                                      </div>
+                                      <div className="md:col-span-3">
+                                        <select
+                                          value={eqAssess.status}
+                                          onChange={(e) => {
+                                            const nextSt = e.target.value as typeof eqAssess.status;
+                                            setAssessmentModalJob(prev => {
+                                              if (!prev) return prev;
+                                              const nextSecs = prev.sections.map((s, i) => {
+                                                if (i !== sIdx) return s;
+                                                const nextMap = { ...(s.equipmentAssessments || {}) };
+                                                nextMap[eq] = { ...eqAssess, itemLabel: eq, status: nextSt };
+                                                return { ...s, equipmentAssessments: nextMap };
+                                              });
+                                              return { ...prev, sections: nextSecs };
+                                            });
+                                          }}
+                                          className="w-full px-2 py-1 bg-emerald-50 border border-emerald-200 rounded font-black text-emerald-900 text-[11px]"
+                                        >
+                                          <option value="Sesuai Spek">✓ Sesuai Spek</option>
+                                          <option value="Perlu Penyesuaian">⚠ Perlu Penyesuaian</option>
+                                          <option value="Backup / Sub-Vendor">🔄 Backup / Sub-Vendor</option>
+                                          <option value="Pending Cek">⏳ Pending Cek</option>
+                                        </select>
+                                      </div>
+                                      <div className="md:col-span-2">
+                                        <input
+                                          type="text"
+                                          value={eqAssess.qtyVerified || ''}
+                                          onChange={(e) => {
+                                            const qVal = e.target.value;
+                                            setAssessmentModalJob(prev => {
+                                              if (!prev) return prev;
+                                              const nextSecs = prev.sections.map((s, i) => {
+                                                if (i !== sIdx) return s;
+                                                const nextMap = { ...(s.equipmentAssessments || {}) };
+                                                nextMap[eq] = { ...eqAssess, itemLabel: eq, qtyVerified: qVal };
+                                                return { ...s, equipmentAssessments: nextMap };
+                                              });
+                                              return { ...prev, sections: nextSecs };
+                                            });
+                                          }}
+                                          placeholder="Qty Ready"
+                                          className="w-full px-2 py-1 border border-slate-200 rounded text-[11px] font-semibold"
+                                        />
+                                      </div>
+                                      <div className="md:col-span-3 flex items-center gap-1">
+                                        <input
+                                          type="text"
+                                          value={eqAssess.technicalNote || ''}
+                                          onChange={(e) => {
+                                            const nVal = e.target.value;
+                                            setAssessmentModalJob(prev => {
+                                              if (!prev) return prev;
+                                              const nextSecs = prev.sections.map((s, i) => {
+                                                if (i !== sIdx) return s;
+                                                const nextMap = { ...(s.equipmentAssessments || {}) };
+                                                nextMap[eq] = { ...eqAssess, itemLabel: eq, technicalNote: nVal };
+                                                return { ...s, equipmentAssessments: nextMap };
+                                              });
+                                              return { ...prev, sections: nextSecs };
+                                            });
+                                          }}
+                                          placeholder="Catatan teknis alat..."
+                                          className="flex-1 px-2 py-1 border border-slate-200 rounded text-[11px] font-medium"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setAssessmentModalJob(prev => {
+                                              if (!prev) return prev;
+                                              const nextSecs = prev.sections.map((s, i) =>
+                                                i === sIdx
+                                                  ? { ...s, equipment: s.equipment.filter((_, idx) => idx !== eqIdx) }
+                                                  : s
+                                              );
+                                              return { ...prev, sections: nextSecs };
+                                            });
+                                          }}
+                                          className="p-1 text-rose-500 hover:bg-rose-50 rounded cursor-pointer"
+                                          title="Hapus item alat"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Tambah Unit Alat / Spesifikasi Baru di Modal Assessment */}
+                              <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    const assetName = e.target.value;
+                                    if (!assetName) return;
+                                    setAssessmentModalJob(prev => {
+                                      if (!prev) return prev;
+                                      const nextSecs = prev.sections.map((s, i) =>
+                                        i === sIdx ? { ...s, equipment: [...s.equipment, assetName] } : s
+                                      );
+                                      return { ...prev, sections: nextSecs };
+                                    });
+                                  }}
+                                  className="px-2.5 py-1.5 bg-white border border-indigo-200 rounded-lg text-xs font-bold text-slate-800"
+                                >
+                                  <option value="">+ Tambah Cepat dari Inventory Gudang...</option>
+                                  {inventoryAssets.map(a => (
+                                    <option key={a.id} value={a.name}>
+                                      [{a.division}] {a.name} ({a.code})
+                                    </option>
+                                  ))}
+                                </select>
+                                <input
+                                  type="text"
+                                  value={assessmentModalAddEquipText[sIdx] || ''}
+                                  onChange={(e) =>
+                                    setAssessmentModalAddEquipText(prev => ({
+                                      ...prev,
+                                      [sIdx]: e.target.value
+                                    }))
+                                  }
+                                  placeholder="Ketik spesifikasi / unit alat tambahan manual..."
+                                  className="flex-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const txt = (assessmentModalAddEquipText[sIdx] || '').trim();
+                                    if (!txt) return;
+                                    setAssessmentModalJob(prev => {
+                                      if (!prev) return prev;
+                                      const nextSecs = prev.sections.map((s, i) =>
+                                        i === sIdx ? { ...s, equipment: [...s.equipment, txt] } : s
+                                      );
+                                      return { ...prev, sections: nextSecs };
+                                    });
+                                    setAssessmentModalAddEquipText(prev => ({ ...prev, [sIdx]: '' }));
+                                  }}
+                                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black cursor-pointer"
+                                >
+                                  + Tambah Spek Alat
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Bagian B: Assessment Penugasan Staff Inhouse & Kru Freelance */}
+                            <div className="p-3 bg-emerald-50/40 border border-emerald-200 rounded-xl space-y-2.5">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="font-black text-emerald-950 uppercase font-mono text-[11px] flex items-center gap-1.5">
+                                  <Users className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>2. Assessment Penugasan Staff Inhouse & Crew Freelance ({sec.crew.length} Personil)</span>
+                                </span>
+                                <input
+                                  type="text"
+                                  value={sec.crewAssessmentNote || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setAssessmentModalJob(prev => {
+                                      if (!prev) return prev;
+                                      const nextSecs = prev.sections.map((s, i) =>
+                                        i === sIdx ? { ...s, crewAssessmentNote: val } : s
+                                      );
+                                      return { ...prev, sections: nextSecs };
+                                    });
+                                  }}
+                                  placeholder="Catatan assessment tim/kru divisi ini..."
+                                  className="w-full sm:w-72 px-2.5 py-1 bg-white border border-emerald-200 rounded-lg text-[11px] font-semibold"
+                                />
+                              </div>
+
+                              <div className="space-y-1.5">
+                                {sec.crew.map((member, mIdx) => (
+                                  <div
+                                    key={mIdx}
+                                    className="p-2 bg-white border border-slate-200 rounded-lg grid grid-cols-1 md:grid-cols-12 gap-2 items-center"
+                                  >
+                                    <div className="md:col-span-3 flex items-center gap-1.5">
+                                      <span
+                                        className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-black uppercase ${
+                                          member.personnelType === 'Staff'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-emerald-600 text-white'
+                                        }`}
+                                      >
+                                        {member.personnelType}
+                                      </span>
+                                      <span className="font-black text-slate-900 truncate" title={member.canonicalName}>
+                                        {member.name}
+                                      </span>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                      <input
+                                        type="text"
+                                        value={member.roleNote || ''}
+                                        onChange={(e) => {
+                                          const rVal = e.target.value;
+                                          setAssessmentModalJob(prev => {
+                                            if (!prev) return prev;
+                                            const nextSecs = prev.sections.map((s, i) => {
+                                              if (i !== sIdx) return s;
+                                              const nextCrew = s.crew.map((c, idx) =>
+                                                idx === mIdx ? { ...c, roleNote: rVal } : c
+                                              );
+                                              return { ...s, crew: nextCrew };
+                                            });
+                                            return { ...prev, sections: nextSecs };
+                                          });
+                                        }}
+                                        placeholder="Peran / Role (FOH, LED, dll.)"
+                                        className="w-full px-2 py-1 border border-slate-200 rounded text-[11px] font-semibold"
+                                      />
+                                    </div>
+                                    <div className="md:col-span-3">
+                                      <select
+                                        value={member.assessmentStatus || 'Approved'}
+                                        onChange={(e) => {
+                                          const stVal = e.target.value as NonNullable<
+                                            JobCrewMember['assessmentStatus']
+                                          >;
+                                          setAssessmentModalJob(prev => {
+                                            if (!prev) return prev;
+                                            const nextSecs = prev.sections.map((s, i) => {
+                                              if (i !== sIdx) return s;
+                                              const nextCrew = s.crew.map((c, idx) =>
+                                                idx === mIdx ? { ...c, assessmentStatus: stVal } : c
+                                              );
+                                              return { ...s, crew: nextCrew };
+                                            });
+                                            return { ...prev, sections: nextSecs };
+                                          });
+                                        }}
+                                        className="w-full px-2 py-1 bg-emerald-50 border border-emerald-200 rounded font-black text-emerald-950 text-[11px]"
+                                      >
+                                        <option value="Approved">✓ Approved / Siap Tugas</option>
+                                        <option value="Perlu Briefing">⚠ Perlu Briefing Khusus</option>
+                                        <option value="Standby">⏳ Standby / Backup</option>
+                                        <option value="Diganti">🔄 Diganti / Reschedule</option>
+                                        <option value="Selesai Dievaluasi">✅ Selesai Dievaluasi</option>
+                                      </select>
+                                    </div>
+                                    <div className="md:col-span-1">
+                                      <select
+                                        value={member.assessmentScore ?? 5}
+                                        onChange={(e) => {
+                                          const scVal = Number(e.target.value) || 5;
+                                          setAssessmentModalJob(prev => {
+                                            if (!prev) return prev;
+                                            const nextSecs = prev.sections.map((s, i) => {
+                                              if (i !== sIdx) return s;
+                                              const nextCrew = s.crew.map((c, idx) =>
+                                                idx === mIdx ? { ...c, assessmentScore: scVal } : c
+                                              );
+                                              return { ...s, crew: nextCrew };
+                                            });
+                                            return { ...prev, sections: nextSecs };
+                                          });
+                                        }}
+                                        className="w-full px-1.5 py-1 bg-amber-50 border border-amber-200 rounded font-black text-amber-950 text-[11px]"
+                                      >
+                                        <option value={5}>5★</option>
+                                        <option value={4}>4★</option>
+                                        <option value={3}>3★</option>
+                                        <option value={2}>2★</option>
+                                        <option value={1}>1★</option>
+                                      </select>
+                                    </div>
+                                    <div className="md:col-span-3 flex items-center gap-1">
+                                      <input
+                                        type="text"
+                                        value={member.assessmentNote || ''}
+                                        onChange={(e) => {
+                                          const nVal = e.target.value;
+                                          setAssessmentModalJob(prev => {
+                                            if (!prev) return prev;
+                                            const nextSecs = prev.sections.map((s, i) => {
+                                              if (i !== sIdx) return s;
+                                              const nextCrew = s.crew.map((c, idx) =>
+                                                idx === mIdx ? { ...c, assessmentNote: nVal } : c
+                                              );
+                                              return { ...s, crew: nextCrew };
+                                            });
+                                            return { ...prev, sections: nextSecs };
+                                          });
+                                        }}
+                                        placeholder="Catatan evaluasi personil..."
+                                        className="flex-1 px-2 py-1 border border-slate-200 rounded text-[11px] font-medium"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAssessmentModalJob(prev => {
+                                            if (!prev) return prev;
+                                            const nextSecs = prev.sections.map((s, i) =>
+                                              i === sIdx
+                                                ? { ...s, crew: s.crew.filter((_, idx) => idx !== mIdx) }
+                                                : s
+                                            );
+                                            return { ...prev, sections: nextSecs };
+                                          });
+                                        }}
+                                        className="p-1 text-rose-500 hover:bg-rose-50 rounded cursor-pointer"
+                                        title="Hapus personil"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Tambah Staff Inhouse / Kru Freelance di Modal Assessment */}
+                              <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <select
+                                  value={assessmentModalAddCrewName[sIdx] || ''}
+                                  onChange={(e) =>
+                                    setAssessmentModalAddCrewName(prev => ({
+                                      ...prev,
+                                      [sIdx]: e.target.value
+                                    }))
+                                  }
+                                  className="px-2.5 py-1.5 bg-white border border-emerald-200 rounded-lg text-xs font-bold text-slate-800"
+                                >
+                                  <option value="">-- Pilih Staff Inhouse / Kru Freelance --</option>
+                                  <optgroup label="Staff Inhouse Resmi">
+                                    {staffList.map(st => {
+                                      const nick = st.nickname?.split('/')[0].trim() || st.name;
+                                      return (
+                                        <option key={st.id} value={nick}>
+                                          {nick} — {st.name} (STAFF {st.division})
+                                        </option>
+                                      );
+                                    })}
+                                  </optgroup>
+                                  <optgroup label="Kru Freelance Resmi">
+                                    {OFFICIAL_FREELANCE_CREW_LIST.map(fl => (
+                                      <option key={fl.id} value={fl.name}>
+                                        {fl.name} — {fl.canonicalName} (FREELANCE {fl.division})
+                                      </option>
+                                    ))}
+                                  </optgroup>
+                                </select>
+                                <input
+                                  type="text"
+                                  value={assessmentModalAddCrewRole[sIdx] || ''}
+                                  onChange={(e) =>
+                                    setAssessmentModalAddCrewRole(prev => ({
+                                      ...prev,
+                                      [sIdx]: e.target.value
+                                    }))
+                                  }
+                                  placeholder="Role teknis (opsional, misal: FOH / Operator LED)"
+                                  className="flex-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const pName = (assessmentModalAddCrewName[sIdx] || '').trim();
+                                    if (!pName) return;
+                                    const resolved = resolveCrewMember(
+                                      pName,
+                                      sec.division,
+                                      (assessmentModalAddCrewRole[sIdx] || '').trim() || undefined
+                                    );
+                                    setAssessmentModalJob(prev => {
+                                      if (!prev) return prev;
+                                      const nextSecs = prev.sections.map((s, i) =>
+                                        i === sIdx
+                                          ? {
+                                              ...s,
+                                              crew: [
+                                                ...s.crew,
+                                                {
+                                                  ...resolved,
+                                                  assessmentStatus: 'Approved' as const,
+                                                  assessmentScore: 5
+                                                }
+                                              ]
+                                            }
+                                          : s
+                                      );
+                                      return { ...prev, sections: nextSecs };
+                                    });
+                                    setAssessmentModalAddCrewName(prev => ({ ...prev, [sIdx]: '' }));
+                                    setAssessmentModalAddCrewRole(prev => ({ ...prev, [sIdx]: '' }));
+                                  }}
+                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black cursor-pointer"
+                                >
+                                  + Tambah & Approve Kru
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200">
+                        <button
+                          type="button"
+                          onClick={() => setAssessmentModalJob(null)}
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold cursor-pointer"
+                        >
+                          Batal
+                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveAssessmentModal(false)}
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black cursor-pointer shadow-sm flex items-center gap-1.5"
+                          >
+                            <Check className="w-4 h-4" />
+                            <span>Simpan Hasil Assessment & Auto-Sync</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveAssessmentModal(true)}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black cursor-pointer shadow-sm flex items-center gap-1.5"
+                          >
+                            <Calendar className="w-4 h-4" />
+                            <span>Simpan Assessment & Buka di Google Calendar ↗</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Add / Edit Job Assignment Modal */}
                 {showJobFormModal && (

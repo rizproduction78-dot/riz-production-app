@@ -184,6 +184,14 @@ export function formatJobCalendarDescription(
   lines.push(`🕒 Jadwal Loading / Berangkat: ${job.loadingSchedule || 'Sesuai koordinasi lapangan'}`);
   lines.push(`👮 Person in Charge (PIC): ${job.pic || '-'}`);
   lines.push(`📌 Status Operasional: ${job.status || 'Terjadwal'}`);
+  lines.push(
+    `✅ Status Assessment Admin: ${job.adminAssessmentStatus || 'Terverifikasi Admin (Approved)'}${
+      job.adminAssessedBy ? ` (Oleh: ${job.adminAssessedBy})` : ''
+    }`
+  );
+  if (job.adminAssessmentNote) {
+    lines.push(`📝 Catatan Assessment Admin: ${job.adminAssessmentNote}`);
+  }
 
   if (options?.filterPersonName && options.filterPersonName !== 'ALL') {
     lines.push(
@@ -196,7 +204,7 @@ export function formatJobCalendarDescription(
   }
 
   lines.push('');
-  lines.push('--- RINCIAN DIVISI, UNIT ALAT, KRU & ARMADA ---');
+  lines.push('--- RINCIAN DIVISI, SPESIFIKASI TEKNIS UNIT ALAT, KRU & ASSESSMENT ADMIN ---');
 
   job.sections.forEach((sec, idx) => {
     if (
@@ -206,18 +214,42 @@ export function formatJobCalendarDescription(
     ) {
       return;
     }
+    const formatCrewWithAssessment = (c: JobDivisionSection['crew'][number]) => {
+      const canon = c.canonicalName && c.canonicalName !== c.name ? ` (${c.canonicalName})` : '';
+      const role = c.roleNote ? ` [${c.roleNote}]` : '';
+      const assess = c.assessmentStatus ? ` {${c.assessmentStatus}${c.assessmentScore ? ` ★${c.assessmentScore}/5` : ''}}` : '';
+      const note = c.assessmentNote ? ` — ${c.assessmentNote}` : '';
+      return `${c.name}${canon}${role}${assess}${note}`;
+    };
+
     const staffCrew = sec.crew
       .filter(c => c.personnelType === 'Staff')
-      .map(c => `${c.name}${c.canonicalName && c.canonicalName !== c.name ? ` (${c.canonicalName})` : ''}${c.roleNote ? ` [${c.roleNote}]` : ''}`);
+      .map(formatCrewWithAssessment);
     const freelanceCrew = sec.crew
       .filter(c => c.personnelType === 'Freelance')
-      .map(c => `${c.name}${c.roleNote ? ` [${c.roleNote}]` : ''}`);
+      .map(formatCrewWithAssessment);
     const vehiclesFormatted = sec.vehicles
       .filter(v => v && v !== '-')
       .map(v => formatFleetVehicleBadge(v));
 
+    const formattedEquip = sec.equipment.map(eq => {
+      const eqAssess = sec.equipmentAssessments?.[eq];
+      if (!eqAssess) return eq;
+      return `${eq} [${eqAssess.status}${eqAssess.qtyVerified ? ` • ${eqAssess.qtyVerified}` : ''}${eqAssess.technicalNote ? ` • ${eqAssess.technicalNote}` : ''}]`;
+    });
+
     lines.push(`${idx + 1}. [${sec.division.toUpperCase()}] ${sec.packageLabel}`);
-    lines.push(`   • Unit Alat: ${sec.equipment.length > 0 ? sec.equipment.join(' | ') : '-'}`);
+    lines.push(
+      `   • Assessment Spesifikasi Teknis: ${sec.specAssessmentStatus || 'Sesuai Spesifikasi (Approved)'}${
+        sec.specAssessmentNote ? ` (${sec.specAssessmentNote})` : ''
+      }`
+    );
+    lines.push(`   • Unit Alat & Spesifikasi: ${formattedEquip.length > 0 ? formattedEquip.join(' | ') : '-'}`);
+    lines.push(
+      `   • Assessment Penugasan Kru: ${sec.crewAssessmentStatus || 'Personil Approved & Siap'}${
+        sec.crewAssessmentNote ? ` (${sec.crewAssessmentNote})` : ''
+      }`
+    );
     lines.push(`   • Staff Inhouse (${staffCrew.length}): ${staffCrew.length > 0 ? staffCrew.join(', ') : '-'}`);
     lines.push(`   • Kru Freelance (${freelanceCrew.length}): ${freelanceCrew.length > 0 ? freelanceCrew.join(', ') : '-'}`);
     lines.push(`   • Armada Mobilisasi: ${vehiclesFormatted.length > 0 ? vehiclesFormatted.join(', ') : '-'}`);
@@ -225,7 +257,7 @@ export function formatJobCalendarDescription(
   });
 
   lines.push(`🏢 Kantor / Gudang HQ: ${OFFICIAL_HQ_ADDRESS}`);
-  lines.push(`📅 Sinkronisasi Kalender: Google Calendar (${OFFICIAL_GOOGLE_CALENDAR_WEB_URL})`);
+  lines.push(`📅 Sinkronisasi Kalender: Google Calendar (${OFFICIAL_GOOGLE_CALENDAR_ID} — ${OFFICIAL_GOOGLE_CALENDAR_WEB_URL})`);
 
   return lines.join('\n');
 }
@@ -253,7 +285,14 @@ export function buildGoogleCalendarEventUrl(
     .map(s => s.packageLabel)
     .join(', ');
 
-  const title = `${personPrefix}${divisionPrefix}[RIZ PRODUCTION] ${job.venue}${allPackages ? ` — ${allPackages}` : ''} (PIC: ${job.pic || '-'})`;
+  const assessTag =
+    job.adminAssessmentStatus === 'Terverifikasi Admin (Approved)'
+      ? '[APPROVED ADMIN] '
+      : job.adminAssessmentStatus === 'Perlu Revisi Teknis/Kru'
+        ? '[REVISI SPEK/KRU] '
+        : '';
+
+  const title = `${personPrefix}${divisionPrefix}${assessTag}[RIZ PRODUCTION] ${job.venue}${allPackages ? ` — ${allPackages}` : ''} (PIC: ${job.pic || '-'})`;
   const details = formatJobCalendarDescription(job, options);
   const location = `${job.venue} | Gudang HQ: ${OFFICIAL_HQ_ADDRESS}`;
 
@@ -264,7 +303,8 @@ export function buildGoogleCalendarEventUrl(
     details,
     location,
     ctz: 'Asia/Jakarta',
-    trp: 'true'
+    trp: 'true',
+    src: OFFICIAL_GOOGLE_CALENDAR_ID
   });
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;

@@ -421,6 +421,21 @@ export interface JobCrewMember {
   staffId?: string; // ID staf inhouse atau freelance
   division?: string;
   roleNote?: string; // Catatan peran khusus (misal: Pasang, Bongkaran, VJ & Zoom, Campers, Drop)
+  // Assessment Admin untuk Penugasan Staff / Crew Freelance
+  assessmentStatus?: 'Approved' | 'Perlu Briefing' | 'Standby' | 'Diganti' | 'Selesai Dievaluasi';
+  assessmentScore?: number; // Skor kesiapan / performa 1-5 bintang
+  assessmentNote?: string; // Catatan evaluasi / instruksi khusus dari Admin
+  assessedBy?: string;
+  assessedAt?: string;
+}
+
+export interface JobEquipmentAssessmentItem {
+  itemLabel: string;
+  status: 'Sesuai Spek' | 'Perlu Penyesuaian' | 'Backup / Sub-Vendor' | 'Pending Cek';
+  qtyVerified?: string;
+  technicalNote?: string;
+  assessedBy?: string;
+  assessedAt?: string;
 }
 
 export interface JobDivisionSection {
@@ -430,6 +445,14 @@ export interface JobDivisionSection {
   crew: JobCrewMember[]; // Daftar staff inhouse & freelance yang ditugaskan
   vehicles: string[]; // Daftar unit armada / mobilisasi (Truck, Riz 2, Engkel Riz, Serena, Yosep, dll.)
   sectionPic?: string; // PIC spesifik sub-divisi bila ada
+  // Assessment Admin untuk Unit Alat / Spesifikasi Teknis & Penugasan Crew per Divisi
+  equipmentAssessments?: Record<string, JobEquipmentAssessmentItem>;
+  specAssessmentStatus?: 'Belum Assessment' | 'Sesuai Spesifikasi (Approved)' | 'Perlu Penyesuaian Spek' | 'Lengkap & Siap Loading';
+  specAssessmentNote?: string;
+  crewAssessmentStatus?: 'Belum Assessment' | 'Personil Approved & Siap' | 'Perlu Briefing / Tambah Kru' | 'Selesai Dievaluasi';
+  crewAssessmentNote?: string;
+  assessedBy?: string;
+  assessedAt?: string;
 }
 
 export interface JobAssignment {
@@ -444,6 +467,13 @@ export interface JobAssignment {
   sections: JobDivisionSection[];
   notes?: string; // Catatan khusus kostum / aturan venue / vendor
   status: 'Terjadwal' | 'Loading / Setup' | 'Berlangsung (Show)' | 'Bongkaran' | 'Selesai';
+  // Assessment Admin Level Event & Sinkronisasi Google Calendar
+  adminAssessmentStatus?: 'Belum Assessment' | 'Terverifikasi Admin (Approved)' | 'Perlu Revisi Teknis/Kru' | 'Selesai & Dievaluasi';
+  adminAssessmentNote?: string;
+  adminAssessedBy?: string;
+  adminAssessedAt?: string;
+  gcalSynced?: boolean;
+  gcalLastSyncedAt?: string;
   _userEdited?: boolean;
   _syncMeta?: {
     updatedAt: string;
