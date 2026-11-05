@@ -105,10 +105,49 @@ expect(
   `Zero-activity staff correctly identified and isolated from display (${zeroActivityResults.length} inactive staff)`
 );
 
-// 6. Test Summary Report
+// 6. Test Balanced Detail Task Counting for November 2026 Google Sheet
+console.log('\n--- 6. Testing Balanced Detail Task Counting (November 2026 Google Sheet) ---');
+const novResults = calculateAllStaffKpis(
+  STAFF_LIST,
+  INITIAL_DAILY_REPORTS.filter(r => r.date?.startsWith('2026-11')),
+  INITIAL_LOGBOOK_ENTRIES.filter(e => e.date?.startsWith('2026-11')),
+  INITIAL_FINDINGS.filter(f => (f.dateCreated || f.date || '').startsWith('2026-11')),
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  '2026-11'
+).filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);
+
+const expectedNovCounts: Record<string, { reports: number; qcs: number; days: number }> = {
+  'Mulyana': { reports: 7, qcs: 6, days: 3 },
+  'Muhamad Rahmat': { reports: 6, qcs: 6, days: 2 },
+  'Iwan Kurniawan': { reports: 5, qcs: 5, days: 2 },
+  'Mulyadi': { reports: 4, qcs: 3, days: 1 },
+  'Yudishtira Purnama A': { reports: 4, qcs: 3, days: 1 },
+  'Heri': { reports: 4, qcs: 3, days: 1 },
+  'Wahyudin': { reports: 3, qcs: 3, days: 1 },
+  'Taufik Diana': { reports: 2, qcs: 2, days: 1 },
+  'Ramdani': { reports: 1, qcs: 1, days: 1 }
+};
+
+for (const [staffName, exp] of Object.entries(expectedNovCounts)) {
+  const found = novResults.find(s => s.name === staffName);
+  expect(
+    Boolean(found && found.reports === exp.reports && found.qcs === exp.qcs && found.attendanceCount === exp.days),
+    `Nov 2026 detail sheet count for ${staffName}: Lap=${found?.reports}/${exp.reports}, QC=${found?.qcs}/${exp.qcs}, Hadir=${found?.attendanceCount}/${exp.days}, KPI=${found?.kpi}%`
+  );
+}
+
+// 7. Test Summary Report
 console.log('\n================================================================');
 console.log(`TEST SUMMARY: ${passedTests}/${totalTests} Tests Passed (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('================================================================\n');
+
+if (passedTests !== totalTests) {
+  process.exit(1);
+}
 
 console.log('ACTIVE STAFF KPI LEADERBOARD (HANYA STAF BERAKTIFITAS):');
 activeResults.slice(0, 10).forEach((r, idx) => {

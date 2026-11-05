@@ -29,6 +29,357 @@ import { Staff, Division, DailyReport, LogbookEntry, Finding, AttendanceLog, Wor
 import { StaffScheduleRow, getCurrentMonthSchedule, getScheduleByKey, getActiveMonthKey } from '../data/staffSchedules';
 import { NAME_TO_STAFF_ID } from '../lib/dailySheetParser';
 
+export interface BalancedSheetTaskItem {
+  activity: string;
+  remark: string;
+  isQc: boolean;
+  isTechnicalWork: boolean;
+}
+
+const NON_QC_ACTIVITY_PATTERNS = /^(?:[-*•\d.)\s]*)(?:buat\s+dudukan|repack\b|rapih|ngerapihin|merapihkan|beres[\s-]*beres|nyuci\s+pemberat|pembuatan\s+storytelling|belajar\b|training\b|prepare\b|pengembalian\s+alat|bantu\s+team|mencatat\s+serial|pencatatan\s+serial|melanjutkan\s+pencatatan|marking\b|setup\s+layout)/i;
+
+const NON_EQUIPMENT_CLEANING_PATTERNS = /\b(?:rak\s+kantor|kamar\s+mandi|toilet|ruangan|lantai|halaman|sampah|meja\s+kerja)\b/i;
+
+const TECHNICAL_QC_ACTIVITY_PATTERNS = /\b(?:qc|inspeksi|checklist|onhouse|p2h|cek|check|pengecekan|uji|testing|test\s+unit|maintenan+a?ce|maintenace|servi[cs]e|repair|ganti|benerin|sortir|update\s+firmware|touch\s*up|vacum|inventory|kabinet|modul|dl\s*32|dl\s*251|mixer|ewd|slxd|qlxd|iem|whm|parled|beam|hazer|smoke|ups|takel|tripot|tripod|avanda|sub\s+kla|db\s*tech|db\s*no|monitor|hdmi|sdi|kabel|prosesor|processor|hanging\s*bar|hangging\s*bar|drum|mic|speaker|headset|legran|legrand|box\s*led|stand\s*box)\b/i;
+
+const TECHNICAL_REMARK_PATTERNS = /\b(?:ok|oke|aman|normal|bersih|bagus|terkoneksi|terkonecting|lengkap|siap\s+di\s*pakai|eror|error|rusak|mati|lemah|bermasalah|perbaikan|service|recieving|receiving|dead\s+pixel|ic\s+warna|ganti\s+jalur|ngacing|selesai|done|ada|sudah|beres)\b/i;
+
+export function isSheetSubTaskQc(activity: string, remark: string = ''): boolean {
+  const actClean = String(activity || '').trim();
+  const remClean = String(remark || '').trim();
+  if (!actClean && !remClean) return false;
+
+  if (NON_QC_ACTIVITY_PATTERNS.test(actClean)) {
+    // Pengecualian jika di baris yang sama eksplisit melakukan cek/check kelengkapan
+    if (!/\b(?:cek|check|pengecekan|inspeksi|test\s+unit)\b/i.test(actClean)) {
+      return false;
+    }
+  }
+
+  if (NON_EQUIPMENT_CLEANING_PATTERNS.test(actClean)) {
+    return false;
+  }
+
+  if (/\b(?:cleaning|bersih)/i.test(actClean)) {
+    return true;
+  }
+
+  if (TECHNICAL_QC_ACTIVITY_PATTERNS.test(actClean)) {
+    return true;
+  }
+
+  if (TECHNICAL_REMARK_PATTERNS.test(remClean) && !NON_QC_ACTIVITY_PATTERNS.test(actClean)) {
+    return true;
+  }
+
+  return false;
+}
+
+export function isSheetSubTaskTechnicalWork(activity: string, remark: string = ''): boolean {
+  if (isSheetSubTaskQc(activity, remark)) return true;
+  const combined = `${activity || ''} ${remark || ''}`.toLowerCase();
+  return /\b(?:servi[cs]e|repair|ganti|benerin|maintenan+a?ce|maintenace|repack|buat\s+dudukan|instal|pasang|solder|kanibal|modif|perbaikan|test\s+unit|cek|check|cleaning|bersih|rapih)\b/i.test(combined);
+}
+
+function isPureRemarkHeaderSentence(activity: string, remark: string): boolean {
+  if (remark) return false;
+  const clean = activity.replace(/^[-*•\s]+/, '').trim();
+  if (!clean) return false;
+  if (/^(?:cek|check|cleaning|bersih|servi[cs]e|repair|ganti|benerin|rapih|repack|mainten|proses|buat|setup|touch|training|belajar|prepare|sortir|vacum|update)\b/i.test(clean)) {
+    return false;
+  }
+  return /\b(?:semua\s+dalam\s+kondisi\s+normal|siap\s+di\s*pakai\s+untuk\s+event|kondisi\s+normal\s+semua)\b/i.test(clean);
+}
+
+function isSheetContinuationLine(activity: string): boolean {
+  const clean = activity.replace(/^[-*•\s]+/, '').trim();
+  if (!clean) return true;
+  // Baris yang hanya berisi nomor urut / rentang nomor unit (contoh: "No. 1-2-3...", "14-15-16...", "47-48", "no. 1 - 8")
+  if (/^(?:no\.?\s*)?[\d\s,.\-–s/d]+$/i.test(clean)) {
+    return true;
+  }
+  // Baris keterangan lanjutan kalimat sebelumnya (contoh: "massing2 menjadi 2 WHM dalam 1 box", "Note : G3 Yang isi 4...")
+  if (/^(?:mass?ing\d*|masing\d*|note\s*:|catatan\s*:|nb\s*:)/i.test(clean)) {
+    return true;
+  }
+  return false;
+}
+
+function isParentSummaryHeaderRow(
+  current: { activity: string; remark: string },
+  nextRow?: { activity: string; remark: string }
+): boolean {
+  if (!nextRow) return false;
+  const cleanAct = current.activity.replace(/^[-*•\s]+/, '').trim();
+  const nextAct = nextRow.activity.trim();
+
+  // Header kategori inventaris/umum yang diikuti rincian sub-item
+  if (/^(?:\d+[.)]\s*)?(?:update\s+inventory|inventory|cek\s+unit\s+tripot|cek\s+all\s+servisan|perbaikan\s*:?|service\s+&\s+cek\s+unit)$/i.test(cleanAct)) {
+    return true;
+  }
+
+  // Header ringkasan servis kabinet LED (contoh: "servise 8 kabinet led", "servise 6 kabinet", "1. servise 7 kabinet led", "1. repair 12 kabinet")
+  // yang langsung diikuti rincian sub-kabinet ("- 6 kabinet ganti dead pixel", "-1 kabinet ngacing", dst.)
+  if (
+    /^(?:\d+[.)]\s*)?(?:servi[cs]e|repair)\s+\d+\s+kabinet(?:\s+led)?$/i.test(cleanAct) &&
+    /^-+\s*\d+\s*kabinet\b/i.test(nextAct)
+  ) {
+    return true;
+  }
+
+  // Header "2. cek 11 modul kabinet" yang diikuti rincian "- 2 modul ilang jalur ic", dst.
+  if (
+    /^(?:\d+[.)]\s*)?cek\s+\d+\s+modul\s+kabinet$/i.test(cleanAct) &&
+    /^-+\s*\d+\s*modul\b/i.test(nextAct)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function getEquipmentTaskGroupKey(activity: string): string | null {
+  let s = activity
+    .replace(/^[-*•\s]+/, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  if (!s) return null;
+
+  // Normalisasi ejaan umum di Google Sheet agar peralatan yang sama terkelompokkan secara adil
+  s = s
+    .replace(/\bmaintenan+a?ce\b|\bmaintenace\b/g, 'maintenance')
+    .replace(/\bextention\b/g, 'extension')
+    .replace(/\bservise\b/g, 'service')
+    .replace(/\b(?:twitter|twiter|twitwe)\b/g, 'tweeter')
+    .replace(/(\d+)\s*(?:meter|m)\b/g, '$1meter');
+
+  // 1. Kelompokkan rentang unit Wireless Mic Sennheiser EWD ("EWD no. 5 - 8", "EWD no. 9 - 12", dst.)
+  if (/^ewd\s+no\.?\s*[\d\s\-–,]+$/i.test(s)) {
+    return 'whm-ewd-batch';
+  }
+  // 2. Kelompokkan rentang unit Wireless Mic Shure SLXD / QLXD ("SLXD no. 1 - 4", "QLXD no 9 - 12", dst.)
+  if (/^(?:slxd|qlxd)\s+no\.?\s*[\d\s\-–,]+$/i.test(s)) {
+    return 'whm-shure-batch';
+  }
+  // 3. Kelompokkan rincian inventaris stand ("stand speaker 22pcs", "stand mic lama 44pcs", dst.)
+  if (/^stand\s+(?:speaker|mic|kick|boox|box|key|gtr|gitar)\b/i.test(s)) {
+    return 'inventory-stand-batch';
+  }
+  // 4. Kelompokkan rincian marking mic berurutan ("marking mic sm58...", "marking mic drum")
+  if (/^marking\s+mic\b/i.test(s)) {
+    return 'marking-mic-batch';
+  }
+  // 5. Kelompokkan rincian inventaris takel ("takel 2ton 2pcs", "takel 1ton 8pcs", "setrap takel...")
+  if (/^(?:setrap\s+)?takel\b/i.test(s)) {
+    return 'inventory-takel-batch';
+  }
+  // 6. Kelompokkan rincian cek modul kabinet ("2 modul ilang jalur ic", "3 modul ilang jalur pixel", dst.)
+  if (/^\d+\s*modul\s+(?:ilang|kena|arus|rusak|mati|error)\b/i.test(s)) {
+    return 'cek-modul-kabinet-batch';
+  }
+  // 7. Kelompokkan rincian cek unit tripot A-G ("A , Tripot Centurion", "B , Tripot Centurion", dst.)
+  if (/^[a-g]\s*,\s*tripot\b/i.test(s)) {
+    return 'cek-tripot-batch';
+  }
+  // 8. Kelompokkan pengecekan/perbaikan unit bernomor seri sama ("DL 32 no 1".."DL 32 no 4", "Ganti tweeter DB No 15/18/5")
+  const unitNoMatch = s.match(/^(.+?)\s+no\.?\s*\d+(?:\s*[-–,]\s*\d+)*$/i);
+  if (unitNoMatch) {
+    const base = unitNoMatch[1].trim();
+    if (base.length >= 3) {
+      return `unit-no:${base}`;
+    }
+  }
+  // 9. Kelompokkan penomoran kabel/alat berurutan di akhir baris ("cek all kabel lan 1".."10", "maintenance kabel extension 50meter 1".."2", "10meter 1".."11")
+  const trailingIdxMatch = s.match(/^(.+?)\s+\d+$/);
+  if (trailingIdxMatch) {
+    const base = trailingIdxMatch[1].trim();
+    // Pastikan base memiliki minimal 2 kata agar tidak menggabungkan kalimat biasa
+    if (base.split(/\s+/).length >= 2) {
+      return `unit-idx:${base}`;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Mengekstrak daftar tugas terstruktur dan berimbang dari entri Google Sheet (DailyReport / LogbookEntry).
+ * - Membaca rincian baris (`rowDetails` atau baris `activity`/`notes`) secara utuh.
+ * - Menggabungkan baris lanjutan nomor unit (seperti rentang No. 1-48) ke tugas induknya.
+ * - Melewati baris judul/ringkasan induk jika langsung diikuti rincian sub-tugas di bawahnya.
+ * - Mengelompokkan penomoran unit berulang pada alat yang sama (seperti kabel LAN 1-10 atau kabel extension 1-11)
+ *   menjadi 1 kesatuan tugas peralatan agar perhitungan antar-staf proporsional dan berimbang.
+ */
+export type SheetTaskSourceItem = Partial<DailyReport> | Partial<LogbookEntry> | Record<string, any> | null | undefined;
+
+export function extractBalancedSheetTasks(
+  item?: SheetTaskSourceItem
+): BalancedSheetTaskItem[] {
+  if (!item) return [];
+
+  const rawRows: { activity: string; remark: string }[] = [];
+  const details = (item as any).rowDetails;
+
+  if (Array.isArray(details) && details.length > 0) {
+    for (const d of details) {
+      const actRaw = String(d?.activity || '').trim();
+      const remRaw = String(d?.remark || '').trim();
+      if (!actRaw && !remRaw) continue;
+
+      const actLines = actRaw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const remLines = remRaw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+      if (actLines.length > 1) {
+        actLines.forEach((line, idx) => {
+          rawRows.push({
+            activity: line,
+            remark: remLines[idx] ?? (idx === 0 ? remLines.join(' | ') : '')
+          });
+        });
+      } else {
+        rawRows.push({ activity: actRaw, remark: remRaw });
+      }
+    }
+  } else {
+    const actText = String(item.activity || '').trim();
+    const remText = String((item as any).notes || (item as any).followUp || '').trim();
+    const actLines = actText.split(/\r?\n/).map(l => l.trim()).filter(l => l && l !== '-');
+    const remLines = remText.split(/\r?\n/).map(l => l.trim());
+
+    if (actLines.length === 0 && remText && remText !== '-') {
+      rawRows.push({ activity: remText, remark: remText });
+    } else {
+      actLines.forEach((line, idx) => {
+        rawRows.push({
+          activity: line,
+          remark: remLines[idx] ?? (actLines.length > 1 && remLines.length === 1 ? remLines[0] : '')
+        });
+      });
+    }
+  }
+
+  if (rawRows.length === 0) return [];
+
+  // Tahap 1: Gabungkan baris remark di awal blok & baris lanjutan (nomor unit / catatan)
+  const step1Rows: { activity: string; remark: string }[] = [];
+  let pendingSharedRemark = '';
+
+  for (let i = 0; i < rawRows.length; i++) {
+    const curr = rawRows[i];
+    const act = curr.activity.trim();
+    const rem = curr.remark.trim();
+
+    if (!act && !rem) continue;
+
+    // Jika baris hanya berisi remark tanpa activity, tempelkan ke tugas sebelumnya
+    if (!act && rem) {
+      if (step1Rows.length > 0) {
+        const prev = step1Rows[step1Rows.length - 1];
+        prev.remark = prev.remark ? `${prev.remark} | ${rem}` : rem;
+      } else {
+        pendingSharedRemark = pendingSharedRemark ? `${pendingSharedRemark} | ${rem}` : rem;
+      }
+      continue;
+    }
+
+    // Jika baris pertama adalah kalimat status/remark umum untuk daftar unit di bawahnya (contoh: WHM Yudish)
+    if (isPureRemarkHeaderSentence(act, rem) && i + 1 < rawRows.length) {
+      pendingSharedRemark = pendingSharedRemark ? `${pendingSharedRemark} | ${act}` : act;
+      continue;
+    }
+
+    // Jika baris adalah lanjutan nomor unit atau catatan dari baris di atasnya
+    if (isSheetContinuationLine(act) && step1Rows.length > 0) {
+      const prev = step1Rows[step1Rows.length - 1];
+      prev.activity = `${prev.activity} ${act}`.replace(/\s+/g, ' ').trim();
+      if (rem && !prev.remark.includes(rem)) {
+        prev.remark = prev.remark ? `${prev.remark} | ${rem}` : rem;
+      }
+      continue;
+    }
+
+    const effectiveRemark = rem || pendingSharedRemark;
+    // Reset pendingSharedRemark jika baris sudah berganti ke kalimat kerja baru yang memiliki remark sendiri
+    if (rem) {
+      pendingSharedRemark = '';
+    }
+
+    step1Rows.push({
+      activity: act,
+      remark: effectiveRemark
+    });
+  }
+
+  if (step1Rows.length === 0 && pendingSharedRemark) {
+    step1Rows.push({ activity: pendingSharedRemark, remark: pendingSharedRemark });
+  }
+
+  // Tahap 2: Lewati baris ringkasan induk jika langsung diikuti rincian sub-tugas
+  const step2Rows: { activity: string; remark: string }[] = [];
+  for (let i = 0; i < step1Rows.length; i++) {
+    const curr = step1Rows[i];
+    const next = step1Rows[i + 1];
+    if (isParentSummaryHeaderRow(curr, next)) {
+      if (curr.remark && next && !next.remark.includes(curr.remark)) {
+        next.remark = next.remark ? `${curr.remark} | ${next.remark}` : curr.remark;
+      }
+      continue;
+    }
+    step2Rows.push(curr);
+  }
+
+  // Tahap 3: Kelompokkan penomoran unit berurutan untuk jenis alat/pekerjaan yang sama
+  const groupedRows: { activity: string; remark: string; groupKey: string | null }[] = [];
+  for (const row of step2Rows) {
+    const gKey = getEquipmentTaskGroupKey(row.activity);
+    const prev = groupedRows[groupedRows.length - 1];
+    if (prev && gKey && prev.groupKey === gKey) {
+      prev.activity = `${prev.activity}; ${row.activity}`;
+      if (row.remark && !prev.remark.includes(row.remark)) {
+        prev.remark = prev.remark ? `${prev.remark} | ${row.remark}` : row.remark;
+      }
+    } else {
+      groupedRows.push({
+        activity: row.activity,
+        remark: row.remark,
+        groupKey: gKey
+      });
+    }
+  }
+
+  return groupedRows.map(r => ({
+    activity: r.activity,
+    remark: r.remark,
+    isQc: isSheetSubTaskQc(r.activity, r.remark),
+    isTechnicalWork: isSheetSubTaskTechnicalWork(r.activity, r.remark)
+  }));
+}
+
+export function countCompletedSheetTasks(item?: SheetTaskSourceItem): number {
+  if (!item) return 0;
+  const tasks = extractBalancedSheetTasks(item);
+  return Math.max(1, tasks.length);
+}
+
+export function countCompletedSheetQcTasks(item?: SheetTaskSourceItem): number {
+  if (!item) return 0;
+  const details = (item as any).rowDetails;
+  if (Array.isArray(details) && details.length > 0) {
+    const tasks = extractBalancedSheetTasks(item);
+    return tasks.filter(t => t.isQc).length;
+  }
+  const tasks = extractBalancedSheetTasks(item);
+  const qcMatches = tasks.filter(t => t.isQc).length;
+  if (qcMatches > 0) return qcMatches;
+  // Jika dipanggil pada LogbookEntry lama tanpa rowDetails (contoh: data historis September / mock test)
+  const itemAny = item as any;
+  if ('result' in itemAny || 'checklists' in itemAny || String(itemAny.id || '').startsWith('log-') || String(itemAny.id || '').startsWith('lg-')) {
+    return 1;
+  }
+  return 0;
+}
+
 export interface StaffKpiResult {
   id: string;
   staffId: string;
@@ -417,36 +768,60 @@ export function calculateStaffKpi(
   // Evaluasi patokan operasional untuk bulan berjalan vs bulan lampau
   const targetReports = dailyReports.filter(r => !r.date || r.date.startsWith(targetMonthKey));
   const targetLogs = logbookEntries.filter(e => !e.date || e.date.startsWith(targetMonthKey));
+  const hasDetailedTargetReports = targetReports.some(
+    r => Array.isArray((r as any).rowDetails) && (r as any).rowDetails.length > 0
+  );
 
-  // Hitung volume output tertinggi dari staf aktif dalam batch data untuk patokan proporsional
+  // Hitung hari kehadiran unik tertinggi dan volume output tugas tertinggi dari staf aktif dalam batch data
+  const staffAttendanceMap = new Map<string, Set<string>>();
   const staffReportCounts = new Map<string, number>();
   targetReports.forEach(r => {
     const sName = (r.staffName || '').trim();
-    if (sName) staffReportCounts.set(sName, (staffReportCounts.get(sName) || 0) + 1);
+    if (!sName) return;
+    staffReportCounts.set(sName, (staffReportCounts.get(sName) || 0) + countCompletedSheetTasks(r));
+    if (r.date) {
+      if (!staffAttendanceMap.has(sName)) staffAttendanceMap.set(sName, new Set());
+      staffAttendanceMap.get(sName)!.add(r.date);
+    }
   });
-  const maxTeamReports = staffReportCounts.size > 0 ? Math.max(...staffReportCounts.values()) : 1;
-
-  const staffQcCounts = new Map<string, number>();
   targetLogs.forEach(e => {
     const sName = (e.staffName || '').trim();
-    if (sName) staffQcCounts.set(sName, (staffQcCounts.get(sName) || 0) + 1);
+    if (sName && e.date) {
+      if (!staffAttendanceMap.has(sName)) staffAttendanceMap.set(sName, new Set());
+      staffAttendanceMap.get(sName)!.add(e.date);
+    }
   });
-  const maxTeamQcs = staffQcCounts.size > 0 ? Math.max(...staffQcCounts.values()) : 1;
+
+  const maxTeamAttendance = staffAttendanceMap.size > 0
+    ? Math.max(1, ...Array.from(staffAttendanceMap.values()).map(set => set.size))
+    : 1;
+  const maxTeamReports = staffReportCounts.size > 0 ? Math.max(1, ...staffReportCounts.values()) : 1;
+
+  const staffQcCounts = new Map<string, number>();
+  if (hasDetailedTargetReports) {
+    targetReports.forEach(r => {
+      const sName = (r.staffName || '').trim();
+      if (sName) {
+        staffQcCounts.set(sName, (staffQcCounts.get(sName) || 0) + countCompletedSheetQcTasks(r));
+      }
+    });
+  } else {
+    targetLogs.forEach(e => {
+      const sName = (e.staffName || '').trim();
+      if (sName) {
+        staffQcCounts.set(sName, (staffQcCounts.get(sName) || 0) + countCompletedSheetQcTasks(e));
+      }
+    });
+  }
+  const maxTeamQcs = staffQcCounts.size > 0 ? Math.max(1, ...staffQcCounts.values()) : 1;
 
   let attendanceTarget = 0;
-  if (isCurrentRunningMonth) {
-    // Pada bulan berjalan, target absensi dipatok secara adil berdasarkan output operasional tertinggi staf berjalan
-    attendanceTarget = Math.max(1, maxTeamReports);
-  } else if (isFutureMonth) {
+  if (isFutureMonth) {
     attendanceTarget = 0;
   } else {
-    // Bulan lampau: gunakan total hari kerja dinas sebulan penuh dari roster resmi
-    attendanceTarget = scheduledWorkingDaysFullMonth > 0 ? scheduledWorkingDaysFullMonth : 24;
+    // Sesuai Komit Mutlak §6.11 & §6.12: Target kehadiran dipatok dinamis dari hari kerja riil tertinggi di Google Sheet (bukan shift template teoritis)
+    attendanceTarget = Math.max(1, maxTeamAttendance);
   }
-
-  const attendanceScore = attendanceTarget > 0 
-    ? Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100))
-    : (attendanceCount > 0 ? 100 : 0);
 
   // ─────────────────────────────────────────────────────────────
   // 2. MENGHITUNG UJI KOMPETENSI YANG DIIKUTI (6 Unit Standar K3 & Kelistrikan)
@@ -495,11 +870,19 @@ export function calculateStaffKpi(
     disciplineScore = (isCurrentRunningMonth && scheduledWorkingDaysToDate === 0) ? 100 : 0;
   }
 
+  const attendanceScore = attendanceTarget > 0
+    ? (attendanceCount > 0 && alphaDeductions === 0
+        ? Math.min(100, Math.round(40 + ((attendanceCount / attendanceTarget) * 60)))
+        : Math.min(100, Math.round((attendanceCount / attendanceTarget) * 100)))
+    : (attendanceCount > 0 ? 100 : 0);
+
   // ─────────────────────────────────────────────────────────────
-  // 4. PRODUKTIVITAS / DAILY TASK (Bobot 25%: Laporan Harian Operasional & Daily Tasks)
+  // 4. PRODUKTIVITAS / DAILY TASK (Bobot 25%: Laporan Harian Operasional & Detail Tugas GSheet)
   // ─────────────────────────────────────────────────────────────
-  const reportsCount = dailyReports.filter(r => isStaffMatch(staff, r.staffName)).length;
-  
+  const staffTargetReports = targetReports.filter(r => isStaffMatch(staff, r.staffName));
+  const reportsCount = staffTargetReports.reduce((sum, r) => sum + countCompletedSheetTasks(r), 0);
+  const staffReportDates = new Set(staffTargetReports.map(r => r.date).filter(Boolean));
+
   let realTasks: DailyTask[] = dailyTasksOverride || [];
   if (!dailyTasksOverride && typeof window !== 'undefined') {
     try {
@@ -507,27 +890,61 @@ export function calculateStaffKpi(
       if (saved) realTasks = JSON.parse(saved);
     } catch (e) {}
   }
-  const completedTaskCount = realTasks.filter(
-    t => (isStaffMatch(staff, t.assignedName) || (t.assignedTo === staff.id)) &&
-         t.status === 'Done' &&
-         ((t.dueDate && t.dueDate.startsWith(targetMonthKey)) || (!t.dueDate && t.createdAt && t.createdAt.startsWith(targetMonthKey)))
-  ).length;
+  // Hanya tambahkan DailyTask mandiri yang belum tercermin pada DailyReport Google Sheet di tanggal yang sama
+  const completedTaskCount = realTasks.filter(t => {
+    if (!(isStaffMatch(staff, t.assignedName) || t.assignedTo === staff.id)) return false;
+    if (t.status !== 'Done') return false;
+    const taskDate = t.dueDate || t.createdAt || '';
+    if (!taskDate.startsWith(targetMonthKey)) return false;
+    if (String(t.id || '').startsWith('dt-2026') && staffReportDates.has(taskDate.slice(0, 10))) return false;
+    if (staffReportDates.has(taskDate.slice(0, 10))) return false;
+    return true;
+  }).length;
 
   const combinedProductivityCount = reportsCount + completedTaskCount;
-  const reportTarget = isCurrentRunningMonth ? Math.max(1, maxTeamReports) : Math.max(1, attendanceTarget);
-  const reportScore = Math.min(100, Math.round((combinedProductivityCount / reportTarget) * 100));
+  const reportTarget = Math.max(1, maxTeamReports);
+  const reportVolumeRatio = Math.min(1, combinedProductivityCount / reportTarget);
+  const targetTasksPerDay = Math.max(2, reportTarget / Math.max(1, maxTeamAttendance));
+  const staffTasksPerDay = attendanceCount > 0 ? (combinedProductivityCount / attendanceCount) : 0;
+  const reportDailyRatio = Math.min(1, staffTasksPerDay / targetTasksPerDay);
+  const reportScore = combinedProductivityCount > 0
+    ? Math.min(100, Math.round(((reportVolumeRatio * 0.70) + (reportDailyRatio * 0.30)) * 100))
+    : 0;
 
   // ─────────────────────────────────────────────────────────────
   // 5. QUALITY / QC CHECKLIST (Bobot 20%: Inspeksi Teknis & Kesiapan Alat)
   // ─────────────────────────────────────────────────────────────
-  const qcCount = logbookEntries.filter(e => isStaffMatch(staff, e.staffName)).length;
+  const staffTargetLogs = targetLogs.filter(e => isStaffMatch(staff, e.staffName));
+  const staffHasDetailedReports = staffTargetReports.some(
+    r => Array.isArray((r as any).rowDetails) && (r as any).rowDetails.length > 0
+  );
+
+  let qcCount = 0;
+  if (staffHasDetailedReports) {
+    const qcFromReports = staffTargetReports.reduce((sum, r) => sum + countCompletedSheetQcTasks(r), 0);
+    const standaloneLogs = staffTargetLogs.filter(
+      e => !String(e.id || '').startsWith('log-rep-') && !staffReportDates.has(String(e.date || ''))
+    );
+    qcCount = qcFromReports + standaloneLogs.reduce((sum, e) => sum + countCompletedSheetQcTasks(e), 0);
+  } else if (staffTargetLogs.length > 0) {
+    qcCount = staffTargetLogs.reduce((sum, e) => sum + countCompletedSheetQcTasks(e), 0);
+  } else {
+    qcCount = staffTargetReports.reduce((sum, r) => sum + countCompletedSheetQcTasks(r), 0);
+  }
+
   const isSpecialistNonQC = staff.division === 'Admin';
-  const qcTarget = isCurrentRunningMonth ? Math.max(1, maxTeamQcs) : Math.max(1, attendanceTarget);
-  const rawQcScore = Math.min(100, Math.round((qcCount / qcTarget) * 100));
+  const qcTarget = Math.max(1, maxTeamQcs);
+  const qcVolumeRatio = Math.min(1, qcCount / qcTarget);
+  const targetQcsPerDay = Math.max(2, qcTarget / Math.max(1, maxTeamAttendance));
+  const staffQcsPerDay = attendanceCount > 0 ? (qcCount / attendanceCount) : 0;
+  const qcDailyRatio = Math.min(1, staffQcsPerDay / targetQcsPerDay);
+  const rawQcScore = qcCount > 0
+    ? Math.min(100, Math.round(((qcVolumeRatio * 0.70) + (qcDailyRatio * 0.30)) * 100))
+    : 0;
   const qcScore = isSpecialistNonQC ? reportScore : rawQcScore;
 
   // ─────────────────────────────────────────────────────────────
-  // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Bobot 10%: Penanganan Temuan Kerusakan & WO)
+  // 6. KOMPLEKSITAS TUGAS & WORK ORDER (Bobot 10%: Penanganan Teknis, Temuan QC & WO)
   // ─────────────────────────────────────────────────────────────
   const staffFindings = findings.filter(f => {
     if (!isStaffMatch(staff, f.pic)) return false;
@@ -547,13 +964,24 @@ export function calculateStaffKpi(
     return !wDate || wDate.startsWith(targetMonthKey);
   });
 
-  const totalAssigned = staffFindings.length + staffWOs.length;
-  const closedCount = staffFindings.filter(f => f.status === 'Close').length + staffWOs.filter(w => w.status === 'Completed' || w.progress === 100).length;
+  const closedFindingsCount = staffFindings.filter(f => f.status === 'Close').length;
+  const completedWOsCount = staffWOs.filter(w => w.status === 'Completed' || w.progress === 100).length;
+  const inProgressWOsCount = staffWOs.filter(
+    w => w.status === 'In Progress' || (Number(w.progress) > 0 && Number(w.progress) < 100)
+  ).length;
+  const closedCount = closedFindingsCount + completedWOsCount;
 
-  const taskComplexityScore = totalAssigned > 0 
-    ? Math.min(100, Math.round((closedCount / totalAssigned) * 100))
+  const technicalTasksCount = staffTargetReports.reduce(
+    (sum, r) => sum + extractBalancedSheetTasks(r).filter(t => t.isTechnicalWork).length,
+    0
+  );
+
+  // Staf yang melaporkan temuan kerusakan saat inspeksi QC tidak dikenakan penalti (kpi_penalty_flag: false)
+  const effectiveTechOutput = Math.max(combinedProductivityCount, technicalTasksCount) + closedCount + (inProgressWOsCount * 0.5);
+  const taskComplexityScore = (combinedProductivityCount > 0 || closedCount > 0 || inProgressWOsCount > 0)
+    ? Math.min(100, Math.round(50 + (Math.min(1, effectiveTechOutput / Math.max(1, maxTeamReports)) * 50)))
     : 0;
-  const woCount = closedCount;
+  const woCount = Math.max(closedCount, technicalTasksCount);
   const woScore = taskComplexityScore;
 
   // ─────────────────────────────────────────────────────────────

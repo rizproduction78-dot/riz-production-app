@@ -30,7 +30,7 @@ import {
   PieChart
 } from 'lucide-react';
 import { STAFF_LIST, getMasterStaffList } from '../data';
-import { calculateAllStaffKpis, isStaffInDivision, isStaffMatch, isStaffInGoogleSheet } from '../utils/kpiCalculator';
+import { calculateAllStaffKpis, isStaffInDivision, isStaffMatch, isStaffInGoogleSheet, countCompletedSheetTasks, countCompletedSheetQcTasks } from '../utils/kpiCalculator';
 import { getScheduleByKey, StaffScheduleRow, ALL_MONTHLY_SCHEDULES, getActiveMonthKey, formatMonthLabel } from '../data/staffSchedules';
 import { subscribeCloudCollection } from '../lib/cloudSync';
 import { Staff, MaintenanceSchedule } from '../types';
@@ -257,8 +257,20 @@ export default function Dashboard({
   )).length;
 
   // Dynamic derivations for report cards
-  const totalDailyReportsCount = activeDailyReports.length;
-  const totalQCCount = activeLogbookEntries.length;
+  const hasDetailedActiveReports = React.useMemo(
+    () => activeDailyReports.some(r => Array.isArray((r as any).rowDetails) && (r as any).rowDetails.length > 0),
+    [activeDailyReports]
+  );
+  const totalDailyReportsCount = React.useMemo(
+    () => activeDailyReports.reduce((sum, r) => sum + countCompletedSheetTasks(r), 0),
+    [activeDailyReports]
+  );
+  const totalQCCount = React.useMemo(
+    () => hasDetailedActiveReports
+      ? activeDailyReports.reduce((sum, r) => sum + countCompletedSheetQcTasks(r), 0)
+      : activeLogbookEntries.reduce((sum, e) => sum + countCompletedSheetQcTasks(e), 0),
+    [activeDailyReports, activeLogbookEntries, hasDetailedActiveReports]
+  );
   const totalWorkOrdersCount = totalRepair + totalPM;
   const uniqueWorkingDays = React.useMemo(() => {
     return new Set(activeDailyReports.map(r => r.date).filter(Boolean)).size;
@@ -372,17 +384,22 @@ export default function Dashboard({
       return lower.includes('mulyana') || lower.includes('kharo') || lower.includes('karo');
     };
 
-    const dr = activeDailyReports.filter(r => {
-      if (r.division === d.key) return true;
-      if ((d.key === 'Videotron' || d.key === 'Service') && isDualStaff(r.staffName)) return true;
-      return false;
-    }).length;
+    const dr = activeDailyReports
+      .filter(r => {
+        if (r.division === d.key) return true;
+        if ((d.key === 'Videotron' || d.key === 'Service') && isDualStaff(r.staffName)) return true;
+        return false;
+      })
+      .reduce((sum, r) => sum + countCompletedSheetTasks(r), 0);
 
-    const qc = activeLogbookEntries.filter(e => {
-      if (e.division === d.key) return true;
-      if ((d.key === 'Videotron' || d.key === 'Service') && isDualStaff(e.staffName)) return true;
-      return false;
-    }).length;
+    const qcSourceList = hasDetailedActiveReports ? activeDailyReports : activeLogbookEntries;
+    const qc = qcSourceList
+      .filter(e => {
+        if (e.division === d.key) return true;
+        if ((d.key === 'Videotron' || d.key === 'Service') && isDualStaff(e.staffName)) return true;
+        return false;
+      })
+      .reduce((sum, e) => sum + countCompletedSheetQcTasks(e), 0);
 
     const wo = activeWorkOrders.filter(w => {
       if (w.division === d.key) return true;
