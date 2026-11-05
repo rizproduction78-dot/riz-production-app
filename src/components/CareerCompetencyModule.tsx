@@ -426,48 +426,37 @@ export default function CareerCompetencyModule({
   return (
     <div className="space-y-8 font-sans">
       {/* ────────────────────────────────────────────────────────── */}
-      {/* 1. TOP HEADER BANNER (OFFICIAL PT. RIZ PRODUCTION)         */}
+      {/* 1. HEADER FUNGSIONAL KOMPETENSI & JENJANG KARIR            */}
       {/* ────────────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 p-6 md:p-8 rounded-3xl text-white shadow-xl border border-indigo-900/60 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-slate-900 p-4 rounded-xl text-white shadow-xs border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 rounded-xl bg-red-600/90 text-white font-black text-xs tracking-wider uppercase border border-red-500 shadow-md">
-              RIZ-PROLOG
-            </div>
-            <div className="text-[11px] font-mono tracking-widest text-amber-400 font-bold uppercase">
-              PT. RIZ PRODUCTION MULTI KREASI
-            </div>
-          </div>
-          <h1 className="text-xl md:text-3xl font-black tracking-tight mt-2 text-white flex items-center gap-2">
-            STRUKTUR KOMPETENSI & JENJANG KARIR
+          <h1 className="text-base md:text-lg font-black tracking-tight text-white">
+            Struktur Kompetensi & Jenjang Karir Staff
           </h1>
-          <p className="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
-            Standardisasi resmi kualifikasi SDM teknisi Audio, Lighting, Videotron, Multimedia, & Warehouse. Mengintegrasikan <strong>Struktur Kompetensi Berjenjang (Level 1-8)</strong>, <strong>Paspor Kompetensi Digital</strong>, serta alur <strong>10-Stage Career Pipeline</strong>.
+          <p className="text-xs text-slate-300 mt-0.5">
+            Penilaian Level Kompetensi (Level 1-8), Paspor Kompetensi Digital, dan Alur Jenjang Karir SDM
           </p>
-          <div className="flex items-center gap-2 mt-3 text-[11px] font-mono font-bold text-amber-300">
-            <span>⭐ "BUILD SKILL, CREATE IMPACT, DELIVER EXCELLENCE"</span>
-          </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           {isManagement && (
             <button
               type="button"
               onClick={handleResetAllCareerRecords}
-              className="flex items-center gap-2 px-4 py-2.5 bg-rose-600/90 hover:bg-rose-700 text-white font-bold text-xs rounded-xl border border-rose-500 shadow-md cursor-pointer transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg border border-rose-500 shadow-2xs cursor-pointer transition-all"
               title="Reset seluruh karir, level matriks, dan paspor kompetensi semua staff ke Tahap 1 (TRAINING)"
             >
-              <Trash2 className="w-4 h-4 text-white" />
+              <Trash2 className="w-3.5 h-3.5 text-white" />
               <span>Reset Semua Kompetensi Staff</span>
             </button>
           )}
 
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-800/90 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 shadow-sm cursor-pointer transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-lg border border-slate-700 shadow-2xs cursor-pointer transition-all"
           >
-            <Printer className="w-4 h-4 text-indigo-400" />
+            <Printer className="w-3.5 h-3.5 text-indigo-400" />
             <span>Cetak Dokumen</span>
           </button>
         </div>

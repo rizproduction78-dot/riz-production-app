@@ -2209,23 +2209,6 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                       </div>
                     )}
 
-                    {/* Simulated check-in time (for easier testing/demo of Lateness indicator) */}
-                    <div className="p-3 bg-slate-50 border border-slate-150 rounded-lg">
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">
-                        Jam Absensi <span className="text-slate-400 font-normal">(Demo: kosongkan untuk menggunakan waktu sekarang)</span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 07:45 atau 08:15"
-                        value={simulatedTime}
-                        onChange={(e) => setSimulatedTime(e.target.value)}
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs bg-white"
-                      />
-                      <span className="text-[10px] text-slate-400 mt-1 block leading-tight">
-                        *Jam Masuk Standard: Maksimal 08:00 AM. Di atas 08:00 akan tercatat **Terlambat**.
-                      </span>
-                    </div>
-
                     {/* Submit Button */}
                     <button
                       type="submit"
@@ -2841,22 +2824,14 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
 
             return (
               <div className="space-y-5">
-                {/* Official Reference Banner */}
-                <div className="p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-xl border border-indigo-800/60 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2 py-0.5 bg-indigo-500/30 border border-indigo-400/40 rounded text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-200">
-                        OFFICIAL CREW & JOB SCHEDULE
-                      </span>
-                      <span className="text-xs text-slate-300 font-mono">
-                         Staff Inhouse & Kru Freelance
-                      </span>
-                    </div>
-                    <h3 className="text-base font-black tracking-tight text-white">
+                {/* Functional Header Bar Jadwal Penugasan & Google Calendar */}
+                <div className="p-3.5 bg-slate-900 text-white rounded-xl border border-slate-800 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-black tracking-tight text-white">
                       Jadwal Penugasan Kerja / Job Event (Staff/Crew, Unit Alat, Armada, Lokasi/Venue & PIC)
                     </h3>
-                    <p className="text-xs text-slate-300">
-                      Sumber Acuan Resmi: Sistem Penjadwalan Aplikasi & Sinkronisasi Google Calendar (Staff Inhouse & Kru Freelance) serta Google Sheet Armada Resmi PT. Riz Production Multi Kreasi.
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      Sinkronisasi Google Calendar ({gcalConfig.calendarId}) & Assessment Spesifikasi Teknis / Crew
                     </p>
                   </div>
 
@@ -3171,41 +3146,6 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                           </div>
                         );
                       })}
-                    </div>
-
-                    {/* Direct Full-Browser Google Calendar Sign-In & Sync Bar (No Blocked Iframe) */}
-                    <div className="pt-3 border-t border-slate-200">
-                      <div className="p-3.5 bg-indigo-50/80 border border-indigo-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
-                            <Calendar className="w-4 h-4 text-indigo-600" />
-                            <span>Akses & Login Langsung Google Calendar Resmi ({gcalConfig.calendarId})</span>
-                          </div>
-                          <p className="text-[11px] text-slate-600">
-                            Google memblokir halaman Sign-In di dalam bingkai iframe tertanam. Gunakan tombol di samping untuk membuka & masuk ke akun <strong>{gcalConfig.calendarId}</strong> langsung di tab browser penuh atau mengimpor seluruh event sekaligus.
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 shrink-0">
-                          <a
-                            href={`https://calendar.google.com/calendar/u/0/r?authuser=${encodeURIComponent(gcalConfig.calendarId)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black flex items-center gap-1.5 shadow-2xs"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            <span>Buka & Sign-In Google Calendar ↗</span>
-                          </a>
-                          <a
-                            href={`${OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL}?authuser=${encodeURIComponent(gcalConfig.calendarId)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black flex items-center gap-1.5 shadow-2xs"
-                          >
-                            <Calendar className="w-3.5 h-3.5" />
-                            <span>Halaman Impor (.ics) Google Calendar ↗</span>
-                          </a>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -6524,85 +6464,29 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
         return (
           <div className="space-y-6 font-sans">
 
-            {/* POLICY OVERVIEW BANNER */}
-            <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-6 rounded-xl border border-slate-800 shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10">
-                <Zap className="w-48 h-48 text-amber-400" />
-              </div>
-              <div className="relative z-10 max-w-4xl space-y-4">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400/20 border border-amber-400/30 rounded-full text-[10px] font-extrabold text-amber-300 uppercase tracking-wider">
-                  <Award className="w-3.5 h-3.5 text-amber-400" /> REGULASI WAJIB BASIC ELECTRICAL - PROGRESS PEGAWAI
+            {/* HEADER FUNGSIONAL KOMPETENSI KELISTRIKAN */}
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                  <Award className="w-4 h-4 text-indigo-600" />
                 </div>
-                <h2 className="text-xl md:text-2xl font-display font-bold tracking-tight">Standardisasi Kompetensi Kelistrikan Staff Produksi</h2>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Sesuai dengan instruksi manajemen RIZ-PRODUCTION, seluruh personel di divisi <strong className="text-white">Sound (Audio), Lighting, Multimedia, Videotron, dan Gudang</strong> wajib menguasai 6 poin kompetensi kelistrikan dasar (Basic Electrical). Tingkat penguasaan kelistrikan ini dicatat dalam sistem dan menjadi prasyarat mutlak untuk <strong>kenaikan status kepegawaian</strong> (Magang ke Kontrak, Kontrak ke Tetap) serta penilaian kinerja tahunan.
-                </p>
-                <div className="text-[11px] text-slate-400 flex flex-wrap gap-x-4 gap-y-1 pt-2">
-                  <span>⚡ <strong className="text-slate-200">Admin/Supervisor/TL</strong> dapat memberikan verifikasi centang kelayakan langsung.</span>
-                  <span>✍️ <strong className="text-slate-200">Staff</strong> dapat mengambil Quiz K3 Kelistrikan secara mandiri untuk membuka modul pertama.</span>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-sm">Standardisasi Kompetensi Kelistrikan Staff Produksi</h3>
+                  <p className="text-[11px] text-slate-500">Verifikasi Penguasaan 6 Poin Basic Electrical & Quiz K3 Kelistrikan</p>
                 </div>
               </div>
-            </div>
 
-            {/* HIERARCHICAL COMPETENCY DEVELOPMENT FLOW (ROADMAP) */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-slate-100 gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-indigo-50 text-indigo-600 rounded">
-                    <Award className="w-4 h-4 text-indigo-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-sm">Alur Standardisasi Pelatihan & Sertifikasi</h3>
-                    <p className="text-[10px] text-slate-400">Kerangka Penilaian Kompetensi Kelistrikan Dasar RIZ-PRODUCTION</p>
-                  </div>
-                </div>
-
-                {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
-                  <button
-                    type="button"
-                    onClick={handleResetAllCompetencies}
-                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto shadow-xs"
-                    title="Reset seluruh hasil kompetensi dan sertifikasi semua staff ke 0%"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Reset Semua Kompetensi Staff (0%)</span>
-                  </button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-11 gap-2.5 items-stretch relative">
-                {[
-                  { name: 'Program', desc: 'Regulasi Dasar' },
-                  { name: 'Bidang', desc: 'Basic Electrical' },
-                  { name: 'Modul', desc: '6 Materi Inti' },
-                  { name: 'Unit Kompetensi', desc: 'Standar Kelayakan' },
-                  { name: 'Elemen Kompetensi', desc: 'Rincian Kriteria' },
-                  { name: 'Indikator Unjuk Kerja', desc: 'Metrik Pengukuran' },
-                  { name: 'Materi', desc: 'K3 & Teori Fisika' },
-                  { name: 'Workshop', desc: 'Praktek Lapangan' },
-                  { name: 'Assessment', desc: 'Uji Mandiri / TL' },
-                  { name: 'Evidence', desc: 'Portofolio / Log' },
-                  { name: 'Certification', desc: 'Rekomendasi TL' }
-                ].map((step, sIdx, arr) => (
-                  <div key={sIdx} className="flex flex-col items-center justify-between text-center relative group">
-                    <div className="w-full h-full p-2.5 bg-slate-50 hover:bg-indigo-50/50 border border-slate-100 hover:border-indigo-200 rounded-lg transition-all flex flex-col items-center justify-center space-y-1">
-                      <span className="text-[9px] font-mono font-bold text-indigo-500">0{sIdx + 1}</span>
-                      <span className="font-bold text-[11px] text-slate-800 leading-tight">{step.name}</span>
-                      <span className="text-[9px] text-slate-400 font-medium leading-none">{step.desc}</span>
-                    </div>
-                    {sIdx < arr.length - 1 && (
-                      <div className="hidden lg:flex items-center absolute -right-2 top-1/2 -translate-y-1/2 z-10 text-slate-300">
-                        →
-                      </div>
-                    )}
-                    {sIdx < arr.length - 1 && (
-                      <div className="flex lg:hidden text-center text-slate-300 my-0.5 justify-center w-full">
-                        ↓
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              {(currentUser.role === 'Admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Manager') && (
+                <button
+                  type="button"
+                  onClick={handleResetAllCompetencies}
+                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto shadow-xs"
+                  title="Reset seluruh hasil kompetensi dan sertifikasi semua staff ke 0%"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Reset Semua Kompetensi Staff (0%)</span>
+                </button>
+              )}
             </div>
 
             {/* HIGH-LEVEL ANALYTICS METRICS */}
