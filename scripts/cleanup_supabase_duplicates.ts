@@ -1,57 +1,65 @@
-import { pullCollectionFromSupabase, deleteSupabaseDoc, saveSupabaseDoc } from '../src/lib/supabaseSync';
+import { pullCollectionFromSupabase, deleteSupabaseDoc, pushCollectionToSupabase } from '../src/lib/supabaseSync';
 import { normalizeCollectionItems } from '../src/lib/cloudSync';
+import { INITIAL_DAILY_REPORTS, INITIAL_LOGBOOK_ENTRIES, INITIAL_DAILY_TASKS, INITIAL_FINDINGS } from '../src/data';
 
 async function cleanup() {
   console.log('Fetching daily_reports from Supabase...');
   const sbReports = await pullCollectionFromSupabase('daily_reports');
-  console.log('Total daily_reports:', sbReports.length);
+  console.log('Total daily_reports in Supabase:', sbReports.length);
 
-  // Identify test IDs
-  const testReports = sbReports.filter((r: any) => String(r.id || '').startsWith('dr-test') || String(r.id || '').startsWith('test-'));
-  console.log('Test reports to delete:', testReports.map((r: any) => r.id));
-  for (const r of testReports) {
-    await deleteSupabaseDoc('daily_reports', r.id);
-  }
+  const mergedReports = normalizeCollectionItems('daily_reports', [...INITIAL_DAILY_REPORTS, ...sbReports]);
+  const cleanReportIds = new Set(mergedReports.map((r: any) => String(r.id)));
+  const dirtyReportIds = sbReports
+    .filter((r: any) => !cleanReportIds.has(String(r.id)))
+    .map((r: any) => String(r.id));
 
-  // Identify duplicate October reports
-  const octReports = sbReports.filter((r: any) => r.date && r.date.startsWith('2026-10') && !String(r.id || '').startsWith('dr-test'));
-  console.log('October reports before cleanup:', octReports.length);
-  
-  const cleanOctReports = normalizeCollectionItems('daily_reports', octReports);
-  console.log('Clean October reports:', cleanOctReports.length);
-
-  const cleanIds = new Set(cleanOctReports.map(r => r.id));
-  const dirtyIds = octReports.filter((r: any) => !cleanIds.has(r.id)).map((r: any) => r.id);
-  console.log(`Deleting ${dirtyIds.length} duplicate/shifted report records from Supabase...`);
-  for (const id of dirtyIds) {
+  console.log(`Deleting ${dirtyReportIds.length} obsolete/shifted report records from Supabase...`);
+  for (const id of dirtyReportIds) {
     await deleteSupabaseDoc('daily_reports', id);
   }
 
-  // Now do the same for logbook_entries
+  const novCanonicalReports = INITIAL_DAILY_REPORTS.filter((r: any) => String(r.date || '').startsWith('2026-11'));
+  await pushCollectionToSupabase('daily_reports', novCanonicalReports as any[]);
+  console.log(`Upserted ${novCanonicalReports.length} canonical November 2026 daily_reports to Supabase.`);
+
   console.log('\nFetching logbook_entries from Supabase...');
   const sbLogs = await pullCollectionFromSupabase('logbook_entries');
-  console.log('Total logbook_entries:', sbLogs.length);
+  console.log('Total logbook_entries in Supabase:', sbLogs.length);
 
-  const testLogs = sbLogs.filter((l: any) => String(l.id || '').startsWith('lg-test') || String(l.id || '').startsWith('test-'));
-  console.log('Test logs to delete:', testLogs.map((l: any) => l.id));
-  for (const l of testLogs) {
-    await deleteSupabaseDoc('logbook_entries', l.id);
-  }
+  const mergedLogs = normalizeCollectionItems('logbook_entries', [...INITIAL_LOGBOOK_ENTRIES, ...sbLogs]);
+  const cleanLogIds = new Set(mergedLogs.map((l: any) => String(l.id)));
+  const dirtyLogIds = sbLogs
+    .filter((l: any) => !cleanLogIds.has(String(l.id)))
+    .map((l: any) => String(l.id));
 
-  const octLogs = sbLogs.filter((l: any) => l.date && l.date.startsWith('2026-10') && !String(l.id || '').startsWith('lg-test'));
-  console.log('October logs before cleanup:', octLogs.length);
-
-  const cleanOctLogs = normalizeCollectionItems('logbook_entries', octLogs);
-  console.log('Clean October logs:', cleanOctLogs.length);
-
-  const cleanLogIds = new Set(cleanOctLogs.map(l => l.id));
-  const dirtyLogIds = octLogs.filter((l: any) => !cleanLogIds.has(l.id)).map((l: any) => l.id);
-  console.log(`Deleting ${dirtyLogIds.length} duplicate/shifted log records from Supabase...`);
+  console.log(`Deleting ${dirtyLogIds.length} obsolete/shifted logbook records from Supabase...`);
   for (const id of dirtyLogIds) {
     await deleteSupabaseDoc('logbook_entries', id);
   }
 
-  console.log('\nCleanup complete!');
+  const novCanonicalLogs = INITIAL_LOGBOOK_ENTRIES.filter((l: any) => String(l.date || '').startsWith('2026-11'));
+  await pushCollectionToSupabase('logbook_entries', novCanonicalLogs as any[]);
+  console.log(`Upserted ${novCanonicalLogs.length} canonical November 2026 logbook_entries to Supabase.`);
+
+  console.log('\nFetching findings from Supabase...');
+  const sbFindings = await pullCollectionFromSupabase('findings');
+  const mergedFindings = normalizeCollectionItems('findings', [...INITIAL_FINDINGS, ...sbFindings]);
+  const cleanFindingIds = new Set(mergedFindings.map((f: any) => String(f.id)));
+  const dirtyFindingIds = sbFindings
+    .filter((f: any) => !cleanFindingIds.has(String(f.id)))
+    .map((f: any) => String(f.id));
+
+  console.log(`Deleting ${dirtyFindingIds.length} obsolete finding records from Supabase...`);
+  for (const id of dirtyFindingIds) {
+    await deleteSupabaseDoc('findings', id);
+  }
+  await pushCollectionToSupabase('findings', INITIAL_FINDINGS as any[]);
+
+  console.log('\nSyncing canonical daily_tasks to Supabase...');
+  await pushCollectionToSupabase('daily_tasks', INITIAL_DAILY_TASKS as any[]);
+  console.log(`Upserted ${INITIAL_DAILY_TASKS.length} canonical daily_tasks to Supabase.`);
+
+  console.log('\nCleanup & reconciliation complete!');
 }
 
 cleanup().catch(console.error);

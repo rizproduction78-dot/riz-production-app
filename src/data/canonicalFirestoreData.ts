@@ -3,7 +3,7 @@ import { DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
 /**
  * DATA KANONIKAL RESMI CLOUD FIRESTORE & GOOGLE SHEET PT. RIZ PRODUCTION MULTI KREASI
  * Disinkronkan langsung dari Cloud Firestore (wh-logbook-2026).
- * Total: 305 Daily Reports | 251 Logbook Entries | 60 Findings | 28 Work Orders
+ * Total: 307 Daily Reports | 252 Logbook Entries | 60 Findings | 28 Work Orders
  */
 
 export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
@@ -5708,6 +5708,74 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     ],
     "status": "Submitted",
     "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261105-staff-heri-80",
+    "date": "2026-11-05",
+    "staffName": "Heri",
+    "division": "Lighting",
+    "activity": "- Cleaning All Mini Brut & Cek kelengkapan\nBreket (No. 1-2-3-4-5-6-7-8-9-10)\n- Cleaning All Freshnel 300W & Cek\nKelengkapan breket (No.1-2-3-4-5-6-7-8)\n- Cleaning All Freshnel 200W & Cek\nKelengkapan breket (No.1-2-3-4-5-6-7-8-9-10-11-12)\n-Cleaning All Stromy & Cek kelengkapan breket\nNo. 1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18\n19-20-21-22-23-24-25-26-27-28-29-30\n- Benerin Bok Freshnel 200W ganti siku (1Bok)",
+    "notes": "- Bersih, Normal, Breket Kumplit\n- Bersih, Normal, Breket Kumplit tiap bok\n- Bersih, Normal, Breket Kumplit tiap bok\n- Bersih, Normal, Breket Komplit tiap bok\n- Sudah Beres (Bener)",
+    "rowDetails": [
+      {
+        "activity": "- Cleaning All Mini Brut & Cek kelengkapan",
+        "remark": "- Bersih, Normal, Breket Kumplit"
+      },
+      {
+        "activity": "Breket (No. 1-2-3-4-5-6-7-8-9-10)",
+        "remark": ""
+      },
+      {
+        "activity": "- Cleaning All Freshnel 300W & Cek",
+        "remark": "- Bersih, Normal, Breket Kumplit tiap bok"
+      },
+      {
+        "activity": "Kelengkapan breket (No.1-2-3-4-5-6-7-8)",
+        "remark": ""
+      },
+      {
+        "activity": "- Cleaning All Freshnel 200W & Cek",
+        "remark": "- Bersih, Normal, Breket Kumplit tiap bok"
+      },
+      {
+        "activity": "Kelengkapan breket (No.1-2-3-4-5-6-7-8-9-10-11-12)",
+        "remark": ""
+      },
+      {
+        "activity": "-Cleaning All Stromy & Cek kelengkapan breket",
+        "remark": "- Bersih, Normal, Breket Komplit tiap bok"
+      },
+      {
+        "activity": "No. 1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18",
+        "remark": ""
+      },
+      {
+        "activity": "19-20-21-22-23-24-25-26-27-28-29-30",
+        "remark": ""
+      },
+      {
+        "activity": "- Benerin Bok Freshnel 200W ganti siku (1Bok)",
+        "remark": "- Sudah Beres (Bener)"
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261105-staff-mulyadi-90",
+    "date": "2026-11-05",
+    "staffName": "Mulyadi",
+    "division": "Multimedia",
+    "activity": "Brins mampang",
+    "notes": "done",
+    "rowDetails": [
+      {
+        "activity": "Brins mampang",
+        "remark": "done"
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
   }
 ];
 
@@ -11203,13 +11271,13 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "division": "Lighting",
     "staffName": "Heri",
     "activity": "Cek Unit Tripot\n- A , Tripot Centurion\n- B , Tripot Centurion\n- C , Tripot Lama (Berat)\n- D , Tripot Lama\n- E , Tripot Lama ( Tipis Enteng )\n- F , Tripot Lama ( Tipis Enteng )\n- G , Tripot Custom",
-    "result": "OK",
+    "result": "NG",
     "followUp": "Normal\nNormal\nNormal\nNormal\nNormal\nNormal\nKeadaan tidak komplite",
-    "status": "Close",
+    "status": "Open",
     "verification": "Auto-Synced",
     "checklists": {
       "Cek Unit Tripot\n- A , Tripot Centurion\n-": {
-        "status": "OK",
+        "status": "NG",
         "notes": "Normal\nNormal\nNormal\nNormal\nNormal\nNormal\nKeadaan tidak komplite"
       }
     },
@@ -12119,13 +12187,13 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "division": "Videotron",
     "staffName": "Mulyana",
     "activity": "servise 8 kabinet led\n- 6 kabinet ganti dead pixel\n-1 kabinet ganti ic warna\n- 1 kabinet ganti jalur",
-    "result": "OK",
+    "result": "NG",
     "followUp": "2 unit minta ganti recieving card\nselesai\nselesai\nselesai",
-    "status": "Close",
+    "status": "Open",
     "verification": "Auto-Synced",
     "checklists": {
       "servise 8 kabinet led\n- 6 kabinet ganti ": {
-        "status": "OK",
+        "status": "NG",
         "notes": "2 unit minta ganti recieving card\nselesai\nselesai\nselesai"
       }
     },
@@ -12369,6 +12437,66 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
       {
         "activity": "- 5 kabinet ganti jalur",
         "remark": "done"
+      }
+    ],
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261105-staff-heri-80",
+    "date": "2026-11-05",
+    "division": "Lighting",
+    "staffName": "Heri",
+    "activity": "- Cleaning All Mini Brut & Cek kelengkapan\nBreket (No. 1-2-3-4-5-6-7-8-9-10)\n- Cleaning All Freshnel 300W & Cek\nKelengkapan breket (No.1-2-3-4-5-6-7-8)\n- Cleaning All Freshnel 200W & Cek\nKelengkapan breket (No.1-2-3-4-5-6-7-8-9-10-11-12)\n-Cleaning All Stromy & Cek kelengkapan breket\nNo. 1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18\n19-20-21-22-23-24-25-26-27-28-29-30\n- Benerin Bok Freshnel 200W ganti siku (1Bok)",
+    "result": "OK",
+    "followUp": "- Bersih, Normal, Breket Kumplit\n- Bersih, Normal, Breket Kumplit tiap bok\n- Bersih, Normal, Breket Kumplit tiap bok\n- Bersih, Normal, Breket Komplit tiap bok\n- Sudah Beres (Bener)",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "- Cleaning All Mini Brut & Cek kelengkap": {
+        "status": "OK",
+        "notes": "- Bersih, Normal, Breket Kumplit\n- Bersih, Normal, Breket Kumplit tiap bok\n- Bersih, Normal, Breket Kumplit tiap bok\n- Bersih, Normal, Breket Komplit tiap bok\n- Sudah Beres (Bener)"
+      }
+    },
+    "rowDetails": [
+      {
+        "activity": "- Cleaning All Mini Brut & Cek kelengkapan",
+        "remark": "- Bersih, Normal, Breket Kumplit"
+      },
+      {
+        "activity": "Breket (No. 1-2-3-4-5-6-7-8-9-10)",
+        "remark": ""
+      },
+      {
+        "activity": "- Cleaning All Freshnel 300W & Cek",
+        "remark": "- Bersih, Normal, Breket Kumplit tiap bok"
+      },
+      {
+        "activity": "Kelengkapan breket (No.1-2-3-4-5-6-7-8)",
+        "remark": ""
+      },
+      {
+        "activity": "- Cleaning All Freshnel 200W & Cek",
+        "remark": "- Bersih, Normal, Breket Kumplit tiap bok"
+      },
+      {
+        "activity": "Kelengkapan breket (No.1-2-3-4-5-6-7-8-9-10-11-12)",
+        "remark": ""
+      },
+      {
+        "activity": "-Cleaning All Stromy & Cek kelengkapan breket",
+        "remark": "- Bersih, Normal, Breket Komplit tiap bok"
+      },
+      {
+        "activity": "No. 1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18",
+        "remark": ""
+      },
+      {
+        "activity": "19-20-21-22-23-24-25-26-27-28-29-30",
+        "remark": ""
+      },
+      {
+        "activity": "- Benerin Bok Freshnel 200W ganti siku (1Bok)",
+        "remark": "- Sudah Beres (Bener)"
       }
     ],
     "_source": "google_sheet"

@@ -364,7 +364,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v106_balanced_sheet_kpi_nov5';
+  const REF_SYNC_KEY = 'riz_ref_synced_v108_notification_komit_nov5_sync';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
@@ -1053,7 +1053,41 @@ export default function App() {
         }
       }
 
-      if (newFindingDocs.length > 0) {
+      if (syncedMonthKey && parsedEntries.length > 0) {
+        const validSheetFindingIds = new Set(newFindingDocs.map(d => d.id));
+        const canonicalFindingIds = new Set(INITIAL_FINDINGS.map(f => f.id));
+        const staleFindingIdsToRemove = new Set<string>();
+        setFindings(prev => {
+          const map = new Map<string, any>();
+          prev.forEach(f => {
+            if (!f?.id) return;
+            const idStr = String(f.id);
+            const fDate = String(f.dateCreated || '');
+            const isInSyncedMonth = fDate.startsWith(syncedMonthKey);
+            const isAutoSheetFinding = idStr.startsWith('gsheet-finding-') && !canonicalFindingIds.has(idStr);
+            const isUserEdited = Boolean((f as any)._userEdited || f._syncMeta?._userEdited);
+            if (isInSyncedMonth && isAutoSheetFinding && !isUserEdited && !validSheetFindingIds.has(idStr)) {
+              staleFindingIdsToRemove.add(idStr);
+              return;
+            }
+            map.set(idStr, f);
+          });
+          newFindingDocs.forEach(d => {
+            const existing = map.get(d.id);
+            if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
+            map.set(d.id, existing ? { ...existing, ...d, status: existing.status || d.status } : d);
+          });
+          const merged = normalizeCollectionItems('findings', Array.from(map.values()));
+          try {
+            localStorage.setItem('riz_findings_v2', JSON.stringify(merged));
+            localStorage.setItem('riz_findings', JSON.stringify(merged));
+          } catch (_e) {}
+          return merged as any;
+        });
+        staleFindingIdsToRemove.forEach(staleId => {
+          deleteCloudDoc('findings', staleId).catch(() => {});
+        });
+      } else if (newFindingDocs.length > 0) {
         setFindings(prev => {
           const map = new Map<string, any>();
           prev.forEach(f => { if (f?.id) map.set(f.id, f); });

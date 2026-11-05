@@ -45,6 +45,7 @@ import {
 import { getVehicleExpiryAlerts } from '../utils/vehicleExpiryAlerts';
 import { INITIAL_VEHICLES, INITIAL_DAILY_REPORTS } from '../data';
 import { formatMonthLabel } from '../data/staffSchedules';
+import { isFindingRemark } from '../lib/googleSheetSync';
 
 export interface QCNotificationCenterProps {
   dailyReports?: DailyReport[];
@@ -174,14 +175,12 @@ export interface NotificationItem {
   targetTab: string;
 }
 
-// Kata kunci spesifik temuan kendala / kerusakan nyata
+// Kata kunci spesifik temuan kendala / kerusakan nyata (belum terselesaikan)
 const STRICT_FINDING_TERMS = [
   'dead pixel',
   'ilang jalur',
   'hilang jalur',
-  'ganti jalur',
   'kena ic',
-  'ganti ic warna',
   'mati total',
   'led merah mati',
   'red mati',
@@ -208,6 +207,9 @@ const STRICT_FINDING_TERMS = [
   'ga bisa ngisi',
   'tidak bisa ngisi',
   'ga bisa input',
+  'gabisa input',
+  'tidak menyala',
+  'tidak nyala',
   'twiter mati',
   'tweeter mati',
   'twitwe kecil',
@@ -383,7 +385,43 @@ export default function QCNotificationCenter({
   const isRowKendalaText = (text?: string): boolean => {
     if (!text) return false;
     const lower = String(text).toLowerCase();
+    if (/\bsudah\s+(?:di\s*perbaiki|di\s*pasangkan|normal|oke|ok|beres|selesai|aman|kepasang)\b/i.test(lower)) {
+      if (!lower.includes('belum') && !lower.includes('masih') && !lower.includes('kecuali')) {
+        return false;
+      }
+    }
     return STRICT_FINDING_TERMS.some(t => lower.includes(t));
+  };
+
+  // Evaluasi status kendala per baris secara komit pada kolom REMARK Google Sheet:
+  // Jika kolom REMARK terisi (mis. "done", "selesai", "kondisi ok", "Aman"), maka status ditentukan murni dari REMARK
+  // sehingga aktivitas perbaikan yang sudah selesai (seperti "- 5 kabinet ganti jalur" -> "done") TIDAK dianggap kendala.
+  const isRowKendala = (act?: string, rem?: string): boolean => {
+    const cleanRem = String(rem || '').trim();
+    if (cleanRem && cleanRem !== '-') {
+      return isFindingRemark(cleanRem) || isRowKendalaText(cleanRem);
+    }
+    return isRowKendalaText(act);
+  };
+
+  const compactLongNumberSequence = (text: string): string => {
+    return text.replace(/\b(\d+(?:-\d+){3,})\b/g, match => {
+      const nums = match.split('-').map(Number);
+      const isSequential = nums.every((n, idx) => idx === 0 || n === nums[idx - 1] + 1);
+      if (isSequential && nums.length >= 4) {
+        return `${nums[0]}-${nums[nums.length - 1]}`;
+      }
+      return match;
+    });
+  };
+
+  const isSheetContinuationActivity = (act: string): boolean => {
+    const clean = act.trim();
+    if (!clean) return false;
+    if (/^(?:no\.?\s*)?\d+(?:\s*[-–,]\s*\d+)+$/i.test(clean)) return true;
+    if (/^(?:kelengkapan\s+)?breket\s*\(no\.?\s*\d+/i.test(clean)) return true;
+    if (/^mas+ing2\b/i.test(clean)) return true;
+    return false;
   };
 
   const normalizeStaffKey = (staffName?: string): string => {
@@ -407,12 +445,6 @@ export default function QCNotificationCenter({
     if (raw.includes('damri')) return 'damri';
     if (raw.includes('gatot')) return 'gatotwiliyanto';
     return raw.replace(/[^a-z0-9]/g, '');
-  };
-
-  const isGenericOkRemark = (rem?: string): boolean => {
-    const clean = String(rem || '').trim().toLowerCase();
-    if (!clean) return false;
-    return /^(kondisi\s+unit\s+sudah\s+ok|kondisi\s+sudah\s+ok|kondisi\s+ok|sudah\s+ok|ok|aman|normal|bagus|done|selesai)$/i.test(clean);
   };
 
   // Menggabungkan HANYA 4 SUMBER INPUT OPERASIONAL RESMI TANPA DUPLIKASI BERULANG:
@@ -448,26 +480,87 @@ export default function QCNotificationCenter({
       }
     });
 
-    // Helper membangun pasangan baris Aktivitas <-> Remark tanpa pengulangan kalimat "Kondisi unit sudah OK" berulang-ulang
+    // Mengelompokkan baris unit bernomor berurutan yang memiliki nama alat, remark, dan status sama
+    // Contoh: "- maintenance kabel extention 10meter 1" s/d "11" -> "- maintenance kabel extention 10meter (No. 1 - 11)"
+    const groupConsecutiveNumberedRows = (rows: PairedActivityRow[]): PairedActivityRow[] => {
+      const parseNumberedRow = (act: string) => {
+        const m = act.match(/^([-–*•\s]*)(.+?)\s+(?:no\.?\s*)?(\d+(?:\s*[-–]\s*\d+)?)$/i);
+        if (!m) return null;
+        const prefix = m[1] ? '- ' : '';
+        const rawBase = m[2].trim().replace(/\bmaintenanace\b/gi, 'maintenance');
+        const normBase = rawBase.toLowerCase().replace(/\s+/g, ' ');
+        const numLabel = m[3].trim();
+        return { prefix, displayBase: `${prefix}${rawBase}`, normBase, numLabel };
+      };
+
+      const grouped: PairedActivityRow[] = [];
+      let i = 0;
+      while (i < rows.length) {
+        const parsedFirst = parseNumberedRow(rows[i].activity);
+        if (!parsedFirst) {
+          grouped.push(rows[i]);
+          i++;
+          continue;
+        }
+
+        const run: Array<{ row: PairedActivityRow; numLabel: string }> = [
+          { row: rows[i], numLabel: parsedFirst.numLabel }
+        ];
+        let j = i + 1;
+        while (j < rows.length) {
+          const parsedNext = parseNumberedRow(rows[j].activity);
+          if (
+            parsedNext &&
+            parsedNext.normBase === parsedFirst.normBase &&
+            rows[j].isNg === rows[i].isNg &&
+            rows[j].remark.toLowerCase().trim() === rows[i].remark.toLowerCase().trim()
+          ) {
+            run.push({ row: rows[j], numLabel: parsedNext.numLabel });
+            j++;
+          } else {
+            break;
+          }
+        }
+
+        if (run.length >= 2) {
+          const singleNums = run.map(item => (/^\d+$/.test(item.numLabel) ? Number(item.numLabel) : NaN));
+          const isContiguousInts =
+            singleNums.every(n => !isNaN(n)) &&
+            singleNums.every((n, idx) => idx === 0 || n === singleNums[idx - 1] + 1);
+          const rangeSuffix = isContiguousInts
+            ? `(No. ${singleNums[0]} - ${singleNums[singleNums.length - 1]})`
+            : `(No. ${run.map(item => item.numLabel).join(', ')})`;
+
+          grouped.push({
+            activity: `${parsedFirst.displayBase} ${rangeSuffix}`,
+            remark: rows[i].remark,
+            isNg: rows[i].isNg
+          });
+          i = j;
+        } else {
+          grouped.push(rows[i]);
+          i++;
+        }
+      }
+      return grouped;
+    };
+
+    // Helper membangun pasangan baris Aktivitas <-> Remark sesuai literal Google Sheet (tanpa mengubah teks remark menjadi "OK")
     const compactPairedRows = (rows: PairedActivityRow[]): PairedActivityRow[] => {
       const deduped: PairedActivityRow[] = [];
       const seenRowKey = new Set<string>();
       rows.forEach(r => {
-        const key = `${r.activity.toLowerCase().trim()}__${r.remark.toLowerCase().trim()}`;
+        const cleanedAct = compactLongNumberSequence(r.activity);
+        const key = `${cleanedAct.toLowerCase().trim()}__${r.remark.toLowerCase().trim()}`;
         if (seenRowKey.has(key)) return;
         seenRowKey.add(key);
-        deduped.push(r);
+        deduped.push({
+          ...r,
+          activity: cleanedAct
+        });
       });
 
-      const genericOkCount = deduped.filter(r => !r.isNg && isGenericOkRemark(r.remark)).length;
-      if (genericOkCount <= 1) return deduped;
-
-      return deduped.map(r => {
-        if (!r.isNg && isGenericOkRemark(r.remark)) {
-          return { ...r, remark: 'OK' };
-        }
-        return r;
-      });
+      return groupConsecutiveNumberedRows(deduped);
     };
 
     const buildReportPairedRows = (
@@ -476,25 +569,78 @@ export default function QCNotificationCenter({
       notesStr?: string
     ): PairedActivityRow[] => {
       if (Array.isArray(rawDetails) && rawDetails.length > 0) {
+        const mergedDetails: Array<{ activity: string; remark: string }> = [];
+        let pendingSharedRemark = '';
+
+        rawDetails.forEach(r => {
+          if (!r) return;
+          const act = String(r.activity || '').trim();
+          const rem = r.remark && r.remark !== '-' ? String(r.remark).trim() : '';
+          if (!act && !rem) return;
+
+          if (!act && rem) {
+            if (mergedDetails.length === 0) {
+              pendingSharedRemark = pendingSharedRemark ? `${pendingSharedRemark} • ${rem}` : rem;
+            } else {
+              const prev = mergedDetails[mergedDetails.length - 1];
+              if (!prev.remark) {
+                prev.remark = rem;
+              } else if (isRowKendala('', rem) && !isRowKendala(prev.activity, prev.remark)) {
+                mergedDetails.push({ activity: rem, remark: rem });
+              } else if (!prev.remark.includes(rem)) {
+                prev.remark = `${prev.remark} • ${rem}`;
+              }
+            }
+            return;
+          }
+
+          if (isSheetContinuationActivity(act) && mergedDetails.length > 0) {
+            const prev = mergedDetails[mergedDetails.length - 1];
+            const joiner = /\d$/.test(prev.activity) && /^\d/.test(act) ? '-' : ' ';
+            prev.activity = compactLongNumberSequence(`${prev.activity}${joiner}${act}`);
+            if (rem) {
+              prev.remark = prev.remark ? `${prev.remark} • ${rem}` : rem;
+            }
+            return;
+          }
+
+          let effectiveRem = rem;
+          if (!effectiveRem && pendingSharedRemark) {
+            effectiveRem = pendingSharedRemark;
+          } else if (effectiveRem && pendingSharedRemark) {
+            pendingSharedRemark = '';
+          }
+
+          mergedDetails.push({
+            activity: compactLongNumberSequence(act),
+            remark: effectiveRem
+          });
+        });
+
         return compactPairedRows(
-          rawDetails
-            .filter(r => r && String(r.activity || '').trim() !== '')
-            .map(r => {
-              const act = String(r.activity || '').trim();
-              const rem = r.remark && r.remark !== '-' ? String(r.remark).trim() : '';
-              return {
-                activity: act,
-                remark: rem,
-                isNg: isRowKendalaText(act) || isRowKendalaText(rem)
-              };
-            })
+          mergedDetails.map(r => ({
+            activity: r.activity,
+            remark: r.remark,
+            isNg: isRowKendala(r.activity, r.remark)
+          }))
         );
       }
 
-      const actLines = String(activityStr || '')
+      const rawActLines = String(activityStr || '')
         .split('\n')
         .map(s => s.trim())
         .filter(Boolean);
+      const actLines: string[] = [];
+      rawActLines.forEach(line => {
+        if (isSheetContinuationActivity(line) && actLines.length > 0) {
+          const prev = actLines[actLines.length - 1];
+          const joiner = /\d$/.test(prev) && /^\d/.test(line) ? '-' : ' ';
+          actLines[actLines.length - 1] = compactLongNumberSequence(`${prev}${joiner}${line}`);
+        } else {
+          actLines.push(compactLongNumberSequence(line));
+        }
+      });
+
       const remLines = String(notesStr || '')
         .split('\n')
         .map(s => s.trim())
@@ -506,7 +652,7 @@ export default function QCNotificationCenter({
           actLines.map((act, idx) => ({
             activity: act,
             remark: remLines[idx] || '',
-            isNg: isRowKendalaText(act) || isRowKendalaText(remLines[idx])
+            isNg: isRowKendala(act, remLines[idx])
           }))
         );
       }
@@ -517,15 +663,25 @@ export default function QCNotificationCenter({
           {
             activity: actLines[0],
             remark: joinedRem,
-            isNg: isRowKendalaText(actLines[0]) || isRowKendalaText(joinedRem)
+            isNg: isRowKendala(actLines[0], joinedRem)
           }
         ]);
+      }
+      if (actLines.length > 1 && remLines.length === 1) {
+        const sharedRem = remLines[0];
+        return compactPairedRows(
+          actLines.map(act => ({
+            activity: act,
+            remark: sharedRem,
+            isNg: isRowKendala(act, sharedRem)
+          }))
+        );
       }
       return compactPairedRows(
         actLines.map(act => ({
           activity: act,
           remark: '',
-          isNg: isRowKendalaText(act)
+          isNg: isRowKendala(act, '')
         }))
       );
     };
@@ -572,11 +728,10 @@ export default function QCNotificationCenter({
       const repNotes = rep.notes && rep.notes !== '-' ? rep.notes : undefined;
       const repPairedRows = buildReportPairedRows(effectiveRowDetails, rep.activity, repNotes);
 
-      const lowerAct = String(rep.activity).toLowerCase();
-      const lowerNotes = String(rep.notes || '').toLowerCase();
       const isKendala =
-        repPairedRows.some(r => r.isNg) ||
-        STRICT_FINDING_TERMS.some(t => lowerAct.includes(t) || lowerNotes.includes(t));
+        repPairedRows.length > 0
+          ? repPairedRows.some(r => r.isNg)
+          : isRowKendala(rep.activity, repNotes);
       const repQcResult: 'OK' | 'NG' = isKendala ? 'NG' : 'OK';
       const repBaseTs = parseSafeTimestamp(dateVal, undefined, rep.id);
 
@@ -630,7 +785,10 @@ export default function QCNotificationCenter({
       const allRemarksPairedInline =
         logPairedRows.length > 0 && logPairedRows.some(r => r.remark && r.remark.trim() !== '');
 
-      const isNg = log.result === 'NG' || logPairedRows.some(r => r.isNg);
+      const isNg =
+        logPairedRows.length > 0
+          ? logPairedRows.some(r => r.isNg)
+          : log.result === 'NG' || isRowKendala(log.activity, logNotes);
       const logQcResult: 'OK' | 'NG' = isNg ? 'NG' : 'OK';
       const logBaseTs = parseSafeTimestamp(dateVal, log.time, log.id);
 
@@ -682,11 +840,7 @@ export default function QCNotificationCenter({
       const cleanRemPart = remarkSplit.length > 1 ? remarkSplit.slice(1).join('\n').trim() : '';
 
       const matchedSheetRows = rowDetailsByDateStaff.get(dKey);
-      const taskActLines = cleanActPart.split('\n').map(s => s.trim()).filter(Boolean);
-      const useSheetRows =
-        matchedSheetRows &&
-        matchedSheetRows.length === taskActLines.length &&
-        matchedSheetRows[0]?.activity.toLowerCase() === taskActLines[0]?.toLowerCase();
+      const useSheetRows = Boolean(matchedSheetRows && matchedSheetRows.length > 0 && id.startsWith('dt-2026'));
 
       const taskPairedRows = buildReportPairedRows(
         useSheetRows ? matchedSheetRows : undefined,
@@ -703,7 +857,7 @@ export default function QCNotificationCenter({
           subtitle: task.title !== cleanActPart ? `Tugas: ${task.title}` : undefined,
           metaBadge: taskMetaBadge || undefined,
           activity: cleanActPart,
-          pairedRows: taskPairedRows.length > 0 ? taskPairedRows : existingLogItem.pairedRows,
+          pairedRows: existingLogItem.pairedRows && existingLogItem.pairedRows.length > 0 ? existingLogItem.pairedRows : taskPairedRows,
           source: 'Daily Task Kanban',
           targetTab: 'log_task'
         };
@@ -729,9 +883,10 @@ export default function QCNotificationCenter({
         taskPairedRows.length > 1 &&
         taskPairedRows.every(r => !r.remark);
 
-      const lowerTaskText = `${task.title || ''} ${rawDesc} ${(task as any).notes || ''}`.toLowerCase();
       const isTaskKendala =
-        taskPairedRows.some(r => r.isNg) || STRICT_FINDING_TERMS.some(t => lowerTaskText.includes(t));
+        taskPairedRows.length > 0
+          ? taskPairedRows.some(r => r.isNg)
+          : isRowKendala(cleanActPart, cleanRemPart || (task as any).notes);
       const taskQcResult: 'OK' | 'NG' | 'INFO' = isTaskKendala ? 'NG' : (task.status === 'Done' ? 'OK' : 'INFO');
       const taskBaseTs = parseSafeTimestamp(dateVal, timeVal, task.id);
 
@@ -781,15 +936,24 @@ export default function QCNotificationCenter({
       const staffKey = normalizeStaffKey(staffVal);
       const dKey = `${dateVal}_${staffKey}`;
       const isSheetFinding = f._source === 'google_sheet' || id.startsWith('gsheet-finding-') || id.startsWith('fd-2026');
-      if (isSheetFinding && !dateVal.startsWith('2026-09')) {
-        if (seenFindingStaffDateKeys.has(dKey)) return;
-        seenFindingStaffDateKeys.add(dKey);
-      }
+      const isCanonicalFd = id.startsWith('fd-');
+      const isUserEditedFinding = Boolean((f as any)._userEdited || (f as any)._syncMeta?._userEdited);
 
       // Bersihkan teks "(... Kondisi unit sudah OK)" bila masih ada dari cache lama
       const cleanedIssueText = String(f.issue || '')
         .replace(/\s*\([^)]*kondisi(?:\s+unit)?(?:\s+sudah)?\s+ok[^)]*\)/gi, '')
         .trim();
+
+      // Abaikan gsheet-finding-* usang (non-canonical & belum diedit user) yang bukan merupakan kendala aktual
+      if (isSheetFinding && !isCanonicalFd && !isUserEditedFinding && !isFindingRemark(cleanedIssueText)) {
+        seenIds.add(id);
+        return;
+      }
+
+      if (isSheetFinding && !dateVal.startsWith('2026-09')) {
+        if (seenFindingStaffDateKeys.has(dKey)) return;
+        seenFindingStaffDateKeys.add(dKey);
+      }
 
       const issueSegments = cleanedIssueText
         .split(/\s*\|\s*|\n+/)
@@ -827,6 +991,11 @@ export default function QCNotificationCenter({
       const existingLogItem = itemsByDateStaff.get(dKey);
       if (existingLogItem) {
         seenIds.add(id);
+        // Jika kartu Daily Log aktual dari Google Sheet berstatus OK (semua baris selesai/aman)
+        // dan temuan berasal dari auto-sync lama (bukan fd-* kanonikal & bukan input/editan user), jangan timpa menjadi NG
+        if (existingLogItem.qcResult === 'OK' && !isCanonicalFd && !isUserEditedFinding) {
+          return;
+        }
         addCategoryUnique(existingLogItem, 'Temuan Unit Bermasalah');
         existingLogItem.qcResult = 'NG';
         if (!existingLogItem.subtitle && f.equipment) {
@@ -983,12 +1152,24 @@ export default function QCNotificationCenter({
         if (b.qcResult === 'NG') return 1;
       }
 
-      // 4. Jika tanggal & status sama, timestamp numerik terbaru paling atas
+      // 4. Jika tanggal & status sama dan berasal dari Google Sheet (rep-YYYYMMDD-staff-xxx-<rowNum>),
+      //    urutkan berdasarkan nomor baris di Sheet dari paling bawah (input terbaru hari itu) ke atas
+      const rowMatchA = String(a.id || '').match(/-(\d+)$/);
+      const rowMatchB = String(b.id || '').match(/-(\d+)$/);
+      if (rowMatchA && rowMatchB) {
+        const rowA = parseInt(rowMatchA[1], 10);
+        const rowB = parseInt(rowMatchB[1], 10);
+        if (rowA !== rowB) {
+          return rowB - rowA;
+        }
+      }
+
+      // 5. Jika tanggal & status sama, timestamp numerik terbaru paling atas
       if (b.timestamp !== a.timestamp) {
         return b.timestamp - a.timestamp;
       }
 
-      // 5. Stable sort
+      // 6. Stable sort
       return String(b.id || '').localeCompare(String(a.id || ''));
     });
   }, [dailyReports, logbookEntries, findings, dailyTasks, warehouseLogs, activeMonth, effectiveVehicles]);

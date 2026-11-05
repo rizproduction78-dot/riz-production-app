@@ -212,6 +212,17 @@
 | 05 Nov 2026 | kharo |  |  | servise 6 kabinet |  | done |
 |  |  |  |  | -1 kabinet ngacing |  | done |
 |  |  |  |  | - 5 kabinet ganti jalur |  | done |
+| 5 November 2026 | - Heri |  | - Cleaning All Mini Brut & Cek kelengkapan |  |  | - Bersih, Normal, Breket Kumplit |
+|  |  |  | Breket (No. 1-2-3-4-5-6-7-8-9-10) |  |  |  |
+|  |  |  | - Cleaning All Freshnel 300W & Cek |  |  | - Bersih, Normal, Breket Kumplit tiap bok |
+|  |  |  | Kelengkapan breket (No.1-2-3-4-5-6-7-8) |  |  |  |
+|  |  |  | - Cleaning All Freshnel 200W & Cek |  |  | - Bersih, Normal, Breket Kumplit tiap bok |
+|  |  |  | Kelengkapan breket (No.1-2-3-4-5-6-7-8-9-10-11-12) |  |  |  |
+|  |  |  | -Cleaning All Stromy & Cek kelengkapan breket |  |  | - Bersih, Normal, Breket Komplit tiap bok |
+|  |  |  | No. 1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18 |  |  |  |
+|  |  |  | 19-20-21-22-23-24-25-26-27-28-29-30 |  |  |  |
+|  |  |  | - Benerin Bok Freshnel 200W ganti siku (1Bok) |  |  | - Sudah Beres (Bener) |
+| 5 Nov 2026 | jay |  |  |  | Brins mampang | done |
 
 ## Desember 2026 (GID: 368237370)
 

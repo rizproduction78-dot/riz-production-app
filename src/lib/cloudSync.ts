@@ -9,7 +9,7 @@
 
 import { normalizeStaffMaster, normalizeVehiclesMaster, normalizeAssetsMaster, STAFF_LIST, getMasterStaffList, INITIAL_DAILY_TASKS, INITIAL_DAILY_REPORTS, INITIAL_LOGBOOK_ENTRIES, INITIAL_FINDINGS, INITIAL_JOB_ASSIGNMENTS } from '../data';
 import { isStaffMatch } from '../utils/kpiCalculator';
-import { triggerAutoSyncToGoogleSheet } from './googleSheetSync';
+import { triggerAutoSyncToGoogleSheet, isFindingRemark } from './googleSheetSync';
 import {
   saveSupabaseDoc,
   deleteSupabaseDoc,
@@ -291,6 +291,15 @@ function extractDateFromRecordId(id?: string): string | undefined {
   return undefined;
 }
 
+const CANONICAL_BASELINE_MS = new Date('2026-11-05T14:45:00.000Z').getTime();
+
+function getLiveGvizSyncTimestamp(item: any): number {
+  const raw = item?._syncedAt || item?._syncMeta?._syncedAt;
+  if (!raw) return 0;
+  const ms = new Date(raw).getTime();
+  return Number.isFinite(ms) && ms > CANONICAL_BASELINE_MS ? ms : 0;
+}
+
 // Helper to normalize and enforce canonical data integrity across all devices & caches
 export function normalizeCollectionItems<T = any>(collectionName: string, rawItems: T[]): T[] {
   if (!Array.isArray(rawItems)) return [];
@@ -306,21 +315,35 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
   // Special normalization for daily_tasks: preserve exact operational dates (createdAt & dueDate)
   // and prevent Supabase row.created_at (sync timestamp) from overwriting task dates, while keeping 100% of user edits
   if (collectionName === 'daily_tasks') {
+    const deletedIds = getDeletedIds('daily_tasks');
     const canonicalMap = new Map<string, any>(INITIAL_DAILY_TASKS.map(t => [t.id, t]));
     const map = new Map<string, any>();
+
+    INITIAL_DAILY_TASKS.forEach((canon: any) => {
+      if (canon?.id && !deletedIds.has(String(canon.id))) {
+        map.set(String(canon.id), { ...canon });
+      }
+    });
+
     items.forEach((item: any) => {
       if (!item || !item.id) return;
       const rawId = String(item.id);
+      if (deletedIds.has(rawId)) return;
       const canonical = canonicalMap.get(rawId);
       const idDate = extractDateFromRecordId(rawId);
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
+
+      // Eliminasi task dt-202610* / dt-202611* usang dari cache/Supabase yang bukan bagian dari canonical resmi dan bukan editan user
+      if (!canonical && !isUserEdited && (rawId.startsWith('dt-202610') || rawId.startsWith('dt-202611'))) {
+        return;
+      }
 
       let effectiveDueDate = item.dueDate ? String(item.dueDate).slice(0, 10) : (canonical?.dueDate || idDate);
       let effectiveCreatedAt = item.createdAt ? String(item.createdAt) : (canonical?.createdAt || effectiveDueDate);
 
       if (canonical && !isUserEdited) {
         effectiveCreatedAt = canonical.createdAt;
-        effectiveDueDate = item.dueDate ? String(item.dueDate).slice(0, 10) : (canonical.dueDate || canonical.createdAt);
+        effectiveDueDate = canonical.dueDate || canonical.createdAt;
       } else if (idDate) {
         effectiveCreatedAt = idDate;
         effectiveDueDate = effectiveDueDate || idDate;
@@ -335,17 +358,27 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
         }
       }
 
-      map.set(rawId, {
-        ...(canonical || {}),
-        ...item,
-        title: item.title || canonical?.title || '',
-        description: item.description !== undefined ? item.description : (canonical?.description || ''),
-        division: item.division || canonical?.division || 'Umum',
-        assignedName: item.assignedName || canonical?.assignedName || '',
-        priority: item.priority || canonical?.priority || 'Sedang',
-        createdAt: effectiveCreatedAt,
-        dueDate: effectiveDueDate,
-      });
+      if (canonical && !isUserEdited) {
+        map.set(rawId, {
+          ...item,
+          ...canonical,
+          status: item.status === 'Completed' ? 'Completed' : canonical.status,
+          createdAt: effectiveCreatedAt,
+          dueDate: effectiveDueDate,
+        });
+      } else {
+        map.set(rawId, {
+          ...(canonical || {}),
+          ...item,
+          title: item.title || canonical?.title || '',
+          description: item.description !== undefined ? item.description : (canonical?.description || ''),
+          division: item.division || canonical?.division || 'Umum',
+          assignedName: item.assignedName || canonical?.assignedName || '',
+          priority: item.priority || canonical?.priority || 'Sedang',
+          createdAt: effectiveCreatedAt,
+          dueDate: effectiveDueDate,
+        });
+      }
     });
     return Array.from(map.values()) as T[];
   }
@@ -436,7 +469,23 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const canonical = canonicalFindingsMap.get(rawId);
       const idDate = extractDateFromRecordId(rawId);
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
-      const isLiveSynced = Boolean(item._syncedAt);
+      const isLiveSynced = getLiveGvizSyncTimestamp(item) > 0;
+
+      // Eliminasi entri gsheet-finding-* / find-20261* otomatis yang bukan kendala nyata
+      if (!canonical && !isUserEdited && (rawId.startsWith('gsheet-finding-') || rawId.startsWith('find-20261'))) {
+        if (!isFindingRemark(String(item.issue || ''))) {
+          return;
+        }
+        const fDate = idDate || String(item.dateCreated || item.date || item.targetDate || '').trim().slice(0, 10);
+        if (fDate.startsWith('2026-10') || fDate.startsWith('2026-11')) {
+          const matchedCanonReport = (INITIAL_DAILY_REPORTS || []).find(
+            (r: any) => r?.date === fDate && isStaffMatch({ id: '', name: r.staffName } as any, item.pic)
+          );
+          if (matchedCanonReport && !isFindingRemark(String(matchedCanonReport.notes || ''))) {
+            return;
+          }
+        }
+      }
 
       let normalizedItem = idDate && !isUserEdited
         ? { ...item, dateCreated: idDate, date: idDate }
@@ -501,7 +550,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     const staffDateSheetSet = new Set<string>();
     const canonicalReportsMap = new Map<string, any>((INITIAL_DAILY_REPORTS || []).map((r: any) => [String(r.id), r]));
 
-    // Sort: 1. User-edited, 2. Latest _syncedAt (live Google Sheet pull), 3. Canonical ID, 4. Non-gsheet-
+    // Sort: 1. User-edited, 2. Latest live _syncedAt (newer than canonical baseline), 3. Canonical ID, 4. Non-gsheet-
     const sortedItems = [...items].sort((a: any, b: any) => {
       const aId = String(a?.id || '');
       const bId = String(b?.id || '');
@@ -509,10 +558,8 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const bEdited = b?._userEdited || b?._syncMeta?._userEdited ? 1 : 0;
       if (aEdited !== bEdited) return bEdited - aEdited;
 
-      const aSyncedRaw = a?._syncedAt || a?._syncMeta?._syncedAt || a?._syncMeta?.updatedAt;
-      const bSyncedRaw = b?._syncedAt || b?._syncMeta?._syncedAt || b?._syncMeta?.updatedAt;
-      const aSynced = aSyncedRaw ? new Date(aSyncedRaw).getTime() : 0;
-      const bSynced = bSyncedRaw ? new Date(bSyncedRaw).getTime() : 0;
+      const aSynced = getLiveGvizSyncTimestamp(a);
+      const bSynced = getLiveGvizSyncTimestamp(b);
       if (aSynced !== bSynced) return bSynced - aSynced;
 
       const aCanon = canonicalReportsMap.has(aId) ? 1 : 0;
@@ -535,7 +582,14 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (rawId.startsWith('dr-test') || rawId.startsWith('test-')) return;
 
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
+      const isLiveSynced = getLiveGvizSyncTimestamp(item) > 0;
       const canonical = canonicalReportsMap.get(rawId);
+
+      // Eliminasi baris rep-202610* / rep-202611* usang (shifted row ID lama dari Supabase/cache)
+      // yang tidak ada di canonical resmi dan bukan hasil live sync terbaru ataupun editan user
+      if (!canonical && !isUserEdited && !isLiveSynced && (rawId.startsWith('rep-202610') || rawId.startsWith('rep-202611'))) {
+        return;
+      }
 
       const staffObj = allKnownStaff.find(s => isStaffMatch(s, item.staffName)) || STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
@@ -564,14 +618,17 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (!isCustomAppId && semanticSet.has(semanticKey)) return; // Semantic dedup for external/gsheet rows
       if (!isCustomAppId) semanticSet.add(semanticKey);
 
+      const useCanonicalData = Boolean(canonical && !isUserEdited && !isLiveSynced);
       const normalizedItem = {
         ...(canonical && !isUserEdited ? canonical : {}),
         ...item,
         staffName: effectiveStaffName,
-        division: effectiveDivision,
-        activity: item.activity !== undefined ? item.activity : (canonical?.activity || ''),
-        notes: item.notes !== undefined ? item.notes : (canonical?.notes || ''),
-        rowDetails: Array.isArray(item.rowDetails) ? item.rowDetails : (Array.isArray(canonical?.rowDetails) ? canonical.rowDetails : undefined),
+        division: useCanonicalData ? (canonical.division || effectiveDivision) : effectiveDivision,
+        activity: useCanonicalData ? canonical.activity : (item.activity !== undefined ? item.activity : (canonical?.activity || '')),
+        notes: useCanonicalData ? (canonical.notes || '') : (item.notes !== undefined ? item.notes : (canonical?.notes || '')),
+        rowDetails: useCanonicalData
+          ? (Array.isArray(canonical.rowDetails) ? canonical.rowDetails : (Array.isArray(item.rowDetails) ? item.rowDetails : undefined))
+          : (Array.isArray(item.rowDetails) ? item.rowDetails : (Array.isArray(canonical?.rowDetails) ? canonical.rowDetails : undefined)),
       };
       
       // Keep by ID so updates can happen correctly
@@ -589,7 +646,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     const staffDateSheetSet = new Set<string>();
     const canonicalLogsMap = new Map<string, any>((INITIAL_LOGBOOK_ENTRIES || []).map((l: any) => [String(l.id), l]));
 
-    // Sort: 1. User-edited, 2. Latest _syncedAt (live Google Sheet pull), 3. Canonical ID, 4. Non-gsheet-
+    // Sort: 1. User-edited, 2. Latest live _syncedAt (newer than canonical baseline), 3. Canonical ID, 4. Non-gsheet-
     const sortedItems = [...items].sort((a: any, b: any) => {
       const aId = String(a?.id || '');
       const bId = String(b?.id || '');
@@ -597,10 +654,8 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const bEdited = b?._userEdited || b?._syncMeta?._userEdited ? 1 : 0;
       if (aEdited !== bEdited) return bEdited - aEdited;
 
-      const aSyncedRaw = a?._syncedAt || a?._syncMeta?._syncedAt || a?._syncMeta?.updatedAt;
-      const bSyncedRaw = b?._syncedAt || b?._syncMeta?._syncedAt || b?._syncMeta?.updatedAt;
-      const aSynced = aSyncedRaw ? new Date(aSyncedRaw).getTime() : 0;
-      const bSynced = bSyncedRaw ? new Date(bSyncedRaw).getTime() : 0;
+      const aSynced = getLiveGvizSyncTimestamp(a);
+      const bSynced = getLiveGvizSyncTimestamp(b);
       if (aSynced !== bSynced) return bSynced - aSynced;
 
       const aCanon = canonicalLogsMap.has(aId) ? 1 : 0;
@@ -623,7 +678,12 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (rawId.startsWith('lg-test') || rawId.startsWith('test-')) return;
 
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
+      const isLiveSynced = getLiveGvizSyncTimestamp(item) > 0;
       const canonical = canonicalLogsMap.get(rawId);
+
+      if (!canonical && !isUserEdited && !isLiveSynced && (rawId.startsWith('log-rep-202610') || rawId.startsWith('log-rep-202611'))) {
+        return;
+      }
 
       const staffObj = allKnownStaff.find(s => isStaffMatch(s, item.staffName)) || STAFF_LIST.find(s => isStaffMatch(s, item.staffName));
       
@@ -649,14 +709,19 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (!isCustomAppId && semanticSet.has(semanticKey)) return; // Semantic dedup for external/gsheet rows
       if (!isCustomAppId) semanticSet.add(semanticKey);
 
+      const useCanonicalData = Boolean(canonical && !isUserEdited && !isLiveSynced);
       const normalizedItem = {
         ...(canonical && !isUserEdited ? canonical : {}),
         ...item,
         staffName: effectiveStaffName,
-        division: effectiveDivision,
-        activity: item.activity !== undefined ? item.activity : (canonical?.activity || ''),
-        followUp: item.followUp !== undefined ? item.followUp : (canonical?.followUp || ''),
-        rowDetails: Array.isArray(item.rowDetails) ? item.rowDetails : (Array.isArray(canonical?.rowDetails) ? canonical.rowDetails : undefined),
+        division: useCanonicalData ? (canonical.division || effectiveDivision) : effectiveDivision,
+        activity: useCanonicalData ? canonical.activity : (item.activity !== undefined ? item.activity : (canonical?.activity || '')),
+        result: useCanonicalData ? canonical.result : (item.result || canonical?.result || 'OK'),
+        followUp: useCanonicalData ? (canonical.followUp || '') : (item.followUp !== undefined ? item.followUp : (canonical?.followUp || '')),
+        status: useCanonicalData ? canonical.status : (item.status || canonical?.status || 'Close'),
+        rowDetails: useCanonicalData
+          ? (Array.isArray(canonical.rowDetails) ? canonical.rowDetails : (Array.isArray(item.rowDetails) ? item.rowDetails : undefined))
+          : (Array.isArray(item.rowDetails) ? item.rowDetails : (Array.isArray(canonical?.rowDetails) ? canonical.rowDetails : undefined)),
       };
       
       if (item.id) {

@@ -10,6 +10,7 @@
 import { assert } from 'console';
 import { formatFromSupabase } from '../src/lib/supabaseSync';
 import { normalizeCollectionItems } from '../src/lib/cloudSync';
+import { isFindingRemark } from '../src/lib/googleSheetSync';
 import { INITIAL_DAILY_TASKS, INITIAL_FINDINGS, INITIAL_DAILY_REPORTS } from '../src/data';
 
 function runNotificationTests() {
@@ -188,7 +189,7 @@ function runNotificationTests() {
   const distinctNovDates = Array.from(new Set(novTasks.map((t: any) => t.createdAt))).sort();
   console.log(`- Jumlah Daily Task November 2026: ${novTasks.length}`);
   console.log(`- Tanggal unik Daily Task November 2026: ${distinctNovDates.join(', ')}`);
-  assert(novTasks.length >= 13, `Harus minimal 13 Daily Task November 2026, ditemukan ${novTasks.length}`);
+  assert(novTasks.length === 15, `Harus tepat 15 Daily Task November 2026, ditemukan ${novTasks.length}`);
   assert(
     JSON.stringify(distinctNovDates) === JSON.stringify(['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05']),
     'Tanggal Daily Task November harus terdistribusi presisi pada 2026-11-01 s/d 2026-11-05!'
@@ -199,7 +200,7 @@ function runNotificationTests() {
   );
   console.log('✓ PASS: Tanggal Daily Task presisi sesuai tanggal aktual masing-masing (tidak sama semua).\n');
 
-  console.log('[TEST 6] Anti-Duplikasi Temuan Unit Bermasalah (gsheet-finding-* vs fd-*)');
+  console.log('[TEST 6] Anti-Duplikasi & Eliminasi False-Positive Temuan Unit Bermasalah (gsheet-finding-* vs fd-*)');
   const duplicateFindingsInput = [
     ...INITIAL_FINDINGS,
     {
@@ -237,19 +238,31 @@ function runNotificationTests() {
       targetDate: '2026-11-02',
       status: 'Open',
       _source: 'google_sheet'
+    },
+    {
+      id: 'gsheet-finding-2026-11-05-done',
+      dateCreated: '2026-11-05',
+      division: 'Videotron',
+      pic: 'Mulyana',
+      equipment: '6 Kabinet LED Videotron',
+      issue: 'done',
+      priority: 'Sedang',
+      targetDate: '2026-11-05',
+      status: 'Open',
+      _source: 'google_sheet'
     }
   ];
   const dedupedFindings = normalizeCollectionItems('findings', duplicateFindingsInput as any);
   const novFindings = dedupedFindings.filter((f: any) => String(f.dateCreated || '').startsWith('2026-11'));
-  console.log(`- Jumlah Temuan November 2026 setelah deduplikasi: ${novFindings.length}`);
+  console.log(`- Jumlah Temuan November 2026 setelah deduplikasi & filter false-positive: ${novFindings.length}`);
   assert(novFindings.length === 5, `Harus tepat 5 Temuan Unit Bermasalah di November 2026, ditemukan ${novFindings.length}`);
   assert(
     novFindings.every((f: any) => String(f.id).startsWith('fd-202611')),
     'Seluruh Temuan November 2026 harus menggunakan ID kanonikal fd-202611* (bukan gsheet-finding-*)'
   );
-  console.log('✓ PASS: Tidak ada duplikasi kartu Temuan Unit Bermasalah di Pusat Notifikasi.\n');
+  console.log('✓ PASS: Tidak ada duplikasi kartu maupun false-positive Temuan Unit Bermasalah di Pusat Notifikasi.\n');
 
-  console.log('[TEST 7] Anti-Duplikasi & Akurasi Teks Aktual Live Google Sheet November 2026');
+  console.log('[TEST 7] Anti-Duplikasi & Akurasi Teks Aktual Live Google Sheet November 2026 (15 Entri, 5 Kendala)');
   const dirtyReportsInput = [
     {
       id: 'rep-20261104-staff-iwan-44',
@@ -266,7 +279,14 @@ function runNotificationTests() {
   const cleanReports = normalizeCollectionItems('daily_reports', dirtyReportsInput as any);
   const novReports = cleanReports.filter((r: any) => String(r.date || '').startsWith('2026-11'));
   const iwanNov4 = novReports.find((r: any) => r.date === '2026-11-04' && r.staffName === 'Iwan Kurniawan');
-  assert(novReports.length === 13, `Harus tepat 13 Daily Report di November 2026, ditemukan ${novReports.length}`);
+  const mulyanaNov5 = novReports.find((r: any) => r.date === '2026-11-05' && r.staffName === 'Mulyana');
+  const novReportsWithFinding = novReports.filter((r: any) => isFindingRemark(r.notes || ''));
+  assert(novReports.length === 15, `Harus tepat 15 Daily Report di November 2026, ditemukan ${novReports.length}`);
+  assert(novReportsWithFinding.length === 5, `Harus tepat 5 Daily Report dengan kendala di November 2026, ditemukan ${novReportsWithFinding.length}`);
+  assert(
+    mulyanaNov5 && !isFindingRemark(mulyanaNov5.notes || ''),
+    'Mulyana pada 2026-11-05 (servise 6 kabinet -> done) TIDAK BOLEH dianggap kendala!'
+  );
   assert(
     iwanNov4 && String(iwanNov4.activity).includes('Service Bracket Drum TAMA'),
     'Teks activity Iwan Kurniawan harus mencakup "Service Bracket Drum TAMA" sesuai Google Sheet resmi'

@@ -766,6 +766,32 @@ export const INITIAL_DAILY_TASKS: DailyTask[] = [
     dueDate: '2026-11-05',
     createdAt: '2026-11-05',
     createdBy: 'Mulyana'
+  },
+  {
+    id: 'dt-20261105-06',
+    title: 'Cleaning & Cek Kelengkapan Breket Mini Brut (1-10), Freshnel 300W (1-8), Freshnel 200W (1-12), Stromy (1-30) & Benerin Bok Freshnel 200W',
+    description: '- Cleaning All Mini Brut & Cek kelengkapan Breket (No. 1-10)\n- Cleaning All Freshnel 300W & Cek Kelengkapan breket (No.1-8)\n- Cleaning All Freshnel 200W & Cek Kelengkapan breket (No.1-12)\n-Cleaning All Stromy & Cek kelengkapan breket No. 1-30\n- Benerin Bok Freshnel 200W ganti siku (1Bok)\nREMARK:\n- Bersih, Normal, Breket Kumplit\n- Bersih, Normal, Breket Kumplit tiap bok\n- Bersih, Normal, Breket Kumplit tiap bok\n- Bersih, Normal, Breket Komplit tiap bok\n- Sudah Beres (Bener)',
+    division: 'Lighting',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-heri',
+    assignedName: 'Heri',
+    dueDate: '2026-11-05',
+    createdAt: '2026-11-05',
+    createdBy: 'Heri'
+  },
+  {
+    id: 'dt-20261105-07',
+    title: 'Event / Penugasan Multimedia Brins Mampang',
+    description: 'Brins mampang\nREMARK:\ndone',
+    division: 'Multimedia',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-mulyadi',
+    assignedName: 'Mulyadi',
+    dueDate: '2026-11-05',
+    createdAt: '2026-11-05',
+    createdBy: 'Mulyadi'
   }
 ];
 

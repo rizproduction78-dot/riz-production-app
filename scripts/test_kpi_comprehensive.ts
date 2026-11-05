@@ -121,12 +121,12 @@ const novResults = calculateAllStaffKpis(
 ).filter(s => s.reports > 0 || s.qcs > 0 || s.wos > 0);
 
 const expectedNovCounts: Record<string, { reports: number; qcs: number; days: number }> = {
+  'Heri': { reports: 9, qcs: 8, days: 2 },
   'Mulyana': { reports: 7, qcs: 6, days: 3 },
   'Muhamad Rahmat': { reports: 6, qcs: 6, days: 2 },
   'Iwan Kurniawan': { reports: 5, qcs: 5, days: 2 },
-  'Mulyadi': { reports: 4, qcs: 3, days: 1 },
+  'Mulyadi': { reports: 5, qcs: 4, days: 2 },
   'Yudishtira Purnama A': { reports: 4, qcs: 3, days: 1 },
-  'Heri': { reports: 4, qcs: 3, days: 1 },
   'Wahyudin': { reports: 3, qcs: 3, days: 1 },
   'Taufik Diana': { reports: 2, qcs: 2, days: 1 },
   'Ramdani': { reports: 1, qcs: 1, days: 1 }

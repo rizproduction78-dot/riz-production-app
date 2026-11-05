@@ -892,12 +892,18 @@ export function getMonthKeyForGid(gid: string): string | undefined {
 /** Key localStorage untuk timestamp terakhir pull daily log */
 export const DAILY_LOG_LAST_PULL_KEY = 'riz_daily_log_last_pull';
 
-/** Keyword pada kolom REMARK yang menandakan temuan/masalah */
+/** Keyword pada kolom REMARK yang menandakan temuan/masalah nyata */
 const FINDING_KEYWORDS = [
-  'harus service', 'service', 'servise', 'rusak', 'kendala', 'masalah',
-  'error', 'eror', 'mati', 'tidak berfungsi', 'ganti', 'perbaikan',
-  'repair', 'tidak ok', 'ng', 'perlu', 'ga bisa', 'gabisa', 'tidak bisa',
-  'belum normal', 'separo', 'lemah', 'bengkok', ' tidak komplite'
+  'harus service', 'harus servis', 'service ulang', 'servis ulang',
+  'service berat', 'servise berat', 'full service', 'rusak', 'kendala',
+  'masalah', 'bermasalah', 'error', 'eror', 'mati', 'tidak berfungsi',
+  'minta ganti', 'harus ganti', 'ganti ptc', 'ganti pompa', 'ganti konektor',
+  'ganti stop kontak', 'perlu perbaikan', 'butuh perbaikan', 'tidak ok',
+  'ga bisa', 'gabisa', 'tidak bisa', 'belum normal', 'belum clear', 'blm clear',
+  'separo', 'lemah', 'bengkok', 'tidak komplite', 'tidak komplit', 'suara kecil',
+  'serak', 'putus', 'korslet', 'konslet', 'los 1 unit', '1 unit los', 'hilang',
+  'dalam pengecekan', 'dalam penegecekan', 'kirim ke pib', 'dead pixel',
+  'ilang jalur', 'hilang jalur', 'tidak menyala', 'tidak nyala'
 ];
 
 /** Mapping nama panggilan staf dari Google Sheet ke nama canonical di STAFF_LIST */
@@ -1010,29 +1016,60 @@ function parseIndonesianDate(dateStr: string): string | null {
 /** Check if remark text indicates a finding/issue */
 export function isFindingRemark(remark: string): boolean {
   if (!remark || !remark.trim()) return false;
-  const lower = remark.toLowerCase();
-  
-  // Exclude safe phrases that might contain finding keywords (e.g., "tidak ada kendala")
-  const safeKeywords = [
-    'tidak ada kendala', 
-    'tida ada kendala', 
-    'aman', 
-    'normal', 
-    'selesai', 
-    'ok', 
-    'tidak ada masalah',
-    'siap pakai'
-  ];
-  const hasSafe = safeKeywords.some(kw => lower.includes(kw));
-  const hasExplicitDamage = [
-    'rusak', 'service', 'servise', 'perbaikan', 'mati', 'error', 'eror',
-    'putus', 'serak', 'bongkar', 'bermasalah', 'belum normal', 'separo',
-    'ga bisa', 'gabisa', 'tidak bisa', 'lemah', 'bengkok'
-  ].some(kw => lower.includes(kw));
-  
-  if (hasSafe && !hasExplicitDamage) return false;
 
-  return FINDING_KEYWORDS.some(kw => lower.includes(kw));
+  const isSingleLineFinding = (lineRaw: string): boolean => {
+    const clean = lineRaw.replace(/^[-*•\s]+/, '').trim().toLowerCase();
+    if (!clean || clean === '-') return false;
+
+    // Jika baris adalah kata tunggal "perbaikan" (seperti status modul belum selesai pada 2 Okt 2026)
+    if (clean === 'perbaikan' || /^sisa\s+\d+\s+perbaikan$/i.test(clean)) {
+      return true;
+    }
+
+    // Jika eksplisit menyatakan sudah diperbaiki / sudah normal / sudah beres
+    if (/\bsudah\s+(?:di\s*perbaiki|normal|oke|ok|beres|kepasang)\b/i.test(clean)) {
+      return false;
+    }
+
+    const safeKeywords = [
+      'tidak ada kendala',
+      'tida ada kendala',
+      'tidak ada masalah',
+      'siap pakai',
+      'siap di pakai',
+      'aman',
+      'normal',
+      'selesai',
+      'done',
+      'beres',
+      'ok',
+      'oke',
+      'bagus',
+      'bersih',
+      'baik',
+      'lengkap',
+      'komplit',
+      'kumplit',
+      'terkoneksi',
+      'terkonecting',
+      'sudah'
+    ];
+    const hasSafe = safeKeywords.some(kw => clean.includes(kw));
+    const hasExplicitDamage =
+      FINDING_KEYWORDS.some(kw => clean.includes(kw)) ||
+      /\bng\b/i.test(clean) ||
+      clean.includes('kecuali');
+
+    if (hasSafe && !hasExplicitDamage) return false;
+    return hasExplicitDamage;
+  };
+
+  const lines = remark
+    .split(/\r?\n|\s*\|\s*/)
+    .map(l => l.trim())
+    .filter(Boolean);
+
+  return lines.some(isSingleLineFinding);
 }
 
 /** Build dedup key for a daily report entry */
@@ -1226,7 +1263,8 @@ export async function pullDailyLogFromGviz(
           (existing.notes || '').trim() !== (entry.notes || '').trim() ||
           (existing.division || '') !== (entry.division || '') ||
           (existing.staffName || '') !== (entry.staffName || '') ||
-          (existing.date || '') !== (entry.date || '')
+          (existing.date || '') !== (entry.date || '') ||
+          JSON.stringify(existing.rowDetails || []) !== JSON.stringify(entry.rowDetails || [])
         )
       );
 
@@ -1264,7 +1302,8 @@ export async function pullDailyLogFromGviz(
             (existingLog.activity || '').trim() !== (entry.activity || '').trim() ||
             (existingLog.followUp || '').trim() !== expectedFollowUp.trim() ||
             existingLog.result !== expectedResult ||
-            (existingLog.division || '') !== (entry.division || '')
+            (existingLog.division || '') !== (entry.division || '') ||
+            JSON.stringify(existingLog.rowDetails || []) !== JSON.stringify(entry.rowDetails || [])
           )
         );
         if (!existingReportIds.has(logDedupKey) || !existingLog || isModified || isLogModified) {

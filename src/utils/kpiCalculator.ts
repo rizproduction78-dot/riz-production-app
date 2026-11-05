@@ -94,8 +94,8 @@ function isPureRemarkHeaderSentence(activity: string, remark: string): boolean {
 function isSheetContinuationLine(activity: string): boolean {
   const clean = activity.replace(/^[-*•\s]+/, '').trim();
   if (!clean) return true;
-  // Baris yang hanya berisi nomor urut / rentang nomor unit (contoh: "No. 1-2-3...", "14-15-16...", "47-48", "no. 1 - 8")
-  if (/^(?:no\.?\s*)?[\d\s,.\-–s/d]+$/i.test(clean)) {
+  // Baris yang hanya berisi nomor urut / rentang nomor unit atau lanjutan breket bernomor (contoh: "No. 1-2-3...", "14-15-16...", "Breket (No. 1-2-3...)", "Kelengkapan breket (No.1-2-3...)")
+  if (/^(?:(?:kelengkapan\s+)?breket\s*)?\(?\s*(?:no\.?\s*)?[\d\s,.\-–s/d]+\)?$/i.test(clean)) {
     return true;
   }
   // Baris keterangan lanjutan kalimat sebelumnya (contoh: "massing2 menjadi 2 WHM dalam 1 box", "Note : G3 Yang isi 4...")
