@@ -2308,6 +2308,7 @@ export interface InventoryCalculationContext {
   workOrders?: WorkOrder[];
   dailyReports?: DailyReport[];
   jobAssignments?: JobAssignment[];
+  activeMonth?: string;
 }
 
 function parseCustomAssetTotalUnits(asset: Asset): { total: number; sheetDamaged: number } {
@@ -2322,34 +2323,42 @@ function parseCustomAssetTotalUnits(asset: Asset): { total: number; sheetDamaged
 }
 
 /**
- * Menghitung jumlah unit total, pengurangan akibat kerusakan (Sheet + Report/Temuan/WO),
- * pengurangan akibat penugasan aktif (Jadwal Penugasan Job), dan sisa unit siap pakai.
+ * Menghitung jumlah unit total, pengurangan akibat kerusakan (Report/Temuan/WO bulan berjalan),
+ * pengurangan akibat penugasan aktif (Jadwal Penugasan Job bulan berjalan), dan sisa unit siap pakai.
  */
 export function calculateInventoryAssetAvailability(
   asset: Asset,
   ctx?: InventoryCalculationContext
 ): InventoryAssetAvailability {
-  const findings = ctx?.findings ?? CANONICAL_FIRESTORE_FINDINGS;
-  const workOrders = ctx?.workOrders ?? CANONICAL_FIRESTORE_WORK_ORDERS;
-  const jobAssignments = ctx?.jobAssignments ?? INITIAL_JOB_ASSIGNMENTS;
+  const runningMonth =
+    ctx?.activeMonth && ctx.activeMonth !== 'ALL' && ctx.activeMonth !== 'all'
+      ? ctx.activeMonth
+      : '2026-11';
+
+  const rawFindings = ctx?.findings ?? CANONICAL_FIRESTORE_FINDINGS;
+  const rawWorkOrders = ctx?.workOrders ?? CANONICAL_FIRESTORE_WORK_ORDERS;
+  const rawJobAssignments = ctx?.jobAssignments ?? INITIAL_JOB_ASSIGNMENTS;
+
+  const findings = rawFindings.filter(f => f && (f.dateCreated || '').startsWith(runningMonth));
+  const workOrders = rawWorkOrders.filter(
+    w => w && ((w.dateCreated || '').startsWith(runningMonth) || (w.deadline || '').startsWith(runningMonth))
+  );
+  const jobAssignments = rawJobAssignments.filter(
+    j => j && ((j.monthKey || '').startsWith(runningMonth) || (j.dateLabel || '').startsWith(runningMonth))
+  );
 
   const base = parseCustomAssetTotalUnits(asset);
   const totalUnits = base.total;
-  let sheetDamagedUnits = base.sheetDamaged;
+  let sheetDamagedUnits = 0;
   const damageReasons: string[] = [];
 
-  const canonicalBase = CANONICAL_ASSET_BASE_COUNTS[asset.id];
-  if (canonicalBase?.sheetDamageNote && sheetDamagedUnits > 0) {
-    damageReasons.push(canonicalBase.sheetDamageNote);
-  }
-
-  // Jika aset sedang berada di Divisi SERVICE atau diubah manual menjadi Rusak oleh user
-  if (asset.location.includes('SERVICE') && sheetDamagedUnits === 0) {
+  // Jika aset sedang berada di Divisi SERVICE secara aktif
+  if (asset.location === 'Divisi SERVICE (Sedang Diperbaiki)') {
     sheetDamagedUnits = 1;
     damageReasons.push('Sedang di Divisi SERVICE');
   }
 
-  // 1. Hitung pengurangan kerusakan berdasarkan Report / Temuan QC (Findings) & Work Orders aktif
+  // 1. Hitung pengurangan kerusakan berdasarkan Report / Temuan QC (Findings) & Work Orders aktif di bulan berjalan
   let reportDamagedUnits = 0;
   const openFindings = findings.filter(f => f && f.status !== 'Close');
   const activeWOs = workOrders.filter(w => w && w.status !== 'Completed');
@@ -2368,10 +2377,19 @@ export function calculateInventoryAssetAvailability(
     }
   } else if (id === 'ast-aud-013') {
     // Monitor Speaker dB Technologies LVX 15 (2 Unit) -> Temuan LVX15 Mesin Mati
-    const lvxFinding = openFindings.find(f => `${f.equipment} ${f.issue}`.toLowerCase().includes('lvx'));
+    const lvxFinding =
+      openFindings.find(f => `${f.equipment} ${f.issue}`.toLowerCase().includes('lvx')) ||
+      activeWOs.find(w => `${w.equipment || ''} ${w.title}`.toLowerCase().includes('lvx'));
     if (lvxFinding) {
       reportDamagedUnits += 1;
       damageReasons.push('Report Temuan: Monitor dBTech LVX 15 (Mesin Mati / Cek Damri - 1 Unit)');
+    }
+  } else if (id === 'ast-aud-060') {
+    // Kabel Extension / AC Power Audio -> Temuan 2 kabel extension 5 meter rusak (5 Nov 2026)
+    const extFinding = openFindings.find(f => `${f.equipment} ${f.issue}`.toLowerCase().includes('kabel extension'));
+    if (extFinding) {
+      reportDamagedUnits += 2;
+      damageReasons.push('Report Temuan: 2 Unit Kabel Extension 5 Meter Rusak');
     }
   } else if (id === 'ast-lgt-007') {
     // Par Light TRF A64 (24 Unit) -> Temuan No. 5, 12, 19, 33 Eror (4 Unit)

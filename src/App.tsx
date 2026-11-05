@@ -2418,6 +2418,7 @@ export default function App() {
             findings={findings}
             workOrders={workOrders}
             dailyReports={dailyReports}
+            activeMonth={activeMonth}
             onAddAsset={handleAddAsset}
             onUpdateAsset={handleUpdateAsset}
             onDeleteAsset={handleDeleteAsset}
@@ -2437,6 +2438,7 @@ export default function App() {
             findings={findings}
             workOrders={workOrders}
             dailyReports={dailyReports}
+            activeMonth={activeMonth}
             onAddAsset={handleAddAsset}
             onUpdateAsset={handleUpdateAsset}
             onDeleteAsset={handleDeleteAsset}
@@ -2456,6 +2458,7 @@ export default function App() {
             findings={findings}
             workOrders={workOrders}
             dailyReports={dailyReports}
+            activeMonth={activeMonth}
             onAddAsset={handleAddAsset}
             onUpdateAsset={handleUpdateAsset}
             onDeleteAsset={handleDeleteAsset}

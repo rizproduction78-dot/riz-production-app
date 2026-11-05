@@ -148,6 +148,7 @@ interface GudangProps {
   workOrders?: WorkOrder[];
   dailyReports?: DailyReport[];
   jobAssignments?: JobAssignment[];
+  activeMonth?: string;
   onAddAsset?: (asset: Omit<Asset, 'id' | 'repairHistory'>) => void;
   onUpdateAsset?: (id: string, updated: Partial<Asset>) => void;
   onDeleteAsset?: (id: string) => void;
@@ -179,6 +180,7 @@ export default function Gudang({
   workOrders = [],
   dailyReports = [],
   jobAssignments: propJobAssignments,
+  activeMonth,
   onAddAsset,
   onUpdateAsset,
   onDeleteAsset,
@@ -284,11 +286,15 @@ export default function Gudang({
   });
   const activeJobAssignments = propJobAssignments !== undefined ? normalizeJobAssignmentsMaster(propJobAssignments) : localJobAssignments;
 
+  const runningMonth =
+    activeMonth && activeMonth !== 'ALL' && activeMonth !== 'all' ? activeMonth : '2026-11';
+
   const inventoryCalcCtx = {
     findings,
     workOrders,
     dailyReports,
-    jobAssignments: activeJobAssignments
+    jobAssignments: activeJobAssignments,
+    activeMonth: runningMonth
   };
 
   const overallInventorySummary = calculateInventorySummaryMetrics(localAssets, inventoryCalcCtx);
@@ -1895,7 +1901,7 @@ export default function Gudang({
         }));
 
         const unitsInRepairList = assetsWithAvail.filter(
-          item => item.avail.totalDamagedUnits > 0 || item.asset.location === 'Divisi SERVICE (Sedang Diperbaiki)' || item.asset.condition !== 'Baik'
+          item => item.avail.totalDamagedUnits > 0 || item.asset.location === 'Divisi SERVICE (Sedang Diperbaiki)'
         );
 
         return (
@@ -2565,13 +2571,13 @@ export default function Gudang({
         }));
 
         const unitsInRepairList = assetsWithAvail.filter(
-          item => item.avail.totalDamagedUnits > 0 || item.asset.location === 'Divisi SERVICE (Sedang Diperbaiki)' || item.asset.condition !== 'Baik'
+          item => item.avail.totalDamagedUnits > 0 || item.asset.location === 'Divisi SERVICE (Sedang Diperbaiki)'
         );
 
         const filteredWarehouseUnits = assetsWithAvail.filter(({ asset, avail, typeInfo }) => {
           if (warehouseUnitDivFilter !== 'ALL' && asset.division !== warehouseUnitDivFilter) return false;
           if (warehouseUnitStatusFilter === 'SCHEDULED' && avail.assignedUnits <= 0) return false;
-          if (warehouseUnitStatusFilter === 'REPAIR' && avail.totalDamagedUnits <= 0 && asset.condition === 'Baik' && asset.location !== 'Divisi SERVICE (Sedang Diperbaiki)') return false;
+          if (warehouseUnitStatusFilter === 'REPAIR' && avail.totalDamagedUnits <= 0 && asset.location !== 'Divisi SERVICE (Sedang Diperbaiki)') return false;
           if (warehouseUnitStatusFilter === 'AVAILABLE' && avail.availableUnits <= 0) return false;
           if (warehouseUnitSearch.trim()) {
             const q = warehouseUnitSearch.toLowerCase().trim();
