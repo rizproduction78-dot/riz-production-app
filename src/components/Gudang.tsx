@@ -647,6 +647,13 @@ export default function Gudang({
   const [scanSearchInput, setScanSearchInput] = useState('');
   const [scanMessage, setScanMessage] = useState('');
   const [pendingUserBarcode, setPendingUserBarcode] = useState<string>('');
+  // Mode Scan Alur Logistik Keluar/Masuk & Loading Out/In untuk Seluruh Staff
+  const [scannerLogisticsMode, setScannerLogisticsMode] = useState<'inspect' | 'loading_out' | 'loading_in' | 'keluar' | 'masuk'>('inspect');
+  const [scanLogisticsQty, setScanLogisticsQty] = useState<number>(1);
+  const [scanLogisticsNote, setScanLogisticsNote] = useState<string>('');
+  const [autoRecordLogisticsOnScan, setAutoRecordLogisticsOnScan] = useState<boolean>(true);
+  const [inlineFormBarcodeInput, setInlineFormBarcodeInput] = useState<string>('');
+  const [inlineFormScanFeedback, setInlineFormScanFeedback] = useState<string>('');
   // Active Real Hardware Camera Scanner states (Mobile, Tablet & Desktop)
   const [isCameraScannerActive, setIsCameraScannerActive] = useState<boolean>(true);
   const [isLiveWebcamRunning, setIsLiveWebcamRunning] = useState<boolean>(false);
@@ -1425,7 +1432,126 @@ export default function Gudang({
     );
   };
 
-  // Asset scanning with camera / input — HANYA unit yang berhasil di-scan yang masuk ke daftar
+  // Fungsi Pencatatan Langsung Alur Logistik Keluar/Masuk & Loading Out/In via Scan Barcode oleh Staff
+  const recordLogisticsScanMovement = (
+    targetAsset: Asset,
+    movementType: 'Loading' | 'Unloading' | 'Keluar' | 'Masuk',
+    movementQty: number,
+    customNote?: string
+  ): { isDuplicate: boolean; record: WarehouseLog } => {
+    const todayDate = new Date().toISOString().split('T')[0];
+    const normalizedCode = targetAsset.code.trim().toUpperCase();
+    const normalizedItemKey = normalizedCode.toLowerCase();
+
+    const duplicateLog = warehouseLogs.find(log => {
+      const logKey = (log.assetCode || log.itemName || '').trim().toLowerCase();
+      return log.date === todayDate && log.type === movementType && logKey === normalizedItemKey;
+    });
+
+    if (duplicateLog) {
+      return { isDuplicate: true, record: duplicateLog };
+    }
+
+    const scanRes = registerScannedAsset(targetAsset);
+    const qtySafe = Math.max(1, Number(movementQty) || 1);
+    const movementLabel =
+      movementType === 'Loading'
+        ? 'Loading Out (Muat Barang Keluar Event)'
+        : movementType === 'Unloading'
+        ? 'Loading In (Bongkar Barang Masuk Gudang)'
+        : movementType === 'Keluar'
+        ? 'Alur Logistik Barang Keluar'
+        : 'Alur Logistik Barang Masuk Gudang';
+
+    const noteText = customNote?.trim()
+      ? `${movementLabel} [${normalizedCode}] — ${customNote.trim()} (Scan oleh: ${currentUser.name})`
+      : `${movementLabel} [${normalizedCode}] via Scan Barcode oleh ${currentUser.name} (${currentUser.division})`;
+
+    const newLog: WarehouseLog = {
+      id: 'wl-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      type: movementType,
+      date: todayDate,
+      itemName: targetAsset.name,
+      qty: qtySafe,
+      pic: currentUser.name,
+      scannedBy: currentUser.name,
+      scannedByRole: `${currentUser.role} (${currentUser.division})`,
+      scannedAt: scanRes.record.scannedAt || new Date().toLocaleString('id-ID'),
+      notes: noteText,
+      assetCode: normalizedCode,
+      photoUrl: scannedPhoto || undefined,
+      _syncMeta: {
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.name
+      }
+    };
+
+    const nextLogs = deduplicateWarehouseLogs([newLog, ...warehouseLogs]);
+    setWarehouseLogs(nextLogs);
+    try {
+      localStorage.setItem('riz_warehouse_logs', JSON.stringify(nextLogs));
+    } catch {}
+    saveCloudDoc('warehouse_logs', newLog.id, newLog, currentUser.name);
+
+    const nextLocation =
+      movementType === 'Loading' || movementType === 'Keluar'
+        ? customNote?.trim()
+          ? `Event / Loading Out (${customNote.trim()})`
+          : 'Lapangan / Loading Out Event'
+        : 'Gudang Utama RIZ';
+
+    const updatedAssets = localAssets.map(a =>
+      a.id === targetAsset.id ? { ...a, location: nextLocation } : a
+    );
+    setLocalAssets(updatedAssets);
+    try {
+      localStorage.setItem('riz_assets', JSON.stringify(updatedAssets));
+    } catch {}
+    if (onUpdateAssetLocation) onUpdateAssetLocation(targetAsset.id, nextLocation);
+
+    onLogActivity(
+      currentUser.name,
+      currentUser.role,
+      `Scan ${movementLabel}: [${normalizedCode}] ${targetAsset.name} (${qtySafe} Unit) — Petugas: ${currentUser.name}`
+    );
+
+    return { isDuplicate: false, record: newLog };
+  };
+
+  const handleQuickLogisticsScanAction = (
+    targetAsset: Asset,
+    movementType: 'Loading' | 'Unloading' | 'Keluar' | 'Masuk'
+  ) => {
+    const res = recordLogisticsScanMovement(targetAsset, movementType, scanLogisticsQty, scanLogisticsNote);
+    const labelUpper =
+      movementType === 'Loading'
+        ? 'LOADING OUT (KELUAR EVENT)'
+        : movementType === 'Unloading'
+        ? 'LOADING IN (MASUK GUDANG)'
+        : movementType === 'Keluar'
+        ? 'BARANG KELUAR'
+        : 'BARANG MASUK';
+    if (res.isDuplicate) {
+      setScanMessage(
+        `DUPLIKAT DICEGAH: Unit [${targetAsset.code}] ${targetAsset.name} sudah tercatat untuk proses ${labelUpper} hari ini oleh ${res.record.scannedBy || res.record.pic}.`
+      );
+    } else {
+      setScanMessage(
+        `SUKSES CATAT ${labelUpper}: Unit [${targetAsset.code}] ${targetAsset.name} (${res.record.qty} Unit) berhasil dicatat dalam Alur Logistik oleh ${currentUser.name} (${currentUser.division})!`
+      );
+      setScannedAsset({
+        ...targetAsset,
+        location:
+          movementType === 'Loading' || movementType === 'Keluar'
+            ? scanLogisticsNote.trim()
+              ? `Event / Loading Out (${scanLogisticsNote.trim()})`
+              : 'Lapangan / Loading Out Event'
+            : 'Gudang Utama RIZ'
+      });
+    }
+  };
+
+  // Asset scanning with camera / input — Mendukung Manajemen Gudang + Alur Logistik Keluar/Masuk & Loading Out/In Staff
   const handleSimulateQRScan = (codeToScan?: string) => {
     setIsCameraScannerActive(true);
     const targetCode = (codeToScan || scanSearchInput || simulatorTargetCode || 'MJXH18277').trim();
@@ -1451,13 +1577,41 @@ export default function Gudang({
         setScanSearchInput(found.code);
         const scanRes = registerScannedAsset(found);
         setScannedAsset(found);
-        if (scanRes.isDuplicate) {
+
+        if (scannerLogisticsMode !== 'inspect' && autoRecordLogisticsOnScan) {
+          const movementType: 'Loading' | 'Unloading' | 'Keluar' | 'Masuk' =
+            scannerLogisticsMode === 'loading_out'
+              ? 'Loading'
+              : scannerLogisticsMode === 'loading_in'
+              ? 'Unloading'
+              : scannerLogisticsMode === 'keluar'
+              ? 'Keluar'
+              : 'Masuk';
+          const logRes = recordLogisticsScanMovement(found, movementType, scanLogisticsQty, scanLogisticsNote);
+          const modeLabel =
+            movementType === 'Loading'
+              ? 'LOADING OUT (KELUAR EVENT)'
+              : movementType === 'Unloading'
+              ? 'LOADING IN (MASUK GUDANG)'
+              : movementType === 'Keluar'
+              ? 'BARANG KELUAR'
+              : 'BARANG MASUK';
+          if (logRes.isDuplicate) {
+            setScanMessage(
+              `DUPLIKAT DICEGAH: Barcode [${found.code}] ${found.name} sudah tercatat untuk proses ${modeLabel} hari ini oleh ${logRes.record.scannedBy || logRes.record.pic}.`
+            );
+          } else {
+            setScanMessage(
+              `SUKSES SCAN & CATAT ${modeLabel}: Barcode [${found.code}] ${found.name} (${logRes.record.qty} Unit) berhasil dicatat oleh ${currentUser.name} (${currentUser.division})!`
+            );
+          }
+        } else if (scanRes.isDuplicate) {
           setScanMessage(
-            `DUPLIKAT DICEGAH: Barcode [${found.code}] ${found.name} sudah tercatat di-scan oleh ${scanRes.record.scannedBy} (${scanRes.record.scannedAt}). Hasil scan tidak boleh ada double pencatatan!`
+            `DUPLIKAT DICEGAH: Barcode [${found.code}] ${found.name} sudah tercatat di-scan oleh ${scanRes.record.scannedBy} (${scanRes.record.scannedAt}). Pilih tombol Loading Out / Loading In di sebelah kanan untuk mencatat alur logistik.`
           );
         } else {
           setScanMessage(
-            `SUKSES: Barcode [${found.code}] ${found.name} berhasil di-scan oleh ${scanRes.record.scannedBy} (${scanRes.record.scannedAt})!`
+            `SUKSES: Barcode [${found.code}] ${found.name} berhasil di-scan oleh ${scanRes.record.scannedBy} (${scanRes.record.scannedAt})! Siap dicatat ke Alur Logistik Keluar/Masuk atau Loading Out/In.`
           );
           onLogActivity(
             currentUser.name,
@@ -1543,6 +1697,92 @@ export default function Gudang({
         simulatorTargetCode ||
         'MJXH18277';
       handleSimulateQRScan(codeToUse);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  // Scan Barcode / QR langsung pada Formulir Pencatatan Alur Logistik Masuk/Keluar & Loading Out/In
+  const handleInlineLogisticsFormScan = (rawCode?: string) => {
+    const queryCode = (rawCode || inlineFormBarcodeInput || assetCodeInput || '').trim();
+    if (!queryCode) {
+      setInlineFormScanFeedback('INFO: Masukkan atau scan kode barcode unit alat terlebih dahulu.');
+      return;
+    }
+    const qLower = queryCode.toLowerCase();
+    const matched =
+      localAssets.find(a => a.code.toLowerCase() === qLower || a.id.toLowerCase() === qLower) ||
+      localAssets.find(
+        a =>
+          a.serialNumber.toLowerCase().includes(qLower) ||
+          a.code.toLowerCase().includes(qLower) ||
+          a.name.toLowerCase().includes(qLower)
+      );
+
+    if (matched) {
+      registerScannedAsset(matched);
+      setScannedAsset(matched);
+      setAssetCodeInput(matched.code);
+      setItemName(matched.name);
+      setInlineFormBarcodeInput(matched.code);
+      setInlineFormScanFeedback(
+        `SUKSES SCAN: [${matched.code}] ${matched.name} (${matched.division}) siap dicatat sebagai "${type === 'Loading' ? 'Loading Out (Muat Keluar)' : type === 'Unloading' ? 'Loading In (Bongkar Masuk)' : type}" oleh ${currentUser.name}.`
+      );
+      if (!notes.trim()) {
+        setNotes(
+          type === 'Loading'
+            ? `Loading Out (Muat Barang Keluar Event) via Scan Barcode [${matched.code}] oleh ${currentUser.name}`
+            : type === 'Unloading'
+            ? `Loading In (Bongkar Barang Masuk Gudang) via Scan Barcode [${matched.code}] oleh ${currentUser.name}`
+            : type === 'Keluar'
+            ? `Alur Logistik Barang Keluar via Scan Barcode [${matched.code}] oleh ${currentUser.name}`
+            : `Alur Logistik Barang Masuk Gudang via Scan Barcode [${matched.code}] oleh ${currentUser.name}`
+        );
+      }
+    } else {
+      setAssetCodeInput(queryCode.toUpperCase());
+      setInlineFormScanFeedback(
+        `INFO: Kode Barcode [${queryCode.toUpperCase()}] disertakan ke formulir. Isi Nama Barang atau pilih unit di bawah lalu klik Simpan Transaksi.`
+      );
+    }
+  };
+
+  const handleInlineLogisticsFormImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    let detectedBarcodeValue = '';
+    if (typeof createImageBitmap === 'function') {
+      try {
+        const bitmap = await createImageBitmap(file);
+        const decoded = await decodeBarcodeFromSource(bitmap);
+        if (decoded && decoded.rawValue && isValidScannedBarcodeText(decoded.rawValue)) {
+          detectedBarcodeValue = String(decoded.rawValue).trim();
+        }
+      } catch {}
+    }
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      if (typeof reader.result === 'string') {
+        setScannedPhoto(reader.result);
+        if (!detectedBarcodeValue && typeof Image !== 'undefined') {
+          try {
+            const img = new Image();
+            img.src = reader.result;
+            await new Promise<void>(resolve => {
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+            });
+            const decodedFromImg = await decodeBarcodeFromSource(img);
+            if (decodedFromImg && decodedFromImg.rawValue && isValidScannedBarcodeText(decodedFromImg.rawValue)) {
+              detectedBarcodeValue = String(decodedFromImg.rawValue).trim();
+            }
+          } catch {}
+        }
+      }
+      const codeToApply = detectedBarcodeValue || inlineFormBarcodeInput.trim() || assetCodeInput.trim();
+      if (codeToApply) {
+        handleInlineLogisticsFormScan(codeToApply);
+      }
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -1668,10 +1908,10 @@ export default function Gudang({
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <Camera className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                    <span className="text-xs font-extrabold text-slate-900">Scan Barcode/QR Asset</span>
+                    <span className="text-xs font-extrabold text-slate-900">Scan Barcode/QR Asset &amp; Loading Out/In</span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                    Identifikasi kode aset, cek jumlah unit tersedia, lokasi & kondisi fisik peralatan.
+                    Scan kamera oleh staff untuk pencatatan alur logistik keluar/masuk, loading out/in event &amp; manajemen gudang.
                   </p>
                 </div>
               </button>
@@ -1699,7 +1939,7 @@ export default function Gudang({
                     <span className="text-xs font-extrabold text-slate-900">Pencatatan Alur Logistik Masuk/Keluar</span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                    Catat barang masuk, barang keluar, loading/unloading event, serta mutasi servis.
+                    Catat barang masuk, barang keluar, loading out/in event oleh staff, serta mutasi servis.
                   </p>
                 </div>
               </button>
@@ -1902,27 +2142,59 @@ export default function Gudang({
                       Menampilkan <strong>{filteredWarehouseUnits.length} jenis alat</strong> — Ready/Ada: <strong>{scopedTableSummary.totalUnits} Unit</strong> • Dijadwalkan: <strong className="text-amber-700">-{scopedTableSummary.assignedUnits} Unit</strong> • Proses Perbaikan: <strong className="text-rose-600">-{scopedTableSummary.totalDamagedUnits} Unit</strong> • Sisa Bisa Digunakan: <strong className="text-emerald-700">{scopedTableSummary.availableUnits} Unit</strong>
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (showLogForm) {
-                        setShowLogForm(false);
-                        setEditingLogId(null);
-                      } else {
-                        setType('Masuk');
-                        setItemName('');
-                        setQty(1);
-                        setNotes('');
-                        setAssetCodeInput('');
-                        setScannedPhoto(null);
-                        setShowLogForm(true);
-                      }
-                    }}
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 self-start sm:self-auto"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>{showLogForm ? 'Tutup Formulir' : 'Catat Aktivitas Gudang'}</span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScannerLogisticsMode('loading_out');
+                        setAutoRecordLogisticsOnScan(true);
+                        setWarehouseSubTab('scanner');
+                      }}
+                      className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                      title="Buka Scanner Kamera untuk Loading Out (Barang Keluar Event) oleh Staff"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>Scan Loading Out</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScannerLogisticsMode('loading_in');
+                        setAutoRecordLogisticsOnScan(true);
+                        setWarehouseSubTab('scanner');
+                      }}
+                      className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                      title="Buka Scanner Kamera untuk Loading In (Barang Masuk Gudang) oleh Staff"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>Scan Loading In</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (showLogForm) {
+                          setShowLogForm(false);
+                          setEditingLogId(null);
+                        } else {
+                          setType('Loading');
+                          setItemName('');
+                          setQty(1);
+                          setNotes('');
+                          setAssetCodeInput('');
+                          setInlineFormBarcodeInput('');
+                          setInlineFormScanFeedback('');
+                          setScannedPhoto(null);
+                          setShowLogForm(true);
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>{showLogForm ? 'Tutup Formulir' : 'Catat Aktivitas Gudang'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Filter Divisi, Status & Pencarian */}
@@ -1979,51 +2251,120 @@ export default function Gudang({
               {/* Warehouse log Form */}
               {showLogForm && (
                 <form onSubmit={handleAddWarehouseLog} className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4 max-w-xl">
-                  <div className="flex items-center gap-2 pb-3 border-b">
-                    <FileText className="w-5 h-5 text-indigo-600" />
-                    <h3 className="text-sm font-bold text-slate-800">
-                      {editingLogId ? 'Edit Logistik Gudang' : 'Formulir Logistik Gudang Baru'}
-                    </h3>
+                  <div className="flex items-center justify-between gap-2 pb-3 border-b">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-indigo-600" />
+                      <h3 className="text-sm font-bold text-slate-800">
+                        {editingLogId ? 'Edit Logistik Gudang' : 'Formulir Alur Logistik Masuk/Keluar & Loading Out/In Staff'}
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      Petugas: {currentUser.name} ({currentUser.division})
+                    </span>
                   </div>
 
-                  {/* Pilih dari Unit yang Sudah Di-Scan (Tahap 1 -> Tahap 2) */}
-                  <div className="p-3 rounded-xl border border-indigo-100 bg-indigo-50/50 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <label className="text-[11px] font-extrabold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                  {/* Scan Barcode / QR Langsung pada Formulir Logistik Masuk/Keluar & Loading Out/In */}
+                  <div className="p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/60 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <label className="text-[11px] font-extrabold text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
                         <Camera className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Pilih Unit dari Daftar Hasil Scan ({scannedAssetsList.length} Unit)</span>
+                        <span>Scan Barcode / QR Unit (Loading Out / Loading In / Masuk / Keluar)</span>
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => setWarehouseSubTab('scanner')}
-                        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
-                      >
-                        + Scan Barcode Baru
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <label className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-mono font-bold uppercase flex items-center gap-1 cursor-pointer">
+                          <Smartphone className="w-3 h-3" />
+                          <span>Kamera HP</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleInlineLogisticsFormImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setScannerLogisticsMode(
+                              type === 'Loading'
+                                ? 'loading_out'
+                                : type === 'Unloading'
+                                ? 'loading_in'
+                                : type === 'Keluar'
+                                ? 'keluar'
+                                : 'masuk'
+                            );
+                            setAutoRecordLogisticsOnScan(true);
+                            setWarehouseSubTab('scanner');
+                          }}
+                          className="px-2 py-1 bg-slate-900 hover:bg-indigo-800 text-white rounded text-[10px] font-mono font-bold uppercase cursor-pointer"
+                        >
+                          Kamera Live Full-Scan ↗
+                        </button>
+                      </div>
                     </div>
-                    {scannedAssetsList.length > 0 ? (
-                      <select
-                        value={assetCodeInput}
-                        onChange={(e) => {
-                          const selectedCode = e.target.value;
-                          setAssetCodeInput(selectedCode);
-                          const matched = scannedAssetsList.find(a => a.code === selectedCode);
-                          if (matched) {
-                            setItemName(matched.name);
+
+                    {/* Input Scan Barcode Langsung di Formulir */}
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={inlineFormBarcodeInput}
+                        onChange={(e) => setInlineFormBarcodeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleInlineLogisticsFormScan(inlineFormBarcodeInput);
                           }
                         }}
-                        className="block w-full px-3 py-2 border border-indigo-200 rounded-lg text-xs font-bold text-slate-800 bg-white"
+                        placeholder="Scan / Ketik Kode Barcode Unit (e.g. MJXH18277, C450B-01)"
+                        className="flex-1 px-3 py-1.5 border border-indigo-200 rounded-lg text-xs font-mono uppercase bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleInlineLogisticsFormScan(inlineFormBarcodeInput)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-mono font-extrabold uppercase shrink-0 cursor-pointer"
                       >
-                        <option value="">-- Pilih Unit yang Berhasil Di-Scan --</option>
-                        {scannedAssetsList.map((scanned) => (
-                          <option key={scanned.id} value={scanned.code}>
-                            [{scanned.code}] {scanned.name} — ({scanned.condition})
+                        Scan &amp; Isi Unit
+                      </button>
+                    </div>
+
+                    {/* Dropdown Pilih Cepat dari Seluruh Unit Inventory atau Hasil Scan */}
+                    <select
+                      value={assetCodeInput}
+                      onChange={(e) => {
+                        const selectedCode = e.target.value;
+                        if (selectedCode) {
+                          handleInlineLogisticsFormScan(selectedCode);
+                        } else {
+                          setAssetCodeInput('');
+                        }
+                      }}
+                      className="block w-full px-3 py-1.5 border border-indigo-200 rounded-lg text-xs font-bold text-slate-800 bg-white"
+                    >
+                      <option value="">
+                        -- Pilih Cepat Unit dari Inventory / Hasil Scan ({localAssets.length} Unit) --
+                      </option>
+                      {scannedAssetsList.length > 0 && (
+                        <optgroup label={`Unit yang Baru Di-Scan (${scannedAssetsList.length})`}>
+                          {scannedAssetsList.map(scanned => (
+                            <option key={`scanned-${scanned.id}`} value={scanned.code}>
+                              ✓ [{scanned.code}] {scanned.name} — ({scanned.condition})
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label={`Seluruh Master Unit Inventory (${localAssets.length})`}>
+                        {localAssets.map(assetItem => (
+                          <option key={`inv-${assetItem.id}`} value={assetItem.code}>
+                            [{assetItem.code}] {assetItem.name} ({assetItem.division})
                           </option>
                         ))}
-                      </select>
-                    ) : (
-                      <div className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 font-medium">
-                        Belum ada unit yang di-scan. Unit yang belum berhasil di-scan pada Tahap 01 tidak bisa muncul di daftar pilihan ini.
+                      </optgroup>
+                    </select>
+
+                    {inlineFormScanFeedback && (
+                      <div className="text-[11px] font-mono px-2.5 py-1.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        {inlineFormScanFeedback}
                       </div>
                     )}
                   </div>
@@ -2032,17 +2373,17 @@ export default function Gudang({
                     {/* Type */}
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                        Tipe Transaksi Gudang
+                        Tipe Proses Alur Logistik / Loading Staff
                       </label>
                       <select
                         value={type}
                         onChange={(e) => setType(e.target.value as any)}
-                        className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50/50"
+                        className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50/50 font-semibold text-slate-800"
                       >
-                        <option value="Masuk">Barang Masuk (Incoming)</option>
-                        <option value="Keluar">Barang Keluar (Outgoing)</option>
-                        <option value="Loading">Loading (Muat Barang Ke Truk)</option>
-                        <option value="Unloading">Unloading (Bongkar Barang Gudang)</option>
+                        <option value="Loading">Loading Out (Muat Barang Keluar Event)</option>
+                        <option value="Unloading">Loading In (Bongkar Barang Masuk Gudang)</option>
+                        <option value="Keluar">Barang Keluar (Outgoing Logistik)</option>
+                        <option value="Masuk">Barang Masuk (Incoming Logistik)</option>
                         <option value="Servis Keluar">Servis Keluar (Kirim ke Divisi SERVICE)</option>
                         <option value="Servis Masuk">Servis Masuk (Selesai Servis dari Divisi SERVICE)</option>
                       </select>
@@ -2246,9 +2587,44 @@ export default function Gudang({
                                 type="button"
                                 onClick={() => {
                                   registerScannedAsset(asset);
+                                  setType('Loading');
+                                  setItemName(asset.name);
+                                  setAssetCodeInput(asset.code);
+                                  setInlineFormBarcodeInput(asset.code);
+                                  setQty(1);
+                                  setNotes(`Loading Out (Muat Barang Keluar Event) unit ${asset.name} (${asset.code}) oleh ${currentUser.name}`);
+                                  setShowLogForm(true);
+                                }}
+                                className="px-2 py-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+                                title="Catat Loading Out (Muat Barang Keluar Event) oleh Staff"
+                              >
+                                Loading Out
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  registerScannedAsset(asset);
+                                  setType('Unloading');
+                                  setItemName(asset.name);
+                                  setAssetCodeInput(asset.code);
+                                  setInlineFormBarcodeInput(asset.code);
+                                  setQty(1);
+                                  setNotes(`Loading In (Bongkar Barang Masuk Gudang) unit ${asset.name} (${asset.code}) oleh ${currentUser.name}`);
+                                  setShowLogForm(true);
+                                }}
+                                className="px-2 py-1 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 rounded hover:bg-purple-100 transition-colors cursor-pointer"
+                                title="Catat Loading In (Bongkar Barang Masuk Gudang) oleh Staff"
+                              >
+                                Loading In
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  registerScannedAsset(asset);
                                   setType('Keluar');
                                   setItemName(asset.name);
                                   setAssetCodeInput(asset.code);
+                                  setInlineFormBarcodeInput(asset.code);
                                   setQty(1);
                                   setNotes(`Alokasi keluar unit ${asset.name} (${asset.code})`);
                                   setShowLogForm(true);
@@ -2265,6 +2641,7 @@ export default function Gudang({
                                   setType('Masuk');
                                   setItemName(asset.name);
                                   setAssetCodeInput(asset.code);
+                                  setInlineFormBarcodeInput(asset.code);
                                   setQty(1);
                                   setNotes(`Pengembalian masuk unit ${asset.name} (${asset.code})`);
                                   setShowLogForm(true);
@@ -3394,6 +3771,89 @@ export default function Gudang({
                 </div>
               </div>
 
+              {/* MODE SCAN OPERASIONAL STAFF: ALUR LOGISTIK KELUAR/MASUK & LOADING OUT/IN */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-left space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-mono font-extrabold uppercase text-slate-700">
+                    Mode Scan Staff (Logistik &amp; Loading Out/In):
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-indigo-700">
+                    {currentUser.name} ({currentUser.division})
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1">
+                  {([
+                    { id: 'inspect', label: 'Cek Gudang', activeCls: 'bg-slate-900 text-white border-slate-900' },
+                    { id: 'loading_out', label: 'Loading Out', activeCls: 'bg-blue-600 text-white border-blue-700' },
+                    { id: 'loading_in', label: 'Loading In', activeCls: 'bg-purple-600 text-white border-purple-700' },
+                    { id: 'keluar', label: 'Barang Keluar', activeCls: 'bg-orange-600 text-white border-orange-700' },
+                    { id: 'masuk', label: 'Barang Masuk', activeCls: 'bg-emerald-600 text-white border-emerald-700' }
+                  ] as const).map(m => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => {
+                        setScannerLogisticsMode(m.id);
+                        if (m.id !== 'inspect') {
+                          setAutoRecordLogisticsOnScan(true);
+                        }
+                      }}
+                      className={`px-2 py-1.5 rounded-lg text-[10px] font-mono font-extrabold uppercase border transition-all cursor-pointer text-center ${
+                        scannerLogisticsMode === m.id
+                          ? m.activeCls
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+
+                {scannerLogisticsMode !== 'inspect' && (
+                  <div className="pt-2 border-t border-slate-200 space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[9px] font-mono font-bold uppercase text-slate-500 mb-0.5">
+                          QTY Unit
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={scanLogisticsQty}
+                          onChange={(e) => setScanLogisticsQty(Math.max(1, Number(e.target.value) || 1))}
+                          className="w-full px-2 py-1 border border-slate-300 rounded text-xs font-mono font-bold bg-white text-slate-900"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[9px] font-mono font-bold uppercase text-slate-500 mb-0.5">
+                          Event / Tujuan / Catatan Logistik
+                        </label>
+                        <input
+                          type="text"
+                          value={scanLogisticsNote}
+                          onChange={(e) => setScanLogisticsNote(e.target.value)}
+                          placeholder="e.g. Event JS Luwansa / Truk F 8446 BF"
+                          className="w-full px-2 py-1 border border-slate-300 rounded text-xs bg-white text-slate-900"
+                        />
+                      </div>
+                    </div>
+
+                    <label className="flex items-center gap-2 text-[10px] font-semibold text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={autoRecordLogisticsOnScan}
+                        onChange={(e) => setAutoRecordLogisticsOnScan(e.target.checked)}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span>
+                        Otomatis catat ke Alur Logistik ({scannerLogisticsMode === 'loading_out' ? 'Loading Out / Keluar' : scannerLogisticsMode === 'loading_in' ? 'Loading In / Masuk' : scannerLogisticsMode === 'keluar' ? 'Barang Keluar' : 'Barang Masuk'}) setiap barcode ter-scan
+                      </span>
+                    </label>
+                  </div>
+                )}
+              </div>
+
               {/* VIEWFINDER KAMERA LIVE PONSEL / TABLET / DESKTOP */}
               {isCameraScannerActive && (
                 <div className="rounded-xl overflow-hidden border-2 border-indigo-600 bg-slate-950 text-white shadow-md text-left">
@@ -3815,45 +4275,124 @@ export default function Gudang({
                           </div>
                         </div>
 
-                        {/* Tindak Lanjut Alur Kerja: Scan -> Logistik Masuk/Keluar -> Armada */}
-                        <div className="p-3.5 bg-indigo-50/70 rounded-xl border border-indigo-200 space-y-2.5">
-                          <div className="text-[11px] font-extrabold text-indigo-950 uppercase font-mono flex items-center gap-1.5">
-                            <Package className="w-3.5 h-3.5 text-indigo-600" />
-                            <span>Lanjutkan Alur Kerja Hasil Scan ke Logistik & Armada:</span>
+                        {/* Pencatatan Langsung Alur Logistik Keluar/Masuk & Loading Out/In oleh Staff */}
+                        <div className="p-4 bg-indigo-50/80 rounded-xl border border-indigo-200 space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="text-[11px] font-extrabold text-indigo-950 uppercase font-mono flex items-center gap-1.5">
+                              <Package className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Pencatatan Langsung Alur Logistik Keluar/Masuk &amp; Loading Out/In (Staff):</span>
+                            </div>
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white text-indigo-700 border border-indigo-200">
+                              PIC / Petugas Scan: {currentUser.name} ({currentUser.division})
+                            </span>
                           </div>
-                          <div className="flex flex-wrap gap-2">
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div>
+                              <label className="block text-[10px] font-mono font-bold uppercase text-slate-600 mb-1">
+                                Jumlah Unit (QTY)
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={scanLogisticsQty}
+                                onChange={(e) => setScanLogisticsQty(Math.max(1, Number(e.target.value) || 1))}
+                                className="w-full px-2.5 py-1.5 border border-indigo-200 rounded-lg text-xs font-mono font-bold bg-white text-slate-900"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-[10px] font-mono font-bold uppercase text-slate-600 mb-1">
+                                Tujuan Event / Lokasi / Keterangan Loading Out-In
+                              </label>
+                              <input
+                                type="text"
+                                value={scanLogisticsNote}
+                                onChange={(e) => setScanLogisticsNote(e.target.value)}
+                                placeholder="e.g. Event JS Luwansa / Taman Safari / Kembali ke Gudang"
+                                className="w-full px-2.5 py-1.5 border border-indigo-200 rounded-lg text-xs bg-white text-slate-900"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[10px] font-mono font-bold text-slate-500">Pilih Cepat Tujuan:</span>
+                            {[
+                              'Event JS Luwansa Kuningan',
+                              'Event Taman Safari Indonesia',
+                              'Event Parkir Timur Senayan',
+                              'Gudang Utama RIZ'
+                            ].map(preset => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => setScanLogisticsNote(preset)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
+                                  scanLogisticsNote === preset
+                                    ? 'bg-indigo-600 text-white border-indigo-700'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-indigo-50'
+                                }`}
+                              >
+                                {preset}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Tombol 1-Klik Pencatatan Loading Out / Loading In & Alur Logistik Keluar / Masuk */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                             <button
                               type="button"
-                              onClick={() => {
-                                setType('Keluar');
-                                setItemName(scannedAsset.name);
-                                setAssetCodeInput(scannedAsset.code);
-                                setQty(1);
-                                setNotes(`Barang keluar via Scan Barcode [${scannedAsset.code}]`);
-                                setShowLogForm(true);
-                                setWarehouseSubTab('logs');
-                              }}
-                              className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                              onClick={() => handleQuickLogisticsScanAction(scannedAsset, 'Loading')}
+                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-2xs"
                             >
-                              <ArrowUpRight className="w-3.5 h-3.5" />
-                              <span>Catat Barang Keluar (Tahap 2)</span>
+                              <ArrowUpRight className="w-4 h-4 shrink-0" />
+                              <span>Catat Loading Out (Muat Barang Keluar)</span>
                             </button>
 
                             <button
                               type="button"
+                              onClick={() => handleQuickLogisticsScanAction(scannedAsset, 'Unloading')}
+                              className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                            >
+                              <ArrowDownLeft className="w-4 h-4 shrink-0" />
+                              <span>Catat Loading In (Bongkar Barang Masuk)</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleQuickLogisticsScanAction(scannedAsset, 'Keluar')}
+                              className="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                            >
+                              <ArrowUpRight className="w-4 h-4 shrink-0" />
+                              <span>Catat Alur Logistik Barang Keluar</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleQuickLogisticsScanAction(scannedAsset, 'Masuk')}
+                              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                            >
+                              <ArrowDownLeft className="w-4 h-4 shrink-0" />
+                              <span>Catat Alur Logistik Barang Masuk</span>
+                            </button>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 pt-2 border-t border-indigo-200/70">
+                            <button
+                              type="button"
                               onClick={() => {
-                                setType('Masuk');
+                                setType('Loading');
                                 setItemName(scannedAsset.name);
                                 setAssetCodeInput(scannedAsset.code);
-                                setQty(1);
-                                setNotes(`Barang masuk kembali ke gudang via Scan Barcode [${scannedAsset.code}]`);
+                                setInlineFormBarcodeInput(scannedAsset.code);
+                                setQty(scanLogisticsQty);
+                                setNotes(scanLogisticsNote || `Loading Out / Alur Logistik via Scan Barcode [${scannedAsset.code}]`);
                                 setShowLogForm(true);
                                 setWarehouseSubTab('logs');
                               }}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                              className="px-3 py-1.5 bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-all"
                             >
-                              <ArrowDownLeft className="w-3.5 h-3.5" />
-                              <span>Catat Barang Masuk (Tahap 2)</span>
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>Buka Tabel Alur Logistik Lengkap (Tahap 2)</span>
                             </button>
 
                             <button
@@ -3872,7 +4411,7 @@ export default function Gudang({
                                         ? scannedAsset.division
                                         : 'Audio',
                                       itemDescription: expectedDesc,
-                                      qty: 1,
+                                      qty: scanLogisticsQty,
                                       unit: 'Unit',
                                       estimatedCBM: 0.5
                                     }
@@ -3882,10 +4421,10 @@ export default function Gudang({
                                 setFleetSection('trips');
                                 setShowNewFleetModal(true);
                               }}
-                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
                             >
                               <Truck className="w-3.5 h-3.5" />
-                              <span>Masukkan ke SPJ Armada & Biaya Sewa (Tahap 3)</span>
+                              <span>Masukkan ke SPJ Armada &amp; Biaya Sewa (Tahap 3)</span>
                             </button>
                           </div>
                         </div>
@@ -4027,6 +4566,74 @@ export default function Gudang({
                   )}
                 </div>
               )}
+
+              {/* Live Riwayat Pencatatan Alur Logistik Keluar/Masuk & Loading Out/In langsung di layar Scanner */}
+              <div className="pt-5 border-t border-slate-200 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Truck className="w-4 h-4 text-indigo-600" />
+                      <span>Riwayat Alur Logistik Keluar/Masuk & Loading Out/In ({warehouseLogs.length})</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Seluruh hasil scan Loading Out, Loading In, Barang Keluar, dan Barang Masuk oleh staff tercatat otomatis di sini & pada Tab 02.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWarehouseSubTab('logs')}
+                    className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-bold uppercase transition-colors cursor-pointer"
+                  >
+                    Buka Tab 02 Logistik Lengkap ↗
+                  </button>
+                </div>
+
+                {warehouseLogs.length === 0 ? (
+                  <div className="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                    Belum ada catatan Loading Out / Loading In atau Alur Logistik Masuk/Keluar. Pilih mode scan di atas lalu arahkan kamera ke barcode unit.
+                  </div>
+                ) : (
+                  <div className="max-h-56 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-slate-50/50">
+                    {warehouseLogs.slice(0, 10).map((log) => (
+                      <div key={log.id} className="p-2.5 flex items-center justify-between gap-3 hover:bg-white transition-colors text-xs">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                              log.type === 'Loading'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : log.type === 'Unloading'
+                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                : log.type === 'Keluar'
+                                ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                                : log.type === 'Masuk'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-purple-100 text-purple-800 border border-purple-300'
+                            }`}>
+                              {log.type === 'Loading'
+                                ? 'LOADING OUT (KELUAR)'
+                                : log.type === 'Unloading'
+                                ? 'LOADING IN (MASUK)'
+                                : log.type === 'Keluar'
+                                ? 'LOGISTIK KELUAR'
+                                : log.type === 'Masuk'
+                                ? 'LOGISTIK MASUK'
+                                : log.type}
+                            </span>
+                            <span className="font-bold text-slate-800 truncate">{log.itemName}</span>
+                            <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded text-[10px]">
+                              {log.quantity} Unit
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                            PIC Staff: <strong className="text-slate-700">{log.pic}</strong> • {log.notes || '-'}
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400 shrink-0">{log.date}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
             </div>
           </div>
