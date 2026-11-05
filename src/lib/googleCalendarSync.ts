@@ -1,0 +1,338 @@
+/**
+ * Google Calendar Integration & iCalendar (.ics) Synchronization Engine
+ * PT. Riz Production Multi Kreasi
+ *
+ * Menghubungkan Jadwal Penugasan Job & Event (Staff Inhouse & Kru Freelance)
+ * secara langsung ke Google Calendar (Web, Android, iPhone/iPad, Tablet, Desktop).
+ */
+
+import {
+  JobAssignment,
+  JobDivisionSection,
+  OFFICIAL_JOB_SCHEDULE_DOC_URL,
+  OFFICIAL_COMPANY_ADDRESS as OFFICIAL_HQ_ADDRESS
+} from '../types';
+import { formatFleetVehicleBadge } from '../data/jobAssignmentsData';
+
+export interface GoogleCalendarSyncOptions {
+  filterPersonName?: string;
+  filterPersonType?: 'Staff' | 'Freelance';
+  filterDivision?: string;
+  calendarTitle?: string;
+}
+
+/**
+ * Parse loadingSchedule string into start/end hours (WIB / Asia/Jakarta)
+ * If a specific time or time-of-day is mentioned, returns timed YYYYMMDDTHHmmss,
+ * otherwise returns all-day YYYYMMDD/YYYYMMDD+1.
+ */
+export function resolveGoogleCalendarDates(
+  dateIso: string,
+  loadingSchedule?: string
+): {
+  datesParam: string;
+  icsDtStart: string;
+  icsDtEnd: string;
+  isAllDay: boolean;
+  readableTimeRange: string;
+} {
+  const cleanDate = (dateIso || '').trim().slice(0, 10);
+  const parts = cleanDate.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) {
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    return {
+      datesParam: `${today}/${today}`,
+      icsDtStart: `DTSTART;VALUE=DATE:${today}`,
+      icsDtEnd: `DTEND;VALUE=DATE:${today}`,
+      isAllDay: true,
+      readableTimeRange: 'Seharian (All Day)'
+    };
+  }
+
+  const [year, month, day] = parts;
+  const ymd = `${String(year).padStart(4, '0')}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
+
+  const nextDateObj = new Date(Date.UTC(year, month - 1, day + 1));
+  const nextYmd = `${nextDateObj.getUTCFullYear()}${String(nextDateObj.getUTCMonth() + 1).padStart(2, '0')}${String(nextDateObj.getUTCDate()).padStart(2, '0')}`;
+
+  const sched = (loadingSchedule || '').toLowerCase();
+
+  // Check explicit HH:mm or HH.mm in loadingSchedule (e.g. "Jam 08.00", "14:00")
+  const explicitHourMatch = sched.match(/(?:jam|pukul)?\s*(\d{1,2})[:.](\d{2})/);
+  let startHour: number | null = null;
+  let startMin = 0;
+
+  if (explicitHourMatch) {
+    const h = Number(explicitHourMatch[1]);
+    const m = Number(explicitHourMatch[2]);
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+      startHour = h;
+      startMin = m;
+    }
+  } else if (sched.includes('subuh') || sched.includes('dini hari')) {
+    startHour = 5;
+  } else if (sched.includes('pagi')) {
+    startHour = 8;
+  } else if (sched.includes('siang')) {
+    startHour = 13;
+  } else if (sched.includes('sore')) {
+    startHour = 15;
+  } else if (sched.includes('malam')) {
+    startHour = 19;
+  }
+
+  if (startHour !== null && !sched.includes('h-1')) {
+    const endHour = Math.min(23, startHour + 6);
+    const startTimeStr = `${String(startHour).padStart(2, '0')}${String(startMin).padStart(2, '0')}00`;
+    const endTimeStr = `${String(endHour).padStart(2, '0')}${String(startMin).padStart(2, '0')}00`;
+    const startDt = `${ymd}T${startTimeStr}`;
+    const endDt = `${ymd}T${endTimeStr}`;
+    return {
+      datesParam: `${startDt}/${endDt}`,
+      icsDtStart: `DTSTART;TZID=Asia/Jakarta:${startDt}`,
+      icsDtEnd: `DTEND;TZID=Asia/Jakarta:${endDt}`,
+      isAllDay: false,
+      readableTimeRange: `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')} – ${String(endHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')} WIB`
+    };
+  }
+
+  return {
+    datesParam: `${ymd}/${nextYmd}`,
+    icsDtStart: `DTSTART;VALUE=DATE:${ymd}`,
+    icsDtEnd: `DTEND;VALUE=DATE:${nextYmd}`,
+    isAllDay: true,
+    readableTimeRange: loadingSchedule ? `Loading: ${loadingSchedule}` : 'Seharian (All Day)'
+  };
+}
+
+/**
+ * Format rich event description for Google Calendar from a JobAssignment
+ */
+export function formatJobCalendarDescription(
+  job: JobAssignment,
+  options?: GoogleCalendarSyncOptions
+): string {
+  const lines: string[] = [];
+  lines.push('=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===');
+  lines.push(`📅 Hari / Tanggal: ${job.dateLabel} (${job.date})`);
+  lines.push(`📍 Lokasi / Venue: ${job.venue}`);
+  lines.push(`🕒 Jadwal Loading / Berangkat: ${job.loadingSchedule || 'Sesuai koordinasi lapangan'}`);
+  lines.push(`👮 Person in Charge (PIC): ${job.pic || '-'}`);
+  lines.push(`📌 Status Operasional: ${job.status || 'Terjadwal'}`);
+
+  if (options?.filterPersonName && options.filterPersonName !== 'ALL') {
+    lines.push(
+      `👤 Penugasan Personil: ${options.filterPersonName} (${options.filterPersonType === 'Freelance' ? 'Kru Freelance' : 'Staff Inhouse'})`
+    );
+  }
+
+  if (job.notes) {
+    lines.push(`⚠️ Catatan / SOP Venue: ${job.notes}`);
+  }
+
+  lines.push('');
+  lines.push('--- RINCIAN DIVISI, UNIT ALAT, KRU & ARMADA ---');
+
+  job.sections.forEach((sec, idx) => {
+    if (
+      options?.filterDivision &&
+      options.filterDivision !== 'All' &&
+      sec.division !== options.filterDivision
+    ) {
+      return;
+    }
+    const staffCrew = sec.crew
+      .filter(c => c.personnelType === 'Staff')
+      .map(c => `${c.name}${c.canonicalName && c.canonicalName !== c.name ? ` (${c.canonicalName})` : ''}${c.roleNote ? ` [${c.roleNote}]` : ''}`);
+    const freelanceCrew = sec.crew
+      .filter(c => c.personnelType === 'Freelance')
+      .map(c => `${c.name}${c.roleNote ? ` [${c.roleNote}]` : ''}`);
+    const vehiclesFormatted = sec.vehicles
+      .filter(v => v && v !== '-')
+      .map(v => formatFleetVehicleBadge(v));
+
+    lines.push(`${idx + 1}. [${sec.division.toUpperCase()}] ${sec.packageLabel}`);
+    lines.push(`   • Unit Alat: ${sec.equipment.length > 0 ? sec.equipment.join(' | ') : '-'}`);
+    lines.push(`   • Staff Inhouse (${staffCrew.length}): ${staffCrew.length > 0 ? staffCrew.join(', ') : '-'}`);
+    lines.push(`   • Kru Freelance (${freelanceCrew.length}): ${freelanceCrew.length > 0 ? freelanceCrew.join(', ') : '-'}`);
+    lines.push(`   • Armada Mobilisasi: ${vehiclesFormatted.length > 0 ? vehiclesFormatted.join(', ') : '-'}`);
+    lines.push('');
+  });
+
+  lines.push(`🏢 Kantor / Gudang HQ: ${OFFICIAL_HQ_ADDRESS}`);
+  lines.push(`📄 Referensi Jadwal Resmi: ${OFFICIAL_JOB_SCHEDULE_DOC_URL}`);
+
+  return lines.join('\n');
+}
+
+/**
+ * Build direct Google Calendar template URL for a JobAssignment
+ * Works on Android, iOS (iPhone/iPad), Tablet, and Desktop browsers.
+ */
+export function buildGoogleCalendarEventUrl(
+  job: JobAssignment,
+  options?: GoogleCalendarSyncOptions
+): string {
+  const { datesParam } = resolveGoogleCalendarDates(job.date, job.loadingSchedule);
+  const personPrefix =
+    options?.filterPersonName && options.filterPersonName !== 'ALL'
+      ? `[${options.filterPersonName}] `
+      : '';
+  const divisionPrefix =
+    options?.filterDivision && options.filterDivision !== 'All'
+      ? `[${options.filterDivision}] `
+      : '';
+
+  const allPackages = job.sections
+    .filter(s => !options?.filterDivision || options.filterDivision === 'All' || s.division === options.filterDivision)
+    .map(s => s.packageLabel)
+    .join(', ');
+
+  const title = `${personPrefix}${divisionPrefix}[RIZ PRODUCTION] ${job.venue}${allPackages ? ` — ${allPackages}` : ''} (PIC: ${job.pic || '-'})`;
+  const details = formatJobCalendarDescription(job, options);
+  const location = `${job.venue} | Gudang HQ: ${OFFICIAL_HQ_ADDRESS}`;
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: datesParam,
+    details,
+    location,
+    ctz: 'Asia/Jakarta',
+    trp: 'true'
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/**
+ * Build direct Google Calendar URL for a specific division section inside a JobAssignment
+ */
+export function buildGoogleCalendarSectionEventUrl(
+  job: JobAssignment,
+  section: JobDivisionSection
+): string {
+  const scopedJob: JobAssignment = {
+    ...job,
+    sections: [section]
+  };
+  return buildGoogleCalendarEventUrl(scopedJob, {
+    filterDivision: section.division
+  });
+}
+
+/**
+ * Escape text according to RFC 5545 iCalendar specification
+ */
+function escapeIcsText(value: string): string {
+  return String(value || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+}
+
+/**
+ * Generate RFC 5545 (.ics) content for multiple JobAssignments
+ * Compatible with Google Calendar (Android/iOS/Web), Apple Calendar, and Outlook.
+ */
+export function generateJobAssignmentsIcsContent(
+  jobs: JobAssignment[],
+  options?: GoogleCalendarSyncOptions
+): string {
+  const calName =
+    options?.calendarTitle ||
+    (options?.filterPersonName && options.filterPersonName !== 'ALL'
+      ? `Jadwal Penugasan ${options.filterPersonName} - PT. Riz Production`
+      : 'Jadwal Penugasan Staff & Crew Freelance - PT. Riz Production Multi Kreasi');
+
+  const nowUtc = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//PT. Riz Production Multi Kreasi//Jadwal Penugasan Staff & Freelance//ID',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    `X-WR-CALNAME:${escapeIcsText(calName)}`,
+    'X-WR-TIMEZONE:Asia/Jakarta',
+    'BEGIN:VTIMEZONE',
+    'TZID:Asia/Jakarta',
+    'BEGIN:STANDARD',
+    'TZOFFSETFROM:+0700',
+    'TZOFFSETTO:+0700',
+    'TZNAME:WIB',
+    'DTSTART:19700101T000000',
+    'END:STANDARD',
+    'END:VTIMEZONE'
+  ];
+
+  jobs.forEach(job => {
+    const { icsDtStart, icsDtEnd } = resolveGoogleCalendarDates(job.date, job.loadingSchedule);
+    const personPrefix =
+      options?.filterPersonName && options.filterPersonName !== 'ALL'
+        ? `[${options.filterPersonName}] `
+        : '';
+    const packagesSummary = job.sections.map(s => s.packageLabel).join(', ');
+    const summary = `${personPrefix}[RIZ PRODUCTION] ${job.venue}${packagesSummary ? ` (${packagesSummary})` : ''} - PIC: ${job.pic || '-'}`;
+    const description = formatJobCalendarDescription(job, options);
+    const location = `${job.venue} (HQ: ${OFFICIAL_HQ_ADDRESS})`;
+    const uid = `${job.id}${options?.filterPersonName && options.filterPersonName !== 'ALL' ? `-${options.filterPersonName.toLowerCase().replace(/[^a-z0-9]/g, '')}` : ''}@rizproduction.id`;
+
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${uid}`);
+    lines.push(`DTSTAMP:${nowUtc}`);
+    lines.push(icsDtStart);
+    lines.push(icsDtEnd);
+    lines.push(`SUMMARY:${escapeIcsText(summary)}`);
+    lines.push(`LOCATION:${escapeIcsText(location)}`);
+    lines.push(`DESCRIPTION:${escapeIcsText(description)}`);
+    lines.push('STATUS:CONFIRMED');
+    // Reminder 1: H-1 (1440 minutes before)
+    lines.push('BEGIN:VALARM');
+    lines.push('TRIGGER:-PT1440M');
+    lines.push('ACTION:DISPLAY');
+    lines.push(`DESCRIPTION:${escapeIcsText(`Persiapan & Cek Alat H-1: ${job.venue} (PIC: ${job.pic || '-'})`)}`);
+    lines.push('END:VALARM');
+    // Reminder 2: 3 hours before loading
+    lines.push('BEGIN:VALARM');
+    lines.push('TRIGGER:-PT180M');
+    lines.push('ACTION:DISPLAY');
+    lines.push(`DESCRIPTION:${escapeIcsText(`Persiapan Loading & Keberangkatan Kru: ${job.venue}`)}`);
+    lines.push('END:VALARM');
+    lines.push('END:VEVENT');
+  });
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+/**
+ * Trigger browser download of `.ics` file for importing/subscribing into Google Calendar
+ */
+export function downloadJobAssignmentsIcs(
+  jobs: JobAssignment[],
+  options?: GoogleCalendarSyncOptions
+): string {
+  const icsContent = generateJobAssignmentsIcsContent(jobs, options);
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return icsContent;
+  }
+
+  const slug =
+    options?.filterPersonName && options.filterPersonName !== 'ALL'
+      ? options.filterPersonName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      : 'semua-staff-freelance';
+  const fileName = `jadwal-penugasan-riz-production-${slug}.ics`;
+
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', fileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  return icsContent;
+}

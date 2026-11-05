@@ -8,6 +8,8 @@ import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../src/data/september2026Sched
 import { OFFICIAL_COMPETENCY_MATRICES } from '../src/data/competencyMatrixData';
 import { getDeviceOSInfo, ALL_SYNC_COLLECTIONS, SyncStatus, subscribeSyncStatus } from '../src/lib/cloudSync';
 import { calculateStaffKpi } from '../src/utils/kpiCalculator';
+import { buildGoogleCalendarEventUrl, generateJobAssignmentsIcsContent } from '../src/lib/googleCalendarSync';
+import { decode1DBarcodeFromImageData } from '../src/lib/universalBarcodeScanner';
 
 console.log('====================================================');
 console.log('  RIZ-PRODUCTION END-TO-END AUTOMATED DIAGNOSTIC SUITE');
@@ -69,6 +71,41 @@ const unsub = subscribeSyncStatus((st: SyncStatus) => {
 });
 assert(statusReceived, 'Sync status listener fires upon subscription');
 unsub();
+
+// 6. Test Google Calendar Integration for Staff & Freelance Crew Assignments
+const sampleJobForCal = INITIAL_JOB_ASSIGNMENTS[0];
+const gcalUrl = buildGoogleCalendarEventUrl(sampleJobForCal, {
+  filterPersonName: 'Muhamad Rahmat',
+  filterPersonType: 'Staff'
+});
+assert(
+  gcalUrl.startsWith('https://calendar.google.com/calendar/render?') &&
+    gcalUrl.includes('action=TEMPLATE') &&
+    gcalUrl.includes('Asia%2FJakarta'),
+  'Google Calendar event URL generator produces valid template URL with Asia/Jakarta timezone'
+);
+const icsContent = generateJobAssignmentsIcsContent(INITIAL_JOB_ASSIGNMENTS.slice(0, 3), {
+  filterPersonName: 'Adul',
+  filterPersonType: 'Freelance'
+});
+assert(
+  icsContent.includes('BEGIN:VCALENDAR') &&
+    icsContent.includes('BEGIN:VEVENT') &&
+    icsContent.includes('BEGIN:VALARM') &&
+    icsContent.includes('END:VCALENDAR'),
+  'Google Calendar iCalendar (.ics) generator produces valid RFC 5545 calendar feed with VALARM reminders'
+);
+
+// 7. Test Universal Camera Barcode Scanner 1D Optical Decoder
+const emptyImageData = {
+  width: 200,
+  height: 40,
+  data: new Uint8ClampedArray(200 * 40 * 4)
+} as unknown as ImageData;
+assert(
+  decode1DBarcodeFromImageData(emptyImageData) === null,
+  'Universal Camera Barcode 1D scanline decoder handles blank frames safely without false positives'
+);
 
 console.log('\n====================================================');
 console.log(`  RESULTS: ${passedTests}/${totalTests} TESTS PASSED (100% OK)`);

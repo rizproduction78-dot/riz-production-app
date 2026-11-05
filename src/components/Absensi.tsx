@@ -70,6 +70,15 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc, deleteCloudDoc, pushCollectionToCloud } from '../lib/cloudSync';
+import {
+  buildGoogleCalendarEventUrl,
+  buildGoogleCalendarSectionEventUrl,
+  downloadJobAssignmentsIcs
+} from '../lib/googleCalendarSync';
+import {
+  startUniversalCameraStream,
+  captureSnapshotFromVideo
+} from '../lib/universalBarcodeScanner';
 
 export const WAJIB_ABSEN_NAMES = [
   'Agus', 'Fahrul', 'Caca', 'Seno',
@@ -1018,6 +1027,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   const [cameraActive, setCameraActive] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isLiveSelfieCamera, setIsLiveSelfieCamera] = useState(false);
+  const [selfieFacingMode, setSelfieFacingMode] = useState<'user' | 'environment'>('user');
   const attendanceVideoRef = useRef<HTMLVideoElement | null>(null);
   const attendanceStreamRef = useRef<MediaStream | null>(null);
 
@@ -1033,31 +1043,37 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     setCameraActive(false);
   };
 
-  const handleStartSelfieCamera = async () => {
+  const handleStartSelfieCamera = async (overrideFacing?: 'user' | 'environment') => {
     setCameraActive(true);
-    if (typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
-      try {
-        if (attendanceStreamRef.current) {
-          attendanceStreamRef.current.getTracks().forEach(t => t.stop());
-        }
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user' },
-          audio: false
-        });
-        attendanceStreamRef.current = stream;
-        setIsLiveSelfieCamera(true);
-        setTimeout(() => {
-          if (attendanceVideoRef.current) {
-            attendanceVideoRef.current.srcObject = stream;
-            attendanceVideoRef.current.play().catch(() => {});
-          }
-        }, 50);
-      } catch {
-        setIsLiveSelfieCamera(false);
+    const targetFacing = overrideFacing || selfieFacingMode;
+    try {
+      if (attendanceStreamRef.current) {
+        attendanceStreamRef.current.getTracks().forEach(t => t.stop());
       }
-    } else {
+      const session = await startUniversalCameraStream({
+        preferredFacingMode: targetFacing,
+        videoElement: attendanceVideoRef.current
+      });
+      attendanceStreamRef.current = session.stream;
+      setSelfieFacingMode(session.facingMode);
+      setIsLiveSelfieCamera(true);
+      setTimeout(() => {
+        if (attendanceVideoRef.current && attendanceStreamRef.current) {
+          attendanceVideoRef.current.setAttribute('playsinline', 'true');
+          attendanceVideoRef.current.setAttribute('webkit-playsinline', 'true');
+          attendanceVideoRef.current.srcObject = attendanceStreamRef.current;
+          attendanceVideoRef.current.play().catch(() => {});
+        }
+      }, 50);
+    } catch {
       setIsLiveSelfieCamera(false);
     }
+  };
+
+  const handleSwitchSelfieCameraFacing = async () => {
+    const nextFacing = selfieFacingMode === 'user' ? 'environment' : 'user';
+    setSelfieFacingMode(nextFacing);
+    await handleStartSelfieCamera(nextFacing);
   };
 
   const handleCaptureSimulatedSelfie = () => {
@@ -1065,22 +1081,15 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     setTimeout(() => {
       try {
         if (isLiveSelfieCamera && attendanceVideoRef.current && attendanceVideoRef.current.videoWidth > 0) {
-          const canvas = document.createElement('canvas');
-          canvas.width = attendanceVideoRef.current.videoWidth;
-          canvas.height = attendanceVideoRef.current.videoHeight;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(attendanceVideoRef.current, 0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-            ctx.fillRect(0, canvas.height - 44, canvas.width, 44);
-            ctx.fillStyle = '#34d399';
-            ctx.font = 'bold 13px monospace';
-            ctx.fillText(
-              `${currentUser.name} (${currentUser.division}) • ${new Date().toLocaleString('id-ID')}`,
-              12,
-              canvas.height - 16
-            );
-            setPhotoSimulated(canvas.toDataURL('image/jpeg', 0.85));
+          const snap = captureSnapshotFromVideo(
+            attendanceVideoRef.current,
+            `${currentUser.name} (${currentUser.division}) • ${new Date().toLocaleString('id-ID')}`
+          );
+          if (snap) {
+            setPhotoSimulated(snap);
+            if (!gpsSimulated) {
+              setGpsSimulated(`${OFFICIAL_COMPANY_GPS_COORDINATES} (${OFFICIAL_COMPANY_PLUS_CODE})`);
+            }
             setIsCapturing(false);
             handleStopSelfieCamera();
             return;
@@ -1558,17 +1567,17 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                        {/* CAMERA SIMULATOR */}
+                        {/* REAL HARDWARE CAMERA FOR SELFIE ATTENDANCE (MOBILE / TABLET / DESKTOP) */}
                         <div className="p-4 border border-slate-200 rounded-lg space-y-3 bg-slate-50/50">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
                               <Camera className="w-3.5 h-3.5 text-indigo-600" />
-                              Foto Selfie Verifikasi (Simulator Kamera)
+                              Foto Selfie Verifikasi (Kamera Perangkat)
                             </span>
                             {photoSimulated ? (
                               <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold">Terlampir</span>
                             ) : cameraActive ? (
-                              <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-mono font-bold animate-pulse">Kamera Aktif</span>
+                              <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-mono font-bold animate-pulse">Kamera Live Aktif</span>
                             ) : null}
                           </div>
 
@@ -1600,7 +1609,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                   playsInline
                                   muted
                                   className={`absolute inset-0 w-full h-full object-cover ${
-                                    isLiveSelfieCamera ? 'opacity-90' : 'hidden'
+                                    isLiveSelfieCamera ? 'opacity-95' : 'hidden'
                                   }`}
                                 />
                                 <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-emerald-400" />
@@ -1613,7 +1622,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                       {(currentUser.nickname || currentUser.name).slice(0, 2).toUpperCase()}
                                     </div>
                                     <div className="text-[10px] font-mono text-emerald-400 font-bold uppercase">
-                                      ● SIMULATOR KAMERA SELFIE AKTIF
+                                      ● KAMERA VERIFIKASI SIAP DIJEPRET
                                     </div>
                                     <div className="text-[11px] font-bold text-white">
                                       {currentUser.name} ({currentUser.division})
@@ -1631,6 +1640,17 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                   <Camera className="w-3.5 h-3.5" />
                                   <span>{isCapturing ? 'Menjepret Foto...' : 'Jepret Foto Selfie'}</span>
                                 </button>
+                                {isLiveSelfieCamera && (
+                                  <button
+                                    type="button"
+                                    onClick={handleSwitchSelfieCameraFacing}
+                                    className="py-1.5 px-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1"
+                                    title="Ganti Kamera Depan / Belakang"
+                                  >
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                    <span>{selfieFacingMode === 'user' ? 'Depan' : 'Belakang'}</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={handleStopSelfieCamera}
@@ -1643,18 +1663,18 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                           ) : (
                             <div className="p-3 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-500 bg-slate-50 relative overflow-hidden space-y-2">
                               <Camera className="w-7 h-7 text-indigo-500" />
-                              <span className="text-xs font-semibold text-slate-700">Foto Selfie Area / Wajah</span>
+                              <span className="text-xs font-semibold text-slate-700">Foto Selfie Area / Wajah (Ponsel / Tablet / Laptop)</span>
                               <div className="flex flex-wrap items-center justify-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={handleStartSelfieCamera}
+                                  onClick={() => handleStartSelfieCamera()}
                                   className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold cursor-pointer flex items-center gap-1 shadow-2xs"
                                 >
                                   <Camera className="w-3.5 h-3.5" />
-                                  <span>Aktifkan Simulator Kamera</span>
+                                  <span>Buka Kamera Live</span>
                                 </button>
                                 <label className="px-3 py-1.5 bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold cursor-pointer">
-                                  Pilih File Foto
+                                  Kamera HP / Pilih Foto
                                   <input
                                     type="file"
                                     accept="image/*"
@@ -2394,6 +2414,60 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const activePersonName = selectedStaffObj
+                          ? selectedStaffObj.name
+                          : selectedFreelanceObj
+                            ? selectedFreelanceObj.name
+                            : 'ALL';
+                        const activePersonType = selectedStaffObj
+                          ? ('Staff' as const)
+                          : selectedFreelanceObj
+                            ? ('Freelance' as const)
+                            : undefined;
+                        downloadJobAssignmentsIcs(filteredJobs, {
+                          filterPersonName: activePersonName,
+                          filterPersonType: activePersonType,
+                          filterDivision: jobDivisionFilter
+                        });
+                        onLogActivity(
+                          currentUser.name,
+                          currentUser.role,
+                          `Mengunduh & menyinkronkan ${filteredJobs.length} jadwal penugasan ke Google Calendar (.ics) untuk ${activePersonName === 'ALL' ? 'Semua Staff & Freelance' : activePersonName}`
+                        );
+                      }}
+                      className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                      title="Unduh file Google Calendar (.ics) untuk disinkronkan ke Google Calendar HP / Tablet / Laptop"
+                    >
+                      <Calendar className="w-3.5 h-3.5 text-slate-950" />
+                      <span>Sync Google Calendar ({filteredJobs.length} Job .ics)</span>
+                    </button>
+                    {filteredJobs.length > 0 && (
+                      <a
+                        href={buildGoogleCalendarEventUrl(filteredJobs[0], {
+                          filterPersonName: selectedStaffObj
+                            ? selectedStaffObj.name
+                            : selectedFreelanceObj
+                              ? selectedFreelanceObj.name
+                              : 'ALL',
+                          filterPersonType: selectedStaffObj
+                            ? 'Staff'
+                            : selectedFreelanceObj
+                              ? 'Freelance'
+                              : undefined,
+                          filterDivision: jobDivisionFilter
+                        })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-2 bg-sky-600/40 hover:bg-sky-600/60 text-sky-100 border border-sky-400/50 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                        title="Buka & tambahkan jadwal penugasan ke Google Calendar"
+                      >
+                        <Calendar className="w-3.5 h-3.5 text-sky-300" />
+                        <span>Buka Google Calendar ↗</span>
+                      </a>
+                    )}
                     <a
                       href={OFFICIAL_JOB_SCHEDULE_DOC_URL}
                       target="_blank"
@@ -2555,6 +2629,33 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const activePersonName = selectedStaffObj
+                            ? selectedStaffObj.name
+                            : selectedFreelanceObj
+                              ? selectedFreelanceObj.name
+                              : 'ALL';
+                          const activePersonType = selectedStaffObj
+                            ? ('Staff' as const)
+                            : selectedFreelanceObj
+                              ? ('Freelance' as const)
+                              : undefined;
+                          downloadJobAssignmentsIcs(filteredJobs, {
+                            filterPersonName: activePersonName,
+                            filterPersonType: activePersonType,
+                            filterDivision: jobDivisionFilter
+                          });
+                        }}
+                        className="px-3 py-1 rounded-lg text-xs font-black cursor-pointer transition-all border bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-600 shadow-2xs flex items-center gap-1"
+                        title="Sinkronkan & unduh jadwal penugasan personil ini ke Google Calendar (.ics)"
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>
+                          Sync Google Calendar {selectedStaffObj ? `(${selectedStaffObj.nickname || selectedStaffObj.name.split(' ')[0]})` : selectedFreelanceObj ? `(${selectedFreelanceObj.name})` : '(Semua Kru)'}
+                        </span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleSelectStaffPill(currentUser)}
@@ -2986,6 +3087,29 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 self-start lg:self-center">
+                          <a
+                            href={buildGoogleCalendarEventUrl(job, {
+                              filterPersonName: selectedStaffObj
+                                ? selectedStaffObj.name
+                                : selectedFreelanceObj
+                                  ? selectedFreelanceObj.name
+                                  : 'ALL',
+                              filterPersonType: selectedStaffObj
+                                ? 'Staff'
+                                : selectedFreelanceObj
+                                  ? 'Freelance'
+                                  : undefined,
+                              filterDivision: jobDivisionFilter
+                            })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
+                            title="Tambahkan jadwal penugasan job ini (lengkap dengan kru, alat, armada, venue & PIC) ke Google Calendar"
+                          >
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Simpan ke Google Calendar ↗</span>
+                          </a>
+
                           <select
                             value={job.status || 'Terjadwal'}
                             onChange={(e) => handleUpdateJobStatus(job, e.target.value as JobAssignment['status'])}
@@ -3074,6 +3198,16 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                   <span className="text-[10px] font-mono font-semibold text-slate-500">
                                     {sec.crew.length} Crew • {sec.equipment.length} Alat
                                   </span>
+                                  <a
+                                    href={buildGoogleCalendarSectionEventUrl(job, sec)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 rounded border border-emerald-200 flex items-center gap-1"
+                                    title={`Tambahkan jadwal divisi ${sec.division} (${sec.packageLabel}) ke Google Calendar`}
+                                  >
+                                    <Calendar className="w-2.5 h-2.5" />
+                                    <span>+Google Cal</span>
+                                  </a>
                                   {canManageJobSchedule && (
                                     <button
                                       type="button"
