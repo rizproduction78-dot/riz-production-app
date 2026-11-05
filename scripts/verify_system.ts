@@ -8,7 +8,7 @@ import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../src/data/september2026Sched
 import { OFFICIAL_COMPETENCY_MATRICES } from '../src/data/competencyMatrixData';
 import { getDeviceOSInfo, ALL_SYNC_COLLECTIONS, SyncStatus, subscribeSyncStatus } from '../src/lib/cloudSync';
 import { calculateStaffKpi } from '../src/utils/kpiCalculator';
-import { buildGoogleCalendarEventUrl, generateJobAssignmentsIcsContent } from '../src/lib/googleCalendarSync';
+import { buildGoogleCalendarEventUrl, generateJobAssignmentsIcsContent, parseGoogleCalendarIcsToJobAssignments } from '../src/lib/googleCalendarSync';
 import { decode1DBarcodeFromImageData } from '../src/lib/universalBarcodeScanner';
 
 console.log('====================================================');
@@ -48,7 +48,7 @@ assert(Array.isArray(INITIAL_FLEET_DRIVERS), 'Fleet drivers initial list is a va
 assert(OFFICIAL_SEPTEMBER_2026_SCHEDULE.length > 0, 'September 2026 schedule populated', `Rows: ${OFFICIAL_SEPTEMBER_2026_SCHEDULE.length}`);
 assert(Boolean(OFFICIAL_COMPETENCY_MATRICES['Audio']), 'Competency matrices contain Audio division');
 
-// 3b. Test Official Job Assignments (Staff & Freelance Crew Schedule from Google Doc 1Lwti9V2-5P4WwwkMPupR5stuXNc1Y02W)
+// 3b. Test Official Job Assignments (Staff & Freelance Crew Schedule via App & Google Calendar)
 assert(INITIAL_JOB_ASSIGNMENTS.length >= 49, 'Official Job Assignments populated (Nov & Dec 2026)', `Count: ${INITIAL_JOB_ASSIGNMENTS.length}`);
 const novJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-11');
 const decJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-12');
@@ -92,8 +92,14 @@ assert(
   icsContent.includes('BEGIN:VCALENDAR') &&
     icsContent.includes('BEGIN:VEVENT') &&
     icsContent.includes('BEGIN:VALARM') &&
-    icsContent.includes('END:VCALENDAR'),
-  'Google Calendar iCalendar (.ics) generator produces valid RFC 5545 calendar feed with VALARM reminders'
+    icsContent.includes('END:VCALENDAR') &&
+    !icsContent.includes('docs.google.com/document'),
+  'Google Calendar iCalendar (.ics) generator produces valid RFC 5545 calendar feed with VALARM reminders (no Google Doc reference)'
+);
+const parsedIcsJobs = parseGoogleCalendarIcsToJobAssignments(icsContent);
+assert(
+  parsedIcsJobs.length === 3 && parsedIcsJobs[0].venue.length > 0,
+  'Google Calendar iCalendar (.ics) parser accurately imports VEVENT entries back into JobAssignments'
 );
 
 // 7. Test Universal Camera Barcode Scanner 1D Optical Decoder

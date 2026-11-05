@@ -1,14 +1,13 @@
 /**
  * DATASET RESMI JADWAL PENUGASAN KERJA / JOB EVENT (STAFF & FREELANCE)
- * Sumber Acuan Mutlak: Google Docs Resmi PT. Riz Production Multi Kreasi
- * Document ID: 1Lwti9V2-5P4WwwkMPupR5stuXNc1Y02W
- * URL: https://docs.google.com/document/d/1Lwti9V2-5P4WwwkMPupR5stuXNc1Y02W/edit#heading=h.nf6ix777sh6z
+ * Sumber Acuan Mutlak: Sistem Penjadwalan Aplikasi & Sinkronisasi Google Calendar PT. Riz Production Multi Kreasi
+ * (KOMIT: Jadwal penugasan bukan lagi bersumber dari Google Doc)
  */
 
 import { JobAssignment, JobCrewMember, JobDivisionSection } from '../types';
 
 /**
- * Pemetaan nama panggilan kru di Google Docs ke ID Staff Inhouse resmi (22 personil)
+ * Pemetaan nama panggilan kru ke ID Staff Inhouse resmi (22 personil)
  */
 const STAFF_NICKNAME_MAP: Record<string, { id: string; canonicalName: string; division: string }> = {
   wahyu: { id: 'director-wahyu', canonicalName: 'Wahyu', division: 'Admin' },
@@ -83,7 +82,7 @@ const STAFF_NICKNAME_MAP: Record<string, { id: string; canonicalName: string; di
 };
 
 /**
- * Pemetaan nama kru Freelance & Mitra di Google Docs
+ * Pemetaan nama kru Freelance & Mitra
  */
 const FREELANCE_NICKNAME_MAP: Record<string, { canonicalName: string; division: string }> = {
   adin: { canonicalName: 'ADIN ANDRIANSYAH (ADIN)', division: 'Audio' },
@@ -256,8 +255,8 @@ function createSection(
 }
 
 /**
- * DATASET KANONIKAL JADWAL PENUGASAN JOB NOVEMBER & DESEMBER 2026
- * Sesuai 100% dengan dokumen Google Docs 1Lwti9V2-5P4WwwkMPupR5stuXNc1Y02W
+ * DATASET AWAL JADWAL PENUGASAN JOB NOVEMBER & DESEMBER 2026
+ * Dikelola langsung melalui Sistem Penjadwalan Aplikasi & Sinkronisasi Google Calendar
  */
 export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
   // ============================================================================

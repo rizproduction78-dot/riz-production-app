@@ -819,27 +819,25 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     return Array.from(map.values()) as T[];
   }
 
-  // Normalization for job_assignments to preserve canonical Google Doc schedule while keeping user edits
+  // Normalization for job_assignments (Sistem Penjadwalan Aplikasi & Sinkronisasi Google Calendar — bukan lagi dari Google Doc)
   if (collectionName === 'job_assignments') {
+    const deletedIds = getDeletedIds('job_assignments');
     const canonicalMap = new Map<string, any>((INITIAL_JOB_ASSIGNMENTS || []).map((j: any) => [String(j.id), j]));
     const map = new Map<string, any>();
-    canonicalMap.forEach((val, key) => map.set(key, val));
+    canonicalMap.forEach((val, key) => {
+      if (!deletedIds.has(key)) {
+        map.set(key, val);
+      }
+    });
     items.forEach((item: any) => {
       if (!item || !item.id) return;
       const rawId = String(item.id);
+      if (deletedIds.has(rawId) || item._deleted) return;
       const canonical = canonicalMap.get(rawId);
-      const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
-      if (canonical && !isUserEdited) {
-        map.set(rawId, {
-          ...canonical,
-          ...(item.status ? { status: item.status } : {}),
-        });
-      } else {
-        map.set(rawId, {
-          ...(canonical || {}),
-          ...item,
-        });
-      }
+      map.set(rawId, {
+        ...(canonical || {}),
+        ...item,
+      });
     });
     return Array.from(map.values()) as T[];
   }

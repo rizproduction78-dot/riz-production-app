@@ -17,9 +17,10 @@ export const OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_ID = "1hBGpse_uG9bbeMN
 export const OFFICIAL_ARMADA_SPREADSHEET_ID = "1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs";
 export const OFFICIAL_ARMADA_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1YuJ_rVhvYUTKKujiHNFOydVWAeCDz5H4ui7pDLvXxUs/edit?usp=sharing";
 
-// Sumber Resmi Google Docs Jadwal Penugasan Kerja / Job Crew (Staff & Freelance)
-export const OFFICIAL_JOB_SCHEDULE_DOC_ID = "1Lwti9V2-5P4WwwkMPupR5stuXNc1Y02W";
-export const OFFICIAL_JOB_SCHEDULE_DOC_URL = "https://docs.google.com/document/d/1Lwti9V2-5P4WwwkMPupR5stuXNc1Y02W/edit#heading=h.nf6ix777sh6z";
+// Sumber Resmi Integrasi Google Calendar Jadwal Penugasan Kerja / Job Crew (Staff & Freelance)
+// KOMIT: Jadwal penugasan terkoneksi langsung dengan Google Calendar & Sistem Penjadwalan Aplikasi (bukan lagi dari Google Doc)
+export const OFFICIAL_GOOGLE_CALENDAR_WEB_URL = "https://calendar.google.com/calendar/u/0/r";
+export const OFFICIAL_JOB_SCHEDULE_DOC_URL = OFFICIAL_GOOGLE_CALENDAR_WEB_URL;
 
 // Alamat Resmi & Koordinat GPS Kantor / Gudang PT. Riz Production Multi Kreasi
 export const OFFICIAL_COMPANY_ADDRESS = "Jl. Alternatif Jl. Tugu Wates No.78, RT.02/RW.13, Kedungbadak, Tanah Sareal, Kota Bogor, Jawa Barat 16164";

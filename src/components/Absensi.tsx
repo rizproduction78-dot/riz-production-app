@@ -9,7 +9,7 @@ import {
   JobDivisionSection,
   OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL,
   OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL,
-  OFFICIAL_JOB_SCHEDULE_DOC_URL,
+  OFFICIAL_GOOGLE_CALENDAR_WEB_URL,
   OFFICIAL_ARMADA_SPREADSHEET_URL,
   OFFICIAL_COMPANY_ADDRESS,
   OFFICIAL_COMPANY_PLUS_CODE,
@@ -73,7 +73,8 @@ import { subscribeCloudCollection, saveCloudDoc, deleteCloudDoc, pushCollectionT
 import {
   buildGoogleCalendarEventUrl,
   buildGoogleCalendarSectionEventUrl,
-  downloadJobAssignmentsIcs
+  downloadJobAssignmentsIcs,
+  parseGoogleCalendarIcsToJobAssignments
 } from '../lib/googleCalendarSync';
 import {
   startUniversalCameraStream,
@@ -1013,6 +1014,44 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     onLogActivity(currentUser.name, currentUser.role, `Menghapus Jadwal Penugasan Job: ${job.dateLabel}`);
   };
 
+  const handleImportGoogleCalendarIcs = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const importedJobs = parseGoogleCalendarIcsToJobAssignments(text);
+      if (importedJobs.length === 0) {
+        alert('Tidak ditemukan event kalender (.ics) yang valid di dalam file yang dipilih.');
+        return;
+      }
+      setJobAssignments(prev => {
+        const map = new Map<string, JobAssignment>(prev.map(j => [j.id, j]));
+        importedJobs.forEach(imp => {
+          map.set(imp.id, { ...imp, _userEdited: true });
+        });
+        const sorted = Array.from(map.values()).sort((a, b) =>
+          String(a.date || '').localeCompare(String(b.date || ''))
+        );
+        try {
+          localStorage.setItem('riz_job_assignments_v1', JSON.stringify(sorted));
+        } catch {}
+        return sorted;
+      });
+      importedJobs.forEach(imp => {
+        saveCloudDoc('job_assignments', imp.id, { ...imp, _userEdited: true }, currentUser.name);
+      });
+      onLogActivity(
+        currentUser.name,
+        currentUser.role,
+        `Mengimpor & menyinkronkan ${importedJobs.length} jadwal penugasan dari Google Calendar (.ics)`
+      );
+      alert(`Berhasil mengimpor & menyinkronkan ${importedJobs.length} jadwal penugasan dari Google Calendar!`);
+    } catch (err) {
+      alert('Gagal membaca file Google Calendar (.ics).');
+    }
+  };
+
   // Active check in / out state for current user on today's date
   const todayStr = new Date().toISOString().split('T')[0];
   const userTodayLog = attendanceLogs.find(log => log.staffId === currentUser.id && log.date === todayStr);
@@ -1460,13 +1499,13 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
             </button>
           </div>
           <a
-            href={OFFICIAL_JOB_SCHEDULE_DOC_URL}
+            href={OFFICIAL_GOOGLE_CALENDAR_WEB_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span>Dokumen Resmi Jadwal Crew ↗</span>
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Buka Google Calendar Jadwal Crew ↗</span>
           </a>
         </div>
       )}
@@ -2409,7 +2448,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                       Jadwal Penugasan Kerja / Job Event (Staff/Crew, Unit Alat, Armada, Lokasi/Venue & PIC)
                     </h3>
                     <p className="text-xs text-slate-300">
-                      Sumber Acuan Resmi: Google Docs Jadwal Crew November & Desember 2026 serta Google Sheet Armada Resmi PT. Riz Production Multi Kreasi.
+                      Sumber Acuan Resmi: Sistem Penjadwalan Aplikasi & Sinkronisasi Google Calendar (Staff Inhouse & Kru Freelance) serta Google Sheet Armada Resmi PT. Riz Production Multi Kreasi.
                     </p>
                   </div>
 
@@ -2444,38 +2483,46 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                       <Calendar className="w-3.5 h-3.5 text-slate-950" />
                       <span>Sync Google Calendar ({filteredJobs.length} Job .ics)</span>
                     </button>
-                    {filteredJobs.length > 0 && (
-                      <a
-                        href={buildGoogleCalendarEventUrl(filteredJobs[0], {
-                          filterPersonName: selectedStaffObj
-                            ? selectedStaffObj.name
-                            : selectedFreelanceObj
-                              ? selectedFreelanceObj.name
-                              : 'ALL',
-                          filterPersonType: selectedStaffObj
-                            ? 'Staff'
-                            : selectedFreelanceObj
-                              ? 'Freelance'
-                              : undefined,
-                          filterDivision: jobDivisionFilter
-                        })}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-2 bg-sky-600/40 hover:bg-sky-600/60 text-sky-100 border border-sky-400/50 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-                        title="Buka & tambahkan jadwal penugasan ke Google Calendar"
+                    {canManageJobSchedule && (
+                      <label
+                        className="px-3 py-2 bg-white/15 hover:bg-white/25 text-white border border-white/25 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                        title="Impor jadwal penugasan dari file Google Calendar (.ics)"
                       >
-                        <Calendar className="w-3.5 h-3.5 text-sky-300" />
-                        <span>Buka Google Calendar ↗</span>
-                      </a>
+                        <RefreshCw className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Impor Google Calendar (.ics)</span>
+                        <input
+                          type="file"
+                          accept=".ics,text/calendar"
+                          onChange={handleImportGoogleCalendarIcs}
+                          className="hidden"
+                        />
+                      </label>
                     )}
                     <a
-                      href={OFFICIAL_JOB_SCHEDULE_DOC_URL}
+                      href={
+                        filteredJobs.length > 0
+                          ? buildGoogleCalendarEventUrl(filteredJobs[0], {
+                              filterPersonName: selectedStaffObj
+                                ? selectedStaffObj.name
+                                : selectedFreelanceObj
+                                  ? selectedFreelanceObj.name
+                                  : 'ALL',
+                              filterPersonType: selectedStaffObj
+                                ? 'Staff'
+                                : selectedFreelanceObj
+                                  ? 'Freelance'
+                                  : undefined,
+                              filterDivision: jobDivisionFilter
+                            })
+                          : OFFICIAL_GOOGLE_CALENDAR_WEB_URL
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                      className="px-3 py-2 bg-sky-600/40 hover:bg-sky-600/60 text-sky-100 border border-sky-400/50 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                      title="Buka & tambahkan jadwal penugasan ke Google Calendar"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-indigo-300" />
-                      <span>Google Doc Jadwal Crew ↗</span>
+                      <Calendar className="w-3.5 h-3.5 text-sky-300" />
+                      <span>Buka Google Calendar ↗</span>
                     </a>
                     <a
                       href={OFFICIAL_ARMADA_SPREADSHEET_URL}

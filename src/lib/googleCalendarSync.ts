@@ -9,10 +9,10 @@
 import {
   JobAssignment,
   JobDivisionSection,
-  OFFICIAL_JOB_SCHEDULE_DOC_URL,
+  OFFICIAL_GOOGLE_CALENDAR_WEB_URL,
   OFFICIAL_COMPANY_ADDRESS as OFFICIAL_HQ_ADDRESS
 } from '../types';
-import { formatFleetVehicleBadge } from '../data/jobAssignmentsData';
+import { formatFleetVehicleBadge, resolveCrewMember } from '../data/jobAssignmentsData';
 
 export interface GoogleCalendarSyncOptions {
   filterPersonName?: string;
@@ -160,7 +160,7 @@ export function formatJobCalendarDescription(
   });
 
   lines.push(`🏢 Kantor / Gudang HQ: ${OFFICIAL_HQ_ADDRESS}`);
-  lines.push(`📄 Referensi Jadwal Resmi: ${OFFICIAL_JOB_SCHEDULE_DOC_URL}`);
+  lines.push(`📅 Sinkronisasi Kalender: Google Calendar (${OFFICIAL_GOOGLE_CALENDAR_WEB_URL})`);
 
   return lines.join('\n');
 }
@@ -335,4 +335,192 @@ export function downloadJobAssignmentsIcs(
   document.body.removeChild(link);
   setTimeout(() => URL.revokeObjectURL(url), 3000);
   return icsContent;
+}
+
+/**
+ * Unescape RFC 5545 text values
+ */
+function unescapeIcsText(raw: string): string {
+  return String(raw || '')
+    .replace(/\\n/gi, '\n')
+    .replace(/\\,/g, ',')
+    .replace(/\\;/g, ';')
+    .replace(/\\\\/g, '\\')
+    .trim();
+}
+
+const MONTH_ABBR_ID: Record<number, string> = {
+  1: 'Jan',
+  2: 'Feb',
+  3: 'Mar',
+  4: 'Apr',
+  5: 'Mei',
+  6: 'Jun',
+  7: 'Jul',
+  8: 'Agu',
+  9: 'Sep',
+  10: 'Okt',
+  11: 'Nov',
+  12: 'Des'
+};
+
+/**
+ * Parse iCalendar (.ics) content exported from Google Calendar into JobAssignment[]
+ * Enables two-way Google Calendar workflow without relying on Google Docs.
+ */
+export function parseGoogleCalendarIcsToJobAssignments(icsText: string): JobAssignment[] {
+  if (!icsText || !icsText.includes('BEGIN:VEVENT')) return [];
+
+  // Unfold RFC 5545 folded lines (lines starting with space or tab)
+  const unfolded = icsText.replace(/\r?\n[ \t]/g, '');
+  const eventBlocks = unfolded.split('BEGIN:VEVENT').slice(1);
+  const parsedJobs: JobAssignment[] = [];
+
+  eventBlocks.forEach((block, idx) => {
+    const endIdx = block.indexOf('END:VEVENT');
+    const body = endIdx >= 0 ? block.slice(0, endIdx) : block;
+    const lines = body.split(/\r?\n/);
+
+    let uid = '';
+    let summary = '';
+    let location = '';
+    let description = '';
+    let dtStartRaw = '';
+
+    lines.forEach(line => {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx < 0) return;
+      const keyPart = line.slice(0, colonIdx).toUpperCase();
+      const valPart = line.slice(colonIdx + 1);
+      if (keyPart === 'UID' || keyPart.startsWith('UID;')) {
+        uid = unescapeIcsText(valPart);
+      } else if (keyPart === 'SUMMARY' || keyPart.startsWith('SUMMARY;')) {
+        summary = unescapeIcsText(valPart);
+      } else if (keyPart === 'LOCATION' || keyPart.startsWith('LOCATION;')) {
+        location = unescapeIcsText(valPart);
+      } else if (keyPart === 'DESCRIPTION' || keyPart.startsWith('DESCRIPTION;')) {
+        description = unescapeIcsText(valPart);
+      } else if (keyPart === 'DTSTART' || keyPart.startsWith('DTSTART;')) {
+        dtStartRaw = valPart.trim();
+      }
+    });
+
+    const dateMatch = dtStartRaw.match(/(\d{4})(\d{2})(\d{2})/);
+    if (!dateMatch) return;
+    const [, yyyy, mm, dd] = dateMatch;
+    const dateIso = `${yyyy}-${mm}-${dd}`;
+    const monthKey = `${yyyy}-${mm}`;
+    const dayNum = Number(dd);
+    const monthNum = Number(mm);
+    const dateLabel = `${dayNum} ${MONTH_ABBR_ID[monthNum] || 'Nov'} ${yyyy}`;
+
+    let loadingSchedule = 'Sesuai jadwal Google Calendar';
+    const timeMatch = dtStartRaw.match(/T(\d{2})(\d{2})/);
+    if (timeMatch) {
+      loadingSchedule = `Jam ${timeMatch[1]}:${timeMatch[2]} WIB`;
+    }
+
+    // Extract clean venue from SUMMARY or LOCATION
+    let cleanVenue = location.split('(HQ:')[0].split('| Gudang HQ:')[0].trim();
+    const cleanedSummary = summary
+      .replace(/^\[[^\]]+\]\s*/g, '')
+      .replace(/^\[RIZ PRODUCTION\]\s*/i, '')
+      .trim();
+    if (!cleanVenue) {
+      cleanVenue = cleanedSummary.split('—')[0].split(' - PIC:')[0].trim() || 'Event Google Calendar';
+    }
+
+    // Extract PIC if present in SUMMARY or DESCRIPTION
+    let pic = 'Team Leader / Admin';
+    const picInDesc = description.match(/Person in Charge \(PIC\):\s*([^\n]+)/i);
+    const picInSummary = summary.match(/PIC:\s*([^)\n]+)/i);
+    if (picInDesc && picInDesc[1]) {
+      pic = picInDesc[1].trim();
+    } else if (picInSummary && picInSummary[1]) {
+      pic = picInSummary[1].trim();
+    }
+
+    const loadInDesc = description.match(/Jadwal Loading \/ Berangkat:\s*([^\n]+)/i);
+    if (loadInDesc && loadInDesc[1]) {
+      loadingSchedule = loadInDesc[1].trim();
+    }
+
+    // Parse sections from DESCRIPTION if formatted, or create a default section
+    const sections: JobDivisionSection[] = [];
+    const sectionRegex = /\d+\.\s*\[(AUDIO|LIGHTING|VIDEOTRON|MULTIMEDIA|PRODUKSI|UMUM)\]\s*([^\n]+)\n\s*•\s*Unit Alat:\s*([^\n]+)\n\s*•\s*Staff Inhouse[^:]*:\s*([^\n]+)\n\s*•\s*Kru Freelance[^:]*:\s*([^\n]+)\n\s*•\s*Armada Mobilisasi:\s*([^\n]+)/gi;
+    let secMatch: RegExpExecArray | null;
+    while ((secMatch = sectionRegex.exec(description)) !== null) {
+      const rawDiv = secMatch[1].toUpperCase();
+      const division: JobDivisionSection['division'] =
+        rawDiv === 'AUDIO'
+          ? 'Audio'
+          : rawDiv === 'LIGHTING'
+            ? 'Lighting'
+            : rawDiv === 'VIDEOTRON'
+              ? 'Videotron'
+              : rawDiv === 'MULTIMEDIA'
+                ? 'Multimedia'
+                : rawDiv === 'PRODUKSI'
+                  ? 'Produksi'
+                  : 'Umum';
+      const packageLabel = secMatch[2].trim();
+      const equipment = secMatch[3]
+        .split('|')
+        .map(s => s.trim())
+        .filter(s => s && s !== '-');
+      const staffNames = secMatch[4]
+        .split(',')
+        .map(s => s.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').trim())
+        .filter(s => s && s !== '-');
+      const freelanceNames = secMatch[5]
+        .split(',')
+        .map(s => s.replace(/\[[^\]]*\]/g, '').trim())
+        .filter(s => s && s !== '-');
+      const vehicles = secMatch[6]
+        .split(',')
+        .map(s => s.split('(')[0].trim())
+        .filter(s => s && s !== '-');
+
+      const crew = [
+        ...staffNames.map(n => resolveCrewMember(n, division)),
+        ...freelanceNames.map(n => resolveCrewMember(n, division))
+      ];
+      sections.push({
+        division,
+        packageLabel,
+        equipment,
+        crew,
+        vehicles
+      });
+    }
+
+    if (sections.length === 0) {
+      sections.push({
+        division: 'Audio',
+        packageLabel: cleanedSummary || cleanVenue,
+        equipment: description ? [description.slice(0, 140)] : [],
+        crew: pic && pic !== '-' ? [resolveCrewMember(pic.split('(')[0].trim(), 'Audio')] : [],
+        vehicles: []
+      });
+    }
+
+    const baseId = uid
+      ? uid.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '')
+      : `job-gcal-${yyyy}${mm}${dd}-${idx + 1}`;
+
+    parsedJobs.push({
+      id: baseId.startsWith('job-') ? baseId : `job-gcal-${baseId}`,
+      monthKey,
+      date: dateIso,
+      dateLabel,
+      venue: cleanVenue,
+      loadingSchedule,
+      pic,
+      status: 'Terjadwal',
+      sections,
+      _userEdited: true
+    });
+  });
+
+  return parsedJobs;
 }

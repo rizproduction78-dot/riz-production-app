@@ -280,3 +280,9 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
       4. **Divisi Videotron / LED (`INVENTORY LED 2026`, GID `1693748384`)**: 9 kelompok aset (`AST-LED-001` s/d `AST-LED-009`, LED Hybrid P3.9 70 Meter / 35 Box + NovaStar VX6s + Rigging & Cabling, Total 318 Unit).
     - **Aturan Sinkronisasi Master Aset:** Fungsi `normalizeAssetsMaster` di `src/data.ts` dan `normalizeCollectionItems('assets', ...)` di `src/lib/cloudSync.ts` wajib menjaga keutuhan 133 kelompok aset inventaris resmi 2026 ini di seluruh modul Gudang (`Gudang.tsx`), Panel Admin (`AdminPanel.tsx`), `localStorage` (`riz_assets`), dan Supabase (`assets`).
 
+20. **Komit Mutlak: Jadwal Penugasan Kerja (Staff & Crew Freelance) Terkoneksi Google Calendar (Bukan Lagi dari Google Doc):**
+    - **Status Resmi:** Jadwal Penugasan Kerja / Job Event (Staff Inhouse & Kru Freelance) **bukan lagi bersumber dari Google Doc**.
+    - **Sumber & Integrasi Resmi:** Jadwal penugasan dikelola langsung melalui **Sistem Penjadwalan Aplikasi (`job_assignments`)** yang tersinkronisasi secara real-time dengan **Supabase Cloud** dan terkoneksi dua arah dengan **Google Calendar (`src/lib/googleCalendarSync.ts` — Ekspor/Sync `.ics`, Impor `.ics`, dan Direct Event Template `https://calendar.google.com/calendar/render`)**.
+    - **Larangan Tautan Google Doc:** Dilarang menampilkan tautan atau referensi ke dokumen Google Doc lama (`1Lwti9V2-5P4WwwkMPupR5stuXNc1Y02W`) pada UI maupun deskripsi kalender.
+
+
