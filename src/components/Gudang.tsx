@@ -1834,16 +1834,11 @@ export default function Gudang({
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Title Header & Alur Kerja (Khusus Manajemen Logistik & Gudang — Tidak Tampil di Panel Susunan Unit Inventory) */}
+      {/* Title Header & Tab Navigasi (Khusus Manajemen Logistik & Gudang — Tidak Tampil di Panel Susunan Unit Inventory) */}
       {warehouseSubTab !== 'inventory' && (
         <>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-display font-bold text-slate-900 tracking-tight">Manajemen Logistik & Gudang</h1>
-              <p className="text-xs text-slate-600 font-medium mt-0.5">
-                <strong className="text-indigo-700 font-mono uppercase">Alur Kerja :&gt;</strong> Scan barcode/QR asset, Pencatatan alur logistik barang masuk/keluar, dan tata kelola armada serta biaya sewa operasional.
-              </p>
-            </div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <h1 className="text-xl font-display font-bold text-slate-900 tracking-tight">Manajemen Logistik & Gudang</h1>
 
             {/* Action Toggle Tabs (Disusun Sesuai Urutan Alur Kerja) */}
             <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg self-start overflow-x-auto no-scrollbar touch-scroll max-w-full">
@@ -2288,19 +2283,17 @@ export default function Gudang({
                     {/* Type */}
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                        Tipe Proses Alur Logistik / Loading Staff
+                        Tipe Proses Alur Logistik
                       </label>
                       <select
-                        value={type}
+                        value={type === 'Keluar' ? 'Loading' : type === 'Masuk' ? 'Unloading' : type}
                         onChange={(e) => setType(e.target.value as any)}
                         className="block w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50/50 font-semibold text-slate-800"
                       >
-                        <option value="Loading">Loading Out (Muat Barang Keluar Event)</option>
-                        <option value="Unloading">Loading In (Bongkar Barang Masuk Gudang)</option>
-                        <option value="Keluar">Barang Keluar (Outgoing Logistik)</option>
-                        <option value="Masuk">Barang Masuk (Incoming Logistik)</option>
+                        <option value="Loading">Loading Out / Barang Keluar (Muat ke Event)</option>
+                        <option value="Unloading">Loading In / Barang Masuk (Kembali ke Gudang)</option>
                         <option value="Servis Keluar">Servis Keluar (Kirim ke Divisi SERVICE)</option>
-                        <option value="Servis Masuk">Servis Masuk (Selesai Servis dari Divisi SERVICE)</option>
+                        <option value="Servis Masuk">Servis Masuk (Terima dari Divisi SERVICE)</option>
                       </select>
                     </div>
 
@@ -2507,13 +2500,13 @@ export default function Gudang({
                                   setAssetCodeInput(asset.code);
                                   setInlineFormBarcodeInput(asset.code);
                                   setQty(1);
-                                  setNotes(`Loading Out (Muat Barang Keluar Event) unit ${asset.name} (${asset.code}) oleh ${currentUser.name}`);
+                                  setNotes(`Loading Out (Barang Keluar) unit ${asset.name} (${asset.code}) oleh ${currentUser.name}`);
                                   setShowLogForm(true);
                                 }}
                                 className="px-2 py-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors cursor-pointer"
-                                title="Catat Loading Out (Muat Barang Keluar Event) oleh Staff"
+                                title="Catat Loading Out / Barang Keluar oleh Staff"
                               >
-                                Loading Out
+                                Loading Out (Keluar)
                               </button>
                               <button
                                 type="button"
@@ -2524,47 +2517,13 @@ export default function Gudang({
                                   setAssetCodeInput(asset.code);
                                   setInlineFormBarcodeInput(asset.code);
                                   setQty(1);
-                                  setNotes(`Loading In (Bongkar Barang Masuk Gudang) unit ${asset.name} (${asset.code}) oleh ${currentUser.name}`);
-                                  setShowLogForm(true);
-                                }}
-                                className="px-2 py-1 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 rounded hover:bg-purple-100 transition-colors cursor-pointer"
-                                title="Catat Loading In (Bongkar Barang Masuk Gudang) oleh Staff"
-                              >
-                                Loading In
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  registerScannedAsset(asset);
-                                  setType('Keluar');
-                                  setItemName(asset.name);
-                                  setAssetCodeInput(asset.code);
-                                  setInlineFormBarcodeInput(asset.code);
-                                  setQty(1);
-                                  setNotes(`Alokasi keluar unit ${asset.name} (${asset.code})`);
-                                  setShowLogForm(true);
-                                }}
-                                className="px-2 py-1 text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-200 rounded hover:bg-orange-100 transition-colors cursor-pointer"
-                                title="Catat Barang Keluar / Penjadwalan"
-                              >
-                                Keluar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  registerScannedAsset(asset);
-                                  setType('Masuk');
-                                  setItemName(asset.name);
-                                  setAssetCodeInput(asset.code);
-                                  setInlineFormBarcodeInput(asset.code);
-                                  setQty(1);
-                                  setNotes(`Pengembalian masuk unit ${asset.name} (${asset.code})`);
+                                  setNotes(`Loading In (Barang Masuk) unit ${asset.name} (${asset.code}) oleh ${currentUser.name}`);
                                   setShowLogForm(true);
                                 }}
                                 className="px-2 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors cursor-pointer"
-                                title="Catat Barang Masuk Kembali ke Gudang"
+                                title="Catat Loading In / Barang Masuk Kembali ke Gudang oleh Staff"
                               >
-                                Masuk
+                                Loading In (Masuk)
                               </button>
                             </td>
                           </tr>
@@ -2932,147 +2891,7 @@ export default function Gudang({
         const scopedSummary = calculateInventorySummaryMetrics(divisionScopedAssets, inventoryCalcCtx);
 
         return (
-          <div className="space-y-6">
-            {/* Title Header Khusus Panel Sidebar Susunan Unit Inventory */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-display font-bold text-slate-900 tracking-tight">Susunan Unit Inventory Gudang</h1>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Daftar master inventaris peralatan produksi resmi PT. Riz Production Multi Kreasi dikelompokkan per divisi &amp; type alat.
-                </p>
-              </div>
-            </div>
-
-            {/* RINGKASAN 4 DIVISI & KELOMPOK TYPE (HANYA DI PANEL SUSUNAN UNIT INVENTORY) */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {([
-                  {
-                    divKey: 'Audio' as const,
-                    label: 'DIVISI AUDIO / SOUND',
-                    subTitle: 'Speaker, Mixer & Backline',
-                    Icon: Volume2,
-                    cardClass: 'border-blue-100 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300',
-                    iconBoxClass: 'bg-blue-600 text-white',
-                    labelClass: 'text-blue-600',
-                    countBadgeClass: 'bg-blue-100 text-blue-800'
-                  },
-                  {
-                    divKey: 'Lighting' as const,
-                    label: 'DIVISI LIGHTING',
-                    subTitle: 'Moving Beam, Parled & SFX',
-                    Icon: Lightbulb,
-                    cardClass: 'border-amber-100 bg-gradient-to-br from-amber-50/70 to-white hover:border-amber-300',
-                    iconBoxClass: 'bg-amber-500 text-white',
-                    labelClass: 'text-amber-700',
-                    countBadgeClass: 'bg-amber-100 text-amber-800'
-                  },
-                  {
-                    divKey: 'Multimedia' as const,
-                    label: 'DIVISI MULTIMEDIA',
-                    subTitle: 'PC vMix, Camcorder & Clearcom',
-                    Icon: Video,
-                    cardClass: 'border-purple-100 bg-gradient-to-br from-purple-50/70 to-white hover:border-purple-300',
-                    iconBoxClass: 'bg-purple-600 text-white',
-                    labelClass: 'text-purple-700',
-                    countBadgeClass: 'bg-purple-100 text-purple-800'
-                  },
-                  {
-                    divKey: 'Videotron' as const,
-                    label: 'DIVISI VIDEOTRON / LED',
-                    subTitle: 'LED Hybrid P3.9 80m (40 Box) & VX600s/VX1000',
-                    Icon: Tv,
-                    cardClass: 'border-emerald-100 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300',
-                    iconBoxClass: 'bg-emerald-600 text-white',
-                    labelClass: 'text-emerald-700',
-                    countBadgeClass: 'bg-emerald-100 text-emerald-800'
-                  }
-                ]).map(cfg => {
-                  const divAssets = localAssets.filter(a => a.division === cfg.divKey);
-                  const typeBuckets = groupInventoryAssetsByType(divAssets);
-                  const divSummary = calculateInventorySummaryMetrics(divAssets, inventoryCalcCtx);
-                  const CardIcon = cfg.Icon;
-
-                  return (
-                    <div
-                      key={cfg.divKey}
-                      className={`p-3.5 rounded-xl border ${cfg.cardClass} hover:shadow-sm transition-all flex flex-col justify-between gap-3`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setInventoryDivisionFilter(cfg.divKey);
-                          setInventoryTypeFilter('ALL');
-                        }}
-                        className="text-left flex items-start gap-3 cursor-pointer group w-full"
-                      >
-                        <div className={`p-2.5 rounded-xl ${cfg.iconBoxClass} shadow-xs shrink-0 group-hover:scale-105 transition-transform`}>
-                          <CardIcon className="w-5 h-5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className={`text-[10px] font-mono font-bold uppercase ${cfg.labelClass}`}>{cfg.label}</span>
-                            <span
-                              className={`text-[10px] font-mono font-extrabold ${cfg.countBadgeClass} px-1.5 py-0.5 rounded`}
-                              title={`Siap Pakai: ${divSummary.availableUnits} dari Total ${divSummary.totalUnits} Unit (Rusak: -${divSummary.totalDamagedUnits}, Penugasan: -${divSummary.assignedUnits})`}
-                            >
-                              {divSummary.availableUnits}/{divSummary.totalUnits} Unit
-                            </span>
-                          </div>
-                          <div className="text-xs font-extrabold text-slate-900 mt-0.5 truncate">{cfg.subTitle}</div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                            {typeBuckets.length} Kelompok Type • Total {divSummary.totalUnits} Unit
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1 mt-1.5 font-mono text-[9px] font-bold">
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              Siap: {divSummary.availableUnits} Unit
-                            </span>
-                            {divSummary.totalDamagedUnits > 0 && (
-                              <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
-                                Rusak: -{divSummary.totalDamagedUnits}
-                              </span>
-                            )}
-                            {divSummary.assignedUnits > 0 && (
-                              <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                                Penugasan: -{divSummary.assignedUnits}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-
-                      {/* Quick Type Pills per Division */}
-                      <div className="pt-2 border-t border-slate-200/60 flex flex-wrap gap-1">
-                        {typeBuckets.map(bucket => {
-                          const TypeChipIcon = resolveInventoryTypeIcon(bucket.typeInfo.iconKey);
-                          const bucketSummary = calculateInventorySummaryMetrics(bucket.assets, inventoryCalcCtx);
-                          const hasDeduction = bucketSummary.totalDamagedUnits > 0 || bucketSummary.assignedUnits > 0;
-                          return (
-                            <button
-                              key={bucket.typeInfo.typeGroup}
-                              type="button"
-                              onClick={() => {
-                                setInventoryDivisionFilter(cfg.divKey);
-                                setInventoryTypeFilter(bucket.typeInfo.typeGroup);
-                              }}
-                              className={`px-2 py-0.5 rounded-md border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer hover:brightness-95 ${bucket.typeInfo.bgClass} ${bucket.typeInfo.textClass} ${bucket.typeInfo.borderClass}`}
-                              title={`${bucket.typeInfo.typeGroup}: Siap ${bucketSummary.availableUnits}/${bucketSummary.totalUnits} Unit (Rusak: -${bucketSummary.totalDamagedUnits}, Penugasan: -${bucketSummary.assignedUnits})`}
-                            >
-                              <TypeChipIcon className="w-2.5 h-2.5 shrink-0" />
-                              <span className="truncate max-w-[105px]">{bucket.typeInfo.shortTypeLabel}</span>
-                              <span className="font-mono text-[9px] opacity-85">
-                                ({hasDeduction ? `${bucketSummary.availableUnits}/${bucketSummary.totalUnits}` : bucketSummary.availableUnits})
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
+          <div className="space-y-5">
             {/* Top Summary & Action Bar */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
@@ -3619,20 +3438,9 @@ export default function Gudang({
           
           {/* Scanning Box Control */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4 text-center">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3 text-center">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-left">
-                  <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                    <Smartphone className="w-5 h-5 animate-pulse" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-sm">Scanner Kamera Barcode / QR Unit Alat</h3>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.2 rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                      {isLiveWebcamRunning ? 'KAMERA LIVE AUTO-SCAN AKTIF' : 'KAMERA SCANNER SIAP (PONSEL / TABLET)'}
-                    </span>
-                  </div>
-                </div>
+                <h3 className="font-bold text-slate-800 text-sm text-left">Scanner Barcode / QR Unit Alat</h3>
 
                 <div className="flex items-center gap-1.5">
                   {isLiveWebcamRunning && (
@@ -3686,24 +3494,22 @@ export default function Gudang({
                 </div>
               </div>
 
-              {/* MODE SCAN OPERASIONAL STAFF: ALUR LOGISTIK KELUAR/MASUK & LOADING OUT/IN */}
+              {/* MODE SCAN OPERASIONAL STAFF (3 MODE FUNGSIONAL TANPA DUPLIKASI) */}
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-left space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] font-mono font-extrabold uppercase text-slate-700">
-                    Mode Scan Staff (Logistik &amp; Loading Out/In):
+                    Mode Scan:
                   </span>
                   <span className="text-[10px] font-mono font-bold text-indigo-700">
                     {currentUser.name} ({currentUser.division})
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1">
+                <div className="grid grid-cols-3 gap-1.5">
                   {([
                     { id: 'inspect', label: 'Cek Gudang', activeCls: 'bg-slate-900 text-white border-slate-900' },
-                    { id: 'loading_out', label: 'Loading Out', activeCls: 'bg-blue-600 text-white border-blue-700' },
-                    { id: 'loading_in', label: 'Loading In', activeCls: 'bg-purple-600 text-white border-purple-700' },
-                    { id: 'keluar', label: 'Barang Keluar', activeCls: 'bg-orange-600 text-white border-orange-700' },
-                    { id: 'masuk', label: 'Barang Masuk', activeCls: 'bg-emerald-600 text-white border-emerald-700' }
+                    { id: 'loading_out', label: 'Loading Out (Keluar)', activeCls: 'bg-blue-600 text-white border-blue-700' },
+                    { id: 'loading_in', label: 'Loading In (Masuk)', activeCls: 'bg-emerald-600 text-white border-emerald-700' }
                   ] as const).map(m => (
                     <button
                       key={m.id}
@@ -3715,7 +3521,9 @@ export default function Gudang({
                         }
                       }}
                       className={`px-2 py-1.5 rounded-lg text-[10px] font-mono font-extrabold uppercase border transition-all cursor-pointer text-center ${
-                        scannerLogisticsMode === m.id
+                        (scannerLogisticsMode === m.id ||
+                          (m.id === 'loading_out' && scannerLogisticsMode === 'keluar') ||
+                          (m.id === 'loading_in' && scannerLogisticsMode === 'masuk'))
                           ? m.activeCls
                           : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
                       }`}
@@ -4217,42 +4025,19 @@ export default function Gudang({
                             </div>
                             <div className="sm:col-span-2">
                               <label className="block text-[10px] font-mono font-bold uppercase text-slate-600 mb-1">
-                                Tujuan Event / Lokasi / Keterangan Loading Out-In
+                                Tujuan Event / Lokasi / Keterangan
                               </label>
                               <input
                                 type="text"
                                 value={scanLogisticsNote}
                                 onChange={(e) => setScanLogisticsNote(e.target.value)}
-                                placeholder="e.g. Event JS Luwansa / Taman Safari / Kembali ke Gudang"
+                                placeholder="Ketik nama event / venue / keterangan logistik"
                                 className="w-full px-2.5 py-1.5 border border-indigo-200 rounded-lg text-xs bg-white text-slate-900"
                               />
                             </div>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[10px] font-mono font-bold text-slate-500">Pilih Cepat Tujuan:</span>
-                            {[
-                              'Event JS Luwansa Kuningan',
-                              'Event Taman Safari Indonesia',
-                              'Event Parkir Timur Senayan',
-                              'Gudang Utama RIZ'
-                            ].map(preset => (
-                              <button
-                                key={preset}
-                                type="button"
-                                onClick={() => setScanLogisticsNote(preset)}
-                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
-                                  scanLogisticsNote === preset
-                                    ? 'bg-indigo-600 text-white border-indigo-700'
-                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-indigo-50'
-                                }`}
-                              >
-                                {preset}
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Tombol 1-Klik Pencatatan Loading Out / Loading In & Alur Logistik Keluar / Masuk */}
+                          {/* Tombol 1-Klik Pencatatan Loading Out (Barang Keluar) & Loading In (Barang Masuk) */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                             <button
                               type="button"
@@ -4260,34 +4045,16 @@ export default function Gudang({
                               className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-2xs"
                             >
                               <ArrowUpRight className="w-4 h-4 shrink-0" />
-                              <span>Catat Loading Out (Muat Barang Keluar)</span>
+                              <span>Loading Out (Barang Keluar)</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => handleQuickLogisticsScanAction(scannedAsset, 'Unloading')}
-                              className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-2xs"
-                            >
-                              <ArrowDownLeft className="w-4 h-4 shrink-0" />
-                              <span>Catat Loading In (Bongkar Barang Masuk)</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleQuickLogisticsScanAction(scannedAsset, 'Keluar')}
-                              className="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-2xs"
-                            >
-                              <ArrowUpRight className="w-4 h-4 shrink-0" />
-                              <span>Catat Alur Logistik Barang Keluar</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleQuickLogisticsScanAction(scannedAsset, 'Masuk')}
                               className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-2xs"
                             >
                               <ArrowDownLeft className="w-4 h-4 shrink-0" />
-                              <span>Catat Alur Logistik Barang Masuk</span>
+                              <span>Loading In (Barang Masuk)</span>
                             </button>
                           </div>
 
@@ -4363,12 +4130,9 @@ export default function Gudang({
                           defaultValue={scannedAsset.location}
                           className="w-full p-2 border border-slate-200 rounded-lg text-xs bg-white text-slate-700"
                         >
-                          <option value="Gudang Utama A">Gudang Utama A</option>
-                          <option value="Gudang Utama B">Gudang Utama B</option>
-                          <option value="Gudang Utama C">Gudang Utama C</option>
+                          <option value="Gudang Utama RIZ">Gudang Utama RIZ</option>
+                          <option value="Lapangan / Loading Out Event">Lapangan / Loading Out Event</option>
                           <option value="Divisi SERVICE (Sedang Diperbaiki)">Divisi SERVICE (Sedang Diperbaiki)</option>
-                          <option value="Event Stage Hall A">Event Stage Hall A</option>
-                          <option value="Event Stage Ritz-Carlton">Event Stage Ritz-Carlton</option>
                         </select>
                       </div>
 
