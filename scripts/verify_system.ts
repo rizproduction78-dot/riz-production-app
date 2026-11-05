@@ -40,7 +40,7 @@ ALL_SYNC_COLLECTIONS.forEach(col => {
 // 3. Test Master Data Integrity
 assert(STAFF_LIST.length > 0, 'Master Staff list populated', `Count: ${STAFF_LIST.length}`);
 assert(INITIAL_VEHICLES.length > 0, 'Initial vehicles populated', `Count: ${INITIAL_VEHICLES.length}`);
-assert(INITIAL_ASSETS.length === 133, 'Official Inventory Assets populated (133 canonical asset groups from 1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O)', `Count: ${INITIAL_ASSETS.length}`);
+assert(INITIAL_ASSETS.length === 133, 'Official Inventory Assets populated (133 canonical asset groups from 18UHbZsqbaE66mmpjF37p97wNmM5EheDzyx4lmOOWshk)', `Count: ${INITIAL_ASSETS.length}`);
 assert(Array.isArray(INITIAL_FREELANCE_WORKERS), 'Freelance workers initial list is a valid array', `Count: ${INITIAL_FREELANCE_WORKERS.length}`);
 assert(Array.isArray(INITIAL_FLEET_DRIVERS), 'Fleet drivers initial list is a valid array', `Count: ${INITIAL_FLEET_DRIVERS.length}`);
 assert(OFFICIAL_SEPTEMBER_2026_SCHEDULE.length > 0, 'September 2026 schedule populated', `Rows: ${OFFICIAL_SEPTEMBER_2026_SCHEDULE.length}`);

@@ -261,8 +261,8 @@ export interface Finding {
   };
 }
 
-export const OFFICIAL_INVENTORY_SPREADSHEET_ID = "1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O";
-export const OFFICIAL_INVENTORY_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O/edit?usp=sharing";
+export const OFFICIAL_INVENTORY_SPREADSHEET_ID = "18UHbZsqbaE66mmpjF37p97wNmM5EheDzyx4lmOOWshk";
+export const OFFICIAL_INVENTORY_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/18UHbZsqbaE66mmpjF37p97wNmM5EheDzyx4lmOOWshk/edit?gid=1322035217#gid=1322035217";
 
 export interface Asset {
   id: string;

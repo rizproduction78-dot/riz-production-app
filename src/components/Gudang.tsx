@@ -686,13 +686,16 @@ export default function Gudang({
   };
 
   useEffect(() => {
-    if (warehouseSubTab !== 'scanner') {
+    if (warehouseSubTab === 'scanner' && isCameraScannerActive) {
+      startLiveCameraScanner();
+    } else if (warehouseSubTab !== 'scanner') {
       stopLiveCameraScanner();
     }
     return () => {
       stopLiveCameraScanner();
     };
   }, [warehouseSubTab]);
+
   const [scannedRecords, setScannedRecords] = useState<ScannedAssetRecord[]>(() => {
     try {
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -707,6 +710,47 @@ export default function Gudang({
     } catch (e) {}
     return [];
   });
+
+  // Real-time BarcodeDetector loop when live camera is running
+  useEffect(() => {
+    if (!isLiveWebcamRunning || warehouseSubTab !== 'scanner') return;
+    const WinBarcodeDetector = typeof window !== 'undefined' ? (window as any).BarcodeDetector : undefined;
+    if (!WinBarcodeDetector) return;
+
+    let detector: any = null;
+    try {
+      detector = new WinBarcodeDetector({
+        formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e']
+      });
+    } catch {
+      try {
+        detector = new WinBarcodeDetector();
+      } catch {
+        return;
+      }
+    }
+
+    let isCancelled = false;
+    const intervalId = window.setInterval(async () => {
+      if (isCancelled || !scannerVideoRef.current || scannerVideoRef.current.readyState < 2) return;
+      try {
+        const barcodes = await detector.detect(scannerVideoRef.current);
+        if (Array.isArray(barcodes) && barcodes.length > 0 && barcodes[0]?.rawValue) {
+          const rawCode = String(barcodes[0].rawValue).trim();
+          if (rawCode) {
+            handleSimulateQRScan(rawCode);
+          }
+        }
+      } catch {
+        // Ignore frame detection errors
+      }
+    }, 600);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [isLiveWebcamRunning, warehouseSubTab, localAssets, scannedRecords]);
 
   const registerScannedAsset = (asset: Asset): { isDuplicate: boolean; record: ScannedAssetRecord } => {
     const existing = scannedRecords.find(
@@ -1316,16 +1360,35 @@ export default function Gudang({
     }, 220);
   };
 
-  const handleBarcodeImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBarcodeImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    let detectedBarcodeValue = '';
+    const WinBarcodeDetector = typeof window !== 'undefined' ? (window as any).BarcodeDetector : undefined;
+    if (WinBarcodeDetector && typeof createImageBitmap === 'function') {
+      try {
+        const detector = new WinBarcodeDetector();
+        const bitmap = await createImageBitmap(file);
+        const results = await detector.detect(bitmap);
+        if (Array.isArray(results) && results.length > 0 && results[0]?.rawValue) {
+          detectedBarcodeValue = String(results[0].rawValue).trim();
+        }
+      } catch {
+        // Fallback to filename/target code
+      }
+    }
     const fileNameClean = file.name.replace(/\.[^.]+$/, '').trim();
     const matchedFromFileName = localAssets.find(
       a =>
         fileNameClean.toLowerCase().includes(a.code.toLowerCase()) ||
         a.name.toLowerCase().includes(fileNameClean.toLowerCase())
     );
-    const codeToUse = matchedFromFileName?.code || scanSearchInput.trim() || simulatorTargetCode || 'AST-AUD-001';
+    const codeToUse =
+      detectedBarcodeValue ||
+      matchedFromFileName?.code ||
+      scanSearchInput.trim() ||
+      simulatorTargetCode ||
+      'AST-AUD-001';
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result === 'string') {
@@ -3167,68 +3230,58 @@ export default function Gudang({
                     </span>
                   </div>
 
-                  {/* Camera Lens / Viewfinder Frame */}
-                  <div className="relative h-48 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 flex flex-col items-center justify-center p-4 overflow-hidden">
-                    {/* Optional Live Webcam Stream */}
+                  {/* Camera Lens / Viewfinder Frame — Bebas Halangan (Tanpa Card Menutupi Lensa) */}
+                  <div
+                    onClick={() => {
+                      if (!isLiveWebcamRunning) {
+                        startLiveCameraScanner();
+                      }
+                    }}
+                    className="relative h-56 bg-slate-950 flex items-center justify-center overflow-hidden"
+                  >
+                    {/* Live Webcam Stream */}
                     <video
                       ref={scannerVideoRef}
                       autoPlay
                       playsInline
                       muted
                       className={`absolute inset-0 w-full h-full object-cover ${
-                        isLiveWebcamRunning ? 'opacity-80' : 'hidden'
+                        isLiveWebcamRunning ? 'opacity-100' : 'hidden'
                       }`}
                     />
 
-                    {/* Corner Target Brackets */}
-                    <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-emerald-400 rounded-tl pointer-events-none" />
-                    <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-emerald-400 rounded-tr pointer-events-none" />
-                    <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-emerald-400 rounded-bl pointer-events-none" />
-                    <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-emerald-400 rounded-br pointer-events-none" />
-
-                    {/* Animated Laser Scan Beam */}
-                    <div
-                      className={`w-full max-w-[260px] h-0.5 bg-gradient-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_12px_#f43f5e] transition-all duration-300 z-10 ${
-                        isScanningSimulated ? 'scale-x-110 bg-emerald-400 shadow-[0_0_16px_#34d399]' : 'animate-pulse'
-                      }`}
-                    />
-
-                    {/* Simulated Barcode Card in Camera Sight */}
-                    {activeTargetAsset && (
-                      <div
-                        onClick={() => handleSimulateQRScan(activeTargetAsset.code)}
-                        title="Klik pada label barcode di viewfinder kamera untuk langsung memindai"
-                        className={`relative z-10 mt-2 px-3.5 py-2.5 rounded-xl border backdrop-blur-xs cursor-pointer transition-all max-w-[260px] w-full text-center ${
-                          isScanningSimulated
-                            ? 'bg-emerald-950/90 border-emerald-400 ring-2 ring-emerald-400/50 scale-105'
-                            : 'bg-slate-900/85 hover:bg-slate-900 border-indigo-400/60 hover:border-emerald-400'
-                        }`}
-                      >
-                        <div className="text-[9px] font-mono uppercase tracking-widest text-indigo-300 mb-1">
-                          TARGET LENSA KAMERA ({activeTargetAsset.division})
-                        </div>
-                        {/* Visual Barcode Bars */}
-                        <div className="py-1 px-2 bg-white text-slate-950 rounded font-mono font-black tracking-[0.22em] text-xs select-none">
-                          ||| |||| | ||| || |||| |||
-                        </div>
-                        <div className="mt-1.5 font-mono text-xs font-extrabold text-emerald-300">
-                          {activeTargetAsset.code}
-                        </div>
-                        <div className="text-[11px] font-bold text-white truncate">
-                          {activeTargetAsset.name}
-                        </div>
-                        <div className="mt-1 text-[9px] font-mono text-amber-300">
-                          {isScanningSimulated ? '⚡ MEMINDAI BARCODE...' : '👆 Klik Label Kamera untuk Scan Instan'}
-                        </div>
+                    {/* Subtle Hint Only When Live Camera Is Not Yet Running */}
+                    {!isLiveWebcamRunning && (
+                      <div className="z-10 flex flex-col items-center justify-center gap-1.5 px-4 text-center pointer-events-none">
+                        <Camera className="w-7 h-7 text-indigo-400/80" />
+                        <span className="text-[11px] font-mono font-bold text-slate-300">
+                          Arahkan Kamera ke Barcode / QR Unit Alat
+                        </span>
+                        <span className="text-[10px] font-mono text-indigo-300">
+                          Klik area kamera untuk mengaktifkan Kamera Live atau pilih unit di bawah
+                        </span>
                       </div>
                     )}
+
+                    {/* Corner Target Brackets (Tidak Menghalangi Lensa) */}
+                    <div className="absolute top-3 left-3 w-7 h-7 border-t-2 border-l-2 border-emerald-400 rounded-tl pointer-events-none z-10" />
+                    <div className="absolute top-3 right-3 w-7 h-7 border-t-2 border-r-2 border-emerald-400 rounded-tr pointer-events-none z-10" />
+                    <div className="absolute bottom-3 left-3 w-7 h-7 border-b-2 border-l-2 border-emerald-400 rounded-bl pointer-events-none z-10" />
+                    <div className="absolute bottom-3 right-3 w-7 h-7 border-b-2 border-r-2 border-emerald-400 rounded-br pointer-events-none z-10" />
+
+                    {/* Animated Thin Laser Scan Beam */}
+                    <div
+                      className={`w-4/5 h-0.5 bg-gradient-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_10px_#f43f5e] transition-all duration-300 pointer-events-none z-10 ${
+                        isScanningSimulated ? 'scale-x-105 bg-emerald-400 shadow-[0_0_16px_#34d399]' : 'animate-pulse'
+                      }`}
+                    />
                   </div>
 
-                  {/* Camera Target Selector (Simulasi Arahkan Kamera ke Unit) */}
+                  {/* Camera Target Selector (Di Luar Lensa Kamera Agar Tidak Menghalangi Proses Scan) */}
                   <div className="p-3 bg-slate-900 border-t border-slate-800 space-y-2">
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-[10px] font-mono font-bold uppercase text-indigo-300">
-                        🎯 Arahkan Kamera Simulator ke Unit:
+                        🎯 Pilih / Simulasi Unit Barcode ({activeTargetAsset?.code || simulatorTargetCode}):
                       </span>
                       <label className="text-[10px] font-mono font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer flex items-center gap-1">
                         <Camera className="w-3 h-3" />
@@ -3262,26 +3315,35 @@ export default function Gudang({
                               : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                           }`}
                         >
-                          {divKey === 'ALL' ? 'Semua (133)' : divKey}
+                          {divKey === 'ALL' ? `Semua (${localAssets.length})` : divKey}
                         </button>
                       ))}
                     </div>
 
-                    <select
-                      value={activeTargetAsset?.code || simulatorTargetCode}
-                      onChange={(e) => {
-                        const nextCode = e.target.value;
-                        setSimulatorTargetCode(nextCode);
-                        setScanSearchInput(nextCode);
-                      }}
-                      className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-mono font-bold text-white focus:outline-none focus:border-indigo-400"
-                    >
-                      {simulatorFilteredAssets.map(a => (
-                        <option key={a.id} value={a.code}>
-                          [{a.code}] {a.name} ({a.condition})
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={activeTargetAsset?.code || simulatorTargetCode}
+                        onChange={(e) => {
+                          const nextCode = e.target.value;
+                          setSimulatorTargetCode(nextCode);
+                          setScanSearchInput(nextCode);
+                        }}
+                        className="flex-1 min-w-0 px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-mono font-bold text-white focus:outline-none focus:border-indigo-400"
+                      >
+                        {simulatorFilteredAssets.map(a => (
+                          <option key={a.id} value={a.code}>
+                            [{a.code}] {a.name} ({a.condition})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => handleSimulateQRScan(activeTargetAsset?.code || simulatorTargetCode)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-mono font-extrabold uppercase shrink-0 cursor-pointer transition-colors"
+                      >
+                        Scan Unit
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

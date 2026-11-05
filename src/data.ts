@@ -2828,8 +2828,8 @@ export function normalizeVehiclesMaster(rawList: any[]): VehicleMaster[] {
 }
 
 /**
- * Normalisasi Master Inventaris Aset Gudang Resmi (133 Kelompok Aset dari Google Sheet 1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O):
- * Menggabungkan INITIAL_ASSETS resmi dengan perubahan atau penambahan user di localStorage / Cloud Sync.
+ * Normalisasi Master Inventaris Aset Gudang Resmi (133 Kelompok Aset dari Google Sheet 18UHbZsqbaE66mmpjF37p97wNmM5EheDzyx4lmOOWshk):
+ * Menggabungkan INITIAL_ASSETS resmi 2026 dengan perubahan atau penambahan user di localStorage / Cloud Sync.
  */
 export function normalizeAssetsMaster(rawList: any[]): Asset[] {
   const resultById = new Map<string, Asset>();
@@ -2854,17 +2854,18 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
 
       const canonical = (itemId ? resultById.get(itemId) : undefined) || (itemCode ? canonicalByCode.get(itemCode) : undefined);
       if (canonical) {
+        const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
         resultById.set(canonical.id, {
           ...canonical,
           ...item,
           id: canonical.id,
-          code: item.code || canonical.code,
-          name: item.name || canonical.name,
-          brand: item.brand || canonical.brand,
-          serialNumber: stripInventoryNominalText(item.serialNumber || canonical.serialNumber),
-          division: item.division || canonical.division,
+          code: canonical.code,
+          name: isUserEdited && item.name ? item.name : canonical.name,
+          brand: isUserEdited && item.brand ? item.brand : canonical.brand,
+          serialNumber: stripInventoryNominalText(isUserEdited && item.serialNumber ? item.serialNumber : canonical.serialNumber),
+          division: isUserEdited && item.division ? item.division : canonical.division,
           location: item.location || canonical.location,
-          condition: item.condition || canonical.condition,
+          condition: isUserEdited && item.condition ? item.condition : canonical.condition,
           repairHistory: Array.isArray(item.repairHistory) && item.repairHistory.length > 0
             ? item.repairHistory
             : canonical.repairHistory

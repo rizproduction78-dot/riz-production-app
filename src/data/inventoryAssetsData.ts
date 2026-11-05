@@ -2,16 +2,16 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * DATA MASTER INVENTARIS ALAT & ASET GUDANG RESMI PT. RIZ PRODUCTION MULTI KREASI
- * Sumber Referensi Resmi Google Sheet:
- * https://docs.google.com/spreadsheets/d/1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O/edit?usp=sharing
- * Spreadsheet ID: 1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O
+ * DATA MASTER INVENTARIS ALAT & ASET GUDANG RESMI 2026 PT. RIZ PRODUCTION MULTI KREASI
+ * Sumber Referensi Resmi Google Sheet 2026:
+ * https://docs.google.com/spreadsheets/d/18UHbZsqbaE66mmpjF37p97wNmM5EheDzyx4lmOOWshk/edit?gid=1322035217#gid=1322035217
+ * Spreadsheet ID: 18UHbZsqbaE66mmpjF37p97wNmM5EheDzyx4lmOOWshk (GID Sound 2026: 1322035217)
  *
- * Mencakup 4 Tab Inventaris Resmi (Total 133 Kelompok Aset Gudang):
- * 1. Inventory LIGHTING MAR 2024 (28 Kelompok Aset)
- * 2. Inventory SOUND MAR 2024 (70 Kelompok Aset)
- * 3. INVENTORY STREEMING MAR 2024 (26 Kelompok Aset)
- * 4. INVENTORY LED MAR 2024 (9 Kelompok Aset • LED Hybrid P3.9 60m / 30 Box + VX6s + Rigging/Cabling)
+ * Mencakup 4 Tab Inventaris Resmi 2026 (Total 133 Kelompok Aset Gudang):
+ * 1. Inventory LIGHTING 2026 (28 Kelompok Aset • Check by Heri 30 Juni 2026)
+ * 2. Inventory SOUND 2026 (70 Kelompok Aset • GID 1322035217 • Update s/d Oktober 2026)
+ * 3. INVENTORY STREEMING 2026 (26 Kelompok Aset • Check by Uloh & Chandra 29 Juli 2026)
+ * 4. INVENTORY LED 2026 (9 Kelompok Aset • Update 30 September 2026 • LED Hybrid P3.9 80m / 40 Box / 160 Panel)
  */
 
 import { Asset, Finding, WorkOrder, DailyReport, JobAssignment } from '../types';
@@ -24,14 +24,14 @@ import {
 
 export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   // ───────────────────────────────────────────────────────────────────────────
-  // 1. DIVISI LIGHTING — Sheet: Inventory LIGHTING MAR 2024 (24 MAR 2024)
+  // 1. DIVISI LIGHTING — Sheet: Inventory LIGHTING 2026 (Check by Heri • 30 Juni 2026)
   // ───────────────────────────────────────────────────────────────────────────
   {
     id: 'ast-lgt-001',
     code: 'AST-LGT-001',
-    name: 'Moving Beam TRF Clara (2 Unit)',
-    brand: 'TRF',
-    serialNumber: 'No. 1-2 • QTY: 2 Unit',
+    name: 'Moving Beam Centurion C450B (24 Unit)',
+    brand: 'CENTURION',
+    serialNumber: 'No. 1-24 • QTY: 24 Unit (Ready 24 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -40,9 +40,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-002',
     code: 'AST-LGT-002',
-    name: 'Moving Beam TRF Super (4 Unit)',
-    brand: 'TRF',
-    serialNumber: 'No. 1-4 • QTY: 4 Unit',
+    name: 'Moving Beam Centurion CM550BWS (12 Unit)',
+    brand: 'CENTURION',
+    serialNumber: 'No. 1-12 • QTY: 12 Unit (Ready 12 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -51,9 +51,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-003',
     code: 'AST-LGT-003',
-    name: 'Moving Beam TRF Clara S (14 Unit)',
-    brand: 'TRF',
-    serialNumber: 'No. 1-14 • QTY: 14 Unit',
+    name: 'Moving Beam B-EYE K10 (8 Unit)',
+    brand: 'B-EYE',
+    serialNumber: 'No. 37-44 • QTY: 8 Unit (Ready 8 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -62,9 +62,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-004',
     code: 'AST-LGT-004',
-    name: 'Fresnel Spark 200W (8 Unit)',
+    name: 'Fresnel Spark 200W (13 Unit)',
     brand: 'SPARK',
-    serialNumber: 'No. 1-8 • QTY: 8 Unit',
+    serialNumber: 'No. 1-13 • QTY: 13 Unit (Ready 13 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -73,9 +73,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-005',
     code: 'AST-LGT-005',
-    name: 'Fresnel AMT Light 300W (4 Unit)',
+    name: 'Fresnel AMT Light 300W (8 Unit)',
     brand: 'AMT LIGHT',
-    serialNumber: 'No. 19-22 • QTY: 4 Unit',
+    serialNumber: 'No. 1-8 • QTY: 8 Unit (Ready 8 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -84,9 +84,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-006',
     code: 'AST-LGT-006',
-    name: 'Parled 54 RGBW (16 Unit)',
-    brand: 'PARLED',
-    serialNumber: 'No. 1-16 • QTY: 16 Unit',
+    name: 'Par Light TRF A64 (RGB WW) Set A No. 1-24 (24 Unit)',
+    brand: 'TRF',
+    serialNumber: 'No. 1-24 • QTY: 24 Unit (Ready 24 Unit dari Total 48 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -95,9 +95,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-007',
     code: 'AST-LGT-007',
-    name: 'Par Light TRF A64 (RGB WW) (24 Unit)',
+    name: 'Par Light TRF A64 (RGB WW) Set B No. 25-48 (24 Unit)',
     brand: 'TRF',
-    serialNumber: 'No. 1-24 • QTY: 24 Unit',
+    serialNumber: 'No. 25-48 • QTY: 24 Unit (Ready 24 Unit dari Total 48 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -106,20 +106,20 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-008',
     code: 'AST-LGT-008',
-    name: 'Stormy Strobe Light (12 Unit)',
+    name: 'Stormy Strobe Light (32 Unit - 2 Error / Ready 30 Unit)',
     brand: 'STORMY',
-    serialNumber: 'No. 1-12 • QTY: 12 Unit',
+    serialNumber: 'No. 1-32 • QTY: 32 Unit (Ready 30 Unit • Remark: ERROR 2)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
-    condition: 'Baik',
+    condition: 'Rusak Ringan',
     repairHistory: []
   },
   {
     id: 'ast-lgt-009',
     code: 'AST-LGT-009',
-    name: 'Wallwasher LED 24x 10 Watt (8 Unit)',
+    name: 'Wallwasher LED 24x 10 Watt (20 Unit)',
     brand: 'WALLWASER',
-    serialNumber: 'No. 1-8 • QTY: 8 Unit',
+    serialNumber: 'No. 1-20 • QTY: 20 Unit (Ready 20 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -128,20 +128,20 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-010',
     code: 'AST-LGT-010',
-    name: 'Follow Spot 7R 230 Spark (2 Unit - 1 Rusak)',
+    name: 'Follow Spot 7R 230 Spark (2 Unit)',
     brand: 'SPARK',
-    serialNumber: 'No. 1-2 • QTY: 2 Unit (1 Aktif • Remark: SATU RUSAK)',
+    serialNumber: 'No. 1-2 • QTY: 2 Unit (Ready 2 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
-    condition: 'Rusak Ringan',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-lgt-011',
     code: 'AST-LGT-011',
-    name: 'Mini Brute 4 Cell (4 Unit)',
+    name: 'Mini Brute 4 Cell (10 Unit)',
     brand: 'MINI BRUTE',
-    serialNumber: 'No. 1-4 • QTY: 4 Unit',
+    serialNumber: 'No. 1-10 • QTY: 10 Unit (Ready 10 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -150,9 +150,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-012',
     code: 'AST-LGT-012',
-    name: 'Smoke Machine (4 Unit - 1 Eror)',
+    name: 'Smoke Machine (5 Unit - 1 Rusak / Ready 4 Unit)',
     brand: 'SMOKE MACHINE',
-    serialNumber: 'No. 89-92 • QTY: 4 Unit (Remark: 1 eror)',
+    serialNumber: 'No. 1-5 • QTY: 5 Unit (Ready 4 Unit • Remark: 1 RUSAK)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Rusak Ringan',
@@ -161,20 +161,20 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-013',
     code: 'AST-LGT-013',
-    name: 'Hazer Machine (3 Unit - 1 Eror)',
+    name: 'Hazer Machine (4 Unit)',
     brand: 'HAZER',
-    serialNumber: 'No. 93-94 • QTY: 3 Unit (Remark: 1 eror)',
+    serialNumber: 'No. 1-4 • QTY: 4 Unit (Ready 4 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
-    condition: 'Rusak Ringan',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-lgt-014',
     code: 'AST-LGT-014',
-    name: 'Mixer Lighting Grand MA 2 (1 Unit)',
+    name: 'Mixer Lighting Grand MA 2 Full (1 Unit) & Command Wing MA (1 Unit)',
     brand: 'MA',
-    serialNumber: 'No. 95 • QTY: 1 Unit',
+    serialNumber: 'Grand MA 2 (1 Unit) & Command Wing MA (1 Unit) • QTY: 2 Unit (Ready 2 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -185,7 +185,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-LGT-015',
     name: 'Mixer Lighting Avolite Quartz (1 Unit)',
     brand: 'AVOLITES',
-    serialNumber: 'No. 96 • QTY: 1 Unit',
+    serialNumber: 'QTY: 1 Unit (Ready 1 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -194,9 +194,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-016',
     code: 'AST-LGT-016',
-    name: 'Mixer Lighting Avolites Mini Pearl (1 Unit)',
+    name: 'Mixer Lighting Avolites Tiger Touch II (1 Unit)',
     brand: 'AVOLITES',
-    serialNumber: 'No. 97 • QTY: 1 Unit',
+    serialNumber: 'QTY: 1 Unit (Ready 1 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -205,9 +205,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-017',
     code: 'AST-LGT-017',
-    name: 'Mixer Lighting Avolites Tiger Touch II (1 Unit)',
-    brand: 'AVOLITES',
-    serialNumber: 'QTY: 1 Unit',
+    name: 'Splitter DMX C-Artnet (1 Unit)',
+    brand: 'C-ARTNET',
+    serialNumber: 'No. 221 • QTY: 1 Unit (Ready 1 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -218,7 +218,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-LGT-018',
     name: 'Mixer Lighting Avolite Pearl 2010 (1 Unit - Mati Suri)',
     brand: 'AVOLITES',
-    serialNumber: 'No. 98 • QTY: 1 Unit (Kondisi: MATI SURI)',
+    serialNumber: 'QTY: 1 Unit (Kondisi: MATI SURI)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Rusak Berat',
@@ -229,7 +229,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-LGT-019',
     name: 'Splitter DMX Lighting (4 Unit)',
     brand: 'SPLITER DMX',
-    serialNumber: 'No. 99-102 • QTY: 4 Unit',
+    serialNumber: 'No. 217-220 • QTY: 4 Unit (Ready 4 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -238,9 +238,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-020',
     code: 'AST-LGT-020',
-    name: 'Stand Lighting Double Stand (3 Unit)',
+    name: 'Stand Lighting Double Stand (6 Unit)',
     brand: 'DOUBLE STAND',
-    serialNumber: 'No. 103-105 • QTY: 3 Unit',
+    serialNumber: 'No. 222-227 • QTY: 6 Unit (Ready 6 Unit)',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -251,7 +251,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-LGT-021',
     name: 'Stand Lighting Single Stand (1 Unit)',
     brand: 'SINGGLE STAND',
-    serialNumber: 'No. 106 • QTY: 1 Unit',
+    serialNumber: 'No. 228 • QTY: 1 Unit',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -260,9 +260,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-022',
     code: 'AST-LGT-022',
-    name: 'Kabel Link Baru DMX / Power (162 Unit)',
+    name: 'Kabel Link Baru DMX / Power 100M (1), 75M Rolan (1), 50M (2), 25M (8) & 10M (50) (62 Unit)',
     brand: 'CABLE LINK',
-    serialNumber: '100M (1), 75M Rolan (1), 50M (2), 25M (8), 10M (20), 5M (30), 2M (100) • Total: 162 Unit',
+    serialNumber: '100M (1), 75M Rolan (1), 50M (2), 25M (8), 10M (50) • QTY: 62 Unit',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -271,9 +271,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-023',
     code: 'AST-LGT-023',
-    name: 'Kabel Link Lama DMX / Power (70 Unit)',
+    name: 'Kabel Link Baru DMX / Power 5M (28 Unit) & 2M (41 Unit) (69 Unit)',
     brand: 'CABLE LINK',
-    serialNumber: '10M (20 Unit), 2M (30 Unit), 1M (20 Unit) • Total: 70 Unit',
+    serialNumber: '5M (28 Unit), 2M (41 Unit) • QTY: 69 Unit',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -284,7 +284,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-LGT-024',
     name: 'XLR Link Pendek Lighting (1 Lot)',
     brand: 'CABLE LINK',
-    serialNumber: 'No. 119 • XLR Link Pendek',
+    serialNumber: 'No. 244 • XLR Link Pendek • QTY: 1 Lot',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -293,9 +293,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-025',
     code: 'AST-LGT-025',
-    name: 'Kabel Extension Lighting (36 Unit)',
+    name: 'Kabel Extension Lighting 25M (6 Unit), 10M (6 Unit) & 5M (43 Unit) (55 Unit)',
     brand: 'TAMBAHAN',
-    serialNumber: '25M (4 Unit), 10M (4 Unit), 5M (28 Unit) • Total: 36 Unit',
+    serialNumber: '25M (6 Unit), 10M (6 Unit), 5M (43 Unit) • QTY: 55 Unit',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -304,9 +304,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-026',
     code: 'AST-LGT-026',
-    name: 'Kabel Power 4 X 2.5 (3 Unit)',
+    name: 'Kabel Power 4 X 2.5 25M (4 Unit)',
     brand: 'TAMBAHAN',
-    serialNumber: '50M (1 Unit), 25M (2 Unit) • Total: 3 Unit',
+    serialNumber: '25M (4 Unit) • QTY: 4 Unit',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -315,9 +315,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-027',
     code: 'AST-LGT-027',
-    name: 'Minyak Hazer (2 Botol) & Minyak Smoke (2 Derigen)',
-    brand: 'TAMBAHAN',
-    serialNumber: 'No. 125-126 • Minyak Hazer 2 Botol & Minyak Smoke 2 Derigen',
+    name: 'Cover Minibrute (10 Unit), Cover Fresnel 200 (12 Unit) & Cover Fresnel 300 (4 Unit) (26 Unit)',
+    brand: 'COVER LIGHTING',
+    serialNumber: 'Cover Minibrute (10), Cover Fresnel 200 (12), Cover Fresnel 300 (4) • QTY: 26 Unit',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -326,9 +326,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-lgt-028',
     code: 'AST-LGT-028',
-    name: 'Cover Beam (12 Unit) & Cover Parled (12 Unit)',
-    brand: 'TAMBAHAN',
-    serialNumber: 'No. 127-128 • Cover Beam 12 Unit & Cover Parled 12 Unit',
+    name: 'Cover Beam (20 Unit), Cover Parled (19 Unit) & Cover Stormy (16 Unit) (55 Unit)',
+    brand: 'COVER LIGHTING',
+    serialNumber: 'Cover Beam (20 Unit), Cover Parled (19 Unit), Cover Stormy (16 Unit) • QTY: 55 Unit',
     division: 'Lighting',
     location: 'Gudang Utama RIZ - Zona Lighting',
     condition: 'Baik',
@@ -336,7 +336,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   },
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 2. DIVISI SOUND (AUDIO) — Sheet: Inventory SOUND MAR 2024 (18 MAR 2024)
+  // 2. DIVISI SOUND (AUDIO) — Sheet: Inventory SOUND 2026 (GID 1322035217)
   // ───────────────────────────────────────────────────────────────────────────
   {
     id: 'ast-aud-001',
@@ -352,9 +352,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-002',
     code: 'AST-AUD-002',
-    name: 'PA Speaker Line Array RCF HDL 20-A (8 Unit)',
-    brand: 'RCF',
-    serialNumber: 'No. 1-8 • QTY: 8 Unit',
+    name: 'PA Speaker Line Array Audio Center Avanda 210 (24 Unit)',
+    brand: 'AUDIO CENTER',
+    serialNumber: 'No. 1-24 • QTY: 24 Unit (Masuk 8 Sept 2025)',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -363,9 +363,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-003',
     code: 'AST-AUD-003',
-    name: 'Sub Double RCF P300 (1 Unit)',
-    brand: 'RCF',
-    serialNumber: 'No. 13 • QTY: 1 Unit',
+    name: 'Flying Bar Audio Center Line Array (4 Unit)',
+    brand: 'AUDIO CENTER',
+    serialNumber: 'No. 270 • QTY: 4 Unit (Masuk 8 Sept 2025)',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -374,9 +374,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-004',
     code: 'AST-AUD-004',
-    name: 'Sub Double OMR MP-4600 5 (3 Unit)',
-    brand: 'OMR',
-    serialNumber: 'No. 14 • QTY: 3 Unit',
+    name: 'Sub Single Audio Center T115S-DSP (2 Unit)',
+    brand: 'AUDIO CENTER',
+    serialNumber: 'No. 1-2 • QTY: 2 Unit (Masuk 14 Feb 2025)',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -385,9 +385,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-005',
     code: 'AST-AUD-005',
-    name: 'Sub Double RDW LS-2000 (8 Unit)',
-    brand: 'RDW',
-    serialNumber: 'No. 15 • QTY: 8 Unit',
+    name: 'Sub Double Audio Center Avanda 218A (16 Unit)',
+    brand: 'AUDIO CENTER',
+    serialNumber: 'No. 1-16 • QTY: 16 Unit (Masuk 8 Sept 2025)',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -407,9 +407,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-007',
     code: 'AST-AUD-007',
-    name: 'Sub Single RCF 4 PRO 7001 (2 Unit - NEW)',
+    name: 'Monitor Speaker RCF ART-312A (4 Unit)',
     brand: 'RCF',
-    serialNumber: 'No. 1-2 • QTY: 2 Unit (Kondisi: NEW)',
+    serialNumber: 'No. 1-4 • QTY: 4 Unit (Masuk 14 Feb 2025)',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -418,9 +418,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-008',
     code: 'AST-AUD-008',
-    name: 'Sub Single RCF 4 PRO 8001 (2 Unit - NEW)',
+    name: 'Sub Single RCF 4 PRO 8001 (2 Unit)',
     brand: 'RCF',
-    serialNumber: 'No. 1-2 • QTY: 2 Unit (Kondisi: NEW)',
+    serialNumber: 'No. 1-2 • QTY: 2 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -429,9 +429,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-009',
     code: 'AST-AUD-009',
-    name: 'Sub Single RCF 4 PRO 8002 (2 Unit - NEW)',
+    name: 'Sub Single RCF 4 PRO 8002 (2 Unit)',
     brand: 'RCF',
-    serialNumber: 'No. 1-2 • QTY: 2 Unit (Kondisi: NEW)',
+    serialNumber: 'No. 1-2 • QTY: 2 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -442,7 +442,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-AUD-010',
     name: 'Fullrange K-Array KR100K (2 Unit)',
     brand: 'K ARRAY',
-    serialNumber: 'No. 20-21 • QTY: 2 Unit',
+    serialNumber: 'No. 1-2 • QTY: 2 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -462,9 +462,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-012',
     code: 'AST-AUD-012',
-    name: 'Monitor Speaker dB Technologies Opera 15 (16 Unit)',
+    name: 'Monitor Speaker dB Technologies Opera 15 (18 Unit)',
     brand: 'DB TECH',
-    serialNumber: 'No. 1-16 • QTY: 16 Unit',
+    serialNumber: 'No. 1-18 • QTY: 18 Unit (16 Unit + 2 Masuk 14 Feb 2025)',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -484,9 +484,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-014',
     code: 'AST-AUD-014',
-    name: 'Digital Mixer Midas M32 R (1 Unit)',
+    name: 'Digital Mixer Midas M32 R (2 Unit)',
     brand: 'MIDAS',
-    serialNumber: 'No. 46 • QTY: 1 Unit',
+    serialNumber: 'No. 1-2 • QTY: 2 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -497,7 +497,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-AUD-015',
     name: 'Digital Mixer Midas M32 LIVE (3 Unit)',
     brand: 'MIDAS',
-    serialNumber: 'No. 46b • QTY: 3 Unit',
+    serialNumber: 'No. 1-3 • QTY: 3 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -506,9 +506,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-016',
     code: 'AST-AUD-016',
-    name: 'Digital Mixer Yamaha TF 1 (1 Unit)',
-    brand: 'YAMAHA',
-    serialNumber: 'No. 47 • QTY: 1 Unit',
+    name: 'Digital Mixer Midas HERITAGE-D (2 Unit) & Yamaha TF 1 (1 Unit)',
+    brand: 'MIDAS / YAMAHA',
+    serialNumber: 'Midas HERITAGE-D (2 Unit • Masuk Juli & Sept 2025) & Yamaha TF 1 (1 Unit) • QTY: 3 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -517,9 +517,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-017',
     code: 'AST-AUD-017',
-    name: 'Analog Mixer Yamaha MG 16 (1 Unit)',
+    name: 'Analog Mixer Yamaha MG16 (1 Unit), MG12 (1 Unit) & MG8 (1 Unit)',
     brand: 'YAMAHA',
-    serialNumber: 'QTY: 1 Unit',
+    serialNumber: 'Yamaha MG16 (1), MG12 (1), MG8 (1) • QTY: 3 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -530,7 +530,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-AUD-018',
     name: 'Analog Mixer Mackie 12 Pro (1 Unit)',
     brand: 'MACKIE',
-    serialNumber: 'No. 48 • QTY: 1 Unit',
+    serialNumber: 'QTY: 1 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -541,7 +541,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-AUD-019',
     name: 'IO / Stage Box Midas DL 32 (4 Unit)',
     brand: 'MIDAS',
-    serialNumber: 'No. 48-51 • QTY: 4 Unit',
+    serialNumber: 'No. 1-4 • QTY: 4 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -550,9 +550,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-020',
     code: 'AST-AUD-020',
-    name: 'Power Amply Soundlab HX 3600S (1 Unit)',
-    brand: 'Soundlab',
-    serialNumber: 'No. 52 • QTY: 1 Unit',
+    name: 'IO / Stage Box Midas DL 251 (2 Unit)',
+    brand: 'MIDAS',
+    serialNumber: 'No. 1-2 • QTY: 2 Unit (Masuk 10 Juli & 8 Sept 2025)',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -563,7 +563,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-AUD-021',
     name: 'Power Amply Lab Gruppen FP 10.000Q (1 Unit)',
     brand: 'LAB GRUPPEN',
-    serialNumber: 'No. 53 • QTY: 1 Unit',
+    serialNumber: 'QTY: 1 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -572,9 +572,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-022',
     code: 'AST-AUD-022',
-    name: 'Power Amply STX TX 52 (2 Unit)',
-    brand: 'STX',
-    serialNumber: 'No. 54 • QTY: 2 Unit',
+    name: 'Instrument Drum Tama Star Classic (1 Set) & Cymbal Set Kingdo (1 Set)',
+    brand: 'TAMA / KINGDO',
+    serialNumber: 'Tama Star Classic (1 Set • Masuk 5 Okt 2025) & Cymbal Kingdo (1 Set • Masuk 20 Juli 2025) • QTY: 2 Set',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -583,9 +583,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-023',
     code: 'AST-AUD-023',
-    name: 'Instrument Drum Pearl Vision VBL 926 (1 Set)',
-    brand: 'Pearl',
-    serialNumber: 'No. 55 • QTY: 1 Set',
+    name: 'Instrument Drum Yamaha Tour Custom (1 Set)',
+    brand: 'YAMAHA',
+    serialNumber: 'QTY: 1 Set (Masuk 20 Juli 2025)',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -596,7 +596,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-AUD-024',
     name: 'Instrument Drum Yamaha Stage Custom (1 Set)',
     brand: 'YAMAHA',
-    serialNumber: 'No. 53b • QTY: 1 Set',
+    serialNumber: 'QTY: 1 Set',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -605,9 +605,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-025',
     code: 'AST-AUD-025',
-    name: 'Instrument Drum Elektrik NUX DM-7 (1 Set)',
-    brand: 'NUX',
-    serialNumber: 'No. 54b • QTY: 1 Set',
+    name: 'Instrument Drum Electric Yamaha DTX-6 (1 Set)',
+    brand: 'YAMAHA',
+    serialNumber: 'QTY: 1 Set (Masuk 14 Feb 2025)',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -618,7 +618,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-AUD-026',
     name: 'Instrument Amply Roland JC-120 (1 Unit)',
     brand: 'Roland',
-    serialNumber: 'No. 55b • QTY: 1 Unit',
+    serialNumber: 'QTY: 1 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -627,9 +627,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-027',
     code: 'AST-AUD-027',
-    name: 'Instrument Amply Gallien Krueger GK 1100RB (2 Unit)',
-    brand: 'Galien Kruger',
-    serialNumber: 'No. 56 • QTY: 2 Unit',
+    name: 'Instrument Amply Gallien-Krueger GK 1001RB (2 Unit) & Ampeg SVT-4PRO (1 Unit)',
+    brand: 'Gallien-Krueger / Ampeg',
+    serialNumber: 'GK 1001RB (2 Unit) & Ampeg SVT-4PRO (1 Unit • Masuk 20 Juli 2025) • QTY: 3 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -638,9 +638,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-028',
     code: 'AST-AUD-028',
-    name: 'Instrument Amply Roland KC-550 (1 Unit)',
+    name: 'Instrument Amply Roland KC-550 (3 Unit)',
     brand: 'Roland',
-    serialNumber: 'No. 57 • QTY: 1 Unit',
+    serialNumber: 'No. 1-3 • QTY: 3 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -649,9 +649,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-029',
     code: 'AST-AUD-029',
-    name: 'Instrument Amply Marshall JCM 900 (2 Unit)',
+    name: 'Instrument Amply Marshall JCM 900 (3 Unit)',
     brand: 'Marshall',
-    serialNumber: 'No. 58 • QTY: 2 Unit',
+    serialNumber: 'No. 1-3 • QTY: 3 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -660,9 +660,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-030',
     code: 'AST-AUD-030',
-    name: 'Instrument Keyboard Roland RD 700 NX (1 Unit)',
+    name: 'Instrument Keyboard Roland RD 700 NX (1 Unit) & Roland RD 700 GX (1 Unit)',
     brand: 'Roland',
-    serialNumber: 'No. 59 • QTY: 1 Unit',
+    serialNumber: 'Roland RD 700 NX (1 Unit) & Roland RD 700 GX (1 Unit) • QTY: 2 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -671,9 +671,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-031',
     code: 'AST-AUD-031',
-    name: 'Instrument Keyboard Roland RD 700 GX (1 Unit)',
-    brand: 'Roland',
-    serialNumber: 'No. 60 • QTY: 1 Unit',
+    name: 'Instrument Keyboard Roland RD 800 (1 Unit), Roland RD 2000 (1 Unit) & Yamaha PSR (1 Unit)',
+    brand: 'Roland / YAMAHA',
+    serialNumber: 'Roland RD 800 (1), Roland RD 2000 (1), Yamaha PSR (1) • QTY: 3 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -682,20 +682,20 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-032',
     code: 'AST-AUD-032',
-    name: 'Microphone Wireless MIPRO ACT 312B / ACT-32H (13 Unit - 1 Mati)',
-    brand: 'MIPRO',
-    serialNumber: 'No. 1-12 • QTY: 13 Unit (12 Aktif • Remark: SATU MATI)',
+    name: 'Microphone Wireless Sennheiser EW-D EM (e835) (18 Unit)',
+    brand: 'SENNHEISER',
+    serialNumber: 'No. 1-18 (16 Unit + 2 Masuk 1 Okt 2026) • QTY: 18 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Rusak Ringan',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-aud-033',
     code: 'AST-AUD-033',
-    name: 'Microphone Wireless MIPRO Clipon (4 Unit)',
-    brand: 'MIPRO',
-    serialNumber: 'No. 1-4 • QTY: 4 Unit',
+    name: 'Microphone Wireless Sennheiser EWD Clipon (2 Unit), G3 Clipon (3 Unit) & Antenna Dist EWD ASA (2 Unit)',
+    brand: 'SENNHEISER',
+    serialNumber: 'EWD Clipon (2), G3 Clipon (3), Antenna Distributor EWD ASA (2) • QTY: 7 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -704,20 +704,20 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-034',
     code: 'AST-AUD-034',
-    name: 'Microphone Wireless QA HMD46PRO (13 Set - Adaptor Mati 1 & 1 Mic Error)',
-    brand: 'QA',
-    serialNumber: 'No. 1-13 (5 Set + 8 NEW) • Remark: ADAPTOR MATI SATU DAN 1 MIC ERROR',
+    name: 'Microphone Wireless Shure SLXD4 (8 Unit), Shure QLXD4 (4 Unit) & Bodypack SLXD4 (1 Unit)',
+    brand: 'SHURE',
+    serialNumber: 'Shure SLXD4 (8 Unit), Shure QLXD4 (4 Unit), Shure Bodypack SLXD4 (1 Unit) • QTY: 13 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Rusak Ringan',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-aud-035',
     code: 'AST-AUD-035',
-    name: 'Microphone Wireless QA Clipon / HMD45PRO (8 Unit)',
-    brand: 'QA',
-    serialNumber: 'No. 1-7 (6 Unit + 2 NEW) • QTY: 8 Unit',
+    name: 'Antenna Distributor Shure UA844 + SWB (4 Unit)',
+    brand: 'SHURE',
+    serialNumber: 'No. 1-4 • QTY: 4 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -737,9 +737,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-037',
     code: 'AST-AUD-037',
-    name: 'Microphone Wireless Shure (2 Unit)',
-    brand: 'SHURE',
-    serialNumber: 'No. 1-2 • QTY: 2 Unit',
+    name: 'Microphone Wireless Headset QA HMD46PRO (4 Unit)',
+    brand: 'QA',
+    serialNumber: 'No. 1-4 • QTY: 4 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -748,34 +748,34 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-038',
     code: 'AST-AUD-038',
-    name: 'Microphone Cable Shure SM57 (10 Unit - 2 Tengek)',
+    name: 'Microphone Cable Shure SM57 (25 Unit)',
     brand: 'SHURE',
-    serialNumber: 'No. 1-10 • QTY: 10 Unit (8 Aktif • Remark: 2 TENGEK)',
-    division: 'Audio',
-    location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Rusak Ringan',
-    repairHistory: []
-  },
-  {
-    id: 'ast-aud-039',
-    code: 'AST-AUD-039',
-    name: 'Microphone Cable Shure SM58 (18 Unit)',
-    brand: 'SHURE',
-    serialNumber: 'No. 1-18 (17 Unit + 1 NEW) • QTY: 18 Unit',
+    serialNumber: 'No. 1-25 • QTY: 25 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
     repairHistory: []
   },
   {
-    id: 'ast-aud-040',
-    code: 'AST-AUD-040',
-    name: 'Microphone Cable VXT-TX300 / VXT-TX301 (13 Unit - 1 Mati)',
-    brand: 'VXT',
-    serialNumber: 'No. 1-13 • QTY: 13 Unit (12 Aktif • Remark: SATU MATI)',
+    id: 'ast-aud-039',
+    code: 'AST-AUD-039',
+    name: 'Microphone Cable Shure SM58 (22 Unit - 4 Hilang)',
+    brand: 'SHURE',
+    serialNumber: 'No. 1-22 • QTY: 22 Unit (18 Aktif • Remark: 4 hilang)',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Rusak Ringan',
+    repairHistory: []
+  },
+  {
+    id: 'ast-aud-040',
+    code: 'AST-AUD-040',
+    name: 'Microphone Cable VXT-TX300 / VXT-TX301 (13 Unit)',
+    brand: 'VXT',
+    serialNumber: 'No. 1-13 • QTY: 13 Unit',
+    division: 'Audio',
+    location: 'Gudang Utama RIZ - Zona Audio',
+    condition: 'Baik',
     repairHistory: []
   },
   {
@@ -792,18 +792,18 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-042',
     code: 'AST-AUD-042',
-    name: 'Microphone Gooseneck Hardwell (6 Unit - 2 Rusak)',
+    name: 'Microphone Gooseneck Hardwell (7 Unit)',
     brand: 'HARDWELL',
-    serialNumber: 'No. 1-6 (5 Unit + 1 NEW, 4 Aktif • Remark: 2 RUSAK)',
+    serialNumber: 'No. 1-7 • QTY: 7 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Rusak Ringan',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-aud-043',
     code: 'AST-AUD-043',
-    name: 'Microphone Gooseneck Shure (2 Unit)',
+    name: 'Microphone Gooseneck Shure MX418DC (2 Unit)',
     brand: 'SHURE',
     serialNumber: 'No. 1-2 • QTY: 2 Unit',
     division: 'Audio',
@@ -814,9 +814,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-044',
     code: 'AST-AUD-044',
-    name: 'Microphone Drum Set A (Shure Beta 91, Audix D6, SM57, 4x E604)',
-    brand: 'SHURE / AUDIX / SENNHEISER',
-    serialNumber: 'No. 140-146 • Beta 91 (1), Audix D6 (1), SM57 (1), E604 (4)',
+    name: 'Microphone Drum Set A (Audix D6, Shure Beta 56A, SM57, 4x E604 - 7 Unit)',
+    brand: 'AUDIX / SHURE / SENNHEISER',
+    serialNumber: 'Audix D6 (1), Shure Beta 56A (1), SM57 (1), Sennheiser E604 (4) • QTY: 7 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -825,9 +825,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-045',
     code: 'AST-AUD-045',
-    name: 'Microphone Drum Set B (AKG D112, SM57, 3x E604)',
-    brand: 'AKG / SHURE / SENNHEISER',
-    serialNumber: 'No. 147-151 • AKG D112 (1), SM57 (1), E604 (3)',
+    name: 'Microphone Drum Set B (Beta 52A, 2x SM57, 4x E604) & Set C (Beta 52A, SM57, 4x E904) (13 Unit)',
+    brand: 'SHURE / SENNHEISER',
+    serialNumber: 'Set B (7 Pcs) & Set C (6 Pcs) • QTY: 13 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -836,9 +836,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-046',
     code: 'AST-AUD-046',
-    name: 'Microphone Drum Set Takstar (2 Set)',
-    brand: 'TAKSTAR',
-    serialNumber: 'No. 152-153 • QTY: 2 Set',
+    name: 'Microphone Drum Set AKG (D112 MKII, 4x P4, 2x P17 - 7 Pcs) & Takstar Drum Set (2 Set)',
+    brand: 'AKG / TAKSTAR',
+    serialNumber: 'AKG Drum Set (7 Pcs) & Takstar Drum Set (2 Set) • QTY: 9 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -847,31 +847,31 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-047',
     code: 'AST-AUD-047',
-    name: 'DI-Box Behringer Ultra-DI D100 / D101 (10 Unit - 2 Rusak)',
+    name: 'DI-Box Behringer Ultra-DI DI100 (8 Unit)',
     brand: 'Behringer',
-    serialNumber: 'No. 1-10 • QTY: 10 Unit (8 Aktif • Remark: RUSAK 2)',
+    serialNumber: 'No. 1-8 • QTY: 8 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Rusak Ringan',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-aud-048',
     code: 'AST-AUD-048',
-    name: 'DI-Box Samson MDA1 Mono Active (15 Unit - 1 Rusak)',
+    name: 'DI-Box Samson MDA1 Mono Active (15 Unit) & Samson S-Direct (3 Unit)',
     brand: 'SAMSON',
-    serialNumber: 'No. 1-15 (10 Unit + 5 NEW • Remark: RUSAK 1)',
+    serialNumber: 'Samson MDA1 (15 Unit) & Samson S-Direct (3 Unit) • QTY: 18 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Rusak Ringan',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-aud-049',
     code: 'AST-AUD-049',
-    name: 'DI-Box Samson S-Direct (3 Unit)',
-    brand: 'SAMSON',
-    serialNumber: 'No. 1-3 • QTY: 3 Unit',
+    name: 'DI-Box Klark Teknik DN10A Active (20 Unit) & Klark Teknik DN100 (2 Unit)',
+    brand: 'KLARK TEKNIK',
+    serialNumber: 'Klark Teknik DN10A (20 Unit • Masuk 20 Juli 2025) & DN100 (2 Unit) • QTY: 22 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -891,9 +891,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-051',
     code: 'AST-AUD-051',
-    name: 'Microphone Condenser AKG C-1000 (4 Unit)',
+    name: 'Microphone Condenser AKG C-1000 (15 Unit)',
     brand: 'AKG',
-    serialNumber: 'No. 1-4 • QTY: 4 Unit',
+    serialNumber: 'No. 1-15 • QTY: 15 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -902,9 +902,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-052',
     code: 'AST-AUD-052',
-    name: 'Microphone Condenser JTS TX-9 (3 Unit) & JTS NX-9 (1 Unit)',
-    brand: 'JTS',
-    serialNumber: 'No. 180-183 • JTS TX-9 (3 Unit) & JTS NX-9 (1 Unit)',
+    name: 'Microphone Condenser JTS TX-9 (3 Unit), JTS NX-9 (1 Unit) & AKG C411 (3 Unit)',
+    brand: 'JTS / AKG',
+    serialNumber: 'JTS TX-9 (3 Unit), JTS NX-9 (1 Unit), AKG C411 (3 Unit) • QTY: 7 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -913,9 +913,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-053',
     code: 'AST-AUD-053',
-    name: 'Microphone Condenser Shure 81 (1), Beta 91A (1) & Beta 52 (2)',
-    brand: 'SHURE',
-    serialNumber: 'No. 184-187 • Shure 81 (1), Beta 91A (1), Beta 52 (2)',
+    name: 'Microphone Kick In/Out Shure Beta 91A (4 Unit), Beta 52A (3 Unit), Behringer BA19A (1) & Shure SM81 (1)',
+    brand: 'SHURE / BEHRINGER',
+    serialNumber: 'Shure Beta 91A (4), Beta 52A (3), Behringer BA19A (1), Shure SM81 (1) • QTY: 9 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -924,9 +924,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-054',
     code: 'AST-AUD-054',
-    name: 'Microphone Condenser Behringer ECM8000 (1 Unit) & Superlux (2 Unit)',
-    brand: 'Behringer / Superlux',
-    serialNumber: 'No. 188-189 • Behringer ECM8000 (1) & Superlux (2)',
+    name: 'Microphone RTA & Condenser Earthworks M50 (1), Behringer ECM800 (1), Melab (1), QA (1) & Superlux (2)',
+    brand: 'EARTHWORKS / BEHRINGER / SUPERLUX',
+    serialNumber: 'Earthworks M50 (1), Behringer ECM800 (1), Melab (1), QA (1), Superlux (2) • QTY: 6 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -935,9 +935,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-055',
     code: 'AST-AUD-055',
-    name: 'Microphone Cable Shure Beta 58 (4 Unit)',
-    brand: 'SHURE',
-    serialNumber: 'No. 1-4 • QTY: 4 Unit',
+    name: 'In-Ear Monitor (IEM) Sennheiser SR IEM G4 (8 Unit), Combiner AC 41 + ADP UHF (1) & Mipro MI-58 (1)',
+    brand: 'SENNHEISER / MIPRO',
+    serialNumber: 'Sennheiser SR IEM G4 (8 Unit), Combiner AC 41 + ADP UHF (1 Unit), Mipro MI-58 (1 Unit) • QTY: 10 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -946,9 +946,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-056',
     code: 'AST-AUD-056',
-    name: 'Speaker Management DLMS Xilica XP3060 (1) & Behringer DCX 2496-LE (1)',
-    brand: 'XILICA / BEHRINGER',
-    serialNumber: 'No. 194-195 • Xilica XP3060 (1 Unit) & Behringer DCX 2496-LE (1 Unit)',
+    name: 'Speaker Management DLMS Xilica XP4080 (1), Marani MIR 480i (2), Marani MIR 480A (1) & FIR408 (1)',
+    brand: 'XILICA / MARANI / PRECISION DRIVE',
+    serialNumber: 'Xilica XP4080 (1), Marani MIR 480i (2), Marani MIR 480A (1), Precision Drive FIR408 (1) • QTY: 5 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -957,9 +957,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-057',
     code: 'AST-AUD-057',
-    name: 'Audio Splitter 32CH Switch A+B (2 Unit) & Splitter AUX (1 Unit)',
+    name: 'Audio Splitter 32CH Switch A+B (1), 32CH A+B+C (1), 48CH A+B+C (1) & Splitter AUX (1)',
     brand: 'Custom',
-    serialNumber: 'No. 196-198 • Splitter 32CH Switch A+B (2) & Splitter AUX (1)',
+    serialNumber: 'Splitter 32CH A+B (1), 32CH A+B+C (1), 48CH A+B+C (1), Splitter AUX (1) • QTY: 4 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -968,9 +968,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-058',
     code: 'AST-AUD-058',
-    name: 'Snake Cable BTV 32/50M (1 Unit) & Kabel LAN Custom 50/65M (7 Unit)',
-    brand: 'BTV / Custom',
-    serialNumber: 'No. 199-200 • Snake Cable 32/50M (1) & LAN Custom 50/65M (7)',
+    name: 'Kabel LAN Belden 75M Abu-Abu (7 Roll), LAN 75M Ungu (2 Roll), Kabel Optik 250M (1) & Extender DN9680 (1)',
+    brand: 'BELDEN / KLARK TEKNIK',
+    serialNumber: 'LAN Belden 75M Abu2 (7), LAN 75M Ungu (2), Kabel Optik 250M (1), Extender Optik DN9680 (1) • QTY: 11 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -979,20 +979,20 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-059',
     code: 'AST-AUD-059',
-    name: 'Cable XLR Canare 10 Meter (280 Unit - 2 Rusak)',
-    brand: 'Canare',
-    serialNumber: 'No. 201 • QTY: 280 Unit (Awal 242 • Remark: 2 RUSAK)',
+    name: 'Cable XLR Canare 10 Meter (306 Unit) & Cable XLR Galileo (29 Unit)',
+    brand: 'Canare / Galileo',
+    serialNumber: 'XLR Canare 10M (306 Unit) & XLR Galileo (29 Unit) • QTY: 335 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Rusak Ringan',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-aud-060',
     code: 'AST-AUD-060',
-    name: 'Cable Jack to Jack Canare (60 Unit)',
+    name: 'Cable Jack to Jack Canare (58 Unit)',
     brand: 'Canare',
-    serialNumber: 'No. 202 • QTY: 60 Unit (Awal 51)',
+    serialNumber: 'No. 233 • QTY: 58 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -1001,9 +1001,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-061',
     code: 'AST-AUD-061',
-    name: 'Cable Rumbai WHM (2), Rumbai Drum (4), Power AC (4) & Junction Box AUX (1)',
-    brand: 'Custom',
-    serialNumber: 'No. 203-207 • Rumbai WHM (2), Rumbai Drum (4), Power AC (4), Junction Box AUX (1)',
+    name: 'Kabel Rumbai Panjang (10), Rumbai Pendek (16), Rumbai Drum Canare (1) & Snake Box 8/16/24CH (10)',
+    brand: 'Canare / Custom',
+    serialNumber: 'Rumbai Panjang (10), Pendek (16), Drum (1), Junction AUX (1), Snake 8CH (1), Biru 16CH (3), Hitam 16CH (4), Orange 24CH (1) • QTY: 37 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -1012,9 +1012,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-062',
     code: 'AST-AUD-062',
-    name: 'Stand Speaker (LB720 23, Baretone 2, NoBrand 2 - Total 27 Unit)',
-    brand: 'LB720 / BARETONE',
-    serialNumber: 'No. 208 • QTY: 27 Unit',
+    name: 'Stand Speaker LB720 (24 Unit)',
+    brand: 'LB720',
+    serialNumber: 'No. 247 • QTY: 24 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -1023,20 +1023,20 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-063',
     code: 'AST-AUD-063',
-    name: 'Stand Mic Hercules MS33B (26 Unit - 3 Rusak) & MS201B (4 Unit)',
-    brand: 'Hercules',
-    serialNumber: 'No. 209-210 • MS33B (26 Unit, Remark: RUSAK 3) & MS201B (4 Unit)',
+    name: 'Stand Mic Hercules MS33B (44 Unit), Stand Mic Pendek Samson (5 Unit) & Hercules Pendek (5 Unit)',
+    brand: 'Hercules / Samson',
+    serialNumber: 'Hercules MS33B (44 Unit), Samson Pendek (5 Unit), Hercules Pendek (5 Unit) • QTY: 54 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Rusak Ringan',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-aud-064',
     code: 'AST-AUD-064',
-    name: 'Stand Keyboard Double Hercules KS 410B (2 Unit) & Single KS 120B (3 Unit)',
+    name: 'Stand Keyboard Double Hercules KS 410B (3 Unit) & Single KS 120B (4 Unit)',
     brand: 'Hercules',
-    serialNumber: 'No. 211-212 • KS 410B Double (2 Unit) & KS 120B Single (3 Unit)',
+    serialNumber: 'KS 410B Double (3 Unit) & KS 120B Single (4 Unit) • QTY: 7 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -1045,9 +1045,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-065',
     code: 'AST-AUD-065',
-    name: 'Stand Book Superior (8 Unit)',
+    name: 'Stand Book Superior (12 Unit)',
     brand: 'Superior',
-    serialNumber: 'No. 213 • QTY: 8 Unit',
+    serialNumber: 'No. 253 • QTY: 12 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -1056,31 +1056,31 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-066',
     code: 'AST-AUD-066',
-    name: 'Stand Guitar Single Hercules (3 Unit) & Double GS 422B (2 Unit - 1 Aus)',
+    name: 'Stand Guitar Single Hercules (4 Unit) & Double GS 422B (2 Unit)',
     brand: 'Hercules',
-    serialNumber: 'No. 214-215 • Single (3 Aktif dari 4) & Double GS 422B (2 Unit • Remark: RUSAK UDAH AUS 1)',
+    serialNumber: 'Single Guitar Stand (4 Unit) & Double GS 422B (2 Unit) • QTY: 6 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Rusak Ringan',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-aud-067',
     code: 'AST-AUD-067',
-    name: 'Panel Box Custom 3Phase (1 Unit - Hilang)',
-    brand: 'Custom',
-    serialNumber: 'No. 216 • QTY: 1 Unit (Remark: HILANG)',
+    name: 'Panel Box Custom 3Phase (1 Unit), Panel Legrand 6 Port (2 Unit) & Reglan Panel Orange (23 Unit)',
+    brand: 'Legrand / Custom',
+    serialNumber: 'Panel 3Phase (1), Panel Legrand 6 Port (2), Reglan Panel Orange 1 (14) & Orange 2 (9) • QTY: 26 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Rusak Berat',
+    condition: 'Baik',
     repairHistory: []
   },
   {
     id: 'ast-aud-068',
     code: 'AST-AUD-068',
-    name: 'Kabel Listrik Eterna 50M (4), 50M 4x4 (2) & 5M-10-15M (100 Unit)',
-    brand: 'Eterna',
-    serialNumber: 'No. 217-219 • 50M (4), 50M 4X4 (2), 5M-10-15M (100) • Total: 106 Unit',
+    name: 'Kabel Listrik Eterna 50M (8 Unit), Eterna 5M-15M (117 Unit) & Kabel Panel Jembo 10M/24M/25M (6 Unit)',
+    brand: 'Eterna / Jembo',
+    serialNumber: 'Eterna 50M (4), 50M 4x4 (3), 50M 4x5 (1), Eterna 5M-15M (117), Jembo 10M (1), 25M (1), 24M (4) • QTY: 131 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -1089,9 +1089,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-aud-069',
     code: 'AST-AUD-069',
-    name: 'Stabilizer Stavolt 3000Va (4 Unit) & UPS ICA CP700 (1) / CP1400 (1)',
-    brand: 'Stavolt / ICA',
-    serialNumber: 'No. 220-222 • Stavolt 3000Va (4), UPS ICA CP700 (1), UPS ICA CP1400 (1)',
+    name: 'Stabilizer Stavolt 3000Va (4), UPS ICA CP700 (2), CP1400 (2), iPad Gen 10 (2) & Router AX23 (2)',
+    brand: 'Stavolt / ICA / Apple / TP-Link',
+    serialNumber: 'Stavolt 3000Va (4), UPS ICA CP700 (2), CP1400 (2), Apple iPad Gen 10 (2), Router TP-Link AX23 (2) • QTY: 12 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -1102,7 +1102,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-AUD-070',
     name: 'Takel 2 Ton (2), Takel 1 Ton (8), Strap 2 Ton 3M (12) & Booster Pasline (4)',
     brand: 'Pasline / Rigging',
-    serialNumber: 'No. 223-228 • Takel 2T (2), Takel 1T (2+6 NEW), Strap 2T 3M (12 NEW), Booster Pasline (2+2 NEW)',
+    serialNumber: 'No. 256-259 • Takel 2T (2), Takel 1T (8), Strap 2T 3M (12), Booster Pasline (4) • QTY: 26 Unit',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
     condition: 'Baik',
@@ -1110,14 +1110,14 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   },
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 3. DIVISI MULTIMEDIA — Sheet: INVENTORY STREEMING MAR 2024 (18 MAR 2024)
+  // 3. DIVISI MULTIMEDIA — Sheet: INVENTORY STREEMING 2026 (Check by Uloh & Chandra • 29 Juli 2026)
   // ───────────────────────────────────────────────────────────────────────────
   {
     id: 'ast-mm-001',
     code: 'AST-MM-001',
-    name: 'PC Streaming 1 Workstation (Intel Core i9 10920X, RTX 3070, 64GB RAM, 2x DeckLink Quad HDMI)',
-    brand: 'Intel / MSI / Gigabyte',
-    serialNumber: 'i9-10920X 12C/24T, MSI RTX3070 Gaming X Trio, X299X Aorus Master, 2x32GB Corsair, 2x1TB XPG, 2x DeckLink Quad • QTY: 1 Unit',
+    name: 'PC Streaming 1 Workstation (Intel Core i9 14900KF, RTX A5000 24GB, 128GB DDR5, DeckLink Quad SDI + VMOX 4-HDMI)',
+    brand: 'Intel / Leadtek Quadro / MSI',
+    serialNumber: 'i9-14900KF 24C/32T, Leadtek RTX A5000 24GB, MSI PRO Z790-A MAX WIFI, 128GB Corsair DDR5, DeckLink Quad SDI + VMOX 4-HDMI • QTY: 1 Set',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1126,9 +1126,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-002',
     code: 'AST-MM-002',
-    name: 'PC Streaming 2 Workstation (AMD Ryzen 9 5900X, RTX 2060 Super, 32GB RAM, SEMOX 4-HDMI PCIe)',
-    brand: 'AMD Ryzen / MSI / Gigabyte',
-    serialNumber: 'Ryzen 9 5900X 12C/24T, MSI RTX2060 Super, B550 Aorus Master, 32GB Corsair, 1TB+512GB XPG, SEMOX 4-HDMI • QTY: 1 Unit',
+    name: 'PC Streaming 2 Workstation (Intel Core i9 14900KF, RTX 3070 8GB, 128GB DDR5, VMOX 4-HDMI + DeckLink HDMI)',
+    brand: 'Intel / MSI / Corsair',
+    serialNumber: 'i9-14900KF 24C/32T, MSI RTX 3070 Gaming X Trio 8GB, MSI PRO Z790-A MAX WIFI, 128GB Corsair DDR5, VMOX 4-HDMI + DeckLink • QTY: 1 Set',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1137,9 +1137,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-003',
     code: 'AST-MM-003',
-    name: 'PC Streaming 3 Workstation (AMD Ryzen 9 3900XT, RTX 2060 Super, 32GB RAM, Elgato Cam Link Pro Quad HDMI)',
-    brand: 'AMD Ryzen / MSI / Gigabyte',
-    serialNumber: 'Ryzen 9 3900XT 12C, MSI RTX2060 Super, B550 Aorus Pro AC, 32GB Corsair, 1TB XPG + 1TB V-Gen, Elgato Cam Link Pro 4K30',
+    name: 'PC Streaming 3 Workstation (Intel Core i9 10920X, RTX 3070Ti 8GB, 48GB DDR4, Elgato Cam Link Pro 4-HDMI)',
+    brand: 'Intel / Gigabyte Aorus / MSI',
+    serialNumber: 'i9-10920X 12C/24T, RTX 3070Ti Gaming X Trio 8GB, X299X Aorus Master, 48GB DDR4, Elgato Cam Link Pro 4K30 • QTY: 1 Set',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1148,9 +1148,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-004',
     code: 'AST-MM-004',
-    name: 'Video Capture Card Elgato HD60S (2 Unit), Acasis HD33 (1) & Acasis HD31 (2)',
-    brand: 'ELGATO / ACASIS',
-    serialNumber: 'Elgato H260S/HD60S (2 Unit), Acasis HD 33 1080P (1 Unit), Acasis HD 31 1080P (2 Unit)',
+    name: 'Video Capture Card Acasis HD33 (1 Unit), Acasis HD31 (2 Unit) & Hagibis LNM-318 4K (2 Unit)',
+    brand: 'ACASIS / HAGIBIS',
+    serialNumber: 'Acasis HD 33 1080P (1 Unit), Acasis HD 31 1080P (2 Unit), Hagibis LNM-318 4K (2 Unit) • QTY: 5 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1159,42 +1159,42 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-005',
     code: 'AST-MM-005',
-    name: 'Video Capture Card Hagibis 4K (2), Vention USB-HDMI (2), Ezcap HD60 (3 - 1 Rusak) & Game Link Raw 4K (1)',
-    brand: 'HAGIBIS / VENTION / EZCAP',
-    serialNumber: 'Hagibis LNM-318 4K (2), Vention ACW (2), Ezcap HD60 (3 Unit - SATU RUSAK), Ezcap Game Link Raw 4K30 (1)',
-    division: 'Multimedia',
-    location: 'Gudang Utama RIZ - Zona Multimedia',
-    condition: 'Rusak Ringan',
-    repairHistory: []
-  },
-  {
-    id: 'ast-mm-006',
-    code: 'AST-MM-006',
-    name: 'Audio Soundcard Behringer U-Phoria UMC202HD (3 - 1 Rusak), UMC402HD (1) & Xenyx QX1002USB (1)',
-    brand: 'BEHRINGER',
-    serialNumber: 'UMC202HD 2-In (3 Unit, 2 Aktif - SATU RUSAK), UMC402HD 4-In (1 Unit), Xenyx QX1002USB (1 Unit)',
-    division: 'Multimedia',
-    location: 'Gudang Utama RIZ - Zona Multimedia',
-    condition: 'Rusak Ringan',
-    repairHistory: []
-  },
-  {
-    id: 'ast-mm-007',
-    code: 'AST-MM-007',
-    name: 'Audio Soundcard Hardwell Optimus 4 (2 Unit), ISK DS-1 (1) & Focusrite Scarlett 2i2 3rd Gen (1 NEW)',
-    brand: 'HARDWELL / FOCUSRITE / ISK',
-    serialNumber: 'Hardwell Optimus 4 (2 Unit), ISK DS-1 (1 Unit), Focusrite Scarlett 2i2 3rd Gen USB (1 Unit NEW)',
+    name: 'Video Capture Card Vention USB-HDMI (2 Unit), Ezcap HD60 (3 Unit) & Ezcap Game Link Raw 4K30 (1 Unit)',
+    brand: 'VENTION / EZCAP',
+    serialNumber: 'Vention ACW USB-HDMI (2 Unit), Ezcap HD60 (3 Unit), Ezcap Game Link Raw 4K30 (1 Unit) • QTY: 6 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
     repairHistory: []
   },
   {
+    id: 'ast-mm-006',
+    code: 'AST-MM-006',
+    name: 'Audio Soundcard Behringer Xenyx QX1002USB (1 Unit), ISK DS-1 (1 Unit) & SSL Soundcard (2 Unit)',
+    brand: 'BEHRINGER / ISK / SSL',
+    serialNumber: 'Behringer Xenyx QX1002USB (1 Unit), ISK DS-1 (1 Unit), SSL Soundcard (2 Unit) • QTY: 4 Unit',
+    division: 'Multimedia',
+    location: 'Gudang Utama RIZ - Zona Multimedia',
+    condition: 'Baik',
+    repairHistory: []
+  },
+  {
+    id: 'ast-mm-007',
+    code: 'AST-MM-007',
+    name: 'Audio Soundcard Hardwell Optimus 4 Channel (2 Unit - 1 Rusak)',
+    brand: 'HARDWELL',
+    serialNumber: 'Hardwell Optimus 4 Channel • QTY: 2 Unit (1 Aktif • Remark: 1 Rusak)',
+    division: 'Multimedia',
+    location: 'Gudang Utama RIZ - Zona Multimedia',
+    condition: 'Rusak Ringan',
+    repairHistory: []
+  },
+  {
     id: 'ast-mm-008',
     code: 'AST-MM-008',
-    name: 'Camcorder Sony HXR-NX100 FHD NXCAM (2 Unit Aktif)',
+    name: 'Camcorder Sony HXR-NX100 FHD NXCAM (4 Unit)',
     brand: 'CAMCORDER SONY',
-    serialNumber: 'QTY: 2 Unit Aktif dari 4 (Remark: GANTI KAMERA YANG HILANG 2)',
+    serialNumber: 'No. 1-4 • QTY: 4 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1203,9 +1203,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-009',
     code: 'AST-MM-009',
-    name: 'Camcorder Sony PXW-Z190 4K 3-CMOS XDCAM (4 Unit - NEW)',
-    brand: 'CAMCORDER SONY',
-    serialNumber: 'QTY: 4 Unit (Kondisi: NEW)',
+    name: 'Camcorder Sony PXW-Z190 4K 3-CMOS XDCAM (4 Unit) & Camera PTZ Feelworld (1 Unit)',
+    brand: 'CAMCORDER SONY / FEELWORLD',
+    serialNumber: 'Sony PXW-Z190 4K (4 Unit) & Camera PTZ Feelworld (1 Unit) • QTY: 5 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1214,9 +1214,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-010',
     code: 'AST-MM-010',
-    name: 'Remote Control Kamera Libec ZFC-5HD Peanut Zoom (3 Unit)',
-    brand: 'LIBEC',
-    serialNumber: 'QTY: 3 Unit',
+    name: 'Remote Control Kamera Libec ZFC-5HD Zoom (3 Unit) & Battery Pack Livegear NPF-970 (2) / Sony BP-U100 (2)',
+    brand: 'LIBEC / LIVEGEAR / SONY',
+    serialNumber: 'Libec ZFC-5HD (3 Unit), Battery Livegear NPF-970 (2 Unit), Battery Sony BP-U100 PXW (2 Unit) • QTY: 7 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1225,9 +1225,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-011',
     code: 'AST-MM-011',
-    name: 'Tripod Kamera Libec 650EX (4), Libec TH-X (4 NEW), Sirui SH-5 (1) & Takara Hydro A16 (1)',
-    brand: 'LIBEC / SIRUI / TAKARA',
-    serialNumber: 'Libec 650EX (4), Libec TH-X (4 NEW - Ganti Tripod Hilang 2), Sirui SH-5 (1), Takara Hydro A16 (1)',
+    name: 'Tripod Kamera Libec 650EX (4 Unit), Libec TH-X (4 Unit) & Sirui SH-5 (1 Unit)',
+    brand: 'LIBEC / SIRUI',
+    serialNumber: 'Libec 650EX (4 Unit), Libec TH-X (4 Unit), Sirui SH-5 (1 Unit) • QTY: 9 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1236,9 +1236,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-012',
     code: 'AST-MM-012',
-    name: 'Wireless Cam Accsoon CineEye II Pro (2 Unit) & Hollyland Cosmo C1 FullHD (1 Unit NEW)',
+    name: 'Wireless Cam Accsoon CineEye II Pro (2 Unit) & Hollyland Cosmo C1 FullHD (2 Unit)',
     brand: 'ACCSON / HOLLYLAND',
-    serialNumber: 'Accsoon CineEye II Pro (2 Unit) & Hollyland Cosmo C1 FullHD (1 Unit NEW)',
+    serialNumber: 'Accsoon CineEye II Pro (2 Unit) & Hollyland Cosmo C1 FullHD (2 Unit) • QTY: 4 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1247,9 +1247,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-013',
     code: 'AST-MM-013',
-    name: 'Memory Cam SanDisk 64GB (4 Unit), 128GB (1 Unit NEW) & 256GB (1 Unit)',
+    name: 'Memory Cam SanDisk Extreme PRO SDXC UHS-I 256GB (1 Unit)',
     brand: 'SANDISK',
-    serialNumber: 'SanDisk 64GB (4 Unit - 3 NEW), 128GB (1 Unit NEW), 256GB (1 Unit)',
+    serialNumber: 'SanDisk Extreme PRO 256GB • QTY: 1 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1260,7 +1260,7 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
     code: 'AST-MM-014',
     name: 'Blackmagic Design Micro Converter HDMI to SDI 3G (3 Unit) & SDI to HDMI 3G (1 Unit)',
     brand: 'BLACKMAGIC DESIGN',
-    serialNumber: 'Micro Converter HDMI to SDI 3G (3 Unit) & SDI to HDMI 3G (1 Unit)',
+    serialNumber: 'Micro Converter HDMI to SDI 3G (3 Unit) & SDI to HDMI 3G (1 Unit) • QTY: 4 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1269,9 +1269,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-015',
     code: 'AST-MM-015',
-    name: 'Laptop Produksi Gaming: HP Omen 15 i7 (1), MSI GP66 RTX3060 (1 NEW), ROG Strix G16 RTX4050 (1 NEW) & Alienware M15 RTX3080 (1)',
-    brand: 'HP / MSI / ASUS ROG / ALIENWARE',
-    serialNumber: 'HP Omen 15 GTX1660Ti (1), MSI GP66 Leopard 11UE (1 NEW), ASUS ROG Strix G16 (1 NEW), Dell Alienware M15 R4 32GB/1TB/RTX3080 (1)',
+    name: 'Video Switcher Blackmagic ATEM HD/4K 8CH (1 Unit), Blackmagic 4K 8-Input (1 Unit) & PTZ Keyboard (1 Unit)',
+    brand: 'BLACKMAGIC DESIGN / FEELWORLD',
+    serialNumber: 'Blackmagic ATEM HD/4K 8CH (1), Blackmagic 4K 8-Input (1), PTZ Keyboard Controller (1) • QTY: 3 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1280,9 +1280,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-016',
     code: 'AST-MM-016',
-    name: 'Laptop Operasional: Lenovo X1 i7 (2 NEW), Lenovo T495 Ryzen 5 Pro (3 NEW), Dell Latitude E7480 (1) & Dell 5580 (1)',
-    brand: 'LENOVO / DELL',
-    serialNumber: 'Lenovo X1 i7-8565U (2 NEW), Lenovo T495 Ryzen 5 Pro 14" (3 NEW), Dell Latitude E7480 i7 (1), Dell 5580 i7 RAM 16GB (1)',
+    name: 'Laptop Operasional Lenovo ThinkPad T495 Ryzen 5 Pro 14" (3 Unit)',
+    brand: 'LENOVO',
+    serialNumber: 'Lenovo ThinkPad T495 AMD Ryzen 5 Pro 3500U 14" FHD • QTY: 3 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1291,9 +1291,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-017',
     code: 'AST-MM-017',
-    name: 'Green Screen 3x8m (3), Stand Takara Spirit-3 (10), Tiang Backdrop 4m (3), Clamp (20) & Studio LED Godox SL200II (4)',
+    name: 'Green Screen 3x8m (3), Stand Takara Spirit-3 (10), Tiang Backdrop 4m (9), Clamp (24) & Studio LED Godox SL200II (4)',
     brand: 'Godox / Takara / Custom',
-    serialNumber: 'Green Screen 3x8m (3), Stand Takara Spirit-3 (10), Tiang Backdrop 4m (3), Clamp Backdrop (20 Aktif, Hilang 4), Godox SL200II (4)',
+    serialNumber: 'Green Screen 3x8m (3), Stand Takara Spirit-3 (10), Tiang Backdrop 4m (9), Clamp Backdrop (24), Godox SL200II (4) • QTY: 50 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1302,9 +1302,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-018',
     code: 'AST-MM-018',
-    name: 'Controller Elgato Stream Deck XL (1), Akai MIDI MIX (2), ICON Platform M+ (1) & ICON Platform X+ (1)',
-    brand: 'Elgato / AKAI / ICON',
-    serialNumber: 'Stream Deck XL (1), Akai MIDI MIX (2), ICON Platform M+ (1), ICON Platform X+ (1) • Total: 5 Unit',
+    name: 'Controller Elgato Stream Deck XL (1 Unit) & Akai Professional MIDI MIX (2 Unit)',
+    brand: 'Elgato / AKAI',
+    serialNumber: 'Stream Deck XL (1 Unit) & Akai Professional MIDI MIX (2 Unit) • QTY: 3 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1313,9 +1313,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-019',
     code: 'AST-MM-019',
-    name: 'Video Switcher DataVideo SE-500 4Ch (1), SE-650 4Ch SDI/HDMI (1) & SE-1200 6Ch SDI/HDMI (1 NEW)',
+    name: 'Video Switcher DataVideo SE-650 4Ch SDI/HDMI (1 Unit) & DataVideo SE-1200MU 6Ch SDI/HDMI (1 Unit)',
     brand: 'DATA VIDEO',
-    serialNumber: 'SE-500 4Ch 1080P (1 Unit), SE-650 2SDI+2HDMI (1 Unit), SE-1200 4SDI+2HDMI (1 Unit NEW)',
+    serialNumber: 'DataVideo SE-650 2SDI+2HDMI (1 Unit) & DataVideo SE-1200MU 4SDI+2HDMI (1 Unit) • QTY: 2 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1324,9 +1324,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-020',
     code: 'AST-MM-020',
-    name: 'Video Recorder Vitesse HD 1080 (1 Unit) & Ninja Atomos Inferno (1 Unit)',
-    brand: 'Vitesse / NINJA ATOMOS',
-    serialNumber: 'Vitesse HD Video Recorder 1080 (1 Unit) & Ninja Atomos Inferno (1 Unit)',
+    name: 'Video Recorder Shimbol Memory Recorder HD (1 Unit) & Blackmagic HyperDeck HD Recorder (1 Unit)',
+    brand: 'SHIMBOL / BLACKMAGIC DESIGN',
+    serialNumber: 'Shimbol Video Memory Recorder HD 1080 (1 Unit) & Blackmagic HyperDeck HD Recorder (1 Unit) • QTY: 2 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Baik',
@@ -1335,9 +1335,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-021',
     code: 'AST-MM-021',
-    name: 'Clear Com Wireless Intercom UltraLITE Eartec UL5D 5-Person (1 Set) & 4-Person (1 Set - 1 Rusak)',
-    brand: 'ULTRALITE EARTEC',
-    serialNumber: 'Eartec UL5D 5-Person Full Duplex (1 Set) & UL5D 4-Person Full Duplex (1 Set • Remark: SATU RUSAK)',
+    name: 'Clear Com Intercom Eartec UL5D 5-Person (4 - 1 Rusak), 4-Person (3 - 1 Rusak) & Hollyland Solidcom SE (5)',
+    brand: 'ULTRALITE EARTEC / HOLLYLAND',
+    serialNumber: 'Eartec UL5D 5-Person (4 Unit - 1 Rusak), UL5D 4-Person (3 Unit - 1 Rusak), Hollyland Solidcom SE (5 Unit) • QTY: 12 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Rusak Ringan',
@@ -1346,31 +1346,31 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-022',
     code: 'AST-MM-022',
-    name: 'Switch Hub TP-Link 16-Port Gigabit (2), Router Tenda AC23 (1) & UPS APC 1100VA/1200VA (2)',
-    brand: 'TP-LINK / Tenda / APC',
-    serialNumber: 'TP-Link TL-SG1016D 16-Port (2), Router Tenda AC23 (1), UPS APC BX1100LI-MS (1), UPS APC BVX1200LI-MS (1)',
-    division: 'Multimedia',
-    location: 'Gudang Utama RIZ - Zona Multimedia',
-    condition: 'Baik',
-    repairHistory: []
-  },
-  {
-    id: 'ast-mm-023',
-    code: 'AST-MM-023',
-    name: 'HDMI Splitter Vention & Bafo (1x8: 2 Unit, 1x4: 6 Unit, 1x2: 5 Unit - 2 Rusak)',
-    brand: 'Vention / BAFO',
-    serialNumber: 'Vention 1x8 (2), Vention 1x4 (3 Aktif dari 4 - RUSAK 1), Vention 1x2 (2 Aktif dari 3 - RUSAK 1), 4-In 1x4 (1), Bafo 1x4 (2), Bafo 1x2 (3)',
+    name: 'Switch Hub TP-Link 16-Port Gigabit (2 Unit) & UPS APC BVX1200LI-MS 1200VA (1 Unit - Rusak)',
+    brand: 'TP-LINK / APC',
+    serialNumber: 'TP-Link TL-SG1016D 16-Port (2 Unit) & UPS APC BVX1200LI-MS 1200VA (1 Unit • Remark: Rusak) • QTY: 3 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Rusak Ringan',
     repairHistory: []
   },
   {
+    id: 'ast-mm-023',
+    code: 'AST-MM-023',
+    name: 'HDMI Splitter Vention 1x8 (2 Unit), PX HDMI (2 Unit), Cable Time 1x4 (2 Unit) & Vention 1x4 (2 Unit)',
+    brand: 'Vention / PX / Cable Time',
+    serialNumber: 'Vention 1x8 (2), PX (2), Cable Time 1x4 (2), Vention 1x4 (2) • QTY: 8 Unit',
+    division: 'Multimedia',
+    location: 'Gudang Utama RIZ - Zona Multimedia',
+    condition: 'Baik',
+    repairHistory: []
+  },
+  {
     id: 'ast-mm-024',
     code: 'AST-MM-024',
-    name: 'Converter, Adapter, Audio Isolator MPOW, HDMI Repeater 8K/4K & Hub LAN Vention',
+    name: 'Converter & Adapter: Thunderbolt-HDMI (4), DP-HDMI (4 - 1 Rusak), MPOW (5 - 3 Rusak), Repeater 8K/4K (3) & Hub LAN (9)',
     brand: 'VENTION / UGREEN / MPOW',
-    serialNumber: 'Thunderbolt-HDMI (3), DP-HDMI (7 - RUSAK 1), HDMI-VGA (2), TypeC-HDMI (2), LAN Adapter (3), Noise Isolator MPOW (3 Aktif), Repeater 8K/4K (2), Hub LAN (3)',
+    serialNumber: 'TB-HDMI (4), DP-HDMI (4 - 1 Rusak), HDMI-VGA (2), TypeC-HDMI (2), LAN Adapter (6), MPOW (5 - Rusak 3), Repeater 8K/4K (3), Hub LAN (3), XLR-3.5mm (3) • QTY: 32 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Rusak Ringan',
@@ -1379,9 +1379,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-025',
     code: 'AST-MM-025',
-    name: 'Cabling Multimedia: HDMI Fiber Optic 25M-50M, HDMI 5M/1M, SDI 50M/25M/1M & LAN Cat6 Vention',
+    name: 'Cabling Multimedia: HDMI FO 25M-50M (21 - 3 Rusak), HDMI 5M/1M/Optic (40 - 3 Rusak), SDI (12) & LAN Vention (33 - 6 Rusak)',
     brand: 'VENTION / BAFO',
-    serialNumber: 'HDMI FO 30-40M (12 - RUSAK 2), FO 25M Bafo (1 NEW), FO 50M Bafo (2 NEW), HDMI 5M (18), HDMI 1M (10), SDI 50M (7), SDI 25M (1), SDI 1M (4), LAN Cat6 (27)',
+    serialNumber: 'HDMI FO 30-40M (10 - Rusak 2), Bafo 25M FO (8), Vention 5M (21 - Rusak 3), FO 50M (3 - Rusak 1), HDMI 1M (14), Optic 100M (1), Surge (4), SDI (12), LAN Cat6 (33 - Hilang/Rusak 6) • QTY: 106 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Rusak Ringan',
@@ -1390,9 +1390,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-mm-026',
     code: 'AST-MM-026',
-    name: 'LED Smart TV Coocaa 50" (2 Unit), Coocaa 42" (3 Unit - 1 Rusak), Samsung 42" (1 Rusak) & Weyoon 42" (1 Rusak)',
-    brand: 'Coocaa / Samsung / WEYOON',
-    serialNumber: 'Coocaa 50" FHD (2 Unit - 1 NEW), Coocaa 42" 42CTC6200 (3 Unit - 1 RUSAK), Samsung 42" (1 RUSAK), Weyoon 42" (1 RUSAK)',
+    name: 'LED Smart TV Samsung 50" (4), Coocaa 50" (2 - 1 Rusak), Samsung 42" (2), Coocaa 42" (3 - 2 Rusak), Standing (5) & Matador (6)',
+    brand: 'Samsung / Coocaa',
+    serialNumber: 'Samsung 50" (4), Coocaa 50" (2 - Rusak 1), Samsung 42" (2), Coocaa 42" (3 - Rusak 2), Standing TV (5), Matador TV (6) • QTY: 22 Unit',
     division: 'Multimedia',
     location: 'Gudang Utama RIZ - Zona Multimedia',
     condition: 'Rusak Ringan',
@@ -1400,14 +1400,14 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   },
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 4. DIVISI VIDEOTRON (LED) — Sheet: INVENTORY LED MAR 2024 (18 MAR 2024)
+  // 4. DIVISI VIDEOTRON (LED) — Sheet: INVENTORY LED 2026 (Update 30 September 2026)
   // ───────────────────────────────────────────────────────────────────────────
   {
     id: 'ast-led-001',
     code: 'AST-LED-001',
-    name: 'LED Visual Yestech Hybrid P3.9 (60 Meter / 30 Box)',
+    name: 'LED Visual Yestech Hybrid P3.9 (80 Meter / 40 Box / 160 Panel)',
     brand: 'YESTECH',
-    serialNumber: 'No. 1 • LED HYBRID P 3.9 (30 BOX) • QTY: 60 Meter',
+    serialNumber: 'No. 1 • LED HYBRID P 3.9 40 BOX (80 Meter / 160 Panel) • QTY: 40 Box',
     division: 'Videotron',
     location: 'Gudang Utama RIZ - Zona Videotron',
     condition: 'Baik',
@@ -1416,9 +1416,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-led-002',
     code: 'AST-LED-002',
-    name: 'Processor NovaStar VX6s LED Video Processor (2 Unit)',
+    name: 'Processor NovaStar VX600s (3 Unit), NovaStar VX1000 (2 Unit), NovaStar VX1000 Pro (2 Unit) & TB (1 Unit)',
     brand: 'NOVASTAR',
-    serialNumber: 'No. 1b • NovaStar VX6s Led Video Processor • QTY: 2 Unit',
+    serialNumber: 'NovaStar VX600s (3 Unit), VX1000 (2 Unit), VX1000 Pro (2 Unit), Processor TB (1 Unit) • QTY: 8 Unit',
     division: 'Videotron',
     location: 'Gudang Utama RIZ - Zona Videotron',
     condition: 'Baik',
@@ -1427,9 +1427,9 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-led-003',
     code: 'AST-LED-003',
-    name: 'Panel Listrik LED Kecil (2 Unit), Panel Listrik Besar (1 Unit) & Extension Legrand 3-Out 1-In Fort (2 Unit)',
-    brand: 'LEGRAND / Custom',
-    serialNumber: 'Panel Listrik Kecil (2 Unit), Panel Listrik Besar (1 Unit), Plug Socket 3 Out 1 In Fort (2 Unit)',
+    name: 'Laptop Produksi LED (MSI Katana RTX4060, Cyborg, GP66 RTX3060, ROG Strix RTX4050, Alienware RTX3080) (5) & Capture/Soundcard LED (19)',
+    brand: 'MSI / ASUS ROG / ALIENWARE / ELGATO',
+    serialNumber: 'Laptop LED (5 Unit), Soundcard UMC202HD/402HD/Scarlett (4 Unit), Capture Card Elgato/Ezcap/Vention (12 Unit), USB Hub (3 Unit) • QTY: 24 Unit',
     division: 'Videotron',
     location: 'Gudang Utama RIZ - Zona Videotron',
     condition: 'Baik',
@@ -1438,31 +1438,31 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-led-004',
     code: 'AST-LED-004',
-    name: 'Bracket / Clamp LED Yestech (60 Unit)',
+    name: 'Bracket / Clamp LED Yestech (80 Unit - 1 Hilang Penyodok)',
     brand: 'YESTECH',
-    serialNumber: 'No. 2d • BRACKET LED • QTY: 60 Unit',
+    serialNumber: 'No. 2h • BRACKET LED • QTY: 80 Unit (79 Layak • Remark: 1 Hilang Penyodok)',
     division: 'Videotron',
     location: 'Gudang Utama RIZ - Zona Videotron',
-    condition: 'Baik',
+    condition: 'Rusak Ringan',
     repairHistory: []
   },
   {
     id: 'ast-led-005',
     code: 'AST-LED-005',
-    name: 'Rigging & Leveling LED: Hambalan Holo (12), Hambalan 2M (10), Hambalan 1M (1), Tiang 1M (24) & Tiang 2M (32)',
+    name: 'Rigging 20x20 (20), Level LED 2x1 & 1x1 (17), Kaki Tiang & Shoks (206), Hambalan (16) & Tiang Frame 1M/2M (68 - 1 Patah)',
     brand: 'Custom Rigging LED',
-    serialNumber: 'Hambalan Holo (12), Hambalan 2M (10), Hambalan 1M (1), Tiang 1M (24), Tiang 2M (32)',
+    serialNumber: 'Rigging 20x20 (20), Level LED (17), Kaki Tiang 1M-20cm + Shoks (206), Hambalan 2M/1M/50cm (16), Tiang 1M (26 - Patah 1), Tiang 2M (42) • QTY: 327 Unit',
     division: 'Videotron',
     location: 'Gudang Utama RIZ - Zona Videotron',
-    condition: 'Baik',
+    condition: 'Rusak Ringan',
     repairHistory: []
   },
   {
     id: 'ast-led-006',
     code: 'AST-LED-006',
-    name: 'Pemberat LED (30 Unit), Tali Tambang (5 Roll) & Gantungan Hanging Bar (16 Unit)',
-    brand: 'Custom Rigging LED',
-    serialNumber: 'Pemberat LED (30 Unit), Tali Tambang (5 Roll), Gantungan (16 Unit)',
+    name: 'Pemberat LED (38 Unit), Hanging Bar Yestech (17 Unit), Tali Tambang (5), Tali Strap (18) & Cooling Pad (3)',
+    brand: 'YESTECH / Custom Rigging LED',
+    serialNumber: 'Pemberat LED (38), Hanging Bar Yestech (17), Tali Tambang (5), Strap Ungu Kecil (12), Strap Panjang (6), Cooling Pad (3) • QTY: 81 Unit',
     division: 'Videotron',
     location: 'Gudang Utama RIZ - Zona Videotron',
     condition: 'Baik',
@@ -1471,34 +1471,34 @@ export const INITIAL_INVENTORY_ASSETS: Asset[] = [
   {
     id: 'ast-led-007',
     code: 'AST-LED-007',
-    name: 'HDMI Cable Armored 100M (1 Unit), Armored 50M (2 Unit) & Vention 5M/2M/1M 4K (6 Unit)',
-    brand: 'ARMORED / VENTION',
-    serialNumber: 'HDMI Armored 100M (1), Armored 50M (2), Vention 5M (2), Vention 2M (2), Vention 1M (2)',
+    name: 'HDMI Armored 100M (4 - 2 Rusak), Armored 50M (2), Vention (6), Kabel Optik 300M (1), Extender Optik (4) & HDMI Optic/4K (7)',
+    brand: 'ARMORED / VENTION / OPTIC',
+    serialNumber: 'HDMI Armored 100M (4 - Rusak 2), Armored 50M (2), Vention 5M/2M/1M (6), Optik 300M (1), Extender Optik (4), HDMI Optic 100M (2), Converter 4K (5) • QTY: 24 Unit',
     division: 'Videotron',
     location: 'Gudang Utama RIZ - Zona Videotron',
-    condition: 'Baik',
+    condition: 'Rusak Ringan',
     repairHistory: []
   },
   {
     id: 'ast-led-008',
     code: 'AST-LED-008',
-    name: 'Network Cable Neutrik LAN RJ45 Cat6/Cat6a SSTP Double-Shielded 100M (10 Unit) & 20M (16 Unit)',
+    name: 'Network Cable Neutrik LAN RJ45 Cat6a SSTP 100M (16 Unit - 1 Hilang), 50M (3 Unit), 20M (26 Unit) & Barel LAN (14 Unit)',
     brand: 'NEUTRIC',
-    serialNumber: 'Kabel LAN RJ45 Cat6/Cat6a SSTP Double-Shielded 100M (10 Unit) & 20M (16 Unit)',
+    serialNumber: 'Neutrik Cat6a 100M (16 - Hilang 1), 50M (3), 20M (26), Barel LAN (14) • QTY: 59 Unit',
     division: 'Videotron',
     location: 'Gudang Utama RIZ - Zona Videotron',
-    condition: 'Baik',
+    condition: 'Rusak Ringan',
     repairHistory: []
   },
   {
     id: 'ast-led-009',
     code: 'AST-LED-009',
-    name: 'Cable Panel LED 50M (4 Unit), Cable Panel 50M Steker (1 Unit) & Power Legrand OE',
+    name: 'Panel Listrik 12 Port (5 - 1 Panel Check R), Panel 6 Port (1), Cable Panel 50M (5), Power & Konektor Legrand (60) & Terminal (6)',
     brand: 'LEGRAND / Custom',
-    serialNumber: 'Cable Panel 50M (4 Unit), Cable Panel 50M Steker (1 Unit), Power Legrand OE',
+    serialNumber: 'Panel 12 Port (5 - 1 Check R), Panel 6 Port (1), Cable Panel 50M (5), Power Legrand (23), Konektor Legrand/Speakon (37), Terminal (6) • QTY: 77 Unit',
     division: 'Videotron',
     location: 'Gudang Utama RIZ - Zona Videotron',
-    condition: 'Baik',
+    condition: 'Rusak Ringan',
     repairHistory: []
   }
 ];
@@ -1538,13 +1538,14 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
   const text = `${asset.code} ${asset.name} ${asset.brand} ${asset.serialNumber}`.toLowerCase();
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 1. DIVISI AUDIO / SOUND (Sheet: Inventory SOUND MAR 2024)
+  // 1. DIVISI AUDIO / SOUND (Sheet: Inventory SOUND 2026 • GID 1322035217)
   // ─────────────────────────────────────────────────────────────────────────
   if (asset.division === 'Audio') {
     if (
-      ['ast-aud-001', 'ast-aud-002', 'ast-aud-010'].includes(id) ||
+      ['ast-aud-001', 'ast-aud-002', 'ast-aud-003', 'ast-aud-010'].includes(id) ||
       name.includes('pa speaker') ||
       name.includes('line array') ||
+      name.includes('flying bar') ||
       name.includes('fullrange')
     ) {
       return {
@@ -1561,7 +1562,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     }
 
     if (
-      ['ast-aud-003', 'ast-aud-004', 'ast-aud-005', 'ast-aud-006', 'ast-aud-007', 'ast-aud-008', 'ast-aud-009'].includes(id) ||
+      ['ast-aud-004', 'ast-aud-005', 'ast-aud-006', 'ast-aud-008', 'ast-aud-009'].includes(id) ||
       name.includes('sub double') ||
       name.includes('sub single') ||
       name.includes('subwoofer')
@@ -1580,7 +1581,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     }
 
     if (
-      ['ast-aud-011', 'ast-aud-012', 'ast-aud-013'].includes(id) ||
+      ['ast-aud-007', 'ast-aud-011', 'ast-aud-012', 'ast-aud-013'].includes(id) ||
       name.includes('monitor speaker') ||
       name.includes('floor monitor')
     ) {
@@ -1598,11 +1599,12 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     }
 
     if (
-      ['ast-aud-014', 'ast-aud-015', 'ast-aud-016', 'ast-aud-017', 'ast-aud-018', 'ast-aud-019'].includes(id) ||
+      ['ast-aud-014', 'ast-aud-015', 'ast-aud-016', 'ast-aud-017', 'ast-aud-018', 'ast-aud-019', 'ast-aud-020'].includes(id) ||
       name.includes('mixer') ||
       name.includes('stage box') ||
       name.includes('stagebox') ||
       text.includes('dl 32') ||
+      text.includes('dl 251') ||
       text.includes('dl32')
     ) {
       return {
@@ -1619,13 +1621,13 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     }
 
     if (
-      ['ast-aud-020', 'ast-aud-021', 'ast-aud-022', 'ast-aud-056', 'ast-aud-057'].includes(id) ||
+      ['ast-aud-021', 'ast-aud-056', 'ast-aud-057'].includes(id) ||
       name.includes('power amply') ||
       name.includes('speaker management') ||
       name.includes('dlms') ||
       name.includes('audio splitter') ||
       text.includes('xilica') ||
-      text.includes('dcx 2496')
+      text.includes('marani')
     ) {
       return {
         typeGroup: 'Power Amplifier, DLMS & Audio Splitter',
@@ -1641,7 +1643,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     }
 
     if (
-      ['ast-aud-023', 'ast-aud-024', 'ast-aud-025', 'ast-aud-026', 'ast-aud-027', 'ast-aud-028', 'ast-aud-029', 'ast-aud-030', 'ast-aud-031'].includes(id) ||
+      ['ast-aud-022', 'ast-aud-023', 'ast-aud-024', 'ast-aud-025', 'ast-aud-026', 'ast-aud-027', 'ast-aud-028', 'ast-aud-029', 'ast-aud-030', 'ast-aud-031'].includes(id) ||
       name.includes('instrument') ||
       name.includes('drum ') ||
       name.includes('keyboard') ||
@@ -1666,6 +1668,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     if (
       ['ast-aud-032', 'ast-aud-033', 'ast-aud-034', 'ast-aud-035', 'ast-aud-036', 'ast-aud-037'].includes(id) ||
       name.includes('microphone wireless') ||
+      name.includes('antenna distributor') ||
       name.includes('clipon')
     ) {
       return {
@@ -1707,6 +1710,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
         'ast-aud-052', 'ast-aud-053', 'ast-aud-054', 'ast-aud-055'
       ].includes(id) ||
       name.includes('microphone') ||
+      name.includes('in-ear monitor') ||
       name.includes('gooseneck') ||
       name.includes('condenser')
     ) {
@@ -1757,7 +1761,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 2. DIVISI LIGHTING (Sheet: Inventory LIGHTING MAR 2024)
+  // 2. DIVISI LIGHTING (Sheet: Inventory LIGHTING 2026)
   // ─────────────────────────────────────────────────────────────────────────
   if (asset.division === 'Lighting') {
     if (
@@ -1818,7 +1822,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     }
 
     if (
-      ['ast-lgt-012', 'ast-lgt-013', 'ast-lgt-027'].includes(id) ||
+      ['ast-lgt-012', 'ast-lgt-013'].includes(id) ||
       name.includes('smoke') ||
       name.includes('hazer') ||
       name.includes('minyak')
@@ -1857,10 +1861,9 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     }
 
     if (
-      ['ast-lgt-020', 'ast-lgt-021', 'ast-lgt-028'].includes(id) ||
+      ['ast-lgt-020', 'ast-lgt-021', 'ast-lgt-027', 'ast-lgt-028'].includes(id) ||
       name.includes('stand lighting') ||
-      name.includes('cover beam') ||
-      name.includes('cover parled')
+      name.includes('cover ')
     ) {
       return {
         typeGroup: 'Stand Lighting & Cover Unit',
@@ -1889,7 +1892,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 3. DIVISI MULTIMEDIA (Sheet: INVENTORY STREEMING MAR 2024)
+  // 3. DIVISI MULTIMEDIA (Sheet: INVENTORY STREEMING 2026)
   // ─────────────────────────────────────────────────────────────────────────
   if (asset.division === 'Multimedia') {
     if (
@@ -1911,7 +1914,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     }
 
     if (
-      ['ast-mm-015', 'ast-mm-016'].includes(id) ||
+      ['ast-mm-016'].includes(id) ||
       name.includes('laptop') ||
       name.includes('macbook')
     ) {
@@ -1950,7 +1953,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     }
 
     if (
-      ['ast-mm-004', 'ast-mm-005', 'ast-mm-018', 'ast-mm-019', 'ast-mm-020'].includes(id) ||
+      ['ast-mm-004', 'ast-mm-005', 'ast-mm-015', 'ast-mm-018', 'ast-mm-019', 'ast-mm-020'].includes(id) ||
       name.includes('video capture') ||
       name.includes('video switcher') ||
       name.includes('video recorder') ||
@@ -2022,7 +2025,7 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 4. DIVISI VIDEOTRON / LED (Sheet: INVENTORY LED MAR 2024)
+  // 4. DIVISI VIDEOTRON / LED (Sheet: INVENTORY LED 2026)
   // ─────────────────────────────────────────────────────────────────────────
   if (asset.division === 'Videotron') {
     if (
@@ -2044,10 +2047,11 @@ export function getInventoryAssetTypeInfo(asset: Asset): InventoryAssetTypeInfo 
     }
 
     if (
-      id === 'ast-led-002' ||
+      ['ast-led-002', 'ast-led-003'].includes(id) ||
       name.includes('processor') ||
       name.includes('novastar') ||
-      name.includes('vx6s')
+      name.includes('vx6') ||
+      name.includes('vx1000')
     ) {
       return {
         typeGroup: 'LED Video Processor',
@@ -2145,146 +2149,146 @@ const CANONICAL_ASSET_BASE_COUNTS: Record<
   string,
   { total: number; sheetDamaged: number; sheetDamageNote?: string }
 > = {
-  // 1. Lighting (28 Kelompok)
-  'ast-lgt-001': { total: 2, sheetDamaged: 0 },
-  'ast-lgt-002': { total: 4, sheetDamaged: 0 },
-  'ast-lgt-003': { total: 14, sheetDamaged: 0 },
-  'ast-lgt-004': { total: 8, sheetDamaged: 0 },
-  'ast-lgt-005': { total: 4, sheetDamaged: 0 },
-  'ast-lgt-006': { total: 16, sheetDamaged: 0 },
+  // 1. Lighting 2026 (28 Kelompok)
+  'ast-lgt-001': { total: 24, sheetDamaged: 0 },
+  'ast-lgt-002': { total: 12, sheetDamaged: 0 },
+  'ast-lgt-003': { total: 8, sheetDamaged: 0 },
+  'ast-lgt-004': { total: 13, sheetDamaged: 0 },
+  'ast-lgt-005': { total: 8, sheetDamaged: 0 },
+  'ast-lgt-006': { total: 24, sheetDamaged: 0 },
   'ast-lgt-007': { total: 24, sheetDamaged: 0 },
-  'ast-lgt-008': { total: 12, sheetDamaged: 0 },
-  'ast-lgt-009': { total: 8, sheetDamaged: 0 },
-  'ast-lgt-010': { total: 2, sheetDamaged: 1, sheetDamageNote: '1 Unit Rusak (Sheet Inventaris)' },
-  'ast-lgt-011': { total: 4, sheetDamaged: 0 },
-  'ast-lgt-012': { total: 4, sheetDamaged: 1, sheetDamageNote: '1 Unit Eror (Sheet Inventaris)' },
-  'ast-lgt-013': { total: 3, sheetDamaged: 1, sheetDamageNote: '1 Unit Eror (Sheet Inventaris)' },
-  'ast-lgt-014': { total: 1, sheetDamaged: 0 },
+  'ast-lgt-008': { total: 32, sheetDamaged: 2, sheetDamageNote: '2 Unit Stormy Error (Ready 30 Unit - Sheet Lighting 2026)' },
+  'ast-lgt-009': { total: 20, sheetDamaged: 0 },
+  'ast-lgt-010': { total: 2, sheetDamaged: 0 },
+  'ast-lgt-011': { total: 10, sheetDamaged: 0 },
+  'ast-lgt-012': { total: 5, sheetDamaged: 1, sheetDamageNote: '1 Unit Smoke Machine Rusak (Ready 4 Unit - Sheet Lighting 2026)' },
+  'ast-lgt-013': { total: 4, sheetDamaged: 0 },
+  'ast-lgt-014': { total: 2, sheetDamaged: 0 },
   'ast-lgt-015': { total: 1, sheetDamaged: 0 },
   'ast-lgt-016': { total: 1, sheetDamaged: 0 },
   'ast-lgt-017': { total: 1, sheetDamaged: 0 },
-  'ast-lgt-018': { total: 1, sheetDamaged: 1, sheetDamageNote: '1 Unit Mati Suri (Sheet Inventaris)' },
+  'ast-lgt-018': { total: 1, sheetDamaged: 1, sheetDamageNote: '1 Unit Mati Suri (Sheet Lighting 2026)' },
   'ast-lgt-019': { total: 4, sheetDamaged: 0 },
-  'ast-lgt-020': { total: 3, sheetDamaged: 0 },
+  'ast-lgt-020': { total: 6, sheetDamaged: 0 },
   'ast-lgt-021': { total: 1, sheetDamaged: 0 },
-  'ast-lgt-022': { total: 162, sheetDamaged: 0 },
-  'ast-lgt-023': { total: 70, sheetDamaged: 0 },
+  'ast-lgt-022': { total: 62, sheetDamaged: 0 },
+  'ast-lgt-023': { total: 69, sheetDamaged: 0 },
   'ast-lgt-024': { total: 1, sheetDamaged: 0 },
-  'ast-lgt-025': { total: 36, sheetDamaged: 0 },
-  'ast-lgt-026': { total: 3, sheetDamaged: 0 },
-  'ast-lgt-027': { total: 4, sheetDamaged: 0 },
-  'ast-lgt-028': { total: 24, sheetDamaged: 0 },
+  'ast-lgt-025': { total: 55, sheetDamaged: 0 },
+  'ast-lgt-026': { total: 4, sheetDamaged: 0 },
+  'ast-lgt-027': { total: 26, sheetDamaged: 0 },
+  'ast-lgt-028': { total: 55, sheetDamaged: 0 },
 
-  // 2. Audio / Sound (70 Kelompok)
+  // 2. Audio / Sound 2026 (70 Kelompok • GID 1322035217)
   'ast-aud-001': { total: 4, sheetDamaged: 0 },
-  'ast-aud-002': { total: 8, sheetDamaged: 0 },
-  'ast-aud-003': { total: 1, sheetDamaged: 0 },
-  'ast-aud-004': { total: 3, sheetDamaged: 0 },
-  'ast-aud-005': { total: 8, sheetDamaged: 0 },
+  'ast-aud-002': { total: 24, sheetDamaged: 0 },
+  'ast-aud-003': { total: 4, sheetDamaged: 0 },
+  'ast-aud-004': { total: 2, sheetDamaged: 0 },
+  'ast-aud-005': { total: 16, sheetDamaged: 0 },
   'ast-aud-006': { total: 4, sheetDamaged: 0 },
-  'ast-aud-007': { total: 2, sheetDamaged: 0 },
+  'ast-aud-007': { total: 4, sheetDamaged: 0 },
   'ast-aud-008': { total: 2, sheetDamaged: 0 },
   'ast-aud-009': { total: 2, sheetDamaged: 0 },
   'ast-aud-010': { total: 2, sheetDamaged: 0 },
   'ast-aud-011': { total: 12, sheetDamaged: 0 },
-  'ast-aud-012': { total: 16, sheetDamaged: 0 },
+  'ast-aud-012': { total: 18, sheetDamaged: 0 },
   'ast-aud-013': { total: 2, sheetDamaged: 0 },
-  'ast-aud-014': { total: 1, sheetDamaged: 0 },
+  'ast-aud-014': { total: 2, sheetDamaged: 0 },
   'ast-aud-015': { total: 3, sheetDamaged: 0 },
-  'ast-aud-016': { total: 1, sheetDamaged: 0 },
-  'ast-aud-017': { total: 1, sheetDamaged: 0 },
+  'ast-aud-016': { total: 3, sheetDamaged: 0 },
+  'ast-aud-017': { total: 3, sheetDamaged: 0 },
   'ast-aud-018': { total: 1, sheetDamaged: 0 },
   'ast-aud-019': { total: 4, sheetDamaged: 0 },
-  'ast-aud-020': { total: 1, sheetDamaged: 0 },
+  'ast-aud-020': { total: 2, sheetDamaged: 0 },
   'ast-aud-021': { total: 1, sheetDamaged: 0 },
   'ast-aud-022': { total: 2, sheetDamaged: 0 },
   'ast-aud-023': { total: 1, sheetDamaged: 0 },
   'ast-aud-024': { total: 1, sheetDamaged: 0 },
   'ast-aud-025': { total: 1, sheetDamaged: 0 },
   'ast-aud-026': { total: 1, sheetDamaged: 0 },
-  'ast-aud-027': { total: 2, sheetDamaged: 0 },
-  'ast-aud-028': { total: 1, sheetDamaged: 0 },
-  'ast-aud-029': { total: 2, sheetDamaged: 0 },
-  'ast-aud-030': { total: 1, sheetDamaged: 0 },
-  'ast-aud-031': { total: 1, sheetDamaged: 0 },
-  'ast-aud-032': { total: 13, sheetDamaged: 1, sheetDamageNote: '1 Unit Mati (Sheet Inventaris)' },
-  'ast-aud-033': { total: 4, sheetDamaged: 0 },
-  'ast-aud-034': { total: 13, sheetDamaged: 2, sheetDamageNote: 'Adaptor Mati 1 & 1 Mic Error (Sheet)' },
-  'ast-aud-035': { total: 8, sheetDamaged: 0 },
+  'ast-aud-027': { total: 3, sheetDamaged: 0 },
+  'ast-aud-028': { total: 3, sheetDamaged: 0 },
+  'ast-aud-029': { total: 3, sheetDamaged: 0 },
+  'ast-aud-030': { total: 2, sheetDamaged: 0 },
+  'ast-aud-031': { total: 3, sheetDamaged: 0 },
+  'ast-aud-032': { total: 18, sheetDamaged: 0 },
+  'ast-aud-033': { total: 7, sheetDamaged: 0 },
+  'ast-aud-034': { total: 13, sheetDamaged: 0 },
+  'ast-aud-035': { total: 4, sheetDamaged: 0 },
   'ast-aud-036': { total: 4, sheetDamaged: 0 },
-  'ast-aud-037': { total: 2, sheetDamaged: 0 },
-  'ast-aud-038': { total: 10, sheetDamaged: 2, sheetDamageNote: '2 Unit Tengek (Sheet Inventaris)' },
-  'ast-aud-039': { total: 18, sheetDamaged: 0 },
-  'ast-aud-040': { total: 13, sheetDamaged: 1, sheetDamageNote: '1 Unit Mati (Sheet Inventaris)' },
+  'ast-aud-037': { total: 4, sheetDamaged: 0 },
+  'ast-aud-038': { total: 25, sheetDamaged: 0 },
+  'ast-aud-039': { total: 22, sheetDamaged: 4, sheetDamageNote: '4 Unit SM58 Hilang (Sheet Sound 2026)' },
+  'ast-aud-040': { total: 13, sheetDamaged: 0 },
   'ast-aud-041': { total: 3, sheetDamaged: 0 },
-  'ast-aud-042': { total: 6, sheetDamaged: 2, sheetDamageNote: '2 Unit Rusak (Sheet Inventaris)' },
+  'ast-aud-042': { total: 7, sheetDamaged: 0 },
   'ast-aud-043': { total: 2, sheetDamaged: 0 },
   'ast-aud-044': { total: 7, sheetDamaged: 0 },
-  'ast-aud-045': { total: 5, sheetDamaged: 0 },
-  'ast-aud-046': { total: 2, sheetDamaged: 0 },
-  'ast-aud-047': { total: 10, sheetDamaged: 2, sheetDamageNote: '2 Unit Rusak (Sheet Inventaris)' },
-  'ast-aud-048': { total: 15, sheetDamaged: 1, sheetDamageNote: '1 Unit Rusak (Sheet Inventaris)' },
-  'ast-aud-049': { total: 3, sheetDamaged: 0 },
+  'ast-aud-045': { total: 13, sheetDamaged: 0 },
+  'ast-aud-046': { total: 9, sheetDamaged: 0 },
+  'ast-aud-047': { total: 8, sheetDamaged: 0 },
+  'ast-aud-048': { total: 18, sheetDamaged: 0 },
+  'ast-aud-049': { total: 22, sheetDamaged: 0 },
   'ast-aud-050': { total: 3, sheetDamaged: 0 },
-  'ast-aud-051': { total: 4, sheetDamaged: 0 },
-  'ast-aud-052': { total: 4, sheetDamaged: 0 },
-  'ast-aud-053': { total: 4, sheetDamaged: 0 },
-  'ast-aud-054': { total: 3, sheetDamaged: 0 },
-  'ast-aud-055': { total: 4, sheetDamaged: 0 },
-  'ast-aud-056': { total: 2, sheetDamaged: 0 },
-  'ast-aud-057': { total: 3, sheetDamaged: 0 },
-  'ast-aud-058': { total: 8, sheetDamaged: 0 },
-  'ast-aud-059': { total: 280, sheetDamaged: 2, sheetDamageNote: '2 Unit XLR Rusak (Sheet Inventaris)' },
-  'ast-aud-060': { total: 60, sheetDamaged: 0 },
-  'ast-aud-061': { total: 11, sheetDamaged: 0 },
-  'ast-aud-062': { total: 27, sheetDamaged: 0 },
-  'ast-aud-063': { total: 30, sheetDamaged: 3, sheetDamageNote: '3 Unit MS33B Rusak (Sheet Inventaris)' },
-  'ast-aud-064': { total: 5, sheetDamaged: 0 },
-  'ast-aud-065': { total: 8, sheetDamaged: 0 },
-  'ast-aud-066': { total: 6, sheetDamaged: 2, sheetDamageNote: '1 Single Hilang & 1 Double Aus (Sheet)' },
-  'ast-aud-067': { total: 1, sheetDamaged: 1, sheetDamageNote: '1 Unit Hilang (Sheet Inventaris)' },
-  'ast-aud-068': { total: 106, sheetDamaged: 0 },
-  'ast-aud-069': { total: 6, sheetDamaged: 0 },
+  'ast-aud-051': { total: 15, sheetDamaged: 0 },
+  'ast-aud-052': { total: 7, sheetDamaged: 0 },
+  'ast-aud-053': { total: 9, sheetDamaged: 0 },
+  'ast-aud-054': { total: 6, sheetDamaged: 0 },
+  'ast-aud-055': { total: 10, sheetDamaged: 0 },
+  'ast-aud-056': { total: 5, sheetDamaged: 0 },
+  'ast-aud-057': { total: 4, sheetDamaged: 0 },
+  'ast-aud-058': { total: 11, sheetDamaged: 0 },
+  'ast-aud-059': { total: 335, sheetDamaged: 0 },
+  'ast-aud-060': { total: 58, sheetDamaged: 0 },
+  'ast-aud-061': { total: 37, sheetDamaged: 0 },
+  'ast-aud-062': { total: 24, sheetDamaged: 0 },
+  'ast-aud-063': { total: 54, sheetDamaged: 0 },
+  'ast-aud-064': { total: 7, sheetDamaged: 0 },
+  'ast-aud-065': { total: 12, sheetDamaged: 0 },
+  'ast-aud-066': { total: 6, sheetDamaged: 0 },
+  'ast-aud-067': { total: 26, sheetDamaged: 0 },
+  'ast-aud-068': { total: 131, sheetDamaged: 0 },
+  'ast-aud-069': { total: 12, sheetDamaged: 0 },
   'ast-aud-070': { total: 26, sheetDamaged: 0 },
 
-  // 3. Multimedia (26 Kelompok)
+  // 3. Multimedia / Streaming 2026 (26 Kelompok)
   'ast-mm-001': { total: 1, sheetDamaged: 0 },
   'ast-mm-002': { total: 1, sheetDamaged: 0 },
   'ast-mm-003': { total: 1, sheetDamaged: 0 },
   'ast-mm-004': { total: 5, sheetDamaged: 0 },
-  'ast-mm-005': { total: 8, sheetDamaged: 1, sheetDamageNote: '1 Unit Ezcap HD60 Rusak (Sheet)' },
-  'ast-mm-006': { total: 5, sheetDamaged: 1, sheetDamageNote: '1 Unit UMC202HD Rusak (Sheet)' },
-  'ast-mm-007': { total: 4, sheetDamaged: 0 },
-  'ast-mm-008': { total: 4, sheetDamaged: 2, sheetDamageNote: '2 Unit Kamera Hilang/Diganti (Sheet)' },
-  'ast-mm-009': { total: 4, sheetDamaged: 0 },
-  'ast-mm-010': { total: 3, sheetDamaged: 0 },
-  'ast-mm-011': { total: 10, sheetDamaged: 0 },
-  'ast-mm-012': { total: 3, sheetDamaged: 0 },
-  'ast-mm-013': { total: 6, sheetDamaged: 0 },
+  'ast-mm-005': { total: 6, sheetDamaged: 0 },
+  'ast-mm-006': { total: 4, sheetDamaged: 0 },
+  'ast-mm-007': { total: 2, sheetDamaged: 1, sheetDamageNote: '1 Unit Hardwell Optimus 4 Rusak (Sheet Streaming 2026)' },
+  'ast-mm-008': { total: 4, sheetDamaged: 0 },
+  'ast-mm-009': { total: 5, sheetDamaged: 0 },
+  'ast-mm-010': { total: 7, sheetDamaged: 0 },
+  'ast-mm-011': { total: 9, sheetDamaged: 0 },
+  'ast-mm-012': { total: 4, sheetDamaged: 0 },
+  'ast-mm-013': { total: 1, sheetDamaged: 0 },
   'ast-mm-014': { total: 4, sheetDamaged: 0 },
-  'ast-mm-015': { total: 4, sheetDamaged: 0 },
-  'ast-mm-016': { total: 7, sheetDamaged: 0 },
-  'ast-mm-017': { total: 44, sheetDamaged: 4, sheetDamageNote: '4 Unit Clamp Backdrop Hilang (Sheet)' },
-  'ast-mm-018': { total: 5, sheetDamaged: 0 },
-  'ast-mm-019': { total: 3, sheetDamaged: 0 },
+  'ast-mm-015': { total: 3, sheetDamaged: 0 },
+  'ast-mm-016': { total: 3, sheetDamaged: 0 },
+  'ast-mm-017': { total: 50, sheetDamaged: 0 },
+  'ast-mm-018': { total: 3, sheetDamaged: 0 },
+  'ast-mm-019': { total: 2, sheetDamaged: 0 },
   'ast-mm-020': { total: 2, sheetDamaged: 0 },
-  'ast-mm-021': { total: 2, sheetDamaged: 1, sheetDamageNote: '1 Set Eartec UL5D Rusak (Sheet)' },
-  'ast-mm-022': { total: 5, sheetDamaged: 0 },
-  'ast-mm-023': { total: 14, sheetDamaged: 2, sheetDamageNote: '2 Unit Vention Splitter Rusak (Sheet)' },
-  'ast-mm-024': { total: 22, sheetDamaged: 1, sheetDamageNote: '1 Unit DP-HDMI Rusak (Sheet)' },
-  'ast-mm-025': { total: 82, sheetDamaged: 2, sheetDamageNote: '2 Unit HDMI FO Rusak (Sheet)' },
-  'ast-mm-026': { total: 7, sheetDamaged: 3, sheetDamageNote: '3 Unit Smart TV 42" Rusak (Sheet)' },
+  'ast-mm-021': { total: 12, sheetDamaged: 2, sheetDamageNote: '2 Unit Eartec UL5D Rusak (Sheet Streaming 2026)' },
+  'ast-mm-022': { total: 3, sheetDamaged: 1, sheetDamageNote: '1 Unit UPS APC 1200VA Rusak (Sheet Streaming 2026)' },
+  'ast-mm-023': { total: 8, sheetDamaged: 0 },
+  'ast-mm-024': { total: 32, sheetDamaged: 4, sheetDamageNote: '1 DP-HDMI & 3 MPOW Isolator Rusak (Sheet Streaming 2026)' },
+  'ast-mm-025': { total: 106, sheetDamaged: 12, sheetDamageNote: '6 HDMI & 6 LAN Vention Rusak/Hilang (Sheet Streaming 2026)' },
+  'ast-mm-026': { total: 22, sheetDamaged: 3, sheetDamageNote: '1 Coocaa 50" & 2 Coocaa 42" Rusak (Sheet Streaming 2026)' },
 
-  // 4. Videotron / LED (9 Kelompok)
-  'ast-led-001': { total: 30, sheetDamaged: 0 },
-  'ast-led-002': { total: 2, sheetDamaged: 0 },
-  'ast-led-003': { total: 5, sheetDamaged: 0 },
-  'ast-led-004': { total: 60, sheetDamaged: 0 },
-  'ast-led-005': { total: 79, sheetDamaged: 0 },
-  'ast-led-006': { total: 51, sheetDamaged: 0 },
-  'ast-led-007': { total: 9, sheetDamaged: 0 },
-  'ast-led-008': { total: 26, sheetDamaged: 0 },
-  'ast-led-009': { total: 6, sheetDamaged: 0 }
+  // 4. Videotron / LED 2026 (9 Kelompok)
+  'ast-led-001': { total: 40, sheetDamaged: 0 },
+  'ast-led-002': { total: 8, sheetDamaged: 0 },
+  'ast-led-003': { total: 24, sheetDamaged: 0 },
+  'ast-led-004': { total: 80, sheetDamaged: 1, sheetDamageNote: '1 Unit Bracket LED Hilang Penyodok (Sheet LED 2026)' },
+  'ast-led-005': { total: 327, sheetDamaged: 1, sheetDamageNote: '1 Unit Tiang Frame 1M Patah (Sheet LED 2026)' },
+  'ast-led-006': { total: 81, sheetDamaged: 0 },
+  'ast-led-007': { total: 24, sheetDamaged: 2, sheetDamageNote: '2 Unit HDMI Armored 100M Rusak (Sheet LED 2026)' },
+  'ast-led-008': { total: 59, sheetDamaged: 1, sheetDamageNote: '1 Unit LAN Neutrik 100M Hilang (Sheet LED 2026)' },
+  'ast-led-009': { total: 77, sheetDamaged: 1, sheetDamageNote: '1 Unit Panel Listrik 12 Port Check R (Sheet LED 2026)' }
 };
 
 export interface InventoryAssetAvailability {
@@ -2443,14 +2447,14 @@ export function calculateInventoryAssetAvailability(
         assignedReasons.push(`Job ${job.venue}: ${qty} Unit`);
       }
     } else if (id === 'ast-aud-002') {
-      const m = allEqText.match(/\bhdl(?:\s*20)?\s+(\d+)/i);
+      const m = allEqText.match(/\b(?:hdl(?:\s*20)?|avanda\s*210)\s+(\d+)/i);
       if (m) {
         const qty = parseInt(m[1], 10);
         assignedUnits += qty;
         assignedReasons.push(`Job ${job.venue}: ${qty} Unit`);
       }
     } else if (id === 'ast-aud-005') {
-      const m = allEqText.match(/\bsub\s+double\s+(\d+)/i);
+      const m = allEqText.match(/\b(?:sub\s+double|avanda\s*218a?|sub\s+kla)\s+(\d+)/i);
       if (m) {
         const qty = parseInt(m[1], 10);
         assignedUnits += qty;
@@ -2610,8 +2614,18 @@ export function calculateInventoryAssetAvailability(
       );
       if (hasInternalLed) {
         assignedUnits += 1;
-        assignedReasons.push(`Job ${job.venue}: 1 Unit Processor VX6s`);
+        assignedReasons.push(`Job ${job.venue}: 1 Unit Processor NovaStar`);
       }
+    }
+
+    // Pencocokan dinamis untuk unit yang dipilih dari daftar Inventory [AST-...] pada Jadwal Penugasan
+    if (asset.code && allEqText.toUpperCase().includes(`[${asset.code.toUpperCase()}]`)) {
+      const escapedCode = asset.code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const codeRegex = new RegExp(`\\[${escapedCode}\\][^,]*?\\((\\d+)\\s*Unit\\)`, 'i');
+      const codeMatch = allEqText.match(codeRegex);
+      const dynamicQty = codeMatch ? Math.max(1, parseInt(codeMatch[1], 10)) : 1;
+      assignedUnits += dynamicQty;
+      assignedReasons.push(`Job ${job.venue}: ${dynamicQty} Unit`);
     }
   }
 

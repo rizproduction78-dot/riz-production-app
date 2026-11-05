@@ -271,12 +271,12 @@ Seluruh agen pembangun wajib mematuhi registrasi eksekusi dan memori kerja terba
     - **Aturan Urutan & Sinkronisasi Armada:** Seluruh riwayat servis resmi (`maintenanceHistory`) wajib disusun dari **tanggal, bulan, tahun aktual terkini di posisi paling atas** (descending) menggunakan `sortMaintenanceHistoryDesc` dan `formatServiceDateIndonesian` di `src/data.ts`. Fungsi `normalizeVehiclesMaster` wajib menjaga keutuhan 7 unit armada resmi ini di seluruh cache `localStorage` (`riz_master_vehicles`) dan Cloud Sync (`master_vehicles`), serta memblokir plat fiktif/usang (`B 9331 JXQ`, dll.).
 
 19. **Komit Mutlak: Sumber Resmi Master Inventaris Alat & Aset Gudang PT. Riz Production Multi Kreasi:**
-    - **URL Google Sheet Inventaris Resmi:** `https://docs.google.com/spreadsheets/d/1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O/edit?usp=sharing`
-    - **Spreadsheet ID Resmi:** `1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O`
+    - **URL Google Sheet Inventaris Resmi (2026):** `https://docs.google.com/spreadsheets/d/18UHbZsqbaE66mmpjF37p97wNmM5EheDzyx4lmOOWshk/edit?gid=1322035217#gid=1322035217` (Mirror: `1lZ9Ja-GWY7BMn7l9uUM4p5Q97DXeKy0O`)
+    - **Spreadsheet ID Resmi:** `18UHbZsqbaE66mmpjF37p97wNmM5EheDzyx4lmOOWshk`
     - **Daftar 4 Tab Inventaris Resmi (`INITIAL_INVENTORY_ASSETS` / `INITIAL_ASSETS` — 133 Kelompok Aset):**
-      1. **Divisi Lighting (`Inventory LIGHTING MAR 2024`)**: 28 kelompok aset (`AST-LGT-001` s/d `AST-LGT-028`, Total Nilai: Rp 220.600.000).
-      2. **Divisi Audio / Sound (`Inventory SOUND MAR 2024`)**: 70 kelompok aset (`AST-AUD-001` s/d `AST-AUD-070`, Total Nilai: Rp 486.950.000).
-      3. **Divisi Multimedia / Streaming (`INVENTORY STREEMING MAR 2024`)**: 26 kelompok aset (`AST-MM-001` s/d `AST-MM-026`, Total Nilai: Rp 339.848.000).
-      4. **Divisi Videotron / LED (`INVENTORY LED MAR 2024`)**: 9 kelompok aset (`AST-LED-001` s/d `AST-LED-009`, LED Hybrid P3.9 60 Meter / 30 Box + NovaStar VX6s + Rigging & Cabling).
-    - **Aturan Sinkronisasi Master Aset:** Fungsi `normalizeAssetsMaster` di `src/data.ts` dan `normalizeCollectionItems('assets', ...)` di `src/lib/cloudSync.ts` wajib menjaga keutuhan 133 kelompok aset inventaris resmi ini di seluruh modul Gudang (`Gudang.tsx`), Panel Admin (`AdminPanel.tsx`), `localStorage` (`riz_assets`), dan Supabase (`assets`).
+      1. **Divisi Lighting (`Inventory LIGHTING 2026`, GID `1322035217`)**: 28 kelompok aset (`AST-LGT-001` s/d `AST-LGT-028`, Total 439 Unit).
+      2. **Divisi Audio / Sound (`Inventory SOUND 2026`, GID `198377050`)**: 70 kelompok aset (`AST-AUD-001` s/d `AST-AUD-070`, Total 928 Unit).
+      3. **Divisi Multimedia / Streaming (`INVENTORY STREEMING 2026`, GID `237306808`)**: 26 kelompok aset (`AST-MM-001` s/d `AST-MM-026`, Total 269 Unit).
+      4. **Divisi Videotron / LED (`INVENTORY LED 2026`, GID `1693748384`)**: 9 kelompok aset (`AST-LED-001` s/d `AST-LED-009`, LED Hybrid P3.9 70 Meter / 35 Box + NovaStar VX6s + Rigging & Cabling, Total 318 Unit).
+    - **Aturan Sinkronisasi Master Aset:** Fungsi `normalizeAssetsMaster` di `src/data.ts` dan `normalizeCollectionItems('assets', ...)` di `src/lib/cloudSync.ts` wajib menjaga keutuhan 133 kelompok aset inventaris resmi 2026 ini di seluruh modul Gudang (`Gudang.tsx`), Panel Admin (`AdminPanel.tsx`), `localStorage` (`riz_assets`), dan Supabase (`assets`).
 
