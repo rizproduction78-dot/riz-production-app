@@ -71,10 +71,19 @@ import {
 } from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc, deleteCloudDoc, pushCollectionToCloud } from '../lib/cloudSync';
 import {
+  OFFICIAL_GOOGLE_CALENDAR_ID,
+  OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL,
+  OFFICIAL_GOOGLE_CALENDAR_EMBED_URL,
+  GoogleCalendarConnectionConfig,
+  getGoogleCalendarSyncConfig,
+  saveGoogleCalendarSyncConfig,
   buildGoogleCalendarEventUrl,
   buildGoogleCalendarSectionEventUrl,
   downloadJobAssignmentsIcs,
-  parseGoogleCalendarIcsToJobAssignments
+  parseGoogleCalendarIcsToJobAssignments,
+  pushJobAssignmentToGoogleCalendarLive,
+  syncAllJobAssignmentsToGoogleCalendar,
+  pullJobAssignmentsFromGoogleCalendarLive
 } from '../lib/googleCalendarSync';
 import {
   startUniversalCameraStream,
@@ -500,6 +509,20 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   const [jobFormEquipmentText, setJobFormEquipmentText] = useState<string>('');
   const [jobFormCrewText, setJobFormCrewText] = useState<string>('');
   const [jobFormVehiclesText, setJobFormVehiclesText] = useState<string>('');
+  const [jobFormOpenGcalOnSave, setJobFormOpenGcalOnSave] = useState<boolean>(true);
+
+  // Google Calendar Live Connection & Interactive Calendar Grid states
+  const [gcalConfig, setGcalConfig] = useState<GoogleCalendarConnectionConfig>(() =>
+    getGoogleCalendarSyncConfig()
+  );
+  const [showGcalSyncPanel, setShowGcalSyncPanel] = useState<boolean>(false);
+  const [showGcalVisualCalendar, setShowGcalVisualCalendar] = useState<boolean>(false);
+  const [isSyncingGcal, setIsSyncingGcal] = useState<boolean>(false);
+  const [gcalSyncFeedback, setGcalSyncFeedback] = useState<{
+    type: 'success' | 'info' | 'warning';
+    text: string;
+    importUrl?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (activeMonth === '2026-11' || activeMonth === '2026-12') {
@@ -566,6 +589,9 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       return sorted;
     });
     saveCloudDoc('job_assignments', finalJob.id, finalJob, currentUser.name);
+    if (gcalConfig.autoSyncOnSave) {
+      pushJobAssignmentToGoogleCalendarLive(finalJob, gcalConfig).catch(() => {});
+    }
     if (activityMessage) {
       onLogActivity(currentUser.name, currentUser.role, activityMessage);
     }
@@ -982,6 +1008,99 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       `${editingJobId ? 'Memperbarui' : 'Menambahkan'} Jadwal Penugasan Job: ${finalJob.dateLabel} (PIC: ${finalJob.pic})`
     );
     setShowJobFormModal(false);
+
+    if (jobFormOpenGcalOnSave && typeof window !== 'undefined') {
+      const gcalEventUrl = buildGoogleCalendarEventUrl(finalJob);
+      window.open(gcalEventUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleSyncAllToGoogleCalendar = async (jobsToSync: JobAssignment[]) => {
+    if (jobsToSync.length === 0) return;
+    setIsSyncingGcal(true);
+    try {
+      const activePersonName =
+        jobSelectedStaffId !== 'ALL'
+          ? (staffList.find(s => s.id === jobSelectedStaffId)?.name || 'ALL')
+          : jobSelectedFreelanceName !== 'ALL'
+            ? jobSelectedFreelanceName
+            : 'ALL';
+      const activePersonType =
+        jobSelectedStaffId !== 'ALL'
+          ? ('Staff' as const)
+          : jobSelectedFreelanceName !== 'ALL'
+            ? ('Freelance' as const)
+            : undefined;
+
+      const res = await syncAllJobAssignmentsToGoogleCalendar(
+        jobsToSync,
+        {
+          filterPersonName: activePersonName,
+          filterPersonType: activePersonType,
+          filterDivision: jobDivisionFilter
+        },
+        gcalConfig
+      );
+      setGcalConfig(getGoogleCalendarSyncConfig());
+      setGcalSyncFeedback({
+        type: res.mode === 'ics_import' ? 'info' : 'success',
+        text: res.message,
+        importUrl: res.importUrl
+      });
+      onLogActivity(
+        currentUser.name,
+        currentUser.role,
+        `Menyinkronkan ${res.syncedCount} jadwal event ke Google Calendar (${gcalConfig.calendarId})`
+      );
+      if (res.mode === 'ics_import' && typeof window !== 'undefined') {
+        window.open(OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL, '_blank', 'noopener,noreferrer');
+      }
+    } finally {
+      setIsSyncingGcal(false);
+    }
+  };
+
+  const handlePullLiveFromGoogleCalendar = async () => {
+    setIsSyncingGcal(true);
+    try {
+      const res = await pullJobAssignmentsFromGoogleCalendarLive(gcalConfig);
+      setGcalConfig(getGoogleCalendarSyncConfig());
+      if (res.ok && res.jobs.length > 0) {
+        setJobAssignments(prev => {
+          const map = new Map<string, JobAssignment>(prev.map(j => [j.id, j]));
+          res.jobs.forEach(imp => {
+            map.set(imp.id, { ...imp, _userEdited: true });
+          });
+          const sorted = Array.from(map.values()).sort((a, b) =>
+            String(a.date || '').localeCompare(String(b.date || ''))
+          );
+          try {
+            localStorage.setItem('riz_job_assignments_v1', JSON.stringify(sorted));
+          } catch {}
+          return sorted;
+        });
+        res.jobs.forEach(imp => {
+          saveCloudDoc('job_assignments', imp.id, { ...imp, _userEdited: true }, currentUser.name);
+        });
+        setGcalSyncFeedback({
+          type: 'success',
+          text: res.message
+        });
+        onLogActivity(
+          currentUser.name,
+          currentUser.role,
+          `Menarik & menyinkronkan ${res.jobs.length} jadwal event dari Google Calendar (${gcalConfig.calendarId})`
+        );
+      } else {
+        setGcalSyncFeedback({
+          type: res.ok ? 'info' : 'warning',
+          text: res.message,
+          importUrl: OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL
+        });
+      }
+    } finally {
+      setIsSyncingGcal(false);
+    }
   };
 
   const handleUpdateJobStatus = (job: JobAssignment, nextStatus: JobAssignment['status']) => {
@@ -2455,33 +2574,27 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => {
-                        const activePersonName = selectedStaffObj
-                          ? selectedStaffObj.name
-                          : selectedFreelanceObj
-                            ? selectedFreelanceObj.name
-                            : 'ALL';
-                        const activePersonType = selectedStaffObj
-                          ? ('Staff' as const)
-                          : selectedFreelanceObj
-                            ? ('Freelance' as const)
-                            : undefined;
-                        downloadJobAssignmentsIcs(filteredJobs, {
-                          filterPersonName: activePersonName,
-                          filterPersonType: activePersonType,
-                          filterDivision: jobDivisionFilter
-                        });
-                        onLogActivity(
-                          currentUser.name,
-                          currentUser.role,
-                          `Mengunduh & menyinkronkan ${filteredJobs.length} jadwal penugasan ke Google Calendar (.ics) untuk ${activePersonName === 'ALL' ? 'Semua Staff & Freelance' : activePersonName}`
-                        );
-                      }}
-                      className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-                      title="Unduh file Google Calendar (.ics) untuk disinkronkan ke Google Calendar HP / Tablet / Laptop"
+                      disabled={isSyncingGcal}
+                      onClick={() => handleSyncAllToGoogleCalendar(filteredJobs)}
+                      className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-60"
+                      title={`Sinkronkan seluruh ${filteredJobs.length} jadwal event ke Google Calendar (${gcalConfig.calendarId})`}
                     >
-                      <Calendar className="w-3.5 h-3.5 text-slate-950" />
-                      <span>Sync Google Calendar ({filteredJobs.length} Job .ics)</span>
+                      <Calendar className={`w-3.5 h-3.5 text-slate-950 ${isSyncingGcal ? 'animate-spin' : ''}`} />
+                      <span>
+                        {isSyncingGcal
+                          ? 'Menyinkronkan...'
+                          : `Sync ke Google Calendar (${filteredJobs.length} Job)`}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSyncingGcal}
+                      onClick={handlePullLiveFromGoogleCalendar}
+                      className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-60"
+                      title={`Tarik jadwal event live dari Google Calendar (${gcalConfig.calendarId})`}
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 text-slate-950 ${isSyncingGcal ? 'animate-spin' : ''}`} />
+                      <span>Tarik dari Google Calendar</span>
                     </button>
                     {canManageJobSchedule && (
                       <label
@@ -2489,7 +2602,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                         title="Impor jadwal penugasan dari file Google Calendar (.ics)"
                       >
                         <RefreshCw className="w-3.5 h-3.5 text-amber-300" />
-                        <span>Impor Google Calendar (.ics)</span>
+                        <span>Impor File (.ics)</span>
                         <input
                           type="file"
                           accept=".ics,text/calendar"
@@ -2498,41 +2611,31 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                         />
                       </label>
                     )}
-                    <a
-                      href={
-                        filteredJobs.length > 0
-                          ? buildGoogleCalendarEventUrl(filteredJobs[0], {
-                              filterPersonName: selectedStaffObj
-                                ? selectedStaffObj.name
-                                : selectedFreelanceObj
-                                  ? selectedFreelanceObj.name
-                                  : 'ALL',
-                              filterPersonType: selectedStaffObj
-                                ? 'Staff'
-                                : selectedFreelanceObj
-                                  ? 'Freelance'
-                                  : undefined,
-                              filterDivision: jobDivisionFilter
-                            })
-                          : OFFICIAL_GOOGLE_CALENDAR_WEB_URL
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-2 bg-sky-600/40 hover:bg-sky-600/60 text-sky-100 border border-sky-400/50 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-                      title="Buka & tambahkan jadwal penugasan ke Google Calendar"
+                    <button
+                      type="button"
+                      onClick={() => setShowGcalVisualCalendar(prev => !prev)}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors border ${
+                        showGcalVisualCalendar
+                          ? 'bg-sky-500 text-slate-950 border-sky-300 font-black'
+                          : 'bg-sky-600/40 hover:bg-sky-600/60 text-sky-100 border-sky-400/50'
+                      }`}
+                      title="Tampilkan Kalender Bulanan Event & Embed Google Calendar"
                     >
-                      <Calendar className="w-3.5 h-3.5 text-sky-300" />
-                      <span>Buka Google Calendar ↗</span>
-                    </a>
-                    <a
-                      href={OFFICIAL_ARMADA_SPREADSHEET_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-100 border border-emerald-400/40 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{showGcalVisualCalendar ? 'Tutup Kalender Visual' : 'Lihat Kalender Event'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowGcalSyncPanel(prev => !prev)}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors border ${
+                        showGcalSyncPanel
+                          ? 'bg-white text-indigo-950 border-white font-black'
+                          : 'bg-white/10 hover:bg-white/20 text-indigo-100 border-white/20'
+                      }`}
+                      title="Pengaturan Akun & Auto-Sync Google Calendar"
                     >
-                      <Truck className="w-3.5 h-3.5 text-emerald-300" />
-                      <span>Sheet Armada Resmi ↗</span>
-                    </a>
+                      <span>⚙️ Koneksi GCal ({gcalConfig.calendarId.split('@')[0]})</span>
+                    </button>
                     {canManageJobSchedule && (
                       <button
                         type="button"
@@ -2545,6 +2648,267 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                     )}
                   </div>
                 </div>
+
+                {/* Feedback Banner Sinkronisasi Google Calendar */}
+                {gcalSyncFeedback && (
+                  <div
+                    className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+                      gcalSyncFeedback.type === 'success'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                        : gcalSyncFeedback.type === 'warning'
+                          ? 'bg-amber-50 border-amber-300 text-amber-900'
+                          : 'bg-sky-50 border-sky-300 text-sky-900'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <Calendar className="w-4 h-4 shrink-0 mt-0.5 text-indigo-600" />
+                      <div>
+                        <div className="font-black uppercase tracking-wide text-[11px]">
+                          Status Sinkronisasi Google Calendar ({gcalConfig.calendarId})
+                        </div>
+                        <p className="font-semibold mt-0.5">{gcalSyncFeedback.text}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {gcalSyncFeedback.importUrl && (
+                        <a
+                          href={gcalSyncFeedback.importUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-black text-xs flex items-center gap-1"
+                        >
+                          <span>Buka Impor Google Calendar ↗</span>
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setGcalSyncFeedback(null)}
+                        className="px-2 py-1 bg-white/80 hover:bg-white rounded border border-slate-300 text-slate-600 font-bold cursor-pointer"
+                      >
+                        Tutup
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Panel Konfigurasi Koneksi Live Google Calendar */}
+                {showGcalSyncPanel && (
+                  <div className="p-4 bg-white border-2 border-indigo-500 rounded-xl shadow-md space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4 text-indigo-600" />
+                          <span>Konfigurasi Sinkronisasi Dua Arah Google Calendar ({gcalConfig.calendarId})</span>
+                        </h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Hubungkan akun Google Calendar resmi agar seluruh jadwal event, kru staff/freelance, alat, dan armada tersinkronisasi otomatis.
+                        </p>
+                      </div>
+                      {gcalConfig.lastSyncedAt && (
+                        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-[10px] font-mono font-bold">
+                          Terakhir Sync: {new Date(gcalConfig.lastSyncedAt).toLocaleString('id-ID')} ({gcalConfig.lastSyncCount || 0} Event)
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          ID Google Calendar Resmi (Email / Calendar ID)
+                        </label>
+                        <input
+                          type="text"
+                          value={gcalConfig.calendarId}
+                          onChange={(e) => {
+                            const updated = saveGoogleCalendarSyncConfig({ calendarId: e.target.value });
+                            setGcalConfig(updated);
+                          }}
+                          placeholder="rizproduction78@gmail.com"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs font-bold text-slate-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          URL Feed iCal Google Calendar (.ics Public / Secret Address)
+                        </label>
+                        <input
+                          type="text"
+                          value={gcalConfig.icalFeedUrl}
+                          onChange={(e) => {
+                            const updated = saveGoogleCalendarSyncConfig({ icalFeedUrl: e.target.value });
+                            setGcalConfig(updated);
+                          }}
+                          placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs text-slate-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          Google OAuth Access Token / Webhook URL (Opsional Push Langsung)
+                        </label>
+                        <input
+                          type="password"
+                          value={gcalConfig.accessToken || ''}
+                          onChange={(e) => {
+                            const updated = saveGoogleCalendarSyncConfig({ accessToken: e.target.value });
+                            setGcalConfig(updated);
+                          }}
+                          placeholder="ya29.a0... (Token Google Calendar API v3)"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs text-slate-800"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                      <label className="inline-flex items-center gap-2 font-bold text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={gcalConfig.autoSyncOnSave}
+                          onChange={(e) => {
+                            const updated = saveGoogleCalendarSyncConfig({ autoSyncOnSave: e.target.checked });
+                            setGcalConfig(updated);
+                          }}
+                          className="rounded border-slate-300 text-indigo-600"
+                        />
+                        <span>Otomatis sinkronkan setiap perubahan jadwal penugasan ke Google Calendar</span>
+                      </label>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <a
+                          href={OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg font-bold flex items-center gap-1"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Halaman Impor Google Calendar ↗</span>
+                        </a>
+                        <a
+                          href={OFFICIAL_GOOGLE_CALENDAR_WEB_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 rounded-lg font-bold flex items-center gap-1"
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Buka Google Calendar ({gcalConfig.calendarId}) ↗</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tampilan Kalender Visual Event & Live Embed Google Calendar */}
+                {showGcalVisualCalendar && (
+                  <div className="p-4 bg-white border-2 border-sky-500 rounded-xl shadow-md space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                      <div>
+                        <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-sky-600" />
+                          <span>
+                            Kalender Visual Event & Integrasi Google Calendar ({jobMonthFilter === '2026-12' ? 'Desember 2026' : 'November 2026'})
+                          </span>
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          Klik tombol <strong>+ GCal</strong> pada tanggal mana pun untuk langsung menyimpan event ke Google Calendar ({gcalConfig.calendarId}).
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSyncAllToGoogleCalendar(filteredJobs)}
+                          className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Sync Semua ({filteredJobs.length} Event) ke Google Calendar</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Grid Kalender Hari 1 - 30/31 */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                      {Array.from(
+                        { length: jobMonthFilter === '2026-12' ? 31 : 30 },
+                        (_, idx) => idx + 1
+                      ).map(dayNum => {
+                        const targetPrefix = `${jobMonthFilter === 'ALL' ? '2026-11' : jobMonthFilter}-${String(dayNum).padStart(2, '0')}`;
+                        const dayJobs = filteredJobs.filter(j => j.date === targetPrefix);
+                        return (
+                          <div
+                            key={dayNum}
+                            className={`p-2.5 rounded-xl border min-h-24 flex flex-col justify-between transition-all ${
+                              dayJobs.length > 0
+                                ? 'bg-indigo-50/60 border-indigo-300 shadow-2xs'
+                                : 'bg-slate-50/50 border-slate-200 opacity-75'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-mono font-black text-slate-700">
+                                Tgl {dayNum}
+                              </span>
+                              {dayJobs.length > 0 && (
+                                <span className="px-1.5 py-0.2 bg-indigo-600 text-white rounded-full text-[9px] font-mono font-black">
+                                  {dayJobs.length} Event
+                                </span>
+                              )}
+                            </div>
+                            <div className="space-y-1.5 mt-2">
+                              {dayJobs.length === 0 ? (
+                                <div className="text-[10px] text-slate-400 italic">Standby Gudang</div>
+                              ) : (
+                                dayJobs.map(dj => (
+                                  <div
+                                    key={dj.id}
+                                    className="p-1.5 bg-white border border-indigo-200 rounded-lg text-[10px] space-y-1 shadow-2xs"
+                                  >
+                                    <div className="font-black text-slate-900 truncate" title={dj.venue}>
+                                      📍 {dj.venue}
+                                    </div>
+                                    <div className="text-[9px] text-slate-500 truncate">
+                                      PIC: {dj.pic} • {dj.sections.reduce((acc, s) => acc + s.crew.length, 0)} Kru
+                                    </div>
+                                    <a
+                                      href={buildGoogleCalendarEventUrl(dj)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="w-full py-0.5 px-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[9px] inline-flex items-center justify-center gap-1"
+                                    >
+                                      <Calendar className="w-2.5 h-2.5" />
+                                      <span>+ Sync ke GCal ↗</span>
+                                    </a>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Live Google Calendar iframe embed for rizproduction78@gmail.com */}
+                    <div className="pt-3 border-t border-slate-200 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span className="font-black text-slate-700 uppercase font-mono text-[10px]">
+                          Live Google Calendar Embed ({gcalConfig.calendarId}):
+                        </span>
+                        <a
+                          href={OFFICIAL_GOOGLE_CALENDAR_EMBED_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:underline font-bold text-[11px]"
+                        >
+                          Buka Layar Penuh Google Calendar ↗
+                        </a>
+                      </div>
+                      <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 h-80">
+                        <iframe
+                          title={`Google Calendar ${gcalConfig.calendarId}`}
+                          src={`https://calendar.google.com/calendar/embed?src=${encodeURIComponent(gcalConfig.calendarId)}&ctz=Asia%2FJakarta&mode=MONTH`}
+                          className="w-full h-full border-0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Summary Metrics */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -4588,6 +4952,21 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                             onChange={(e) => setJobFormNotes(e.target.value)}
                             className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
                           />
+                        </div>
+
+                        <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-lg flex items-center justify-between gap-3">
+                          <label className="inline-flex items-center gap-2 text-xs font-bold text-indigo-950 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={jobFormOpenGcalOnSave}
+                              onChange={(e) => setJobFormOpenGcalOnSave(e.target.checked)}
+                              className="rounded border-indigo-300 text-indigo-600"
+                            />
+                            <span>
+                              Sinkronkan & simpan langsung event ini ke Google Calendar ({gcalConfig.calendarId}) saat klik Simpan
+                            </span>
+                          </label>
+                          <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
                         </div>
 
                         <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">

@@ -1,0 +1,1657 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//PT. Riz Production Multi Kreasi//Jadwal Penugasan Staff & Freelance//ID
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Jadwal Penugasan Staff & Crew Freelance - PT. Riz Production Multi Kreasi
+X-WR-TIMEZONE:Asia/Jakarta
+BEGIN:VTIMEZONE
+TZID:Asia/Jakarta
+BEGIN:STANDARD
+TZOFFSETFROM:+0700
+TZOFFSETTO:+0700
+TZNAME:WIB
+DTSTART:19700101T000000
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:job-20261103-qbig-bsd@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261103T060000
+DTEND;TZID=Asia/Jakarta:20261103T120000
+SUMMARY:[RIZ PRODUCTION] Qbig BSD (Sound 20rb\, Sound 5rb\, LED 48Meter (Victor)) - PIC: Jay (Mulyadi)
+LOCATION:Qbig BSD (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 3 Nov 2026 (2026-11-03)\n📍 Lokasi / Venue: Qbig BSD\n🕒 Jadwal Loading / Berangkat: Packing Malam Jalan jam 06.00 Pagi\n👮 Person in Charge (PIC): Jay (Mulyadi)\n📌 Status Operasional: Selesai\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 20rb\n   • Unit Alat: Avanda 210 8\, Sub Kla 6\, Drum Sub 8001 1\, DB 8\, Lvx 2\, EWD 4\, QA 4\, Headset 2 | Side Fill 8001 + 6001 2set | Digital Mixer Midas HERITAGE D + DL 251 | Digital Mixer Midas HERITAGE D + DL 251 (Sewa Flow) | DI Box Set | IEM Sennheiser G4 8 (Flow) | Stand Set & Backline Set\n   • Staff Inhouse (3): Bulux (Suryana (Buluk))\, Dani (Ramdani (Dani))\, Opik (Taufik Diana (Opik))\n   • Kru Freelance (5): Adin\, ACA\, Enday\, Woyo\, Dyar\n   • Armada Mobilisasi: Truck Operasional\, Pick Up Carry 012 (F 8446 BF)\n\n2. [AUDIO] Sound 5rb\n   • Unit Alat: 6001 2\, Sub Double 2\, ART4\, M32 + DL 32 1\, WHM 4 | Stand Set\n   • Staff Inhouse (0): -\n   • Kru Freelance (3): Jordy [Dateng Malam]\, Isal\, Timbul\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [VIDEOTRON] LED 48Meter (Victor)\n   • Unit Alat: LED Stage 8x4 | LED Gate 4x2 (2 set) | Laptop MSI\n   • Staff Inhouse (1): Ayong (Ayong Sumarsih)\n   • Kru Freelance (1): Uloh\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Qbig BSD (PIC: Jay (Mulyadi))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Qbig BSD
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261104-parkir-timur-senayan@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;VALUE=DATE:20261104
+DTEND;VALUE=DATE:20261105
+SUMMARY:[RIZ PRODUCTION] Parkir Timur Senayan (Main Stage) (LED Main Stage) - PIC: Ayong Sumarsih
+LOCATION:Parkir Timur Senayan (Main Stage) (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 4 Nov 2026 (2026-11-04)\n📍 Lokasi / Venue: Parkir Timur Senayan (Main Stage)\n🕒 Jadwal Loading / Berangkat: Setup & Bongkaran Main Stage\n👮 Person in Charge (PIC): Ayong Sumarsih\n📌 Status Operasional: Berlangsung (Show)\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED Main Stage\n   • Unit Alat: Center 4\,5x8 Dudukan | Wing 2\,5x4 2Set Gantung (Yg ada gak Usah Dibongkar)\n   • Staff Inhouse (3): Ayong (Ayong Sumarsih)\, Wigi (Dedi Agus Wigiantoro (Wigi))\, Irvan (Muhamad Irvan) [Pasang]\n   • Kru Freelance (9): Bunda\, Yopy\, Ambon\, Fiki\, Adi [Pasang]\, Ipal [Pasang]\, Woyo [Bongkaran]\, Dian [Driver Truck - Bongkaran]\, Narso [Bantu Bongkaran]\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Truck Operasional\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Parkir Timur Senayan (Main Stage) (PIC: Ayong Sumarsih)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Parkir Timur Senayan (Main Stage)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261104-js-luwansa@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261104T190000
+DTEND;TZID=Asia/Jakarta:20261104T230000
+SUMMARY:[RIZ PRODUCTION] JS Luwansa (Sound & Lighting + LED 4x6 (Victor)) - PIC: Heri
+LOCATION:JS Luwansa (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 4 Nov 2026 (2026-11-04)\n📍 Lokasi / Venue: JS Luwansa\n🕒 Jadwal Loading / Berangkat: Loading 3 Malam\n👮 Person in Charge (PIC): Heri\n📌 Status Operasional: Berlangsung (Show)\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound & Lighting + LED 4x6 (Victor)\n   • Unit Alat: LVX 2\, 8003 2\, Db 4 (2 Delay + Stand)\, M32R+DL\, WHM 6\, Gooseneck 1 | Stand Set | Fresnel 4\, Quartz | LED 4x6 (Victor)\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (1): Isal\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: JS Luwansa (PIC: Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: JS Luwansa
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261104-tsi@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261104T190000
+DTEND;TZID=Asia/Jakarta:20261104T230000
+SUMMARY:[RIZ PRODUCTION] TSI (Taman Safari Indonesia) (Sound System\, Lighting & Genset\, Produksi (Oce)) - PIC: Jordy / Oce
+LOCATION:TSI (Taman Safari Indonesia) (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 4 Nov 2026 (2026-11-04)\n📍 Lokasi / Venue: TSI (Taman Safari Indonesia)\n🕒 Jadwal Loading / Berangkat: Loading tgl 3 Malam\n👮 Person in Charge (PIC): Jordy / Oce\n📌 Status Operasional: Berlangsung (Show)\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound System\n   • Unit Alat: 6001 2\, 8003 2\, Db 6\, M32+DL\, WHM 6\, Gooseneck | Stand Set\n   • Staff Inhouse (0): -\n   • Kru Freelance (3): Jordy\, ACA\, Timbul\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting & Genset\n   • Unit Alat: Beam 2\, Par 8\, Fresnel 4\, Smoke 1\, Quartz | Genset 60KVA (Bogor Genset)\n   • Staff Inhouse (0): -\n   • Kru Freelance (2): Ndin\, Dyar\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [PRODUKSI] Produksi (Oce)\n   • Unit Alat: Totem Banner 1\,2x2\,44 2Pcs (Oce)\n   • Staff Inhouse (0): -\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: TSI (Taman Safari Indonesia) (PIC: Jordy / Oce)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: TSI (Taman Safari Indonesia)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261104-ancol@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261104T190000
+DTEND;TZID=Asia/Jakarta:20261104T230000
+SUMMARY:[RIZ PRODUCTION] Ancol (Sound 5rb) - PIC: Unyim (Wahyudin)
+LOCATION:Ancol (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 4-5 Nov 2026 (2026-11-04)\n📍 Lokasi / Venue: Ancol\n🕒 Jadwal Loading / Berangkat: Loading 3 Malam (Beres Parkir Timur Senayan)\n👮 Person in Charge (PIC): Unyim (Wahyudin)\n📌 Status Operasional: Berlangsung (Show)\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: Avanda 2\, Sub Kla 2\, DB6\, M32+DL\, WHM 4\, Gooseneck | Stand Set | Drum\n   • Staff Inhouse (3): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\, Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (1): Inal\n   • Armada Mobilisasi: Pick Up Carry 012 (F 8446 BF)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Ancol (PIC: Unyim (Wahyudin))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Ancol
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261104-telkom@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261104T050000
+DTEND;TZID=Asia/Jakarta:20261104T110000
+SUMMARY:[RIZ PRODUCTION] Telkom (Sound System\, Stream + 2 Cam) - PIC: Jay (Mulyadi)
+LOCATION:Telkom (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 4 Nov 2026 (2026-11-04)\n📍 Lokasi / Venue: Telkom\n🕒 Jadwal Loading / Berangkat: Loading 4 Subuh\n👮 Person in Charge (PIC): Jay (Mulyadi)\n📌 Status Operasional: Berlangsung (Show)\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound System\n   • Unit Alat: Art 6\, WHM 6\, TF 1\n   • Staff Inhouse (1): Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (1): Cionk\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [MULTIMEDIA] Stream + 2 Cam\n   • Unit Alat: PC + Acc | PXW 2 + Tripod | Switcher + Record | Laptop 3\n   • Staff Inhouse (2): Heri [VD]\, Jay (Mulyadi (Jay)) [Campers]\n   • Kru Freelance (4): Uloh [VJ + Zoom]\, Okis [VJ + Zoom]\, Chandra [Campers]\, Richard [Campers]\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Telkom (PIC: Jay (Mulyadi))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Telkom
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261105-tribrata@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261105T150000
+DTEND;TZID=Asia/Jakarta:20261105T210000
+SUMMARY:[RIZ PRODUCTION] Tribrata (Sound 5rb\, LED 3x4 + Level 30Cm\, Produksi (Hafiz)) - PIC: Buluk (Suryana) & Irvan
+LOCATION:Tribrata (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 5 Nov 2026 (2026-11-05)\n📍 Lokasi / Venue: Tribrata\n🕒 Jadwal Loading / Berangkat: Loading Sound 4 Sore jam 15.00\n👮 Person in Charge (PIC): Buluk (Suryana) & Irvan\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001\, 8001\, Art6\, M32+DL\, WHM 6\, Gooseneck | Stand Set\n   • Staff Inhouse (3): Bulux (Suryana (Buluk))\, Opik (Taufik Diana (Opik))\, Gatot (Gatot Wiliyanto) [Beres setup pulang ganti Dyar]\n   • Kru Freelance (1): Dyar\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [VIDEOTRON] LED 3x4 + Level 30Cm\n   • Unit Alat: LED 3x4 + Level 30Cm\n   • Staff Inhouse (1): Irvan (Muhamad Irvan)\n   • Kru Freelance (2): Adi\, Ipal\n   • Armada Mobilisasi: Jay\n\n3. [PRODUKSI] Produksi (Hafiz)\n   • Unit Alat: Mini Garden 10 Meter (Hafiz)\n   • Staff Inhouse (0): -\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Tribrata (PIC: Buluk (Suryana) & Irvan)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Tribrata
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261105-bsd@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261105T190000
+DTEND;TZID=Asia/Jakarta:20261105T230000
+SUMMARY:[RIZ PRODUCTION] BSD (Sound 5rb) - PIC: Adin Andriansyah
+LOCATION:BSD (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 5 Nov 2026 (2026-11-05)\n📍 Lokasi / Venue: BSD\n🕒 Jadwal Loading / Berangkat: Loading 4 Malam\n👮 Person in Charge (PIC): Adin Andriansyah\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001 2\, Sub Double 2\, DB 6\, M32 + DL 32 1\, WHM 6 | Stand Set | Drum Set\n   • Staff Inhouse (0): -\n   • Kru Freelance (4): Adin\, Rebing\, Cionk\, Enday\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: BSD (PIC: Adin Andriansyah)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: BSD
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261105-thamrin-nine@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261105T190000
+DTEND;TZID=Asia/Jakarta:20261105T230000
+SUMMARY:[RIZ PRODUCTION] Thamrin Nine (Sound 10rb\, Produksi Tgl 5 (Oce)\, Tgl 6 LED (12x4)) - PIC: Mboh (Muhamad Rahmat) & Ayong
+LOCATION:Thamrin Nine (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 5-6 Nov 2026 (2026-11-05)\n📍 Lokasi / Venue: Thamrin Nine\n🕒 Jadwal Loading / Berangkat: Loading Sound 4 Malam\n👮 Person in Charge (PIC): Mboh (Muhamad Rahmat) & Ayong\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 10rb\n   • Unit Alat: HDL 4\, Sub Double 2\, ART8\, M32+DL\, WHM 6\, Gooseneck | Stand Set\n   • Staff Inhouse (2): Mboh (Muhamad Rahmat (Mboh))\, Dani (Ramdani (Dani))\n   • Kru Freelance (3): Timbul\, ACA\, Ardi [Ngedrop - Dijemput Gatot]\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [PRODUKSI] Produksi Tgl 5 (Oce)\n   • Unit Alat: Totem (60x60x300) cm 6 unit | Backdrop 2\,44 x 5m\n   • Staff Inhouse (0): -\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n3. [VIDEOTRON] Tgl 6 LED (12x4)\n   • Unit Alat: LED uk 12 x 4\n   • Staff Inhouse (2): Ayong (Ayong Sumarsih)\, Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (4): Bunda\, Yopi\, Woyo\, Dian\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Engkel Woyo (Armada Mitra Woyo)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Thamrin Nine (PIC: Mboh (Muhamad Rahmat) & Ayong)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Thamrin Nine
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261106-episode-hotel@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261106T190000
+DTEND;TZID=Asia/Jakarta:20261106T230000
+SUMMARY:[RIZ PRODUCTION] Episode Hotel (Sound 3rb\, Lighting\, LED 6x3 Level 100Cm\, Produksi (Oce)) - PIC: Heri & Buluk (Suryana)
+LOCATION:Episode Hotel (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 6 Nov 2026 (2026-11-06)\n📍 Lokasi / Venue: Episode Hotel\n🕒 Jadwal Loading / Berangkat: Loading 5 Malam\n👮 Person in Charge (PIC): Heri & Buluk (Suryana)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 3rb\n   • Unit Alat: 8003 2\, Db 8 (2 Delay + Stand)\, TF1\, WHM 8\, Gooseneck 1 | Stand Set\n   • Staff Inhouse (2): Bulux (Suryana (Buluk))\, Opick (Taufik Diana (Opik))\n   • Kru Freelance (1): Dyar\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Par 8\, Beam 4\, Fresnel 4\, Tiger\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (2): Idrus\, Isal\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n3. [VIDEOTRON] LED 6x3 Level 100Cm\n   • Unit Alat: LED 6x3 level 100Cm (Bawa 3box dari gudang\, 7box ambil di Maxindo) | Matador 42" 1Pcs (Rae)\n   • Staff Inhouse (1): Irfan (Muhamad Irvan)\n   • Kru Freelance (2): Ambon\, Ipal\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n4. [PRODUKSI] Produksi (Oce)\n   • Unit Alat: Photobooth 2\,44x3\,66 | Backdrop 6x3\n   • Staff Inhouse (0): -\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Episode Hotel (PIC: Heri & Buluk (Suryana))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Episode Hotel
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261107-kemendikbud@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261107T150000
+DTEND;TZID=Asia/Jakarta:20261107T210000
+SUMMARY:[RIZ PRODUCTION] Kemendikbud (Audio Streaming\, Streaming & Green Screen (Camera 3)) - PIC: Jay (Mulyadi)
+LOCATION:Kemendikbud (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 7 Nov 2026 (2026-11-07)\n📍 Lokasi / Venue: Kemendikbud\n🕒 Jadwal Loading / Berangkat: Loading 15:00 di Lokasi\n👮 Person in Charge (PIC): Jay (Mulyadi)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Audio Streaming\n   • Unit Alat: AD 2\, TF1\, Clipon 4 unit\, WHM 2\n   • Staff Inhouse (1): Unyink (Wahyudin (Unyim))\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n2. [MULTIMEDIA] Streaming & Green Screen (Camera 3)\n   • Unit Alat: Streaming Set | Green Screen | Camera 3 Unit\n   • Staff Inhouse (1): Jay (Mulyadi (Jay))\n   • Kru Freelance (3): Moa\, Richad\, Chandra\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Kemendikbud (PIC: Jay (Mulyadi))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Kemendikbud
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261108-bowo-sentul@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261108T140000
+DTEND;TZID=Asia/Jakarta:20261108T200000
+SUMMARY:[RIZ PRODUCTION] Bowo Sentul (Sound 20rb\, LED Center & Wing Gantung\, Multicam 3 Cam) - PIC: Ayong & Jay (Mulyadi)
+LOCATION:Bowo Sentul (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 8 Nov 2026 (2026-11-08)\n📍 Lokasi / Venue: Bowo Sentul\n🕒 Jadwal Loading / Berangkat: Loading 7 Siang Jam 14:00 di Lokasi\n👮 Person in Charge (PIC): Ayong & Jay (Mulyadi)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 20rb\n   • Unit Alat: Avanda 210 8\, Sub Avanda 4\, KLA 2\, Drum Sub 8001 1\, DB 8\, EWD 4\, QA 2\, M32+DL251\, M32+Splitter | DI Box Set & Side Fill 8003+Lvx | Stand Set | Backline (Drum Yamaha Tour Custom\, Drum PDP Concept Maple\, Roland RD 700 NX) | EAR 4 Unit (Jumeno)\n   • Staff Inhouse (3): Bulux (Suryana (Buluk))\, Dani (Ramdani (Dani))\, Opik (Taufik Diana (Opik))\n   • Kru Freelance (6): Adin\, Cionk\, Enday\, Dyar\, Woyo\, Rebing\n   • Armada Mobilisasi: Truck Operasional\, Pick Up Carry 011 (F 8433 BF)\n\n2. [VIDEOTRON] LED Center & Wing Gantung\n   • Unit Alat: LED Center 4x8 Gantung (Bawa Truss Tackle) | LED Wing 3x4 2Set Gantung (Bawa Truss Tackle)\n   • Staff Inhouse (2): Ayong (Ayong Sumarsih)\, Irvan (Muhamad Irvan)\n   • Kru Freelance (4): Ambon\, Yopi\, Fiki\, Ugan\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Engkel Woyo (Armada Mitra Woyo)\n\n3. [MULTIMEDIA] Multicam 3 Cam\n   • Unit Alat: PXW | SE1200\n   • Staff Inhouse (1): Jay (Mulyadi (Jay))\n   • Kru Freelance (4): Chandra\, Richad\, Iman\, Bule\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Bowo Sentul (PIC: Ayong & Jay (Mulyadi))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Bowo Sentul
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261108-karawang@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261108T190000
+DTEND;TZID=Asia/Jakarta:20261108T230000
+SUMMARY:[RIZ PRODUCTION] Karawang (Sound 5rb) - PIC: Unyim (Wahyudin)
+LOCATION:Karawang (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 8 Nov 2026 (2026-11-08)\n📍 Lokasi / Venue: Karawang\n🕒 Jadwal Loading / Berangkat: Loading 7 Malam (Sekalian bawa barang buat ke Danapala)\n👮 Person in Charge (PIC): Unyim (Wahyudin)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: HDL 2\, Sub Kla 2\, Art 6\, M32 + DL 32 1\, WHM 4 | Stand Set | RD GX | Drum\n   • Staff Inhouse (2): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\n   • Kru Freelance (2): Inal\, Timbul\n   • Armada Mobilisasi: Yosep 2 (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Karawang (PIC: Unyim (Wahyudin))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Karawang
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261108-mardi-waluya@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261108T080000
+DTEND;TZID=Asia/Jakarta:20261108T140000
+SUMMARY:[RIZ PRODUCTION] Mardi Waluya (Sound 5rb) - PIC: Mboh (Muhamad Rahmat)
+LOCATION:Mardi Waluya (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 8 Nov 2026 (2026-11-08)\n📍 Lokasi / Venue: Mardi Waluya\n🕒 Jadwal Loading / Berangkat: Loading 7 Pagi\n👮 Person in Charge (PIC): Mboh (Muhamad Rahmat)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001 2\, Sub Double 2\, DB 6\, M32 + DL 32 1\, WHM 8 | Stand Set | Backline\n   • Staff Inhouse (3): Mboh (Muhamad Rahmat (Mboh))\, Yudis (Yudishtira Purnama A (Yudis))\, Heri\n   • Kru Freelance (2): ACA\, Isal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\, Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Mardi Waluya (PIC: Mboh (Muhamad Rahmat))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Mardi Waluya
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261109-andara-jsi@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261109T220000
+DTEND;TZID=Asia/Jakarta:20261109T230000
+SUMMARY:[RIZ PRODUCTION] Andara JSI (Ballroom & Kencana Room) (Sound 25rb Ballroom\, Lighting Ballroom\, Sound 2rb (Kencana Room)) - PIC: Mboh (Muhamad Rahmat)
+LOCATION:Andara JSI (Ballroom & Kencana Room) (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 9 Nov 2026 (2026-11-09)\n📍 Lokasi / Venue: Andara JSI (Ballroom & Kencana Room)\n🕒 Jadwal Loading / Berangkat: Loading 8 Malam Jam 22.00\n👮 Person in Charge (PIC): Mboh (Muhamad Rahmat)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 25rb Ballroom\n   • Unit Alat: Avanda 8\, Sub KLA 4\, Db10\, LVX2\, WHM EWD 4\, QA4 (Booster)\, Midas HD | M32+Splitter\, 6001 + 8001\, 6001 + 8002 Delay | Backline Set (Limiter) & Backline Set Project Pop (Drum + RD Aja) | Headset 1\, EAR 6 (Jumeno)\, EAR Mipro + WHM buat MC (Mipro & G4) | DI Set & Stand Set\n   • Staff Inhouse (4): Mboh (Muhamad Rahmat (Mboh))\, Opik (Taufik Diana (Opik))\, Dani (Ramdani (Dani))\, Bulux (Suryana (Buluk))\n   • Kru Freelance (5): Adin\, ACA\, Dyar\, Woyo\, Rebing\n   • Armada Mobilisasi: Truck Operasional\, Jay\, Pick Up Carry RIZ (011/012/013/014)\n\n2. [LIGHTING] Lighting Ballroom\n   • Unit Alat: Parled 12\, Beam 20\, Fresnel 8\, Stromy 20\, Wall Washer 6\, Mini Brute 4\, Follow Spot\, Hazer 2\, GrandMA\n   • Staff Inhouse (0): -\n   • Kru Freelance (5): Ghele\, Ugan\, Idrus\, Rizki\, Otang\n   • Armada Mobilisasi: Yosep 2 (Armada Mitra Yosep)\n\n3. [AUDIO] Sound 2rb (Kencana Room)\n   • Unit Alat: ART 2\, TF1\, WHM 2\n   • Staff Inhouse (1): Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (1): Enday\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Andara JSI (Ballroom & Kencana Room) (PIC: Mboh (Muhamad Rahmat))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Andara JSI (Ballroom & Kencana Room)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261109-ui-depok@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261109T050000
+DTEND;TZID=Asia/Jakarta:20261109T110000
+SUMMARY:[RIZ PRODUCTION] UI Depok (LED 3x6\, Lighting (Sekalian bawa barang buat ke Ancol)) - PIC: Wigi & Heri
+LOCATION:UI Depok (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 9 Nov 2026 (2026-11-09)\n📍 Lokasi / Venue: UI Depok\n🕒 Jadwal Loading / Berangkat: LED Loading 8 Subuh | Lighting Loading 8 Malam\n👮 Person in Charge (PIC): Wigi & Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 3x6\n   • Unit Alat: LED 3x6\n   • Staff Inhouse (1): Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (2): Bunda\, Ipal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting (Sekalian bawa barang buat ke Ancol)\n   • Unit Alat: Parled 2bar\, Fresnel 4\, Beam 2\, Tiger\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (2): Isal\, Inal\n   • Armada Mobilisasi: Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: UI Depok (PIC: Wigi & Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: UI Depok
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261109-danapala@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261109T080000
+DTEND;TZID=Asia/Jakarta:20261109T140000
+SUMMARY:[RIZ PRODUCTION] Danapala (Sound 10rb) - PIC: Unyim (Wahyudin)
+LOCATION:Danapala (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 9 Nov 2026 (2026-11-09)\n📍 Lokasi / Venue: Danapala\n🕒 Jadwal Loading / Berangkat: Loading 9 Pagi\n👮 Person in Charge (PIC): Unyim (Wahyudin)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 10rb\n   • Unit Alat: HDL 4\, Sub Double 2\, Art 10\, M32 + DL\, WHM 6 | Stand Set | Drum Set Yamaha\n   • Staff Inhouse (2): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\n   • Kru Freelance (2): Cionk\, Timbul\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\, Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Danapala (PIC: Unyim (Wahyudin))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Danapala
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261109-mall-boxis@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261109T190000
+DTEND;TZID=Asia/Jakarta:20261109T230000
+SUMMARY:[RIZ PRODUCTION] Mall Boxies (LED / Level 2x3) - PIC: Irvan
+LOCATION:Mall Boxies (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 9-10 Nov 2026 (2026-11-09)\n📍 Lokasi / Venue: Mall Boxies\n🕒 Jadwal Loading / Berangkat: Loading 8 Malam\n👮 Person in Charge (PIC): Irvan\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED / Level 2x3\n   • Unit Alat: Level 2x3 Tinggi 1m\n   • Staff Inhouse (1): Irvan (Muhamad Irvan)\n   • Kru Freelance (1): Fiki\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Mall Boxies (PIC: Irvan)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Mall Boxies
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261110-spartan-putri-duyung@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261110T200000
+DTEND;TZID=Asia/Jakarta:20261110T230000
+SUMMARY:[RIZ PRODUCTION] Spartan Putri Duyung Ancol (LED 24 Meter\, Lighting) - PIC: Ayong & Heri
+LOCATION:Spartan Putri Duyung Ancol (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 10 Nov 2026 (2026-11-10)\n📍 Lokasi / Venue: Spartan Putri Duyung Ancol\n🕒 Jadwal Loading / Berangkat: Loading 9 Malam jam 20.00 di Lokasi\n👮 Person in Charge (PIC): Ayong & Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 24 Meter\n   • Unit Alat: LED Center 3x5 | Pilar 1\,5x3 2set | Level 5 Meter Tinggi 40Cm\n   • Staff Inhouse (2): Ayong (Ayong Sumarsih)\, Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (4): Bunda\, Ambon\, Ipal\, Yopy\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Parled 12\, Fresnel 4\, Beam 6\, Hazer\, Smoke\, Tiger\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (2): Isal\, Inal\n   • Armada Mobilisasi: Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Spartan Putri Duyung Ancol (PIC: Ayong & Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Spartan Putri Duyung Ancol
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261110-pesona-alam@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261110T190000
+DTEND;TZID=Asia/Jakarta:20261110T230000
+SUMMARY:[RIZ PRODUCTION] Pesona Alam (Sound 5rb\, Lighting & Genset) - PIC: Dani (Ramdani)
+LOCATION:Pesona Alam (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 10 Nov 2026 (2026-11-10)\n📍 Lokasi / Venue: Pesona Alam\n🕒 Jadwal Loading / Berangkat: Loading 9 Malam\n👮 Person in Charge (PIC): Dani (Ramdani)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001 2\, Sub KLA 2\, DB 6\, M32 + DL 32\, WHM 4\, Gooseneck | Stand Set | Drum Yamaha | Clicker titip Jordy\n   • Staff Inhouse (1): Dani (Ramdani (Dani))\n   • Kru Freelance (2): Jordy\, Enday\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n2. [LIGHTING] Lighting & Genset\n   • Unit Alat: Par 2 bar\, Beam 4\, Fresnel 4\, Smoke\, Tiger | Genset (Bogor Genset)\n   • Staff Inhouse (0): -\n   • Kru Freelance (3): Ghele\, Ugan\, Ndin\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Pesona Alam (PIC: Dani (Ramdani))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Pesona Alam
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261111-kebun-raya-bogor@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261111T140000
+DTEND;TZID=Asia/Jakarta:20261111T200000
+SUMMARY:[RIZ PRODUCTION] Kebun Raya Bogor (Sound 10rb) - PIC: Unyim (Wahyudin)
+LOCATION:Kebun Raya Bogor (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 11 Nov 2026 (2026-11-11)\n📍 Lokasi / Venue: Kebun Raya Bogor\n🕒 Jadwal Loading / Berangkat: Loading 10 Siang Jam 14.00 di Lokasi\n👮 Person in Charge (PIC): Unyim (Wahyudin)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 10rb\n   • Unit Alat: Avanda 4\, Sub Kla 2\, Art 8\, M32+DL\, WHM 6\, Gooseneck | Stand Set | Backline\n   • Staff Inhouse (4): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\, Opik (Taufik Diana (Opik))\, Gatot (Gatot Wiliyanto) [Anter Jemput]\n   • Kru Freelance (1): ACA\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\, Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Kebun Raya Bogor (PIC: Unyim (Wahyudin))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Kebun Raya Bogor
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261111-habitate-kuningan@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261111T190000
+DTEND;TZID=Asia/Jakarta:20261111T230000
+SUMMARY:[RIZ PRODUCTION] Habitate Kuningan (Sound 3rb\, Lighting & Produksi) - PIC: Heri
+LOCATION:Habitate Kuningan (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 11 Nov 2026 (2026-11-11)\n📍 Lokasi / Venue: Habitate Kuningan\n🕒 Jadwal Loading / Berangkat: Loading 10 Malam\n👮 Person in Charge (PIC): Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 3rb\n   • Unit Alat: Lvx 2\, 8003 2\, Db 4\, TF1\, WHM 4\, Gooseneck | Stand Set\n   • Staff Inhouse (0): -\n   • Kru Freelance (2): Ardi\, Cionk\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting & Produksi\n   • Unit Alat: Parled 2 bar\, Beam 2\, Fresnel 2 | Kursi Futura Cover Hitam 50Pcs (Saepi Asa Multi)\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (1): Isal\n   • Armada Mobilisasi: Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Habitate Kuningan (PIC: Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Habitate Kuningan
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261111-tribrata@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261111T000000
+DTEND;TZID=Asia/Jakarta:20261111T060000
+SUMMARY:[RIZ PRODUCTION] Tribrata (Sound 10rb\, Lighting\, LED 3x6 + Level 1Meter) - PIC: Buluk (Suryana) & Wigi
+LOCATION:Tribrata (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 11 Nov 2026 (2026-11-11)\n📍 Lokasi / Venue: Tribrata\n🕒 Jadwal Loading / Berangkat: Loading 11 Dini Hari jam 00:00\n👮 Person in Charge (PIC): Buluk (Suryana) & Wigi\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 10rb\n   • Unit Alat: HDL 4\, Sub KLA 2\, DB 8\, QA 6\, M32+DL\, Gooseneck | Stand Set\n   • Staff Inhouse (1): Bulux (Suryana (Buluk))\n   • Kru Freelance (4): Jordy\, Inal\, Enday\, Timbul\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\, Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Beam 4\, Par 2 bar\, Fresnel 4\, Hazer\, Tiger Touch\n   • Staff Inhouse (0): -\n   • Kru Freelance (3): Ghele\, Ugan\, Ndin\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [VIDEOTRON] LED 3x6 + Level 1Meter\n   • Unit Alat: LED 3x6 + Level 1Meter | Mini Garden 10 Meter (Hafiz)\n   • Staff Inhouse (1): Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (2): Ambon\, Ipal\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Tribrata (PIC: Buluk (Suryana) & Wigi)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Tribrata
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261112-pullman-ciawi@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;VALUE=DATE:20261112
+DTEND;VALUE=DATE:20261113
+SUMMARY:[RIZ PRODUCTION] Pullman Ciawi (TV Display) - PIC: Agus (Agustino Setiawan)
+LOCATION:Pullman Ciawi (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 12 Nov 2026 (2026-11-12)\n📍 Lokasi / Venue: Pullman Ciawi\n🕒 Jadwal Loading / Berangkat: Loading sesuai jadwal venue\n👮 Person in Charge (PIC): Agus (Agustino Setiawan)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [MULTIMEDIA] TV Display\n   • Unit Alat: Standing TV + TV 50"\n   • Staff Inhouse (1): Agus (Agustino Setiawan (Agus))\n   • Kru Freelance (1): Uloh\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Pullman Ciawi (PIC: Agus (Agustino Setiawan))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Pullman Ciawi
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261112-tmii@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261112T150000
+DTEND;TZID=Asia/Jakarta:20261112T210000
+SUMMARY:[RIZ PRODUCTION] TMII (Taman Mini Indonesia Indah) (LED 4x16) - PIC: Ayong Sumarsih
+LOCATION:TMII (Taman Mini Indonesia Indah) (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 12 Nov 2026 (2026-11-12)\n📍 Lokasi / Venue: TMII (Taman Mini Indonesia Indah)\n🕒 Jadwal Loading / Berangkat: Loading 11 Jam 15:00 di Lokasi\n👮 Person in Charge (PIC): Ayong Sumarsih\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 4x16\n   • Unit Alat: LED 4x16\n   • Staff Inhouse (2): Ayong (Ayong Sumarsih)\, Irvan (Muhamad Irvan) [Drop]\n   • Kru Freelance (6): Adi\, Ambon\, Bunda\, Yopy\, Woyo\, Fiki [Drop]\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Engkel Woyo (Armada Mitra Woyo)\, Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: TMII (Taman Mini Indonesia Indah) (PIC: Ayong Sumarsih)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: TMII (Taman Mini Indonesia Indah)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261112-kelapa-gading@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261112T190000
+DTEND;TZID=Asia/Jakarta:20261112T230000
+SUMMARY:[RIZ PRODUCTION] Kelapa Gading (LED 3x6 Outdoor (Victor)) - PIC: Irvan
+LOCATION:Kelapa Gading (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 12-13 Nov 2026 (2026-11-12)\n📍 Lokasi / Venue: Kelapa Gading\n🕒 Jadwal Loading / Berangkat: Loading 11 Malam\n👮 Person in Charge (PIC): Irvan\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 3x6 Outdoor (Victor)\n   • Unit Alat: LED 3x6 Outdoor (Victor) | Level + Gawangan (Farid)\n   • Staff Inhouse (1): Irvan (Muhamad Irvan) [VJ]\n   • Kru Freelance (1): Fiki [VJ]\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Kelapa Gading (PIC: Irvan)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Kelapa Gading
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261112-bara-royal-tulip@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261112T190000
+DTEND;TZID=Asia/Jakarta:20261112T230000
+SUMMARY:[RIZ PRODUCTION] Bara Royal Tulip (Sound 3rb\, Lighting & Genset) - PIC: Mboh (Muhamad Rahmat)
+LOCATION:Bara Royal Tulip (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 12-13 Nov 2026 (2026-11-12)\n📍 Lokasi / Venue: Bara Royal Tulip\n🕒 Jadwal Loading / Berangkat: Loading 11 Malam\n👮 Person in Charge (PIC): Mboh (Muhamad Rahmat)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 3rb\n   • Unit Alat: Lvx 2\, 8003 2\, Art 4 (2 Delay)\, M32+DL\, WHM 8\, Gooseneck | Stand Set OT\n   • Staff Inhouse (2): Mboh (Muhamad Rahmat (Mboh))\, Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: Jay\n\n2. [LIGHTING] Lighting & Genset\n   • Unit Alat: Fresnel 4\, Quartz | Genset 60 KVA (Yadi)\n   • Staff Inhouse (0): -\n   • Kru Freelance (1): Isal\n   • Armada Mobilisasi: Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Bara Royal Tulip (PIC: Mboh (Muhamad Rahmat))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Bara Royal Tulip
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261113-gor-tanjung-duren@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261113T190000
+DTEND;TZID=Asia/Jakarta:20261113T230000
+SUMMARY:[RIZ PRODUCTION] GOR Tanjung Duren (Sound 10rb\, Produksi (Yadi\, RAE\, Saepi Asa Multi)) - PIC: Agus (Agustino Setiawan)
+LOCATION:GOR Tanjung Duren (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 13 Nov 2026 (2026-11-13)\n📍 Lokasi / Venue: GOR Tanjung Duren\n🕒 Jadwal Loading / Berangkat: Loading 12 Malam\n👮 Person in Charge (PIC): Agus (Agustino Setiawan)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 10rb\n   • Unit Alat: 6001 4\, Sub Avanda 2\, DB 8\, QA 6\, M32+DL\, Gooseneck | Stand Set\n   • Staff Inhouse (3): Unyink (Wahyudin (Unyim))\, Dani (Ramdani (Dani))\, Agus (Agustino Setiawan (Agus))\n   • Kru Freelance (3): Enday\, Inal\, Dyar\n   • Armada Mobilisasi: Pick Up Carry 012 (F 8446 BF)\n\n2. [PRODUKSI] Produksi (Yadi\, RAE\, Saepi Asa Multi)\n   • Unit Alat: Genset 60 KVA 2Unit & AC 5PK 4Unit (Yadi) | Projector 8000AL + Screen 3x4 2Unit & Laptop 2 (RAE) | Sofa Hitam 10Pcs\, Coffee Table 5Pcs\, Kursi Futura + Cover Hitam 50Pcs\, Long Table IBM 6Pcs\, Sofa Scandiv 3Pcs (Saepi Asa Multi)\n   • Staff Inhouse (1): Agus (Agustino Setiawan (Agus))\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: GOR Tanjung Duren (PIC: Agus (Agustino Setiawan))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: GOR Tanjung Duren
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261114-margo-city-depok@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261114T180000
+DTEND;TZID=Asia/Jakarta:20261114T230000
+SUMMARY:[RIZ PRODUCTION] Margo City Depok (Sound 5rb) - PIC: Unyim (Wahyudin)
+LOCATION:Margo City Depok (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 14 Nov 2026 (2026-11-14)\n📍 Lokasi / Venue: Margo City Depok\n🕒 Jadwal Loading / Berangkat: Loading 13 Malam jam 18.00\n👮 Person in Charge (PIC): Unyim (Wahyudin)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001 2\, 8003 2\, DB2\, DB7+Stand Delay\, M32 + DL 32\, WHM 6\, Gooseneck | Stand Set\n   • Staff Inhouse (2): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\n   • Kru Freelance (1): Inal\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Margo City Depok (PIC: Unyim (Wahyudin))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Margo City Depok
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261114-bri-briliant@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261114T150000
+DTEND;TZID=Asia/Jakarta:20261114T210000
+SUMMARY:[RIZ PRODUCTION] BRI Briliant (Audio & Streaming Set) - PIC: Jay (Mulyadi)
+LOCATION:BRI Briliant (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 14 Nov 2026 (2026-11-14)\n📍 Lokasi / Venue: BRI Briliant\n🕒 Jadwal Loading / Berangkat: Loading 13 Jalan jam 15:00\n👮 Person in Charge (PIC): Jay (Mulyadi)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [MULTIMEDIA] Audio & Streaming Set\n   • Unit Alat: Flat AD\, Art 2\, QA 2\, Headset 4\, TF1\, Gooseneck | PC Intel + Acc\, Switcher + Recorder\, Eartec 4\, Laptop 4\n   • Staff Inhouse (2): Heri\, Jay (Mulyadi (Jay))\n   • Kru Freelance (5): Uloh\, Okis\, Chandra\, Richard\, Ardi\n   • Armada Mobilisasi: APV\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: BRI Briliant (PIC: Jay (Mulyadi))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: BRI Briliant
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261114-ritz-carlton@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261114T210000
+DTEND;TZID=Asia/Jakarta:20261114T230000
+SUMMARY:[RIZ PRODUCTION] Ritz Carlton (LED 3x10) - PIC: Ayong Sumarsih
+LOCATION:Ritz Carlton (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 14 Nov 2026 (2026-11-14)\n📍 Lokasi / Venue: Ritz Carlton\n🕒 Jadwal Loading / Berangkat: Loading 13 Malam Jam 21:00 di Lokasi\n👮 Person in Charge (PIC): Ayong Sumarsih\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 3x10\n   • Unit Alat: LED 3x10\n   • Staff Inhouse (2): Ayong (Ayong Sumarsih)\, Irfan (Muhamad Irvan)\n   • Kru Freelance (4): Bunda\, Ambon\, Woyo\, Wildan\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Ritz Carlton (PIC: Ayong Sumarsih)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Ritz Carlton
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261114-sukabumi@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261114T190000
+DTEND;TZID=Asia/Jakarta:20261114T230000
+SUMMARY:[RIZ PRODUCTION] Sukabumi (Lighting & TV Display) - PIC: Heri
+LOCATION:Sukabumi (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 14 Nov 2026 (2026-11-14)\n📍 Lokasi / Venue: Sukabumi\n🕒 Jadwal Loading / Berangkat: Loading 13 Malam\n👮 Person in Charge (PIC): Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [LIGHTING] Lighting & TV Display\n   • Unit Alat: Fresnel 4\, Quartz | TV 50" 2 Unit\, TV 65" 1 Unit (Standing)\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (2): Ghele\, Ugan\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Sukabumi (PIC: Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Sukabumi
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261115-ojk-sumitro@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261115T190000
+DTEND;TZID=Asia/Jakarta:20261115T230000
+SUMMARY:[RIZ PRODUCTION] OJK Sumitro (Sound 5rb\, Streaming 3 Cam\, Lighting (Sekalian bawa keperluan GOR Otista)) - PIC: Dani (Ramdani) & Heri
+LOCATION:OJK Sumitro (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 15 Nov 2026 (2026-11-15)\n📍 Lokasi / Venue: OJK Sumitro\n🕒 Jadwal Loading / Berangkat: Loading 14 Malam\n👮 Person in Charge (PIC): Dani (Ramdani) & Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001 2\, 8003 2\, DB 6\, M32 + DL 32\, WHM 4\, Gooseneck | Backline Set (Pake Drum Electric) - Bawain Gitar - Condenser 3 | Stand Set\n   • Staff Inhouse (1): Dani (Ramdani (Dani))\n   • Kru Freelance (4): Jordy\, Enday\, ACA\, Dyar\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\, Jay\n\n2. [MULTIMEDIA] Streaming 3 Cam\n   • Unit Alat: PC Ryzen + Acc | Laptop 3 | Cam PXW 3 | Switcher + Recorder\n   • Staff Inhouse (1): Heri [VJ & Zoom]\n   • Kru Freelance (4): Richard [VJ & Zoom]\, Chandra [Switcher]\, Ucup [Campers]\, Fera [Campers]\n   • Armada Mobilisasi: APV\n\n3. [LIGHTING] Lighting (Sekalian bawa keperluan GOR Otista)\n   • Unit Alat: Parled 2 bar\, Beam 2\, Fresnel 2\, Smoke 1\, Tiger | Genset 60KVA (Yadi)\n   • Staff Inhouse (0): -\n   • Kru Freelance (2): Ndin\, Hamid\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: OJK Sumitro (PIC: Dani (Ramdani) & Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: OJK Sumitro
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261115-bogor-icon@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261115T190000
+DTEND;TZID=Asia/Jakarta:20261115T230000
+SUMMARY:[RIZ PRODUCTION] Bogor Icon (Streaming\, Lighting) - PIC: Jay (Mulyadi) & Heri
+LOCATION:Bogor Icon (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 15 Nov 2026 (2026-11-15)\n📍 Lokasi / Venue: Bogor Icon\n🕒 Jadwal Loading / Berangkat: Loading 14 Malam\n👮 Person in Charge (PIC): Jay (Mulyadi) & Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [MULTIMEDIA] Streaming\n   • Unit Alat: PC Intel + Acc\, Laptop 3\, Cam NX 2\, PXW 1 | Switcher\, TV Matador 50" 2 Unit\, Godox 4\, Eartec 3 pcs (Buat Ricky)\n   • Staff Inhouse (1): Jay (Mulyadi (Jay)) [Cam]\n   • Kru Freelance (4): Uloh [VJ & Zoom]\, Kemal [VJ & Zoom]\, Okis [Switcher]\, Bule [Cam]\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Parled 2 bar\, Beam 2\, Fresnel 2\, Smoke 1\, Quartz\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (1): Isal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Bogor Icon (PIC: Jay (Mulyadi) & Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Bogor Icon
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261115-pullman@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261115T190000
+DTEND;TZID=Asia/Jakarta:20261115T230000
+SUMMARY:[RIZ PRODUCTION] Pullman (LED 4x2 Level 1m) - PIC: Wigi (Dedi Agus Wigiantoro)
+LOCATION:Pullman (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 15 Nov 2026 (2026-11-15)\n📍 Lokasi / Venue: Pullman\n🕒 Jadwal Loading / Berangkat: Loading 14 Malam\n👮 Person in Charge (PIC): Wigi (Dedi Agus Wigiantoro)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 4x2 Level 1m\n   • Unit Alat: LED 4x2 Level 1m\n   • Staff Inhouse (1): Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (2): Ipal\, Ambon\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Pullman (PIC: Wigi (Dedi Agus Wigiantoro))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Pullman
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261116-gor-otista-ljk@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261116T190000
+DTEND;TZID=Asia/Jakarta:20261116T230000
+SUMMARY:[RIZ PRODUCTION] GOR Otista LJK (Sound 5rb\, Lighting\, Streaming Set Basket) - PIC: Heri
+LOCATION:GOR Otista LJK (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 16 Nov 2026 (2026-11-16)\n📍 Lokasi / Venue: GOR Otista LJK\n🕒 Jadwal Loading / Berangkat: Loading 15 Malam\n👮 Person in Charge (PIC): Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001 2\, 8003 2\, Db6\, M32 + DL 32\, WHM 4\, Gooseneck\, Condenser 2 Pcs | Stand Set\n   • Staff Inhouse (0): -\n   • Kru Freelance (3): Jordy\, Enday\, ACA\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Par 2 bar\, Beam 6\, Fresnel 4\, Followspot 2\, Smoke 2\, Tiger\n   • Staff Inhouse (0): -\n   • Kru Freelance (3): Ndin\, Hamid\, Idrus\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [MULTIMEDIA] Streaming Set Basket\n   • Unit Alat: Streaming Set Basket | Laptop 2\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (5): Ulloh\, Iman\, Okis\, Dedy\, Bacil\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\, APV\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: GOR Otista LJK (PIC: Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: GOR Otista LJK
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261116-andara-jsi@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261116T140000
+DTEND;TZID=Asia/Jakarta:20261116T200000
+SUMMARY:[RIZ PRODUCTION] Andara JSI Ballroom (Sound 20rb Ballroom\, Lighting Ballroom) - PIC: Fahrul (M. Fahrulyana . A)
+LOCATION:Andara JSI Ballroom (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 16 Nov 2026 (2026-11-16)\n📍 Lokasi / Venue: Andara JSI Ballroom\n🕒 Jadwal Loading / Berangkat: Loading 15 Siang jam 14.00\n👮 Person in Charge (PIC): Fahrul (M. Fahrulyana . A)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 20rb Ballroom\n   • Unit Alat: Avanda 8\, Sub Avanda 4\, DB 10\, LVX2\, WHM EWD 4\, QA4 (Booster)\, Midas HD+DL251\, M32+Splitter | 6001 + 8002 Sidefill | Backline Set (2nd Born) Drum Tour Custom & Backline Set (Limiter Flow\, Drum PDP) | EAR 2 (Jumeno)\, EAR Mipro + WHM buat MC\, DI Set\, Stand Set\n   • Staff Inhouse (5): Mboh (Muhamad Rahmat (Mboh))\, Opik (Taufik Diana (Opik))\, Bulux (Suryana (Buluk))\, Dani (Ramdani (Dani))\, Yudis (Yudishtira Purnama A (Yudis)) [Bantu Setup]\n   • Kru Freelance (5): Adin\, Timbul\, Woyo\, Dyar\, Cionk [Bantu Setup]\n   • Armada Mobilisasi: Truck Operasional\, Yosep (Armada Mitra Yosep)\, Jay\n\n2. [LIGHTING] Lighting Ballroom\n   • Unit Alat: Par 4 Bar\, Fresnel 4\, Beam 18\, Wallwasher 8\, Stromy 12\, Hazer 2\, Minibrute 4\, Follow Spot\, GrandMA | TV 50" + Stand (Fahrul)\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (3): Ghele\, Ugan\, Rifki\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Andara JSI Ballroom (PIC: Fahrul (M. Fahrulyana . A))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Andara JSI Ballroom
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261116-bgr@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261116T190000
+DTEND;TZID=Asia/Jakarta:20261116T230000
+SUMMARY:[RIZ PRODUCTION] BGR (Sound 10rb\, Rigging 6x6) - PIC: Agus (Agustino Setiawan)
+LOCATION:BGR (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 16 Nov 2026 (2026-11-16)\n📍 Lokasi / Venue: BGR\n🕒 Jadwal Loading / Berangkat: Loading 15 Malam\n👮 Person in Charge (PIC): Agus (Agustino Setiawan)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 10rb\n   • Unit Alat: Avanda 4\, Sub KLA 2\, ART 8\, QA 6\, M32+DL\, Gooseneck | Stand Setting | Backline Set RIZ\n   • Staff Inhouse (2): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\n   • Kru Freelance (3): Inal\, Isal\, Arul\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\, Yosep (Armada Mitra Yosep)\n\n2. [PRODUKSI] Rigging 6x6\n   • Unit Alat: Rigging 6x6\n   • Staff Inhouse (1): Agus (Agustino Setiawan (Agus))\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: BGR (PIC: Agus (Agustino Setiawan))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: BGR
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261116-padepokan-volly-sentul@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261116T060000
+DTEND;TZID=Asia/Jakarta:20261116T120000
+SUMMARY:[RIZ PRODUCTION] Padepokan Volly Sentul (Sound 3rb) - PIC: Yudis (Yudishtira Purnama A)
+LOCATION:Padepokan Volly Sentul (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 16 Nov 2026 (2026-11-16)\n📍 Lokasi / Venue: Padepokan Volly Sentul\n🕒 Jadwal Loading / Berangkat: Loading 16 Pagi jam 06.00\n👮 Person in Charge (PIC): Yudis (Yudishtira Purnama A)\n📌 Status Operasional: Terjadwal\n⚠️ Catatan / SOP Venue: Wajib Pake Kemeja RIZ. Beres acara bantu JSI.\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 3rb\n   • Unit Alat: ART 15 2\, 8003 2\, ART12 4\, TF1\, WHM 4\, Gooseneck | Stand Set OT\n   • Staff Inhouse (1): Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (1): Cionk\n   • Armada Mobilisasi: Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Padepokan Volly Sentul (PIC: Yudis (Yudishtira Purnama A))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Padepokan Volly Sentul
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261117-intercon-pim@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261117T190000
+DTEND;TZID=Asia/Jakarta:20261117T230000
+SUMMARY:[RIZ PRODUCTION] InterContinental PIM (LED 4x10 Indoor) - PIC: Ayong Sumarsih
+LOCATION:InterContinental PIM (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 17 Nov 2026 (2026-11-17)\n📍 Lokasi / Venue: InterContinental PIM\n🕒 Jadwal Loading / Berangkat: Loading 16 Jam 19.00 (Packing jam 15.00)\n👮 Person in Charge (PIC): Ayong Sumarsih\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 4x10 Indoor\n   • Unit Alat: LED 4x10 Indoor\n   • Staff Inhouse (2): Ayong (Ayong Sumarsih)\, Irfan (Muhamad Irvan)\n   • Kru Freelance (4): Ambon\, Adi\, Ipal\, Fiki\n   • Armada Mobilisasi: Engkel Woyo (Armada Mitra Woyo)\, Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: InterContinental PIM (PIC: Ayong Sumarsih)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: InterContinental PIM
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261117-tsi@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261117T150000
+DTEND;TZID=Asia/Jakarta:20261117T210000
+SUMMARY:[RIZ PRODUCTION] TSI (Taman Safari Indonesia) (Sound 10rb\, Lighting\, LED 3x6 Level Tinggi 1M\, Multicam) - PIC: Jay (Mulyadi) & Heri
+LOCATION:TSI (Taman Safari Indonesia) (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 17 Nov 2026 (2026-11-17)\n📍 Lokasi / Venue: TSI (Taman Safari Indonesia)\n🕒 Jadwal Loading / Berangkat: Loading 16 Sore\n👮 Person in Charge (PIC): Jay (Mulyadi) & Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 10rb\n   • Unit Alat: Avanda 4\, Sub Avanda 2\, ART 8\, QA 6\, M32+DL\, Gooseneck | Stand Set | Backline Set RIZ\n   • Staff Inhouse (2): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\n   • Kru Freelance (3): Inal\, Isal\, Arul\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\, Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Beam 2\, Par 8\, Fresnel 4\, Smoke\, Tiger\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (2): Ghele\, Ugan\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [VIDEOTRON] LED 3x6 Level Tinggi 1M\n   • Unit Alat: LED 3x6 Level Tinggi 1M\n   • Staff Inhouse (1): Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (2): Bunda\, Yopi\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\n\n4. [MULTIMEDIA] Multicam\n   • Unit Alat: PXW 2 + Tripod | Switcher + Recorder\n   • Staff Inhouse (2): Heri\, Jay (Mulyadi (Jay))\n   • Kru Freelance (2): Okis\, Bacil\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: TSI (Taman Safari Indonesia) (PIC: Jay (Mulyadi) & Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: TSI (Taman Safari Indonesia)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261118-patra-jasa@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261118T200000
+DTEND;TZID=Asia/Jakarta:20261118T230000
+SUMMARY:[RIZ PRODUCTION] Patra Jasa (Sound 15rb\, Lighting\, LED Total 44 Meter\, Produksi (Ronald)) - PIC: Fahrul (M. Fahrulyana . A)
+LOCATION:Patra Jasa (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 18 Nov 2026 (2026-11-18)\n📍 Lokasi / Venue: Patra Jasa\n🕒 Jadwal Loading / Berangkat: Loading 17 Malam jam 20.00\n👮 Person in Charge (PIC): Fahrul (M. Fahrulyana . A)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 15rb\n   • Unit Alat: Avanda 6\, Sub Avanda 4\, DB 8\, LVX 2\, EWD 4\, QA 4\, HD + DL 251\, Gooseneck\, Midas M32+Splitter | Stand Set & Backline Set Drum Tour Custom | Yamaha Montage 8 (BBA) & Yamaha Montage 7 (BBA) | IEM 10 (Jumeno)\, Senn AC3 Antenna Combiner 2\, DI Box 12 | Stand Keyboard Double 4\, Stand Keyboard Single 3\, Stand Book 5\n   • Staff Inhouse (4): Mboh (Muhamad Rahmat (Mboh))\, Buluk (Suryana (Buluk))\, Dani (Ramdani (Dani))\, Opik (Taufik Diana (Opik))\n   • Kru Freelance (4): Adin\, Cionk [Ambil barang BBA]\, Timbul [Ambil barang BBA]\, Woyo\n   • Armada Mobilisasi: Truck Operasional\, Yosep (Armada Mitra Yosep)\, Pick Up Carry RIZ (011/012/013/014)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Parled 16\, Beam 12\, Fresnel 8\, Stromy 8\, Hazer 2\, Follow Spot\, Brute 2\, GrandMA\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (3): Ghele\, Ugan\, Rizki\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [VIDEOTRON] LED Total 44 Meter\n   • Unit Alat: LED Center 4x8 | LED Wing 1\,5x4 2Set (Bawain Pemberat Banyakan)\n   • Staff Inhouse (3): Ayong (Ayong Sumarsih)\, Irfan (Muhamad Irvan)\, Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (5): Ambon\, Adi\, Ipal\, Fiki\, Yopi\n   • Armada Mobilisasi: Engkel Woyo (Armada Mitra Woyo)\, Yosep (Armada Mitra Yosep)\, Truk Engkel PS 110 (F 8942 BG)\n\n4. [PRODUKSI] Produksi (Ronald)\n   • Unit Alat: Gawangan Lighting 5\,5x10 Meter | Level LED tinggi 1 Meter | Gawangan LED 6x3\,4\n   • Staff Inhouse (1): Fahrul (M. Fahrulyana . A (Fahrul))\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Patra Jasa (PIC: Fahrul (M. Fahrulyana . A))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Patra Jasa
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261119-japfa-gadog@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261119T110000
+DTEND;TZID=Asia/Jakarta:20261119T170000
+SUMMARY:[RIZ PRODUCTION] Japfa Gadog (Sound 5rb\, LED 3x4 + Level Tinggi 1 Meter 2Set) - PIC: Unyim (Wahyudin) & Wigi
+LOCATION:Japfa Gadog (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 19-20 Nov 2026 (2026-11-19)\n📍 Lokasi / Venue: Japfa Gadog\n🕒 Jadwal Loading / Berangkat: Sound Loading 18 Siang jam 11.00 | LED Loading Sore jam 16.00\n👮 Person in Charge (PIC): Unyim (Wahyudin) & Wigi\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001 2\, 8002 2\, Art6\, WHM 6\, Clipon 2\, M32+DL\, Gooseneck | Stand Set\n   • Staff Inhouse (2): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\n   • Kru Freelance (1): Inal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [VIDEOTRON] LED 3x4 + Level Tinggi 1 Meter 2Set\n   • Unit Alat: LED 3x4 + Level Tinggi 1 Meter 2Set\n   • Staff Inhouse (1): Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (4): Yopi\, Ipal [Drop]\, Fiki [Drop]\, Woyo [Jemput Bongkaran]\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Japfa Gadog (PIC: Unyim (Wahyudin) & Wigi)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Japfa Gadog
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261119-aston-sentul@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261119T190000
+DTEND;TZID=Asia/Jakarta:20261119T230000
+SUMMARY:[RIZ PRODUCTION] Aston Sentul (Sound 3rb\, Streaming 3 Cam) - PIC: Jay (Mulyadi)
+LOCATION:Aston Sentul (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 19 Nov 2026 (2026-11-19)\n📍 Lokasi / Venue: Aston Sentul\n🕒 Jadwal Loading / Berangkat: Loading 18 Malam\n👮 Person in Charge (PIC): Jay (Mulyadi)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 3rb\n   • Unit Alat: Lvx 2\, 8003 2\, Art 4 (2 Delay)\, M32R+DL\, WHM 8\, Gooseneck | Stand Set\n   • Staff Inhouse (0): -\n   • Kru Freelance (2): Ardi\, Zuhri\n   • Armada Mobilisasi: Jay\n\n2. [MULTIMEDIA] Streaming 3 Cam\n   • Unit Alat: PC Intel + Acc\, Laptop 3\, Cam PXW 3\, Switcher | TV Matador 50" 2 Unit\, Godox 4\n   • Staff Inhouse (2): Heri [VJ & Zoom]\, Jay (Mulyadi (Jay)) [Cam]\n   • Kru Freelance (4): Okis [VJ & Zoom]\, Ulloh [Switcher]\, Chandra [Cam]\, Richad [Cam]\n   • Armada Mobilisasi: APV\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Aston Sentul (PIC: Jay (Mulyadi))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Aston Sentul
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261119-aston-radio-dalem@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261119T210000
+DTEND;TZID=Asia/Jakarta:20261119T230000
+SUMMARY:[RIZ PRODUCTION] Aston Radio Dalem (Sound 3rb\, LED 5x2\,5 + Level 1M\, Lighting & Genset) - PIC: Yudis & Irvan
+LOCATION:Aston Radio Dalem (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 19 Nov 2026 (2026-11-19)\n📍 Lokasi / Venue: Aston Radio Dalem\n🕒 Jadwal Loading / Berangkat: Loading 18 Malam Jam 21:00 di Lokasi\n👮 Person in Charge (PIC): Yudis & Irvan\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 3rb\n   • Unit Alat: K-Array\, Db 4\, WHM 6\, TF1\, Gooseneck | Stand Set\n   • Staff Inhouse (1): Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (1): Arul\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [VIDEOTRON] LED 5x2\,5 + Level 1M\n   • Unit Alat: LED 5x2\,5 | Level 1M | TV 65" x 2 (Rae)\n   • Staff Inhouse (1): Irvan (Muhamad Irvan)\n   • Kru Freelance (2): Adi\, Ipal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [LIGHTING] Lighting & Genset\n   • Unit Alat: Par 2 Bar\, Beam 4\, Fresnel 4\, Smoke\, Wing | Genset 40KVA (Bogor Genset) | Mini Garden 6m (Hafiz)\n   • Staff Inhouse (0): -\n   • Kru Freelance (3): Ghele\, Ugan\, Rifki\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Aston Radio Dalem (PIC: Yudis & Irvan)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Aston Radio Dalem
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261120-mambruk-anyer@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261120T080000
+DTEND;TZID=Asia/Jakarta:20261120T140000
+SUMMARY:[RIZ PRODUCTION] Mambruk Anyer (Sound 15rb\, Lighting\, Produksi) - PIC: Fahrul (M. Fahrulyana . A)
+LOCATION:Mambruk Anyer (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 20 Nov 2026 (2026-11-20)\n📍 Lokasi / Venue: Mambruk Anyer\n🕒 Jadwal Loading / Berangkat: Loading 19 Pagi\n👮 Person in Charge (PIC): Fahrul (M. Fahrulyana . A)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 15rb\n   • Unit Alat: HDL 4\, Sub KLA 2\, DB 12\, Mipro 4\, QA 4\, M32+DL\, M32+Splitter\, Gooseneck | Backline 2 Set\, Stand Set\, IEM 5 Unit (Jumeno)\n   • Staff Inhouse (1): Mboh (Muhamad Rahmat (Mboh))\n   • Kru Freelance (6): Jordy\, ACA\, Cionk\, Enday\, Dyar\, Wildan\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Pick Up Carry 012 (F 8446 BF)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Parled 12\, Beam 8\, Fresnel 4\, Smoke 1\, Stromy 12\, Hazer 1\, Tiger\n   • Staff Inhouse (0): -\n   • Kru Freelance (3): Endin\, Idrus\, Timbul\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [PRODUKSI] Produksi\n   • Unit Alat: Koordinasi Produksi & Backline Anyer\n   • Staff Inhouse (1): Fahrul (M. Fahrulyana . A (Fahrul))\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Mambruk Anyer (PIC: Fahrul (M. Fahrulyana . A))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Mambruk Anyer
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261120-kemenkes-hang-jebat@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261120T210000
+DTEND;TZID=Asia/Jakarta:20261120T230000
+SUMMARY:[RIZ PRODUCTION] Kemenkes Hang Jebat (Multicam\, LED 2x3 Meter (Portrait)) - PIC: Jay (Mulyadi) & Ayong
+LOCATION:Kemenkes Hang Jebat (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 20 Nov 2026 (2026-11-20)\n📍 Lokasi / Venue: Kemenkes Hang Jebat\n🕒 Jadwal Loading / Berangkat: LED Loading 19 Malam Jam 21:00 | Multicam Loading Subuh jam 05.00\n👮 Person in Charge (PIC): Jay (Mulyadi) & Ayong\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [MULTIMEDIA] Multicam\n   • Unit Alat: PXW 1\, NX 2 + Tripod | Switcher + Recorder | Wireless\n   • Staff Inhouse (1): Jay (Mulyadi (Jay))\n   • Kru Freelance (3): Uloh\, Iman\, Ariq\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n2. [VIDEOTRON] LED 2x3 Meter (Portrait)\n   • Unit Alat: LED 2x3 Meter (Portrait) + Level Tinggi 1 Meter\n   • Staff Inhouse (1): Ayong (Ayong Sumarsih)\n   • Kru Freelance (2): Ambon\, Fiki\n   • Armada Mobilisasi: Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Kemenkes Hang Jebat (PIC: Jay (Mulyadi) & Ayong)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Kemenkes Hang Jebat
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261120-sedayu-indo-golf@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261120T190000
+DTEND;TZID=Asia/Jakarta:20261120T230000
+SUMMARY:[RIZ PRODUCTION] Sedayu Indo Golf (LED 2x5 + Level 80cm) - PIC: Irvan
+LOCATION:Sedayu Indo Golf (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 20 Nov 2026 (2026-11-20)\n📍 Lokasi / Venue: Sedayu Indo Golf\n🕒 Jadwal Loading / Berangkat: Loading 19 Malam\n👮 Person in Charge (PIC): Irvan\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 2x5 + Level 80cm\n   • Unit Alat: LED 2x5 + Level 80cm\n   • Staff Inhouse (1): Irvan (Muhamad Irvan)\n   • Kru Freelance (2): Adi\, Ipal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Sedayu Indo Golf (PIC: Irvan)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Sedayu Indo Golf
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261120-raffles@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261120T190000
+DTEND;TZID=Asia/Jakarta:20261120T230000
+SUMMARY:[RIZ PRODUCTION] Raffles Hotel (Multicam & YouTube Stream) - PIC: Heri
+LOCATION:Raffles Hotel (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 20-21 Nov 2026 (2026-11-20)\n📍 Lokasi / Venue: Raffles Hotel\n🕒 Jadwal Loading / Berangkat: Loading 19 Malam\n👮 Person in Charge (PIC): Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [MULTIMEDIA] Multicam & YouTube Stream\n   • Unit Alat: PXW 3 + Tripod (1 Sewa) | Switcher + Record | Day 2 Ada YouTube 2 Laptop\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (3): Chandra\, Okis\, Bule\n   • Armada Mobilisasi: APV\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Raffles Hotel (PIC: Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Raffles Hotel
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261121-prasasti-westin@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261121T190000
+DTEND;TZID=Asia/Jakarta:20261121T230000
+SUMMARY:[RIZ PRODUCTION] Prasasti Westin (Sound 10rb\, Lighting\, Multicam\, LED 4x8\, Produksi & Genset) - PIC: Agus (Agustino Setiawan)
+LOCATION:Prasasti Westin (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 21 Nov 2026 (2026-11-21)\n📍 Lokasi / Venue: Prasasti Westin\n🕒 Jadwal Loading / Berangkat: Loading 20 Malam\n👮 Person in Charge (PIC): Agus (Agustino Setiawan)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 10rb\n   • Unit Alat: Avanda 4\, Sub KLA 2\, DB 8\, WHM 6\, M32 + DL\, Gooseneck\n   • Staff Inhouse (4): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\, Dani (Ramdani (Dani))\, Opik (Taufik Diana (Opik))\n   • Kru Freelance (1): Woyo\n   • Armada Mobilisasi: Yosep 2 (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Par 12 Bar\, Beam 12\, Fresnel 6\, Hazer 1\, Followspot\, Minibrute 2\, Stromy 8\, Wall Washer 4\, GrandMA\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (3): Ghele\, Ugan\, Rizki\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [MULTIMEDIA] Multicam\n   • Unit Alat: PXW 2\, NX 2 + Tripod (PXW 1 Sewa) | Switcher + Recorder | Wireless\n   • Staff Inhouse (1): Jay (Mulyadi (Jay))\n   • Kru Freelance (3): Uloh\, Iman\, Ariq\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n4. [VIDEOTRON] LED 4x8\n   • Unit Alat: LED 4x8 (12 Meter dari Team Hang Jebat\, Sisa 20 dibawa dari gudang)\n   • Staff Inhouse (1): Ayong (Ayong Sumarsih)\n   • Kru Freelance (4): Ambon\, Bunda\, Yopy\, Fiki\n   • Armada Mobilisasi: Engkel Woyo (Armada Mitra Woyo)\, Jay\n\n5. [PRODUKSI] Produksi & Genset\n   • Unit Alat: Genset 60KVA 2 Unit (Yadi) | Backdrop (Edi) | Rigging (Ronald)\n   • Staff Inhouse (1): Agus (Agustino Setiawan (Agus))\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Prasasti Westin (PIC: Agus (Agustino Setiawan))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Prasasti Westin
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261121-kemendikbud@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261121T150000
+DTEND;TZID=Asia/Jakarta:20261121T210000
+SUMMARY:[RIZ PRODUCTION] Kemendikbud (Audio & Green Screen Stream) - PIC: Yudis (Yudishtira Purnama A)
+LOCATION:Kemendikbud (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 21 Nov 2026 (2026-11-21)\n📍 Lokasi / Venue: Kemendikbud\n🕒 Jadwal Loading / Berangkat: Loading 20 Sore (Sekalian bawa barang buat MRP)\n👮 Person in Charge (PIC): Yudis (Yudishtira Purnama A)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [MULTIMEDIA] Audio & Green Screen Stream\n   • Unit Alat: AD 2\, TF1\, Clipon 4 unit\, WHM 2 | Greenscreen (Riz) | TV Matador (Riz) | Stream Moa\n   • Staff Inhouse (1): Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (1): Ardi\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Kemendikbud (PIC: Yudis (Yudishtira Purnama A))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Kemendikbud
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261122-british-school@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261122T130000
+DTEND;TZID=Asia/Jakarta:20261122T190000
+SUMMARY:[RIZ PRODUCTION] British School (LED 3\,5x7 (26M)) - PIC: Wigi & Irvan
+LOCATION:British School (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 22-28 Nov 2026 (2026-11-22)\n📍 Lokasi / Venue: British School\n🕒 Jadwal Loading / Berangkat: Loading 21 Siang (Bawa motor buat bolak-balik selama disana)\n👮 Person in Charge (PIC): Wigi & Irvan\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 3\,5x7 (26M)\n   • Unit Alat: LED 3\,5x7 (26M)\n   • Staff Inhouse (2): Wigi (Dedi Agus Wigiantoro (Wigi))\, Irvan (Muhamad Irvan)\n   • Kru Freelance (2): Adi [Drop]\, Ipal [Drop]\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: British School (PIC: Wigi & Irvan)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: British School
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261122-mrp-wismul@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261122T190000
+DTEND;TZID=Asia/Jakarta:20261122T230000
+SUMMARY:[RIZ PRODUCTION] MRP & Wismul (Set 1 MRP & Set 2 Wismul) (Set 1 MRP — Sound 3rb\, Set 1 MRP — Stream + 4 Cam\, Set 1 MRP — Lighting\, Set 2 Wismul — Stream + 2 Cam Wireless\, Set 2 Wismul — Sound 1rb) - PIC: Jay (Mulyadi) & Heri
+LOCATION:MRP & Wismul (Set 1 MRP & Set 2 Wismul) (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 22 Nov 2026 (2026-11-22)\n📍 Lokasi / Venue: MRP & Wismul (Set 1 MRP & Set 2 Wismul)\n🕒 Jadwal Loading / Berangkat: Loading 21 Malam\n👮 Person in Charge (PIC): Jay (Mulyadi) & Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Set 1 MRP — Sound 3rb\n   • Unit Alat: K-Array\, Db 4\, WHM 6\, M32\, Gooseneck | Stand Set\n   • Staff Inhouse (1): Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (1): Cionk\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [MULTIMEDIA] Set 1 MRP — Stream + 4 Cam\n   • Unit Alat: PC + Acc | PXW 4 + Tripod | Switcher + Record | Laptop 3\n   • Staff Inhouse (1): Jay (Mulyadi (Jay))\n   • Kru Freelance (4): Uloh\, Ariq\, Tofan\, Iman\n   • Armada Mobilisasi: Richard\n\n3. [LIGHTING] Set 1 MRP — Lighting\n   • Unit Alat: Par 2 Bar\, Fresnel 4\, Quartz\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (1): Isal\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n4. [MULTIMEDIA] Set 2 Wismul — Stream + 2 Cam Wireless\n   • Unit Alat: PC Ryzen + Acc | NX 2 + Tripod | Wireless | Laptop 2\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (3): Chandra\, Okis\, Fajar\n   • Armada Mobilisasi: APV\n\n5. [AUDIO] Set 2 Wismul — Sound 1rb\n   • Unit Alat: Art 2\, Clipon 2\, WHM 2\, TF | Stand Set\n   • Staff Inhouse (0): -\n   • Kru Freelance (1): Ardi\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: MRP & Wismul (Set 1 MRP & Set 2 Wismul) (PIC: Jay (Mulyadi) & Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: MRP & Wismul (Set 1 MRP & Set 2 Wismul)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261123-tanah-baru-asogiri@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261123T090000
+DTEND;TZID=Asia/Jakarta:20261123T150000
+SUMMARY:[RIZ PRODUCTION] Tanah Baru Lapangan Asogiri (Sound 20rb\, LED 42 Meter\, Multicam) - PIC: Mboh (Muhamad Rahmat) & Ayong
+LOCATION:Tanah Baru Lapangan Asogiri (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 23 Nov 2026 (2026-11-23)\n📍 Lokasi / Venue: Tanah Baru Lapangan Asogiri\n🕒 Jadwal Loading / Berangkat: Loading 22 Siang jam 09.00\n👮 Person in Charge (PIC): Mboh (Muhamad Rahmat) & Ayong\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 20rb\n   • Unit Alat: Avanda 8\, Sub Avanda 6\, ART10\, LVX 2\, Mipro 4\, QA 4\, M32+DL\, M32+Splitter\, Gooseneck\, Headset 2 | Backline (Drum 2\, RD 1) Stage Custom + Pearl | Stand Set\n   • Staff Inhouse (4): Mboh (Muhamad Rahmat (Mboh))\, Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\, Opik (Taufik Diana (Opik))\n   • Kru Freelance (4): Enday\, Inal\, Maul\, Arul\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Yosep (Armada Mitra Yosep)\, Jay\n\n2. [VIDEOTRON] LED 42 Meter\n   • Unit Alat: Center 3x7\,5 (8 Meter Pinjem Maxindo) | Wing 3x3 2Set | PC Ryzen\n   • Staff Inhouse (1): Ayong (Ayong Sumarsih)\n   • Kru Freelance (6): Bunda\, Ambon\, Yopi\, Ugan\, Ipal\, Fiki\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Yosep (Armada Mitra Yosep)\n\n3. [MULTIMEDIA] Multicam\n   • Unit Alat: PXW Z190 4 | SE 1200 | Laptop Stream YouTube\n   • Staff Inhouse (2): Herry (Heri)\, Jay (Mulyadi (Jay))\n   • Kru Freelance (3): Ulloh\, Chandra\, Okis\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Tanah Baru Lapangan Asogiri (PIC: Mboh (Muhamad Rahmat) & Ayong)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Tanah Baru Lapangan Asogiri
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261123-pesona-alam@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261123T190000
+DTEND;TZID=Asia/Jakarta:20261123T230000
+SUMMARY:[RIZ PRODUCTION] Pesona Alam (Riders RAN) (Sound 20rb (Riders RAN)) - PIC: Buluk (Suryana) & Dani
+LOCATION:Pesona Alam (Riders RAN) (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 23 Nov 2026 (2026-11-23)\n📍 Lokasi / Venue: Pesona Alam (Riders RAN)\n🕒 Jadwal Loading / Berangkat: Loading 22 Malam\n👮 Person in Charge (PIC): Buluk (Suryana) & Dani\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 20rb (Riders RAN)\n   • Unit Alat: Avanda 8\, Sub KLA 4\, DB 10\, EWD 4\, QA 4\, Midas HD+DL 251\, Midas HD+Splitter\, Gooseneck | Backline (Drum 2 + RD 1) (Tour Custom\, PDP) | Stand Set & IEM Senn G4 8 Unit\n   • Staff Inhouse (3): Bulux (Suryana (Buluk))\, Dani (Ramdani (Dani))\, Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (6): Adin\, Rebing\, ACA\, Cionk\, Dyar\, Woyo\n   • Armada Mobilisasi: Truck Operasional\, Pick Up Carry 012 (F 8446 BF)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Pesona Alam (Riders RAN) (PIC: Buluk (Suryana) & Dani)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Pesona Alam (Riders RAN)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261124-sukabumi@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261124T190000
+DTEND;TZID=Asia/Jakarta:20261124T230000
+SUMMARY:[RIZ PRODUCTION] Sukabumi (Lighting) - PIC: Heri
+LOCATION:Sukabumi (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 24 Nov 2026 (2026-11-24)\n📍 Lokasi / Venue: Sukabumi\n🕒 Jadwal Loading / Berangkat: Loading 23 Malam\n👮 Person in Charge (PIC): Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [LIGHTING] Lighting\n   • Unit Alat: Parled 2bar\, Fresnel 4\, Quartz\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (1): Isal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Sukabumi (PIC: Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Sukabumi
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261124-tsi@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261124T150000
+DTEND;TZID=Asia/Jakarta:20261124T210000
+SUMMARY:[RIZ PRODUCTION] TSI (Taman Safari Indonesia) (Sound 5rb\, Lighting) - PIC: Unyim (Wahyudin)
+LOCATION:TSI (Taman Safari Indonesia) (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 24 Nov 2026 (2026-11-24)\n📍 Lokasi / Venue: TSI (Taman Safari Indonesia)\n🕒 Jadwal Loading / Berangkat: Loading 23 Sore\n👮 Person in Charge (PIC): Unyim (Wahyudin)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001 2\, 8002 2\, Art6\, WHM 6\, M32+DL\, Gooseneck | Stand Set OT\n   • Staff Inhouse (2): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\n   • Kru Freelance (1): Inal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Par 2 bar\, Beam 4\, Fresnel 4\, Smoke 1\, Tiger\n   • Staff Inhouse (1): Gatot (Gatot Wiliyanto) [Drop ke TSI]\n   • Kru Freelance (2): Endin\, Dyar\n   • Armada Mobilisasi: Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: TSI (Taman Safari Indonesia) (PIC: Unyim (Wahyudin))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: TSI (Taman Safari Indonesia)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261125-westin@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261125T000000
+DTEND;TZID=Asia/Jakarta:20261125T060000
+SUMMARY:[RIZ PRODUCTION] Westin Hotel (Sound 5rb & Sound Presscon\, Lighting\, LED 12x4 (Sewa Maxindo 15Meter)\, Stream + 4 Cam\, Produksi (Ronald)) - PIC: Mboh\, Ayong\, & Jay
+LOCATION:Westin Hotel (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 25 Nov 2026 (2026-11-25)\n📍 Lokasi / Venue: Westin Hotel\n🕒 Jadwal Loading / Berangkat: Loading 24 Malam Jam 00:00\n👮 Person in Charge (PIC): Mboh\, Ayong\, & Jay\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb & Sound Presscon\n   • Unit Alat: 6001 2\, 8002 2\, Art6\, WHM 6\, M32+DL\, Gooseneck\, Stand Set | Sound Presscon: Art 3\, WHM 6\, TF 1\n   • Staff Inhouse (2): Mboh (Muhamad Rahmat (Mboh))\, Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (2): ACA\, Isal [Presscon]\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Beam 14\, Parled 3 bar\, Stromy 8\, Fresnel 4\, Followspot\, Minibrute 2\, Hazer\, GrandMA\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (3): Ghele\, Endin\, Ugan\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [VIDEOTRON] LED 12x4 (Sewa Maxindo 15Meter)\n   • Unit Alat: LED 12x4 (Sewa Maxindo 15Meter)\n   • Staff Inhouse (1): Ayong (Ayong Sumarsih)\n   • Kru Freelance (5): Ambon\, Bunda\, Adi\, Woyo\, Yopi\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Engkel Woyo (Armada Mitra Woyo)\n\n4. [MULTIMEDIA] Stream + 4 Cam\n   • Unit Alat: PC + Acc | PXW 4 + Tripod | Switcher + Record | Laptop 3\n   • Staff Inhouse (2): Heri\, Jay (Mulyadi (Jay))\n   • Kru Freelance (4): Uloh\, Okis\, Chandra\, Iman\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n5. [PRODUKSI] Produksi (Ronald)\n   • Unit Alat: Level 12m tinggi 1m | Gawangan LED 10x4 | Gawangan Lighting 13x6\,8\n   • Staff Inhouse (0): -\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Westin Hotel (PIC: Mboh\, Ayong\, & Jay)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Westin Hotel
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261125-bellatera-kelapa-gading@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261125T190000
+DTEND;TZID=Asia/Jakarta:20261125T230000
+SUMMARY:[RIZ PRODUCTION] Bellatera Kelapa Gading (Sound & Backline Set) - PIC: Ardi
+LOCATION:Bellatera Kelapa Gading (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 25 Nov 2026 (2026-11-25)\n📍 Lokasi / Venue: Bellatera Kelapa Gading\n🕒 Jadwal Loading / Berangkat: Loading 24 Malam\n👮 Person in Charge (PIC): Ardi\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound & Backline Set\n   • Unit Alat: Art 2 | Backline Set | Mic Drum | Stand Set | Gitar-gitar\n   • Staff Inhouse (0): -\n   • Kru Freelance (2): Ardi\, Enday\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Bellatera Kelapa Gading (PIC: Ardi)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Bellatera Kelapa Gading
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261126-telkom@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261126T150000
+DTEND;TZID=Asia/Jakarta:20261126T210000
+SUMMARY:[RIZ PRODUCTION] Telkom (Sound 3rb\, Lighting) - PIC: Buluk (Suryana)
+LOCATION:Telkom (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 26 Nov 2026 (2026-11-26)\n📍 Lokasi / Venue: Telkom\n🕒 Jadwal Loading / Berangkat: Loading 25 Sore jam 15.00\n👮 Person in Charge (PIC): Buluk (Suryana)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 3rb\n   • Unit Alat: K-Array\, Db 4\, WHM 6\, TF1\, Gooseneck | Stand Set\n   • Staff Inhouse (1): Bulux (Suryana (Buluk))\n   • Kru Freelance (2): Cionk\, Dyar\n   • Armada Mobilisasi: Jay\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Beam 4\, Par 2Bar\, Fresnel 2\n   • Staff Inhouse (0): -\n   • Kru Freelance (2): Ndin\, Isal\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Telkom (PIC: Buluk (Suryana))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Telkom
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261128-flow-ritz-carlton@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261128T170000
+DTEND;TZID=Asia/Jakarta:20261128T230000
+SUMMARY:[RIZ PRODUCTION] Flow Ritz Carlton (LED 4x7 2 Set (Victor) & TV 50") - PIC: Agus & Ayong
+LOCATION:Flow Ritz Carlton (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 28 Nov 2026 (2026-11-28)\n📍 Lokasi / Venue: Flow Ritz Carlton\n🕒 Jadwal Loading / Berangkat: Loading 27 Sore jam 17.00\n👮 Person in Charge (PIC): Agus & Ayong\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 4x7 2 Set (Victor) & TV 50"\n   • Unit Alat: LED 4x7 2 Set (2 Set Victor) | TV 50" 4Pcs (Rae)\n   • Staff Inhouse (2): Agus (Agustino Setiawan (Agus))\, Ayong (Ayong Sumarsih)\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Flow Ritz Carlton (PIC: Agus & Ayong)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Flow Ritz Carlton
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261128-sheraton@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261128T190000
+DTEND;TZID=Asia/Jakarta:20261128T230000
+SUMMARY:[RIZ PRODUCTION] Sheraton Hotel (Stream + 4 Cam\, Sound 10rb\, Lighting\, LED P2.6 4\,5x9 Meter) - PIC: Fahrul & Agus
+LOCATION:Sheraton Hotel (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 28-30 Nov 2026 (2026-11-28)\n📍 Lokasi / Venue: Sheraton Hotel\n🕒 Jadwal Loading / Berangkat: Loading 27 Malam (28 GR)\n👮 Person in Charge (PIC): Fahrul & Agus\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [MULTIMEDIA] Stream + 4 Cam\n   • Unit Alat: PC + Acc | PXW 4 + Tripod | Switcher + Record | Laptop 3\n   • Staff Inhouse (0): -\n   • Kru Freelance (6): Uloh [VJ + Zoom]\, Kemal [VJ + Zoom]\, Chandra [VD]\, Iman [Campers]\, Tile [Campers]\, Fera [Campers]\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n2. [AUDIO] Sound 10rb\n   • Unit Alat: Avanda 4\, Sub KLA 2\, DB 8\, EWD 4\, QA 2\, Midas HD+DL 251\, Gooseneck | WHM 35 Unit | Combiner 8 Unit | Stand Set\n   • Staff Inhouse (2): Dani (Ramdani (Dani))\, Opick (Taufik Diana (Opik))\n   • Kru Freelance (2): Adin\, Dyar\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n3. [LIGHTING] Lighting\n   • Unit Alat: Par 2bar\, Fresnel 4\, Smoke\, Mixer Ndin\n   • Staff Inhouse (0): -\n   • Kru Freelance (2): Rio\, Dyar\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n4. [VIDEOTRON] LED P2.6 4\,5x9 Meter\n   • Unit Alat: LED P2.6 4\,5x9 Meter (Ambil di R2R Serpong) | Level 9 Meter Tinggi 1\,5m (Farid) | Gawangan LED 6x4\,3 (Farid)\n   • Staff Inhouse (3): Ayong (Ayong Sumarsih) [Setup & Standby]\, Irvan (Muhamad Irvan) [Setup & Bongkaran]\, Wigi (Dedi Agus Wigiantoro (Wigi)) [Setup]\n   • Kru Freelance (6): Bunda [Setup & Standby]\, Ambon [Setup]\, Adi [Setup & Bongkaran]\, Fiki [Setup]\, Ipal [Setup & Bongkaran]\, Dian [Bongkaran]\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Yosep 2 (Armada Mitra Yosep)\, Rush\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Sheraton Hotel (PIC: Fahrul & Agus)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Sheraton Hotel
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261128-telkom-hub@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261128T090000
+DTEND;TZID=Asia/Jakarta:20261128T150000
+SUMMARY:[RIZ PRODUCTION] Telkom Hub (Stream + 3 Cam) - PIC: Jay (Mulyadi) & Heri
+LOCATION:Telkom Hub (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 28-29 Nov 2026 (2026-11-28)\n📍 Lokasi / Venue: Telkom Hub\n🕒 Jadwal Loading / Berangkat: Loading & GR 27 Pagi jam 09:00 di Lokasi\n👮 Person in Charge (PIC): Jay (Mulyadi) & Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [MULTIMEDIA] Stream + 3 Cam\n   • Unit Alat: PC + Acc\, NX 3 + Tripod (Sewa 1)\, Switcher + Record\, Laptop 3 | Clearcom 5 unit buat SM\, Perfect Cue\n   • Staff Inhouse (2): Heri [VJ vMix + Zoom & Setup]\, Jay (Mulyadi (Jay)) [Campers]\n   • Kru Freelance (6): Moa [VJ Resolume]\, Cahyo [GR & Setup]\, Okis [VJ vMix + Zoom & Setup]\, Tofan [VD & Setup]\, Dedy [Campers]\, Iman [Setup]\n   • Armada Mobilisasi: APV\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Telkom Hub (PIC: Jay (Mulyadi) & Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Telkom Hub
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261129-mabes-al@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261129T060000
+DTEND;TZID=Asia/Jakarta:20261129T120000
+SUMMARY:[RIZ PRODUCTION] Mabes AL (Sound 5rb) - PIC: Unyim (Wahyudin)
+LOCATION:Mabes AL (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 29 Nov 2026 (2026-11-29)\n📍 Lokasi / Venue: Mabes AL\n🕒 Jadwal Loading / Berangkat: Loading 29 Pagi Jam 06.00 di Lokasi\n👮 Person in Charge (PIC): Unyim (Wahyudin)\n📌 Status Operasional: Terjadwal\n⚠️ Catatan / SOP Venue: WAJIB PAKAI KEMEJA. Tidak boleh memakai celana pendek\, kaos\, jaket\, sweater\, atau sandal.\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: HDL 4\, Sub Double 2\, Art6\, WHM 6\, M32+DL\, Gooseneck (M32 dari Oki) | Stand Set | Drum (Sekalian bawa backline buat Kemenkes)\n   • Staff Inhouse (3): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\, Opik165 (Taufik Diana (Opik))\n   • Kru Freelance (2): Timbul\, Yopi\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\, Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Mabes AL (PIC: Unyim (Wahyudin))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Mabes AL
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261129-pesona-alam@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261129T190000
+DTEND;TZID=Asia/Jakarta:20261129T230000
+SUMMARY:[RIZ PRODUCTION] Pesona Alam (Sound 5rb\, Lighting & TV Matador) - PIC: Agus (Agustino Setiawan)
+LOCATION:Pesona Alam (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 29 Nov 2026 (2026-11-29)\n📍 Lokasi / Venue: Pesona Alam\n🕒 Jadwal Loading / Berangkat: Loading 28 Malam\n👮 Person in Charge (PIC): Agus (Agustino Setiawan)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: HDL 4\, Sub Double 2\, Art6\, WHM 6\, M32+DL\, Gooseneck | Stand Set | Drum\n   • Staff Inhouse (0): -\n   • Kru Freelance (3): Rebing\, Arul\, Inal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting & TV Matador\n   • Unit Alat: Lighting: Team Ronny STV | Genset 60KVA (Yadi) | TV Matador (Agus)\n   • Staff Inhouse (1): Agus (Agustino Setiawan (Agus))\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Pesona Alam (PIC: Agus (Agustino Setiawan))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Pesona Alam
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261129-bucketlist@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261129T220000
+DTEND;TZID=Asia/Jakarta:20261129T230000
+SUMMARY:[RIZ PRODUCTION] Bucketlist Bogor (Sound 15rb + Sound 3rb LT.2 + Sound 1rb\, Lighting & Genset) - PIC: Mboh (Muhamad Rahmat) & Heri
+LOCATION:Bucketlist Bogor (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 29-30 Nov 2026 (2026-11-29)\n📍 Lokasi / Venue: Bucketlist Bogor\n🕒 Jadwal Loading / Berangkat: Loading 28 Malam jam 22:00\n👮 Person in Charge (PIC): Mboh (Muhamad Rahmat) & Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 15rb + Sound 3rb LT.2 + Sound 1rb\n   • Unit Alat: Utama: Avanda 6\, Sub Avanda 4\, DB 6\, LVX 2\, WHM 6\, M32+DL\, M32+Splitter\, Gooseneck\, Stand Set\, Mic Set\, Backline (Drum\, RD Hari Kedua)\, IEM G4 7 Unit (Jumeno) | LT.2 (Sound 3rb): 8002 1\, Art4\, WHM 2\, TF1 | Sound 1rb: DB 2\, Headset 2\, MG12\n   • Staff Inhouse (3): Mboh (Muhamad Rahmat (Mboh))\, Bulux (Suryana (Buluk))\, Yudis (Yudishtira Purnama A (Yudis)) [LT.2]\n   • Kru Freelance (6): ACA\, Cionk\, Enday\, Isal\, Woyo\, Delon [LT.2]\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Yosep (Armada Mitra Yosep)\, Jay\n\n2. [LIGHTING] Lighting & Genset\n   • Unit Alat: Par 3 bar\, Beam 4\, Fresnel 4\, Minibrute 2\, Hazer\, Mirror Ball\, Tiger | Genset 60KVA (Yadi)\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (2): Idrus\, Kote\n   • Armada Mobilisasi: Pick Up Carry RIZ (011/012/013/014)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Bucketlist Bogor (PIC: Mboh (Muhamad Rahmat) & Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Bucketlist Bogor
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261130-sawangan-begawan-taman-budaya@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261130T190000
+DTEND;TZID=Asia/Jakarta:20261130T230000
+SUMMARY:[RIZ PRODUCTION] Alun-Alun Sawangan\, Puri Begawan & Vaceng Taman Budaya (LED Vaceng Taman Budaya (2\,5x4) & Sub-Vendor Sawangan/Begawan) - PIC: Irvan & Jay (Mulyadi)
+LOCATION:Alun-Alun Sawangan\, Puri Begawan & Vaceng Taman Budaya (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 30 Nov 2026 (2026-11-30)\n📍 Lokasi / Venue: Alun-Alun Sawangan\, Puri Begawan & Vaceng Taman Budaya\n🕒 Jadwal Loading / Berangkat: Loading 29 Malam\n👮 Person in Charge (PIC): Irvan & Jay (Mulyadi)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED Vaceng Taman Budaya (2\,5x4) & Sub-Vendor Sawangan/Begawan\n   • Unit Alat: Vaceng Taman Budaya: LED 2\,5 x 4 | Alun-Alun Sawangan: LED 3x4 meter P3.9 (Lempar Yanto) | Puri Begawan: LED 3x4 + Level 1 meter (Lempar Parman)\n   • Staff Inhouse (2): Irvan (Muhamad Irvan)\, Jay (Mulyadi (Jay))\n   • Kru Freelance (1): Ipal [Beres langsung Bongkaran Sheraton]\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Alun-Alun Sawangan\, Puri Begawan & Vaceng Taman Budaya (PIC: Irvan & Jay (Mulyadi))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Alun-Alun Sawangan\, Puri Begawan & Vaceng Taman Budaya
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261130-kemenkes-rasuna-said@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261130T130000
+DTEND;TZID=Asia/Jakarta:20261130T190000
+SUMMARY:[RIZ PRODUCTION] Kemenkes Rasuna Said (Sound 15rb\, LED 10x3\, Rigging (Jabrig)\, Sarnaville (Mandiri Tenda)\, Genset (Yadi) & Produksi (Bagas)) - PIC: Fahrul (M. Fahrulyana . A)
+LOCATION:Kemenkes Rasuna Said (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 30 Nov 2026 (2026-11-30)\n📍 Lokasi / Venue: Kemenkes Rasuna Said\n🕒 Jadwal Loading / Berangkat: LED Loading 29 Siang | Sound Loading 29 Malam\n👮 Person in Charge (PIC): Fahrul (M. Fahrulyana . A)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 15rb\n   • Unit Alat: HDL 6\, Sub Double 4\, Art 8\, WHM 6\, M32+DL (Oky)\, M32+Splitter\, Gooseneck | Stand Set\, Mic Set\, Backline\n   • Staff Inhouse (3): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\, Opik165 (Taufik Diana (Opik))\n   • Kru Freelance (4): Rebing\, Inal\, Timbul\, Yopy\n   • Armada Mobilisasi: Yosep 2 (Armada Mitra Yosep)\, Jay\n\n2. [VIDEOTRON] LED 10x3\n   • Unit Alat: LED 10x3 (LED sisa Kemenkes Lalamove)\n   • Staff Inhouse (2): Wigi (Dedi Agus Wigiantoro (Wigi))\, Irvan (Muhamad Irvan)\n   • Kru Freelance (4): Ambon\, Adi\, Ipal\, Fiki\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Yosep (Armada Mitra Yosep)\n\n3. [PRODUKSI] Rigging (Jabrig)\, Sarnaville (Mandiri Tenda)\, Genset (Yadi) & Produksi (Bagas)\n   • Unit Alat: Rigging Jabrig: Panggung 10x8 + Coversound\, Level LED T 2\,20m x L 10m\, Gawangan LED T 5x8m\, FOH Single Deck 5x5 | Sarnaville 3x3 10Pcs\, Genset 60KVA 1\, Genset 80KVA 1\, AC 5PK 3\, Misty Fan 6 (Yadi) | Backdrop 2\,44x3\,66 + Flooring Karpet (Bagas)\n   • Staff Inhouse (1): Fahrul (M. Fahrulyana . A (Fahrul))\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Kemenkes Rasuna Said (PIC: Fahrul (M. Fahrulyana . A))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Kemenkes Rasuna Said
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261201-kelapa-gading@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261201T190000
+DTEND;TZID=Asia/Jakarta:20261201T230000
+SUMMARY:[RIZ PRODUCTION] Kelapa Gading (LED 3x6) - PIC: Wigi (Dedi Agus Wigiantoro)
+LOCATION:Kelapa Gading (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 1 Des 2026 (2026-12-01)\n📍 Lokasi / Venue: Kelapa Gading\n🕒 Jadwal Loading / Berangkat: Loading 30 Nov Malam\n👮 Person in Charge (PIC): Wigi (Dedi Agus Wigiantoro)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 3x6\n   • Unit Alat: LED 3x6\n   • Staff Inhouse (1): Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (2): Ambon\, Fiki\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Kelapa Gading (PIC: Wigi (Dedi Agus Wigiantoro))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Kelapa Gading
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261202-mambruk-anyer@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261202T130000
+DTEND;TZID=Asia/Jakarta:20261202T190000
+SUMMARY:[RIZ PRODUCTION] Mambruk Anyer (Sound 15rb\, Lighting\, Produksi) - PIC: Fahrul (M. Fahrulyana . A)
+LOCATION:Mambruk Anyer (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 2 Des 2026 (2026-12-02)\n📍 Lokasi / Venue: Mambruk Anyer\n🕒 Jadwal Loading / Berangkat: Loading 1 Des Siang\n👮 Person in Charge (PIC): Fahrul (M. Fahrulyana . A)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 15rb\n   • Unit Alat: HDL 4\, Sub Avanda 2\, DB 12\, Lvx 2\, Mipro 4\, QA 4\, HD + DL251\, M32+Splitter\, Gooseneck | Backline 2 Set\, Stand Set\, IEM 5 Unit (Jumeno)\n   • Staff Inhouse (2): Mboh (Muhamad Rahmat (Mboh))\, Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (5): ACA\, Cionk\, Enday\, Dyar\, Woyo\n   • Armada Mobilisasi: Pick Up Carry 012 (F 8446 BF)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Parled 12\, Beam 8\, Fresnel 4\, Smoke 1\, Stromy 12\, Hazer 1\, Tiger\n   • Staff Inhouse (0): -\n   • Kru Freelance (3): Ghele\, Endin\, Ugan\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [PRODUKSI] Produksi\n   • Unit Alat: Koordinasi Produksi Anyer\n   • Staff Inhouse (1): Fahrul (M. Fahrulyana . A (Fahrul))\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Mambruk Anyer (PIC: Fahrul (M. Fahrulyana . A))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Mambruk Anyer
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261202-holiday-inn@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261202T190000
+DTEND;TZID=Asia/Jakarta:20261202T230000
+SUMMARY:[RIZ PRODUCTION] Holiday Inn (LED 2x6 + Level 6m T 120cm\, Lighting) - PIC: Irvan & Heri
+LOCATION:Holiday Inn (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 2-3 Des 2026 (2026-12-02)\n📍 Lokasi / Venue: Holiday Inn\n🕒 Jadwal Loading / Berangkat: Loading 1 Des Malam\n👮 Person in Charge (PIC): Irvan & Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 2x6 + Level 6m T 120cm\n   • Unit Alat: LED 2x6 | Level 6 Meter Tinggi 120cm\n   • Staff Inhouse (2): Irvan (Muhamad Irvan)\, Heri\n   • Kru Freelance (1): Yopi\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Fresnel 4 Unit\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Holiday Inn (PIC: Irvan & Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Holiday Inn
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261202-harris-summarecon-bekasi@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261202T190000
+DTEND;TZID=Asia/Jakarta:20261202T230000
+SUMMARY:[RIZ PRODUCTION] Harris Summarecon Bekasi (Sound System) - PIC: Unyim (Wahyudin)
+LOCATION:Harris Summarecon Bekasi (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 2-4 Des 2026 (2026-12-02)\n📍 Lokasi / Venue: Harris Summarecon Bekasi\n🕒 Jadwal Loading / Berangkat: Loading 1 Des Malam\n👮 Person in Charge (PIC): Unyim (Wahyudin)\n📌 Status Operasional: Terjadwal\n⚠️ Catatan / SOP Venue: Jangan pakai baju RIZ — Hitam Polos Saja.\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound System\n   • Unit Alat: Avanda 4\, Sub Avanda 2\, DB 8\, WHM 8\, M32+DL\, Gooseneck | Stand Set\n   • Staff Inhouse (2): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\n   • Kru Freelance (2): Inal\, Timbul [Drop]\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\, Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Harris Summarecon Bekasi (PIC: Unyim (Wahyudin))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Harris Summarecon Bekasi
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261203-pullman-cp@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261203T170000
+DTEND;TZID=Asia/Jakarta:20261203T230000
+SUMMARY:[RIZ PRODUCTION] Pullman Central Park (CP) (LED 2x4 + Level Tinggi 1 Meter 2Set) - PIC: Ayong Sumarsih
+LOCATION:Pullman Central Park (CP) (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 3 Des 2026 (2026-12-03)\n📍 Lokasi / Venue: Pullman Central Park (CP)\n🕒 Jadwal Loading / Berangkat: Loading 2 Des Sore jam 17.00\n👮 Person in Charge (PIC): Ayong Sumarsih\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 2x4 + Level Tinggi 1 Meter 2Set\n   • Unit Alat: LED 2x4 + Level Tinggi 1 Meter 2Set\n   • Staff Inhouse (1): Ayong (Ayong Sumarsih) [Geser R Hotel]\n   • Kru Freelance (2): Ambon [Geser R Hotel]\, Ipal [Geser R Hotel]\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Pullman Central Park (CP) (PIC: Ayong Sumarsih)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Pullman Central Park (CP)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261204-tribrata@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261204T150000
+DTEND;TZID=Asia/Jakarta:20261204T210000
+SUMMARY:[RIZ PRODUCTION] Tribrata (Sound & Split Room\, Lighting\, LED 3x4 + Level Tinggi 1\,2 Meter 2Set\, Produksi (Kenrich & Hafiz)) - PIC: Dani\, Heri\, & Wigi
+LOCATION:Tribrata (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 4 Des 2026 (2026-12-04)\n📍 Lokasi / Venue: Tribrata\n🕒 Jadwal Loading / Berangkat: Loading 3 Des Sore jam 15.00\n👮 Person in Charge (PIC): Dani\, Heri\, & Wigi\n📌 Status Operasional: Terjadwal\n⚠️ Catatan / SOP Venue: Jangan pakai baju RIZ — Hitam Polos Saja.\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound & Split Room\n   • Unit Alat: HDL 6\, KLA 4\, Art 8\, WHM 8\, M32+DL\, Gooseneck | Mixer Analog 3 (Split Room Jam 12.00\, 2 Spkr + 2 Mic / Ruangan) + Condenser 6\n   • Staff Inhouse (2): Dani (Ramdani (Dani))\, Opik (Taufik Diana (Opik))\n   • Kru Freelance (3): Jordy\, Timbul\, Adin\n   • Armada Mobilisasi: Pick Up Carry 012 (F 8446 BF)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Parled 2bar\, Beam 6\, Fresnel 4\, Smoke\, Tiger\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (2): Idrus\, Dyar\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [VIDEOTRON] LED 3x4 + Level Tinggi 1\,2 Meter 2Set\n   • Unit Alat: LED 3x4 + Level Tinggi 1\,2 Meter 2Set | Level dari Ari\n   • Staff Inhouse (1): Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (4): Adi\, Fiki\, Ugan [Bantu Setup+Bongkaran]\, Woyo [Bantu Setup+Bongkaran]\n   • Armada Mobilisasi: Engkel Woyo (Armada Mitra Woyo)\, Yosep (Armada Mitra Yosep)\n\n4. [PRODUKSI] Produksi (Kenrich & Hafiz)\n   • Unit Alat: Black Curtain Starlight 27 Meter (Kenrich) | Mini Garden 12 Meter (2 Meter pake daun stock - Hafiz)\n   • Staff Inhouse (0): -\n   • Kru Freelance (0): -\n   • Armada Mobilisasi: -\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Tribrata (PIC: Dani\, Heri\, & Wigi)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Tribrata
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261204-r-hotel@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261204T210000
+DTEND;TZID=Asia/Jakarta:20261204T230000
+SUMMARY:[RIZ PRODUCTION] R Hotel Rancamaya (Sound 5rb\, LED Center 4x2\,5 + Wing 1x2\,5 2Set) - PIC: Buluk (Suryana) & Ayong
+LOCATION:R Hotel Rancamaya (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 4 Des 2026 (2026-12-04)\n📍 Lokasi / Venue: R Hotel Rancamaya\n🕒 Jadwal Loading / Berangkat: Loading 3 Des Malam Jam 21.00\n👮 Person in Charge (PIC): Buluk (Suryana) & Ayong\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001\, 8001 2\, ART 6\, WHM 4\, M32+DL\, Gooseneck | Stand Set | Clipon 1\n   • Staff Inhouse (1): Bulux (Suryana (Buluk))\n   • Kru Freelance (2): Isal\, Enday\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [VIDEOTRON] LED Center 4x2\,5 + Wing 1x2\,5 2Set\n   • Unit Alat: LED 4x2\,5 Center & LED 1x2\,5 Wing 2Set | Level 7 Meter Tinggi 1\,5 Meter (Ari) | Genset 40 KVA (Bogor Genset) | Matador 50" (Jay)\n   • Staff Inhouse (1): Ayong (Ayong Sumarsih)\n   • Kru Freelance (2): Ambon\, Ipal\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: R Hotel Rancamaya (PIC: Buluk (Suryana) & Ayong)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: R Hotel Rancamaya
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261204-manggala-wanabakti@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261204T190000
+DTEND;TZID=Asia/Jakarta:20261204T230000
+SUMMARY:[RIZ PRODUCTION] Manggala Wanabakti (LED 2\,5x6\,5 + Level 7m) - PIC: Irvan
+LOCATION:Manggala Wanabakti (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 4 Des 2026 (2026-12-04)\n📍 Lokasi / Venue: Manggala Wanabakti\n🕒 Jadwal Loading / Berangkat: Loading 3 Des Malam\n👮 Person in Charge (PIC): Irvan\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 2\,5x6\,5 + Level 7m\n   • Unit Alat: LED 2\,5x6\,5 | Level 7 Meter Tinggi 40Cm | Genset 40KVA Bogor Genset (Geseran dari Holiday Inn)\n   • Staff Inhouse (1): Irvan (Muhamad Irvan)\n   • Kru Freelance (3): Yopi\, Ugan\, Woyo\n   • Armada Mobilisasi: Yosep 2 (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Manggala Wanabakti (PIC: Irvan)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Manggala Wanabakti
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261205-pullman-thamrin@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261205T210000
+DTEND;TZID=Asia/Jakarta:20261205T230000
+SUMMARY:[RIZ PRODUCTION] Pullman Thamrin (Sound 5rb\, Lighting\, LED 3x6 + Level Tinggi 1Meter\, Stream + 2 Cam & Genset) - PIC: Mboh\, Wigi\, & Jay
+LOCATION:Pullman Thamrin (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 5 Des 2026 (2026-12-05)\n📍 Lokasi / Venue: Pullman Thamrin\n🕒 Jadwal Loading / Berangkat: Loading 4 Des Malam Jam 21.00\n👮 Person in Charge (PIC): Mboh\, Wigi\, & Jay\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 5rb\n   • Unit Alat: 6001 2\, 8003 2\, Art 6\, M32+DL\, Gooseneck | Stand Set\n   • Staff Inhouse (1): Mboh (Muhamad Rahmat (Mboh))\n   • Kru Freelance (2): ACA\, Isal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n2. [LIGHTING] Lighting\n   • Unit Alat: Fresnel 4\, Parled 4\, Quartz\n   • Staff Inhouse (0): -\n   • Kru Freelance (1): Isal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n3. [VIDEOTRON] LED 3x6 + Level Tinggi 1Meter\n   • Unit Alat: LED 3x6 + Level Tinggi 1Meter\n   • Staff Inhouse (1): Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (2): Adi\, Fiki\n   • Armada Mobilisasi: Engkel Woyo (Armada Mitra Woyo)\n\n4. [MULTIMEDIA] Stream + 2 Cam & Genset\n   • Unit Alat: PC + Acc\, 2 Cam PXW\, Switcher + Record\, Laptop 3 | Genset 60KVA (Yadi)\n   • Staff Inhouse (2): Heri [VJ vMix + Zoom]\, Jay (Mulyadi (Jay)) [Campers]\n   • Kru Freelance (4): Okis [VJ vMix + Zoom]\, Uloh [VD]\, Chandra [Campers]\, Richard [Campers]\n   • Armada Mobilisasi: Mobil Kru / Serena (Luxio B 2673 TVI)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Pullman Thamrin (PIC: Mboh\, Wigi\, & Jay)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Pullman Thamrin
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261206-giga-culinary-cianjur@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261206T130000
+DTEND;TZID=Asia/Jakarta:20261206T190000
+SUMMARY:[RIZ PRODUCTION] Giga Culinary Cianjur (Sound 40rb\, Lighting Concert) - PIC: Dani\, Opik\, Buluk & Heri
+LOCATION:Giga Culinary Cianjur (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 6 Des 2026 (2026-12-06)\n📍 Lokasi / Venue: Giga Culinary Cianjur\n🕒 Jadwal Loading / Berangkat: Loading 5 Des Siang jam 13.00 (Packing Pagi Jam 07.00 Jalan Jam 10.00)\n👮 Person in Charge (PIC): Dani\, Opik\, Buluk & Heri\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 40rb\n   • Unit Alat: Avanda 16\, Sub Avanda 8\, KLA 4\, DB 10\, WHM 6\, HD+DL251\, M32+Splitter\, Gooseneck | 6001 + 8002\, Stand Set\, Cable Protector | Backline: Drum Yamaha Tour\, Drum PDP\, RD 700NX | IEM 4 (Jumeno)\n   • Staff Inhouse (3): Dani (Ramdani (Dani))\, Opik (Taufik Diana (Opik))\, Bulux (Suryana (Buluk))\n   • Kru Freelance (6): Adin\, Rebing\, Cionk\, Enday\, Timbul\, Woyo\n   • Armada Mobilisasi: Truck Operasional\, Pick Up Carry 012 (F 8446 BF)\n\n2. [LIGHTING] Lighting Concert\n   • Unit Alat: Parled 16\, Beam 20\, Fresnel 8\, Stromy 12\, Beye 8\, Mini Brute 4\, Smoke 2\, Follow Spot\, GrandMA\n   • Staff Inhouse (1): Heri\n   • Kru Freelance (5): Ghele\, Ugan\, Endin\, Idrus\, Dyar\n   • Armada Mobilisasi: Yosep 2 (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Giga Culinary Cianjur (PIC: Dani\, Opik\, Buluk & Heri)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Giga Culinary Cianjur
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261206-mulia@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261206T220000
+DTEND;TZID=Asia/Jakarta:20261206T230000
+SUMMARY:[RIZ PRODUCTION] Hotel Mulia Senayan (Sound Ballroom & Genset) - PIC: Mboh (Muhamad Rahmat)
+LOCATION:Hotel Mulia Senayan (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 6 Des 2026 (2026-12-06)\n📍 Lokasi / Venue: Hotel Mulia Senayan\n🕒 Jadwal Loading / Berangkat: Loading 5 Des Malam jam 22:00\n👮 Person in Charge (PIC): Mboh (Muhamad Rahmat)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound Ballroom & Genset\n   • Unit Alat: HDL 8\, Sub Double 4\, Art 12 (2 Delay\, 2 Foyer + Stand)\, WHM EWD 4\, QA4\, M32+DL\, M32+Splitter\, Gooseneck | Drum Yamaha\, RD 700GX (Agus & Fahrul bawa backline buat TSI) | Headset Sennheiser (Hitam 1\, Spare Skin Tone 1 - Jumeno) | Stand Set\, Side Fill 2 Set 6001+8002\, Perfect Cue (Dina) | Genset 100 KVA 1 Unit & Genset 80 KVA 2 Unit (Yadi)\n   • Staff Inhouse (4): Mboh (Muhamad Rahmat (Mboh))\, Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\, Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (4): ACA\, Isal\, Inal\, Jordy\n   • Armada Mobilisasi: Yosep 3 (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Hotel Mulia Senayan (PIC: Mboh (Muhamad Rahmat))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Hotel Mulia Senayan
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261206-uob-south-quarter@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261206T190000
+DTEND;TZID=Asia/Jakarta:20261206T230000
+SUMMARY:[RIZ PRODUCTION] UOB South Quarter (LED 2x3 + Level Tinggi 40cm) - PIC: Irvan
+LOCATION:UOB South Quarter (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 6 Des 2026 (2026-12-06)\n📍 Lokasi / Venue: UOB South Quarter\n🕒 Jadwal Loading / Berangkat: Loading 5 Des Malam\n👮 Person in Charge (PIC): Irvan\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] LED 2x3 + Level Tinggi 40cm\n   • Unit Alat: LED 2x3 + Level Tinggi 40cm\n   • Staff Inhouse (1): Irvan (Muhamad Irvan)\n   • Kru Freelance (1): Ipal\n   • Armada Mobilisasi: Jay\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: UOB South Quarter (PIC: Irvan)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: UOB South Quarter
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261207-tsi@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261207T170000
+DTEND;TZID=Asia/Jakarta:20261207T230000
+SUMMARY:[RIZ PRODUCTION] TSI (Utama & Panggung Terbuka) (Sound 10rb (Utama)\, LED 3x6 + Level Tinggi 1 Meter\, TSI Panggung Terbuka) - PIC: Agus (Agustino Setiawan)
+LOCATION:TSI (Utama & Panggung Terbuka) (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 7 Des 2026 (2026-12-07)\n📍 Lokasi / Venue: TSI (Utama & Panggung Terbuka)\n🕒 Jadwal Loading / Berangkat: Loading 6 Des Sore jam 17.00 & Malam\n👮 Person in Charge (PIC): Agus (Agustino Setiawan)\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [AUDIO] Sound 10rb (Utama)\n   • Unit Alat: HDL 4\, Sub Double 2\, Art 8\, QA6\, M32+DL\, Gooseneck | Backline | Stand Set\n   • Staff Inhouse (2): Mboh (Muhamad Rahmat (Mboh))\, Yudis (Yudishtira Purnama A (Yudis))\n   • Kru Freelance (3): ACA\, Isal\, Jordy\n   • Armada Mobilisasi: Yosep 2 (Armada Mitra Yosep)\n\n2. [VIDEOTRON] LED 3x6 + Level Tinggi 1 Meter\n   • Unit Alat: LED 3x6 | Level Tinggi 1 Meter | Podium Sirine | Genset (Bogor Genset)\n   • Staff Inhouse (2): Ayong (Ayong Sumarsih)\, Agus (Agustino Setiawan (Agus)) [PIC]\n   • Kru Freelance (3): Ambon\, Bunda\, Fiki\n   • Armada Mobilisasi: Truk Engkel PS 110 (F 8942 BG)\, Mobil Kru / Serena (Luxio B 2673 TVI)\n\n3. [AUDIO] TSI Panggung Terbuka\n   • Unit Alat: HDL 2\, Sub Double 2\, Art 6\, M32+DL\, WHM 4 | Stand Set\n   • Staff Inhouse (2): Unyink (Wahyudin (Unyim))\, Butonk (Iwan Kurniawan (Butonk))\n   • Kru Freelance (1): Inal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: TSI (Utama & Panggung Terbuka) (PIC: Agus (Agustino Setiawan))
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: TSI (Utama & Panggung Terbuka)
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:job-20261207-ahmad-yani-taman-budaya@rizproduction.id
+DTSTAMP:20261105T171026Z
+DTSTART;TZID=Asia/Jakarta:20261207T150000
+DTEND;TZID=Asia/Jakarta:20261207T210000
+SUMMARY:[RIZ PRODUCTION] Ahmad Yani & Taman Budaya (Ahmad Yani — LED 2x3 + Level 1 Meter\, Taman Budaya — LED 3x5) - PIC: Irvan & Wigi
+LOCATION:Ahmad Yani & Taman Budaya (HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164)
+DESCRIPTION:=== JADWAL PENUGASAN JOB & EVENT PT. RIZ PRODUCTION MULTI KREASI ===\n📅 Hari / Tanggal: 7 Des 2026 (2026-12-07)\n📍 Lokasi / Venue: Ahmad Yani & Taman Budaya\n🕒 Jadwal Loading / Berangkat: Loading 6 Des Sore & Malam\n👮 Person in Charge (PIC): Irvan & Wigi\n📌 Status Operasional: Terjadwal\n\n--- RINCIAN DIVISI\, UNIT ALAT\, KRU & ARMADA ---\n1. [VIDEOTRON] Ahmad Yani — LED 2x3 + Level 1 Meter\n   • Unit Alat: LED 2x3 + Level 1 Meter\n   • Staff Inhouse (1): Irvan (Muhamad Irvan)\n   • Kru Freelance (1): Yopi\n   • Armada Mobilisasi: Jay\n\n2. [VIDEOTRON] Taman Budaya — LED 3x5\n   • Unit Alat: LED 3x5\n   • Staff Inhouse (1): Wigi (Dedi Agus Wigiantoro (Wigi))\n   • Kru Freelance (2): Adi\, Ipal\n   • Armada Mobilisasi: Yosep (Armada Mitra Yosep)\n\n🏢 Kantor / Gudang HQ: Jl. Alternatif Jl. Tugu Wates No.78\, RT.02/RW.13\, Kedungbadak\, Tanah Sareal\, Kota Bogor\, Jawa Barat 16164\n📅 Sinkronisasi Kalender: Google Calendar (https://calendar.google.com/calendar/u/0/r)
+STATUS:CONFIRMED
+BEGIN:VALARM
+TRIGGER:-PT1440M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan & Cek Alat H-1: Ahmad Yani & Taman Budaya (PIC: Irvan & Wigi)
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-PT180M
+ACTION:DISPLAY
+DESCRIPTION:Persiapan Loading & Keberangkatan Kru: Ahmad Yani & Taman Budaya
+END:VALARM
+END:VEVENT
+END:VCALENDAR

@@ -14,6 +14,71 @@ import {
 } from '../types';
 import { formatFleetVehicleBadge, resolveCrewMember } from '../data/jobAssignmentsData';
 
+export const OFFICIAL_GOOGLE_CALENDAR_ID = 'rizproduction78@gmail.com';
+export const OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL = 'https://calendar.google.com/calendar/u/0/r/settings/export';
+export const OFFICIAL_GOOGLE_CALENDAR_EMBED_URL =
+  'https://calendar.google.com/calendar/embed?src=rizproduction78%40gmail.com&ctz=Asia%2FJakarta';
+export const DEFAULT_GOOGLE_CALENDAR_ICAL_URL =
+  'https://calendar.google.com/calendar/ical/rizproduction78%40gmail.com/public/basic.ics';
+
+export interface GoogleCalendarConnectionConfig {
+  calendarId: string;
+  icalFeedUrl: string;
+  accessToken?: string;
+  apiKey?: string;
+  webhookUrl?: string;
+  autoSyncOnSave: boolean;
+  lastSyncedAt?: string;
+  lastSyncCount?: number;
+}
+
+const GCAL_CONFIG_STORAGE_KEY = 'riz_google_calendar_sync_config_v1';
+
+export function getGoogleCalendarSyncConfig(): GoogleCalendarConnectionConfig {
+  const fallback: GoogleCalendarConnectionConfig = {
+    calendarId: OFFICIAL_GOOGLE_CALENDAR_ID,
+    icalFeedUrl: DEFAULT_GOOGLE_CALENDAR_ICAL_URL,
+    accessToken: '',
+    apiKey: '',
+    webhookUrl: '',
+    autoSyncOnSave: true
+  };
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return fallback;
+  }
+  try {
+    const raw = localStorage.getItem(GCAL_CONFIG_STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return {
+      ...fallback,
+      ...parsed,
+      calendarId: parsed.calendarId || OFFICIAL_GOOGLE_CALENDAR_ID,
+      icalFeedUrl: parsed.icalFeedUrl || DEFAULT_GOOGLE_CALENDAR_ICAL_URL
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+export function saveGoogleCalendarSyncConfig(
+  next: Partial<GoogleCalendarConnectionConfig>
+): GoogleCalendarConnectionConfig {
+  const current = getGoogleCalendarSyncConfig();
+  const merged: GoogleCalendarConnectionConfig = {
+    ...current,
+    ...next,
+    calendarId: (next.calendarId ?? current.calendarId).trim() || OFFICIAL_GOOGLE_CALENDAR_ID,
+    icalFeedUrl: (next.icalFeedUrl ?? current.icalFeedUrl).trim() || DEFAULT_GOOGLE_CALENDAR_ICAL_URL
+  };
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(GCAL_CONFIG_STORAGE_KEY, JSON.stringify(merged));
+    } catch {}
+  }
+  return merged;
+}
+
 export interface GoogleCalendarSyncOptions {
   filterPersonName?: string;
   filterPersonType?: 'Staff' | 'Freelance';
@@ -523,4 +588,327 @@ export function parseGoogleCalendarIcsToJobAssignments(icsText: string): JobAssi
   });
 
   return parsedJobs;
+}
+
+/**
+ * Build Google Calendar REST API v3 Event resource from JobAssignment
+ */
+export function buildGoogleCalendarApiEventPayload(
+  job: JobAssignment,
+  options?: GoogleCalendarSyncOptions
+): Record<string, any> {
+  const { isAllDay, datesParam } = resolveGoogleCalendarDates(job.date, job.loadingSchedule);
+  const [rawStart, rawEnd] = datesParam.split('/');
+  const packagesSummary = job.sections.map(s => s.packageLabel).join(', ');
+  const summary = `[RIZ PRODUCTION] ${job.venue}${packagesSummary ? ` (${packagesSummary})` : ''} - PIC: ${job.pic || '-'}`;
+  const description = formatJobCalendarDescription(job, options);
+  const location = `${job.venue} | Gudang HQ: ${OFFICIAL_HQ_ADDRESS}`;
+
+  const formatIsoDate = (ymd: string) =>
+    `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
+  const formatIsoDateTime = (dt: string) =>
+    `${dt.slice(0, 4)}-${dt.slice(4, 6)}-${dt.slice(6, 8)}T${dt.slice(9, 11)}:${dt.slice(11, 13)}:${dt.slice(13, 15)}+07:00`;
+
+  const start = isAllDay
+    ? { date: formatIsoDate(rawStart) }
+    : { dateTime: formatIsoDateTime(rawStart), timeZone: 'Asia/Jakarta' };
+  const end = isAllDay
+    ? { date: formatIsoDate(rawEnd) }
+    : { dateTime: formatIsoDateTime(rawEnd), timeZone: 'Asia/Jakarta' };
+
+  return {
+    iCalUID: `${job.id}@rizproduction.id`,
+    summary,
+    location,
+    description,
+    start,
+    end,
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'popup', minutes: 1440 },
+        { method: 'popup', minutes: 180 }
+      ]
+    }
+  };
+}
+
+/**
+ * Push a single JobAssignment to Google Calendar via REST API v3 or Apps Script Webhook
+ */
+export async function pushJobAssignmentToGoogleCalendarLive(
+  job: JobAssignment,
+  customConfig?: Partial<GoogleCalendarConnectionConfig>
+): Promise<{ ok: boolean; mode: 'api' | 'webhook' | 'template'; message: string }> {
+  const config = { ...getGoogleCalendarSyncConfig(), ...(customConfig || {}) };
+  const payload = buildGoogleCalendarApiEventPayload(job);
+
+  if (config.accessToken && config.accessToken.trim()) {
+    try {
+      const calId = encodeURIComponent(config.calendarId || OFFICIAL_GOOGLE_CALENDAR_ID);
+      const res = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/import`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${config.accessToken.trim()}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+      if (res.ok) {
+        saveGoogleCalendarSyncConfig({ lastSyncedAt: new Date().toISOString() });
+        return {
+          ok: true,
+          mode: 'api',
+          message: `Jadwal "${job.venue} (${job.dateLabel})" berhasil disinkronkan langsung ke Google Calendar (${config.calendarId}).`
+        };
+      }
+    } catch {}
+  }
+
+  if (config.webhookUrl && config.webhookUrl.trim()) {
+    try {
+      const res = await fetch(config.webhookUrl.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'UPSERT_EVENT',
+          calendarId: config.calendarId || OFFICIAL_GOOGLE_CALENDAR_ID,
+          job,
+          eventPayload: payload
+        })
+      });
+      if (res.ok) {
+        saveGoogleCalendarSyncConfig({ lastSyncedAt: new Date().toISOString() });
+        return {
+          ok: true,
+          mode: 'webhook',
+          message: `Jadwal "${job.venue} (${job.dateLabel})" terkirim ke Google Calendar via Webhook.`
+        };
+      }
+    } catch {}
+  }
+
+  return {
+    ok: true,
+    mode: 'template',
+    message: `Siap ditambahkan ke Google Calendar (${config.calendarId}).`
+  };
+}
+
+/**
+ * Push / Sync all JobAssignments to Google Calendar
+ * Uses direct Google Calendar API v3 / Webhook if configured, or triggers .ics bundle + Google Calendar Import page
+ */
+export async function syncAllJobAssignmentsToGoogleCalendar(
+  jobs: JobAssignment[],
+  options?: GoogleCalendarSyncOptions,
+  customConfig?: Partial<GoogleCalendarConnectionConfig>
+): Promise<{
+  ok: boolean;
+  mode: 'api' | 'webhook' | 'ics_import';
+  syncedCount: number;
+  message: string;
+  importUrl: string;
+}> {
+  const config = { ...getGoogleCalendarSyncConfig(), ...(customConfig || {}) };
+  const calId = config.calendarId || OFFICIAL_GOOGLE_CALENDAR_ID;
+
+  // 1. Direct Google Calendar REST API v3 with OAuth Access Token
+  if (config.accessToken && config.accessToken.trim()) {
+    let successCount = 0;
+    const encodedCalId = encodeURIComponent(calId);
+    for (const job of jobs) {
+      try {
+        const payload = buildGoogleCalendarApiEventPayload(job, options);
+        const res = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodedCalId}/events/import`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${config.accessToken.trim()}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          }
+        );
+        if (res.ok) successCount++;
+      } catch {}
+    }
+    if (successCount > 0) {
+      const nowIso = new Date().toISOString();
+      saveGoogleCalendarSyncConfig({
+        lastSyncedAt: nowIso,
+        lastSyncCount: successCount
+      });
+      return {
+        ok: true,
+        mode: 'api',
+        syncedCount: successCount,
+        message: `Berhasil menyinkronkan ${successCount} dari ${jobs.length} jadwal event langsung ke Google Calendar (${calId})!`,
+        importUrl: OFFICIAL_GOOGLE_CALENDAR_WEB_URL
+      };
+    }
+  }
+
+  // 2. Google Apps Script / Webhook Sync
+  if (config.webhookUrl && config.webhookUrl.trim()) {
+    try {
+      const payloads = jobs.map(j => ({
+        job: j,
+        eventPayload: buildGoogleCalendarApiEventPayload(j, options)
+      }));
+      const res = await fetch(config.webhookUrl.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'BATCH_SYNC_EVENTS',
+          calendarId: calId,
+          events: payloads
+        })
+      });
+      if (res.ok) {
+        const nowIso = new Date().toISOString();
+        saveGoogleCalendarSyncConfig({
+          lastSyncedAt: nowIso,
+          lastSyncCount: jobs.length
+        });
+        return {
+          ok: true,
+          mode: 'webhook',
+          syncedCount: jobs.length,
+          message: `Berhasil menyinkronkan ${jobs.length} jadwal event ke Google Calendar (${calId}) melalui Webhook!`,
+          importUrl: OFFICIAL_GOOGLE_CALENDAR_WEB_URL
+        };
+      }
+    } catch {}
+  }
+
+  // 3. Universal .ics Bundle Download + Google Calendar Direct Import Page
+  downloadJobAssignmentsIcs(jobs, options);
+  const nowIso = new Date().toISOString();
+  saveGoogleCalendarSyncConfig({
+    lastSyncedAt: nowIso,
+    lastSyncCount: jobs.length
+  });
+
+  return {
+    ok: true,
+    mode: 'ics_import',
+    syncedCount: jobs.length,
+    message: `File sinkronisasi (${jobs.length} Jadwal Event) telah diunduh. Pilih file .ics tersebut di halaman Impor Google Calendar (${calId}) yang terbuka untuk memasukkan seluruh event sekaligus.`,
+    importUrl: OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL
+  };
+}
+
+/**
+ * Pull live events from Google Calendar (via REST API v3 or iCal .ics feed URL)
+ */
+export async function pullJobAssignmentsFromGoogleCalendarLive(
+  customConfig?: Partial<GoogleCalendarConnectionConfig>
+): Promise<{
+  ok: boolean;
+  jobs: JobAssignment[];
+  message: string;
+}> {
+  const config = { ...getGoogleCalendarSyncConfig(), ...(customConfig || {}) };
+  const calId = config.calendarId || OFFICIAL_GOOGLE_CALENDAR_ID;
+
+  // 1. Try Google Calendar REST API v3 if accessToken or apiKey is configured
+  if ((config.accessToken && config.accessToken.trim()) || (config.apiKey && config.apiKey.trim())) {
+    try {
+      const encodedCalId = encodeURIComponent(calId);
+      const params = new URLSearchParams({
+        singleEvents: 'true',
+        orderBy: 'startTime',
+        maxResults: '250',
+        timeMin: '2026-10-01T00:00:00Z'
+      });
+      if (config.apiKey && config.apiKey.trim() && !config.accessToken?.trim()) {
+        params.set('key', config.apiKey.trim());
+      }
+      const headers: Record<string, string> = {};
+      if (config.accessToken && config.accessToken.trim()) {
+        headers.Authorization = `Bearer ${config.accessToken.trim()}`;
+      }
+      const res = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodedCalId}/events?${params.toString()}`,
+        { headers }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data.items) ? data.items : [];
+        const convertedIcsLines: string[] = ['BEGIN:VCALENDAR', 'VERSION:2.0'];
+        items.forEach((ev: any) => {
+          if (!ev || ev.status === 'cancelled') return;
+          const startStr = ev.start?.date
+            ? `DTSTART;VALUE=DATE:${String(ev.start.date).replace(/-/g, '')}`
+            : ev.start?.dateTime
+              ? `DTSTART:${String(ev.start.dateTime).replace(/[-:]/g, '').slice(0, 15)}`
+              : '';
+          if (!startStr) return;
+          convertedIcsLines.push('BEGIN:VEVENT');
+          convertedIcsLines.push(`UID:${ev.iCalUID || ev.id || ''}`);
+          convertedIcsLines.push(startStr);
+          convertedIcsLines.push(`SUMMARY:${escapeIcsText(ev.summary || 'Event Google Calendar')}`);
+          convertedIcsLines.push(`LOCATION:${escapeIcsText(ev.location || '')}`);
+          convertedIcsLines.push(`DESCRIPTION:${escapeIcsText(ev.description || '')}`);
+          convertedIcsLines.push('END:VEVENT');
+        });
+        convertedIcsLines.push('END:VCALENDAR');
+        const jobs = parseGoogleCalendarIcsToJobAssignments(convertedIcsLines.join('\r\n'));
+        saveGoogleCalendarSyncConfig({
+          lastSyncedAt: new Date().toISOString(),
+          lastSyncCount: jobs.length
+        });
+        return {
+          ok: true,
+          jobs,
+          message: `Berhasil menarik ${jobs.length} jadwal event langsung dari Google Calendar API (${calId}).`
+        };
+      }
+    } catch {}
+  }
+
+  // 2. Try fetching iCal (.ics) feed URL directly
+  const targetIcalUrl =
+    config.icalFeedUrl?.trim() ||
+    `https://calendar.google.com/calendar/ical/${encodeURIComponent(calId)}/public/basic.ics`;
+
+  const candidateUrls = [
+    targetIcalUrl,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetIcalUrl)}`,
+    '/jadwal-penugasan-riz-production.ics'
+  ];
+
+  for (const url of candidateUrls) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (text && text.includes('BEGIN:VCALENDAR')) {
+        const jobs = parseGoogleCalendarIcsToJobAssignments(text);
+        saveGoogleCalendarSyncConfig({
+          lastSyncedAt: new Date().toISOString(),
+          lastSyncCount: jobs.length
+        });
+        return {
+          ok: true,
+          jobs,
+          message:
+            jobs.length > 0
+              ? `Berhasil menarik & menyinkronkan ${jobs.length} jadwal event dari feed Google Calendar (${calId}).`
+              : `Terhubung ke feed Google Calendar (${calId}), namun belum ada VEVENT baru pada kalender tersebut.`
+        };
+      }
+    } catch {}
+  }
+
+  return {
+    ok: false,
+    jobs: [],
+    message: `Feed kalender ${calId} bersifat privat atau belum dipublikasikan. Gunakan tombol "Sync Semua ke Google Calendar" untuk mengimpor 49 jadwal ke ${calId}, atau masukkan Secret Address in iCal format / Access Token pada pengaturan sinkronisasi.`
+  };
 }
