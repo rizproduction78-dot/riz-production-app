@@ -88,6 +88,7 @@ import { checkVehicleDocExpiry, getVehicleExpiryAlerts } from '../utils/vehicleE
 import {
   startUniversalCameraStream,
   decodeBarcodeFromSource,
+  isValidScannedBarcodeText,
   listVideoInputDevices,
   toggleCameraTorch,
   captureSnapshotFromVideo,
@@ -645,6 +646,7 @@ export default function Gudang({
   const [isScanningSimulated, setIsScanningSimulated] = useState(false);
   const [scanSearchInput, setScanSearchInput] = useState('');
   const [scanMessage, setScanMessage] = useState('');
+  const [pendingUserBarcode, setPendingUserBarcode] = useState<string>('');
   // Active Real Hardware Camera Scanner states (Mobile, Tablet & Desktop)
   const [isCameraScannerActive, setIsCameraScannerActive] = useState<boolean>(true);
   const [isLiveWebcamRunning, setIsLiveWebcamRunning] = useState<boolean>(false);
@@ -759,7 +761,7 @@ export default function Gudang({
       isDetecting = true;
       try {
         const decoded = await decodeBarcodeFromSource(videoEl);
-        if (!isCancelled && decoded && decoded.rawValue) {
+        if (!isCancelled && decoded && decoded.rawValue && isValidScannedBarcodeText(decoded.rawValue)) {
           const cleanCode = decoded.rawValue.trim();
           const now = Date.now();
           if (
@@ -775,7 +777,25 @@ export default function Gudang({
             if (snap) {
               setScannedPhoto(snap);
             }
-            handleSimulateQRScan(cleanCode);
+            const qLower = cleanCode.toLowerCase();
+            const matchedAsset =
+              localAssets.find(a => a.code.toLowerCase() === qLower || a.id.toLowerCase() === qLower) ||
+              localAssets.find(
+                a =>
+                  a.serialNumber.toLowerCase().includes(qLower) ||
+                  a.code.toLowerCase().includes(qLower) ||
+                  a.name.toLowerCase().includes(qLower)
+              );
+            if (matchedAsset) {
+              setPendingUserBarcode('');
+              handleSimulateQRScan(cleanCode);
+            } else {
+              setScanSearchInput(cleanCode.toUpperCase());
+              setPendingUserBarcode(cleanCode.toUpperCase());
+              setScanMessage(
+                `INFO: Kode Barcode User [${cleanCode.toUpperCase()}] berhasil terbaca kamera. Pilih unit alat pada daftar Inventory di atas lalu klik "Simpan Kode Barcode User & Scan" untuk menautkan kode barcode ini.`
+              );
+            }
           }
         }
       } catch {
@@ -783,7 +803,7 @@ export default function Gudang({
       } finally {
         isDetecting = false;
       }
-    }, 260);
+    }, 280);
 
     return () => {
       isCancelled = true;
@@ -805,47 +825,6 @@ export default function Gudang({
     } catch (e) {}
     return [];
   });
-
-  // Real-time BarcodeDetector loop when live camera is running
-  useEffect(() => {
-    if (!isLiveWebcamRunning || warehouseSubTab !== 'scanner') return;
-    const WinBarcodeDetector = typeof window !== 'undefined' ? (window as any).BarcodeDetector : undefined;
-    if (!WinBarcodeDetector) return;
-
-    let detector: any = null;
-    try {
-      detector = new WinBarcodeDetector({
-        formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e']
-      });
-    } catch {
-      try {
-        detector = new WinBarcodeDetector();
-      } catch {
-        return;
-      }
-    }
-
-    let isCancelled = false;
-    const intervalId = window.setInterval(async () => {
-      if (isCancelled || !scannerVideoRef.current || scannerVideoRef.current.readyState < 2) return;
-      try {
-        const barcodes = await detector.detect(scannerVideoRef.current);
-        if (Array.isArray(barcodes) && barcodes.length > 0 && barcodes[0]?.rawValue) {
-          const rawCode = String(barcodes[0].rawValue).trim();
-          if (rawCode) {
-            handleSimulateQRScan(rawCode);
-          }
-        }
-      } catch {
-        // Ignore frame detection errors
-      }
-    }, 600);
-
-    return () => {
-      isCancelled = true;
-      window.clearInterval(intervalId);
-    };
-  }, [isLiveWebcamRunning, warehouseSubTab, localAssets, scannedRecords]);
 
   const registerScannedAsset = (asset: Asset): { isDuplicate: boolean; record: ScannedAssetRecord } => {
     const existing = scannedRecords.find(
@@ -1408,6 +1387,44 @@ export default function Gudang({
     }
   };
 
+  // Penautan & Penyimpanan Kode Barcode yang Disertakan User ke Unit Alat Inventory
+  const handleAssignUserBarcodeToAsset = (assetId: string, rawBarcode: string) => {
+    const cleanBarcode = rawBarcode.trim().toUpperCase();
+    if (!cleanBarcode) return;
+    const targetAsset =
+      localAssets.find(a => a.id === assetId) ||
+      localAssets.find(a => a.code === simulatorTargetCode) ||
+      localAssets[0];
+    if (!targetAsset) return;
+
+    const updatedAsset: Asset & { _userEdited?: boolean } = {
+      ...targetAsset,
+      code: cleanBarcode,
+      _userEdited: true
+    };
+
+    const updatedList = localAssets.map(a => (a.id === targetAsset.id ? updatedAsset : a));
+    setLocalAssets(updatedList);
+    try {
+      localStorage.setItem('riz_assets', JSON.stringify(updatedList));
+    } catch {}
+    saveCloudDoc('assets', updatedAsset.id, updatedAsset);
+
+    setSimulatorTargetCode(cleanBarcode);
+    setScanSearchInput(cleanBarcode);
+    setPendingUserBarcode('');
+    const scanRes = registerScannedAsset(updatedAsset);
+    setScannedAsset(updatedAsset);
+    setScanMessage(
+      `SUKSES: Kode Barcode User [${cleanBarcode}] berhasil disertakan ke unit ${updatedAsset.name} dan di-scan oleh ${scanRes.record.scannedBy} (${scanRes.record.scannedAt})!`
+    );
+    onLogActivity(
+      currentUser.name,
+      currentUser.role,
+      `Menyertakan kode barcode user [${cleanBarcode}] ke unit ${updatedAsset.name} & melakukan scan — Petugas: ${currentUser.name}`
+    );
+  };
+
   // Asset scanning with camera / input — HANYA unit yang berhasil di-scan yang masuk ke daftar
   const handleSimulateQRScan = (codeToScan?: string) => {
     setIsCameraScannerActive(true);
@@ -1429,6 +1446,7 @@ export default function Gudang({
         );
 
       if (found) {
+        setPendingUserBarcode('');
         setSimulatorTargetCode(found.code);
         setScanSearchInput(found.code);
         const scanRes = registerScannedAsset(found);
@@ -1449,7 +1467,10 @@ export default function Gudang({
         }
       } else {
         setScannedAsset(null);
-        setScanMessage(`ERROR: Barcode / Kode Asset "${targetCode}" tidak ditemukan. Unit yang belum berhasil di-scan tidak dapat muncul di daftar.`);
+        setPendingUserBarcode(targetCode.toUpperCase());
+        setScanMessage(
+          `INFO: Kode Barcode User "${targetCode.toUpperCase()}" siap disertakan. Pilih unit alat pada kolom Inventory lalu klik "Simpan Kode Barcode User & Scan" untuk menautkan kode barcode ini.`
+        );
       }
       setIsScanningSimulated(false);
     }, 220);
@@ -1459,7 +1480,9 @@ export default function Gudang({
     if (isLiveWebcamRunning && scannerVideoRef.current) {
       const videoEl = scannerVideoRef.current;
       const decoded = await decodeBarcodeFromSource(videoEl);
-      const targetCode = (decoded?.rawValue || scanSearchInput.trim() || simulatorTargetCode || 'MJXH18277').trim();
+      const validDecoded =
+        decoded?.rawValue && isValidScannedBarcodeText(decoded.rawValue) ? decoded.rawValue.trim() : '';
+      const targetCode = (validDecoded || scanSearchInput.trim() || simulatorTargetCode || 'MJXH18277').trim();
       const snap = captureSnapshotFromVideo(
         videoEl,
         `SCAN: ${targetCode} | ${new Date().toLocaleTimeString('id-ID')}`
@@ -3474,7 +3497,9 @@ export default function Gudang({
                             const firstInDiv = localAssets.find(a => divKey === 'ALL' || a.division === divKey);
                             if (firstInDiv) {
                               setSimulatorTargetCode(firstInDiv.code);
-                              setScanSearchInput(firstInDiv.code);
+                              if (!pendingUserBarcode) {
+                                setScanSearchInput(firstInDiv.code);
+                              }
                             }
                           }}
                           className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase cursor-pointer transition-all ${
@@ -3494,7 +3519,9 @@ export default function Gudang({
                         onChange={(e) => {
                           const nextCode = e.target.value;
                           setSimulatorTargetCode(nextCode);
-                          setScanSearchInput(nextCode);
+                          if (!pendingUserBarcode) {
+                            setScanSearchInput(nextCode);
+                          }
                         }}
                         className="flex-1 min-w-0 px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-mono font-bold text-white focus:outline-none focus:border-indigo-400"
                       >
@@ -3516,16 +3543,28 @@ export default function Gudang({
                 </div>
               )}
 
-              {/* Barcode / Asset Code Manual & Hardware USB/Bluetooth Scanner Input */}
+              {/* Barcode / Asset Code Manual & Hardware USB/Bluetooth Scanner Input (Mendukung Kode Barcode dari User) */}
               <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 space-y-3">
                 <input
                   type="text"
-                  placeholder="Ketik / Scan Kode Barcode (e.g. MJXH18277, AVANDA210A.24.06.254)"
+                  placeholder="Ketik / Scan Kode Barcode User (e.g. MJXH18277, AVANDA210A.24.06.254)"
                   value={scanSearchInput}
                   onChange={(e) => {
-                    setScanSearchInput(e.target.value);
-                    if (e.target.value.trim()) {
-                      setSimulatorTargetCode(e.target.value.trim().toUpperCase());
+                    const val = e.target.value;
+                    setScanSearchInput(val);
+                    const cleanVal = val.trim().toUpperCase();
+                    if (cleanVal) {
+                      const matched = localAssets.find(
+                        a => a.code.toUpperCase() === cleanVal || a.id.toUpperCase() === cleanVal
+                      );
+                      if (matched) {
+                        setSimulatorTargetCode(matched.code);
+                        setPendingUserBarcode('');
+                      } else {
+                        setPendingUserBarcode(cleanVal);
+                      }
+                    } else {
+                      setPendingUserBarcode('');
                     }
                   }}
                   onKeyDown={(e) => {
@@ -3550,6 +3589,27 @@ export default function Gudang({
                       : `Pindai Barcode Unit (${scanSearchInput.trim() || activeTargetAsset?.code || 'MJXH18277'})`}
                   </span>
                 </button>
+
+                {activeTargetAsset &&
+                  (pendingUserBarcode ||
+                    (scanSearchInput.trim() &&
+                      scanSearchInput.trim().toUpperCase() !== activeTargetAsset.code.toUpperCase())) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleAssignUserBarcodeToAsset(
+                          activeTargetAsset.id,
+                          pendingUserBarcode || scanSearchInput.trim()
+                        )
+                      }
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-mono font-bold uppercase transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">
+                        Simpan Kode Barcode User [{(pendingUserBarcode || scanSearchInput).trim().toUpperCase()}] ke {activeTargetAsset.name} &amp; Scan
+                      </span>
+                    </button>
+                  )}
               </div>
 
               {/* Scanner log message */}

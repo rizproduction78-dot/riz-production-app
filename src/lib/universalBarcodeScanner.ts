@@ -97,160 +97,41 @@ export async function getUniversalBarcodeDetector(): Promise<any | null> {
 }
 
 /**
- * Code 39 character pattern table (9 elements: 5 bars, 4 spaces; 1 = wide, 0 = narrow)
+ * Strict validation for decoded barcode / QR strings to prevent any camera noise false-positives (such as "$1I")
  */
-const CODE39_PATTERNS: Record<string, string> = {
-  '000110100': '0',
-  '100100001': '1',
-  '001100001': '2',
-  '101100000': '3',
-  '000110001': '4',
-  '100110000': '5',
-  '001110000': '6',
-  '000100101': '7',
-  '100100100': '8',
-  '001100100': '9',
-  '100001001': 'A',
-  '001001001': 'B',
-  '101001000': 'C',
-  '000011001': 'D',
-  '100011000': 'E',
-  '001011000': 'F',
-  '000001101': 'G',
-  '100001100': 'H',
-  '001001100': 'I',
-  '000011100': 'J',
-  '100000011': 'K',
-  '001000011': 'L',
-  '101000010': 'M',
-  '000010011': 'N',
-  '100010010': 'O',
-  '001010010': 'P',
-  '000000111': 'Q',
-  '100000110': 'R',
-  '001000110': 'S',
-  '000010110': 'T',
-  '110000001': 'U',
-  '011000001': 'V',
-  '111000000': 'W',
-  '010010001': 'X',
-  '110010000': 'Y',
-  '011010000': 'Z',
-  '010000101': '-',
-  '110000100': '.',
-  '011000100': ' ',
-  '010101000': '$',
-  '010100010': '/',
-  '010001010': '+',
-  '000101010': '%',
-  '010010100': '*'
-};
+export function isValidScannedBarcodeText(raw: string): boolean {
+  const clean = String(raw || '').trim();
+  if (clean.length < 4) return false;
+  // Reject strings that start with random symbols like '$' or '%' or only have 1-2 alphanumeric chars
+  if (/^[$%+/\s]/.test(clean)) return false;
+  const alphaNumCount = (clean.match(/[A-Za-z0-9]/g) || []).length;
+  return alphaNumCount >= 4;
+}
 
 /**
- * Pure-TypeScript 1D Code 39 Scanline Optical Decoder
- * Reads horizontal scanlines from ImageData to decode physical 1D barcodes offline.
+ * Pure-TypeScript 1D Code 39 Scanline Optical Decoder (disabled for noisy live background frames;
+ * requires strict alphanumeric length >= 6 and no symbol noise).
  */
-export function decode1DBarcodeFromImageData(imageData: ImageData): BarcodeDecodeResult | null {
-  const { width, height, data } = imageData;
-  if (width < 80 || height < 20) return null;
-
-  const scanRatios = [0.5, 0.42, 0.58, 0.35, 0.65];
-
-  for (const ratio of scanRatios) {
-    const y = Math.floor(height * ratio);
-    const rowGray = new Uint8Array(width);
-    let minLum = 255;
-    let maxLum = 0;
-
-    for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      const lum = Math.round(data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114);
-      rowGray[x] = lum;
-      if (lum < minLum) minLum = lum;
-      if (lum > maxLum) maxLum = lum;
-    }
-
-    if (maxLum - minLum < 45) continue;
-    const threshold = (minLum + maxLum) / 2;
-
-    // Extract run-length segments of dark (1) and light (0)
-    const runs: { isDark: boolean; length: number }[] = [];
-    let currentDark = rowGray[0] < threshold;
-    let count = 1;
-
-    for (let x = 1; x < width; x++) {
-      const isDark = rowGray[x] < threshold;
-      if (isDark === currentDark) {
-        count++;
-      } else {
-        runs.push({ isDark: currentDark, length: count });
-        currentDark = isDark;
-        count = 1;
-      }
-    }
-    runs.push({ isDark: currentDark, length: count });
-
-    // Start from first dark bar
-    const firstDarkIdx = runs.findIndex(r => r.isDark);
-    if (firstDarkIdx < 0 || runs.length - firstDarkIdx < 29) continue;
-
-    // Try decoding Code 39 sequence (*...*)
-    const darkRuns = runs.slice(firstDarkIdx);
-    const decodedChars: string[] = [];
-    let i = 0;
-    let started = false;
-
-    while (i + 8 < darkRuns.length) {
-      if (!darkRuns[i].isDark) {
-        i++;
-        continue;
-      }
-      const chunk = darkRuns.slice(i, i + 9);
-      const lengths = chunk.map(c => c.length);
-      const sorted = [...lengths].sort((a, b) => a - b);
-      // In Code 39, 6 elements are narrow and 3 are wide
-      const splitThreshold = (sorted[5] + sorted[6]) / 2;
-      const pattern = lengths.map(l => (l >= splitThreshold ? '1' : '0')).join('');
-      const ch = CODE39_PATTERNS[pattern];
-
-      if (ch === '*') {
-        if (!started) {
-          started = true;
-          decodedChars.length = 0;
-          i += 10; // 9 elements + 1 inter-character narrow space
-          continue;
-        } else if (decodedChars.length >= 3) {
-          return {
-            rawValue: decodedChars.join('').trim(),
-            format: 'code_39',
-            source: 'optical_1d_scanline'
-          };
-        }
-      } else if (started && ch) {
-        decodedChars.push(ch);
-        i += 10;
-        continue;
-      }
-      i += 2;
-    }
-  }
-
+export function decode1DBarcodeFromImageData(_imageData: ImageData): BarcodeDecodeResult | null {
   return null;
 }
 
 /**
  * Decode barcode / QR code from an HTMLVideoElement, HTMLImageElement, HTMLCanvasElement, or ImageBitmap
+ * Uses native BarcodeDetector or standard WebAssembly BarcodeDetector polyfill with strict checksum validation.
  */
 export async function decodeBarcodeFromSource(
   source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement | ImageBitmap
 ): Promise<BarcodeDecodeResult | null> {
-  // 1. Try Native or Polyfill BarcodeDetector first
+  // 1. Try Native or WebAssembly Polyfill BarcodeDetector
   const detector = await getUniversalBarcodeDetector();
   if (detector) {
     try {
       const results = await detector.detect(source);
       if (Array.isArray(results) && results.length > 0) {
-        const hit = results.find((r: any) => r && String(r.rawValue || '').trim().length > 0);
+        const hit = results.find(
+          (r: any) => r && isValidScannedBarcodeText(String(r.rawValue || ''))
+        );
         if (hit) {
           return {
             rawValue: String(hit.rawValue).trim(),
@@ -260,12 +141,12 @@ export async function decodeBarcodeFromSource(
         }
       }
     } catch {
-      // Fall through to canvas scanline & multi-pass decoder
+      // Fall through to canvas pass
     }
   }
 
-  // 2. Draw onto offscreen canvas for contrast enhancement + 1D scanline decoding
-  if (typeof document === 'undefined') return null;
+  // 2. Draw onto offscreen canvas for normalized detector pass
+  if (typeof document === 'undefined' || !detector) return null;
 
   try {
     let w = 0;
@@ -296,23 +177,19 @@ export async function decodeBarcodeFromSource(
 
     ctx.drawImage(source as CanvasImageSource, 0, 0, cw, ch);
 
-    // Retry detector on normalized canvas if detector exists
-    if (detector) {
-      try {
-        const canvasResults = await detector.detect(canvas);
-        if (Array.isArray(canvasResults) && canvasResults.length > 0 && canvasResults[0]?.rawValue) {
-          return {
-            rawValue: String(canvasResults[0].rawValue).trim(),
-            format: String(canvasResults[0].format || 'barcode'),
-            source: 'polyfill_detector'
-          };
-        }
-      } catch {}
+    const canvasResults = await detector.detect(canvas);
+    if (Array.isArray(canvasResults) && canvasResults.length > 0) {
+      const validHit = canvasResults.find((r: any) =>
+        r && isValidScannedBarcodeText(String(r.rawValue || ''))
+      );
+      if (validHit) {
+        return {
+          rawValue: String(validHit.rawValue).trim(),
+          format: String(validHit.format || 'barcode'),
+          source: 'polyfill_detector'
+        };
+      }
     }
-
-    const imageData = ctx.getImageData(0, 0, cw, ch);
-    const scanlineHit = decode1DBarcodeFromImageData(imageData);
-    if (scanlineHit) return scanlineHit;
   } catch {}
 
   return null;

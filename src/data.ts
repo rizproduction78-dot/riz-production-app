@@ -2949,11 +2949,12 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
         (itemCode ? canonicalByCode.get(itemCode) : undefined);
       if (canonical) {
         const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
+        const isLegacyAstCode = /^AST-(AUD|LGT|MM|LED)-\d+$/i.test(itemCode);
         resultById.set(canonical.id, {
           ...canonical,
           ...item,
           id: canonical.id,
-          code: canonical.code,
+          code: isUserEdited && itemCode && !isLegacyAstCode ? itemCode : canonical.code,
           name: isUserEdited && item.name ? item.name : canonical.name,
           brand: isUserEdited && item.brand ? item.brand : canonical.brand,
           serialNumber: stripInventoryNominalText(isUserEdited && item.serialNumber ? item.serialNumber : canonical.serialNumber),
