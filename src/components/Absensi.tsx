@@ -4,6 +4,7 @@ import {
   AttendanceLog,
   WorkSchedule,
   JobAssignment,
+  JobCrewMember,
   JobDivisionSection,
   OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL,
   OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL,
@@ -18,6 +19,8 @@ import {
   STAFF_LIST,
   getMasterStaffList,
   INITIAL_JOB_ASSIGNMENTS,
+  OFFICIAL_FREELANCE_CREW_LIST,
+  resolveCrewMember,
   buildCrewList,
   formatFleetVehicleBadge
 } from '../data';
@@ -404,12 +407,32 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   const [jobSelectedStaffId, setJobSelectedStaffId] = useState<string>(() =>
     isManagementOrOwner ? 'ALL' : currentUser.id
   );
+  const [jobSelectedFreelanceName, setJobSelectedFreelanceName] = useState<string>('ALL');
+  const [showFreelanceFilterPills, setShowFreelanceFilterPills] = useState<boolean>(false);
   const [jobDivisionFilter, setJobDivisionFilter] = useState<string>('All');
   const [jobCrewTypeFilter, setJobCrewTypeFilter] = useState<'All' | 'Staff' | 'Freelance'>('All');
   const [jobSearchQuery, setJobSearchQuery] = useState<string>('');
 
+  // Inline Crew Picker / Editor state per Job Section (Admin)
+  const [activeCrewPickerKey, setActiveCrewPickerKey] = useState<string | null>(null);
+  const [crewPickerTab, setCrewPickerTab] = useState<'Staff' | 'Freelance'>('Staff');
+  const [crewPickerSearch, setCrewPickerSearch] = useState<string>('');
+  const [crewPickerRoleNote, setCrewPickerRoleNote] = useState<string>('');
+  const [crewPickerCustomName, setCrewPickerCustomName] = useState<string>('');
+  const [editingCrewBadgeKey, setEditingCrewBadgeKey] = useState<string | null>(null);
+  const [editingCrewPersonName, setEditingCrewPersonName] = useState<string>('');
+  const [editingCrewRoleNote, setEditingCrewRoleNote] = useState<string>('');
+  const [editingPicJobId, setEditingPicJobId] = useState<string | null>(null);
+  const [editingPicValue, setEditingPicValue] = useState<string>('');
+
+  // Quick-Schedule Selected Staff/Freelance to an existing Job
+  const [quickAssignJobId, setQuickAssignJobId] = useState<string>('');
+  const [quickAssignSectionIdx, setQuickAssignSectionIdx] = useState<number>(0);
+  const [quickAssignRoleNote, setQuickAssignRoleNote] = useState<string>('');
+
   useEffect(() => {
     setJobSelectedStaffId(isManagementOrOwner ? 'ALL' : currentUser.id);
+    setJobSelectedFreelanceName('ALL');
     setJobWeekFilter('W1');
   }, [currentUser.id, isManagementOrOwner]);
 
@@ -427,6 +450,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   const [jobFormPic, setJobFormPic] = useState<string>('');
   const [jobFormStatus, setJobFormStatus] = useState<JobAssignment['status']>('Terjadwal');
   const [jobFormNotes, setJobFormNotes] = useState<string>('');
+  const [jobFormSectionIdx, setJobFormSectionIdx] = useState<number>(0);
+  const [jobFormSectionsDraft, setJobFormSectionsDraft] = useState<JobDivisionSection[]>([]);
   const [jobFormDivision, setJobFormDivision] = useState<JobDivisionSection['division']>('Audio');
   const [jobFormPackageLabel, setJobFormPackageLabel] = useState<string>('');
   const [jobFormEquipmentText, setJobFormEquipmentText] = useState<string>('');
@@ -457,60 +482,120 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   }, []);
 
   const canManageJobSchedule =
+    isManagementOrOwner ||
+    currentUser.division === 'Admin' ||
+    currentUser.role === 'Staff Admin' ||
     currentUser.role === 'Owner' ||
     currentUser.role === 'Direktur' ||
     currentUser.role === 'Manager' ||
     currentUser.role === 'Admin' ||
     currentUser.role === 'Supervisor' ||
-    currentUser.role === 'Team Leader';
+    currentUser.role === 'Team Leader' ||
+    currentUser.role === 'Staff Leader';
 
-  const handleOpenAddJobModal = () => {
-    setEditingJobId(null);
-    const defaultDate = jobMonthFilter === '2026-12' ? '2026-12-01' : '2026-11-05';
-    setJobFormDate(defaultDate);
-    setJobFormDateLabel('');
-    setJobFormVenue('');
-    setJobFormLoadingSchedule('');
-    setJobFormPic(currentUser.name);
-    setJobFormStatus('Terjadwal');
-    setJobFormNotes('');
-    setJobFormDivision('Audio');
-    setJobFormPackageLabel('Sound 5rb');
-    setJobFormEquipmentText('');
-    setJobFormCrewText('');
-    setJobFormVehiclesText('');
-    setShowJobFormModal(true);
-  };
-
-  const handleOpenEditJobModal = (job: JobAssignment) => {
-    setEditingJobId(job.id);
-    setJobFormDate(job.date);
-    setJobFormDateLabel(job.dateLabel);
-    setJobFormVenue(job.venue);
-    setJobFormLoadingSchedule(job.loadingSchedule || '');
-    setJobFormPic(job.pic || '');
-    setJobFormStatus(job.status || 'Terjadwal');
-    setJobFormNotes(job.notes || '');
-    const firstSec = job.sections[0];
-    setJobFormDivision(firstSec?.division || 'Audio');
-    setJobFormPackageLabel(firstSec?.packageLabel || '');
-    setJobFormEquipmentText((firstSec?.equipment || []).join('\n'));
-    setJobFormCrewText(
-      (firstSec?.crew || [])
-        .map(c => (c.roleNote ? `${c.name} (${c.roleNote})` : c.name))
-        .join(', ')
-    );
-    setJobFormVehiclesText((firstSec?.vehicles || []).join(', '));
-    setShowJobFormModal(true);
-  };
-
-  const handleSaveJobAssignment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!jobFormVenue.trim()) {
-      alert('Lokasi / Venue wajib diisi.');
-      return;
+  const persistUpdatedJobAssignment = (updatedJob: JobAssignment, activityMessage?: string) => {
+    const finalJob: JobAssignment & { _userEdited?: boolean } = {
+      ...updatedJob,
+      _userEdited: true
+    };
+    setJobAssignments(prev => {
+      const exists = prev.some(j => j.id === finalJob.id);
+      const next = exists ? prev.map(j => (j.id === finalJob.id ? finalJob : j)) : [finalJob, ...prev];
+      const sorted = [...next].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+      try {
+        localStorage.setItem('riz_job_assignments_v1', JSON.stringify(sorted));
+      } catch {}
+      return sorted;
+    });
+    saveCloudDoc('job_assignments', finalJob.id, finalJob, currentUser.name);
+    if (activityMessage) {
+      onLogActivity(currentUser.name, currentUser.role, activityMessage);
     }
-    const monthKey = jobFormDate.slice(0, 7) || '2026-11';
+  };
+
+  const handleToggleCrewInJobSection = (
+    job: JobAssignment,
+    sectionIdx: number,
+    personDisplayName: string,
+    roleNoteInput?: string
+  ) => {
+    const sec = job.sections[sectionIdx];
+    if (!sec) return;
+    const resolved = resolveCrewMember(
+      personDisplayName,
+      sec.division,
+      roleNoteInput?.trim() || undefined
+    );
+    const existingIndex = sec.crew.findIndex(c => {
+      if (resolved.staffId && c.staffId && c.staffId === resolved.staffId) return true;
+      return c.name.toLowerCase().trim() === resolved.name.toLowerCase().trim();
+    });
+
+    let nextCrew: JobCrewMember[];
+    let actionLabel: string;
+    if (existingIndex >= 0) {
+      nextCrew = sec.crew.filter((_, idx) => idx !== existingIndex);
+      actionLabel = `Menghapus ${resolved.name} dari jadwal ${job.dateLabel} (${sec.division})`;
+    } else {
+      nextCrew = [...sec.crew, resolved];
+      actionLabel = `Menjadwalkan ${resolved.name} (${resolved.personnelType}) ke ${job.dateLabel} (${sec.division})`;
+    }
+
+    const nextSections = job.sections.map((s, idx) =>
+      idx === sectionIdx ? { ...s, crew: nextCrew } : s
+    );
+    persistUpdatedJobAssignment({ ...job, sections: nextSections }, actionLabel);
+  };
+
+  const handleRemoveCrewFromSection = (job: JobAssignment, sectionIdx: number, memberIdx: number) => {
+    const sec = job.sections[sectionIdx];
+    if (!sec) return;
+    const targetMember = sec.crew[memberIdx];
+    const nextCrew = sec.crew.filter((_, idx) => idx !== memberIdx);
+    const nextSections = job.sections.map((s, idx) =>
+      idx === sectionIdx ? { ...s, crew: nextCrew } : s
+    );
+    persistUpdatedJobAssignment(
+      { ...job, sections: nextSections },
+      `Menghapus ${targetMember?.name || 'Personil'} dari jadwal ${job.dateLabel} (${sec.division})`
+    );
+  };
+
+  const handleUpdateCrewMemberInSection = (
+    job: JobAssignment,
+    sectionIdx: number,
+    memberIdx: number,
+    nextPersonName: string,
+    nextRoleNote: string
+  ) => {
+    const sec = job.sections[sectionIdx];
+    if (!sec || !nextPersonName.trim()) return;
+    const resolved = resolveCrewMember(
+      nextPersonName.trim(),
+      sec.division,
+      nextRoleNote.trim() || undefined
+    );
+    const nextCrew = sec.crew.map((c, idx) => (idx === memberIdx ? resolved : c));
+    const nextSections = job.sections.map((s, idx) =>
+      idx === sectionIdx ? { ...s, crew: nextCrew } : s
+    );
+    persistUpdatedJobAssignment(
+      { ...job, sections: nextSections },
+      `Memperbarui personil ${resolved.name} (${resolved.personnelType}) pada jadwal ${job.dateLabel} (${sec.division})`
+    );
+    setEditingCrewBadgeKey(null);
+  };
+
+  const handleUpdateJobPic = (job: JobAssignment, nextPic: string) => {
+    if (!nextPic.trim()) return;
+    persistUpdatedJobAssignment(
+      { ...job, pic: nextPic.trim() },
+      `Mengubah PIC Jadwal "${job.dateLabel}" menjadi ${nextPic.trim()}`
+    );
+    setEditingPicJobId(null);
+  };
+
+  const syncCurrentModalSectionToDraft = (draftList: JobDivisionSection[], idx: number): JobDivisionSection[] => {
     const rawCrewTokens = jobFormCrewText
       .split(',')
       .map(s => s.trim())
@@ -525,8 +610,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       .map(s => s.trim())
       .filter(Boolean);
 
-    const existingJob = editingJobId ? jobAssignments.find(j => j.id === editingJobId) : null;
-    const updatedSection: JobDivisionSection = {
+    const updatedSec: JobDivisionSection = {
       division: jobFormDivision,
       packageLabel: jobFormPackageLabel.trim() || jobFormDivision,
       equipment: equipmentList,
@@ -534,9 +618,130 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       vehicles: vehicleList
     };
 
-    const nextSections = existingJob && existingJob.sections.length > 1
-      ? [updatedSection, ...existingJob.sections.slice(1)]
-      : [updatedSection];
+    const next = [...draftList];
+    if (idx >= 0 && idx < next.length) {
+      next[idx] = { ...next[idx], ...updatedSec };
+    } else {
+      next.push(updatedSec);
+    }
+    return next;
+  };
+
+  const loadSectionIntoModalFields = (sec: JobDivisionSection | undefined) => {
+    setJobFormDivision(sec?.division || 'Audio');
+    setJobFormPackageLabel(sec?.packageLabel || '');
+    setJobFormEquipmentText((sec?.equipment || []).join('\n'));
+    setJobFormCrewText(
+      (sec?.crew || [])
+        .map(c => (c.roleNote ? `${c.name} (${c.roleNote})` : c.name))
+        .join(', ')
+    );
+    setJobFormVehiclesText((sec?.vehicles || []).join(', '));
+  };
+
+  const handleSelectModalSection = (targetIdx: number) => {
+    const synced = syncCurrentModalSectionToDraft(jobFormSectionsDraft, jobFormSectionIdx);
+    setJobFormSectionsDraft(synced);
+    setJobFormSectionIdx(targetIdx);
+    loadSectionIntoModalFields(synced[targetIdx]);
+  };
+
+  const handleAddModalSection = () => {
+    const synced = syncCurrentModalSectionToDraft(jobFormSectionsDraft, jobFormSectionIdx);
+    const newSec: JobDivisionSection = {
+      division: 'Multimedia',
+      packageLabel: 'Paket Baru',
+      equipment: [],
+      crew: [],
+      vehicles: []
+    };
+    const next = [...synced, newSec];
+    const nextIdx = next.length - 1;
+    setJobFormSectionsDraft(next);
+    setJobFormSectionIdx(nextIdx);
+    loadSectionIntoModalFields(newSec);
+  };
+
+  const handleTogglePersonInModalCrewText = (personName: string) => {
+    const tokens = jobFormCrewText
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    const lowerTarget = personName.toLowerCase().trim();
+    const exists = tokens.some(t => {
+      const base = t.replace(/\([^)]*\)/g, '').trim().toLowerCase();
+      return base === lowerTarget;
+    });
+    const nextTokens = exists
+      ? tokens.filter(t => t.replace(/\([^)]*\)/g, '').trim().toLowerCase() !== lowerTarget)
+      : [...tokens, personName];
+    setJobFormCrewText(nextTokens.join(', '));
+  };
+
+  const handleOpenAddJobModal = () => {
+    setEditingJobId(null);
+    const defaultDate = jobMonthFilter === '2026-12' ? '2026-12-01' : '2026-11-05';
+    setJobFormDate(defaultDate);
+    setJobFormDateLabel('');
+    setJobFormVenue('');
+    setJobFormLoadingSchedule('');
+    setJobFormPic(currentUser.nickname ? `${currentUser.nickname} (${currentUser.name})` : currentUser.name);
+    setJobFormStatus('Terjadwal');
+    setJobFormNotes('');
+    const initialSec: JobDivisionSection = {
+      division: 'Audio',
+      packageLabel: 'Sound 5rb',
+      equipment: [],
+      crew: [],
+      vehicles: []
+    };
+    setJobFormSectionsDraft([initialSec]);
+    setJobFormSectionIdx(0);
+    loadSectionIntoModalFields(initialSec);
+    setShowJobFormModal(true);
+  };
+
+  const handleOpenEditJobModal = (job: JobAssignment, initialSecIndex = 0) => {
+    setEditingJobId(job.id);
+    setJobFormDate(job.date);
+    setJobFormDateLabel(job.dateLabel);
+    setJobFormVenue(job.venue);
+    setJobFormLoadingSchedule(job.loadingSchedule || '');
+    setJobFormPic(job.pic || '');
+    setJobFormStatus(job.status || 'Terjadwal');
+    setJobFormNotes(job.notes || '');
+    const clonedSections: JobDivisionSection[] =
+      job.sections.length > 0
+        ? job.sections.map(s => ({
+            ...s,
+            equipment: [...s.equipment],
+            crew: [...s.crew],
+            vehicles: [...s.vehicles]
+          }))
+        : [
+            {
+              division: 'Audio',
+              packageLabel: 'Sound 5rb',
+              equipment: [],
+              crew: [],
+              vehicles: []
+            }
+          ];
+    const safeIdx = Math.min(Math.max(0, initialSecIndex), clonedSections.length - 1);
+    setJobFormSectionsDraft(clonedSections);
+    setJobFormSectionIdx(safeIdx);
+    loadSectionIntoModalFields(clonedSections[safeIdx]);
+    setShowJobFormModal(true);
+  };
+
+  const handleSaveJobAssignment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!jobFormVenue.trim()) {
+      alert('Lokasi / Venue wajib diisi.');
+      return;
+    }
+    const monthKey = jobFormDate.slice(0, 7) || '2026-11';
+    const nextSections = syncCurrentModalSectionToDraft(jobFormSectionsDraft, jobFormSectionIdx);
 
     const finalJob: JobAssignment & { _userEdited?: boolean } = {
       id: editingJobId || `job-${jobFormDate.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`,
@@ -552,20 +757,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       _userEdited: true
     };
 
-    setJobAssignments(prev => {
-      const exists = prev.some(j => j.id === finalJob.id);
-      const next = exists ? prev.map(j => (j.id === finalJob.id ? finalJob : j)) : [finalJob, ...prev];
-      const sorted = [...next].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
-      try {
-        localStorage.setItem('riz_job_assignments_v1', JSON.stringify(sorted));
-      } catch {}
-      return sorted;
-    });
-
-    saveCloudDoc('job_assignments', finalJob.id, finalJob, currentUser.name);
-    onLogActivity(
-      currentUser.name,
-      currentUser.role,
+    persistUpdatedJobAssignment(
+      finalJob,
       `${editingJobId ? 'Memperbarui' : 'Menambahkan'} Jadwal Penugasan Job: ${finalJob.dateLabel} (PIC: ${finalJob.pic})`
     );
     setShowJobFormModal(false);
@@ -643,7 +836,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
 
   // Handler to toggle / cycle shift with Cloud push
   const handleToggleShift = (staffNo: number, day: number) => {
-    if (currentUser.role !== 'Admin' && currentUser.role !== 'Supervisor' && currentUser.role !== 'Manager') return;
+    if (!canManageJobSchedule) return;
 
     const cycle: string[] = ['MD', 'P', 'M', 'PM', 'L', 'Cuti', '-'];
     const updated = scheduleData.map(row => {
@@ -1542,6 +1735,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
               const targetId = targetStaff.id;
               const targetNameLower = targetStaff.name.toLowerCase();
               const targetNickLower = (targetStaff.nickname || '').toLowerCase().trim();
+              const targetFirstLower = targetStaff.name.split(' ')[0].toLowerCase().trim();
               const picLower = (job.pic || '').toLowerCase();
 
               // 1. Check if staff is PIC of the job or any section
@@ -1563,13 +1757,28 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                 }
                 return sec.crew.some(c => {
                   if (c.staffId && c.staffId === targetId) return true;
-                  const cName = c.name.toLowerCase();
+                  const cName = c.name.toLowerCase().trim();
                   const cCanon = (c.canonicalName || '').toLowerCase();
                   if (cName === targetNameLower || cCanon.includes(targetNameLower)) return true;
                   if (targetNickLower && (cName === targetNickLower || cCanon.includes(targetNickLower))) return true;
+                  if (targetFirstLower.length >= 3 && cName === targetFirstLower) return true;
                   return false;
                 });
               });
+            };
+
+            const matchesFreelanceOnJob = (job: JobAssignment, freelanceName: string): boolean => {
+              if (!freelanceName || freelanceName === 'ALL') return true;
+              const flLower = freelanceName.toLowerCase().trim();
+              const picLower = (job.pic || '').toLowerCase();
+              if (picLower.includes(flLower)) return true;
+              return job.sections.some(sec =>
+                sec.crew.some(c => {
+                  const cName = c.name.toLowerCase().trim();
+                  const cCanon = (c.canonicalName || '').toLowerCase();
+                  return cName === flLower || cCanon.includes(flLower);
+                })
+              );
             };
 
             const selectedStaffObj =
@@ -1577,6 +1786,13 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                 ? undefined
                 : staffList.find(s => s.id === jobSelectedStaffId) ||
                   STAFF_LIST.find(s => s.id === jobSelectedStaffId);
+
+            const selectedFreelanceObj =
+              jobSelectedFreelanceName === 'ALL'
+                ? undefined
+                : OFFICIAL_FREELANCE_CREW_LIST.find(
+                    f => f.name.toLowerCase() === jobSelectedFreelanceName.toLowerCase()
+                  );
 
             const getJobWeekCode = (dateStr: string): 'W1' | 'W2' | 'W3' | 'W4' | 'W5' => {
               const dayNum = Number(String(dateStr || '').slice(8, 10)) || 1;
@@ -1603,9 +1819,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
               jobMonthFilter === 'ALL' ? true : job.monthKey === jobMonthFilter
             );
 
-            // Jobs matching month + staff + division + crewType + search (used to count per-week tabs)
+            // Jobs matching month + staff/freelance + division + crewType + search (used to count per-week tabs)
             const baseFilteredJobs = monthFilteredJobs.filter(job => {
               if (selectedStaffObj && !matchesStaffOnJob(job, selectedStaffObj)) {
+                return false;
+              }
+              if (jobSelectedFreelanceName !== 'ALL' && !matchesFreelanceOnJob(job, jobSelectedFreelanceName)) {
                 return false;
               }
               if (jobDivisionFilter !== 'All') {
@@ -1649,15 +1868,81 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
               weekJobCounts[wk] = (weekJobCounts[wk] || 0) + 1;
             });
 
-            // Compute assignment count per staff for the active month & week filter
+            // Compute assignment count per staff & freelance for the active week AND full month
             const weekScopedMonthJobs = monthFilteredJobs.filter(job =>
               jobWeekFilter === 'ALL' ? true : getJobWeekCode(job.date) === jobWeekFilter
             );
             const staffJobCounts = new Map<string, number>();
+            const monthStaffJobCounts = new Map<string, number>();
             staffList.forEach(st => {
-              const cnt = weekScopedMonthJobs.filter(j => matchesStaffOnJob(j, st)).length;
-              staffJobCounts.set(st.id, cnt);
+              const wkCnt = weekScopedMonthJobs.filter(j => matchesStaffOnJob(j, st)).length;
+              const moCnt = monthFilteredJobs.filter(j => matchesStaffOnJob(j, st)).length;
+              staffJobCounts.set(st.id, wkCnt);
+              monthStaffJobCounts.set(st.id, moCnt);
             });
+
+            const freelanceJobCounts = new Map<string, number>();
+            const monthFreelanceJobCounts = new Map<string, number>();
+            OFFICIAL_FREELANCE_CREW_LIST.forEach(fl => {
+              const wkCnt = weekScopedMonthJobs.filter(j => matchesFreelanceOnJob(j, fl.name)).length;
+              const moCnt = monthFilteredJobs.filter(j => matchesFreelanceOnJob(j, fl.name)).length;
+              freelanceJobCounts.set(fl.name, wkCnt);
+              monthFreelanceJobCounts.set(fl.name, moCnt);
+            });
+
+            const handleSelectStaffPill = (targetStaff: Staff) => {
+              if (jobSelectedStaffId === targetStaff.id) {
+                setJobSelectedStaffId('ALL');
+                return;
+              }
+              setJobSelectedStaffId(targetStaff.id);
+              setJobSelectedFreelanceName('ALL');
+              if (jobCrewTypeFilter === 'Freelance') {
+                setJobCrewTypeFilter('All');
+              }
+              const staffMonthJobs = monthFilteredJobs.filter(j => matchesStaffOnJob(j, targetStaff));
+              if (jobDivisionFilter !== 'All') {
+                const hasInDiv = staffMonthJobs.some(j =>
+                  j.sections.some(sec => sec.division === jobDivisionFilter)
+                );
+                if (!hasInDiv) {
+                  setJobDivisionFilter('All');
+                }
+              }
+              if (jobWeekFilter !== 'ALL') {
+                const inCurrentWeek = staffMonthJobs.some(j => getJobWeekCode(j.date) === jobWeekFilter);
+                if (!inCurrentWeek) {
+                  setJobWeekFilter('ALL');
+                }
+              }
+            };
+
+            const handleSelectFreelancePill = (flName: string) => {
+              if (jobSelectedFreelanceName.toLowerCase() === flName.toLowerCase()) {
+                setJobSelectedFreelanceName('ALL');
+                return;
+              }
+              setJobSelectedFreelanceName(flName);
+              setJobSelectedStaffId('ALL');
+              if (jobCrewTypeFilter === 'Staff') {
+                setJobCrewTypeFilter('All');
+              }
+              const flMonthJobs = monthFilteredJobs.filter(j => matchesFreelanceOnJob(j, flName));
+              if (jobDivisionFilter !== 'All') {
+                const hasInDiv = flMonthJobs.some(j =>
+                  j.sections.some(sec => sec.division === jobDivisionFilter)
+                );
+                if (!hasInDiv) {
+                  setJobDivisionFilter('All');
+                }
+              }
+              if (jobWeekFilter !== 'ALL') {
+                const inCurrentWeek = flMonthJobs.some(j => getJobWeekCode(j.date) === jobWeekFilter);
+                if (!inCurrentWeek) {
+                  setJobWeekFilter('ALL');
+                }
+              }
+            };
 
             const filteredJobs = baseFilteredJobs.filter(job =>
               jobWeekFilter === 'ALL' ? true : getJobWeekCode(job.date) === jobWeekFilter
@@ -1709,6 +1994,15 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                   return 'bg-blue-50 text-blue-700 border-blue-200';
               }
             };
+
+            const effectiveQuickAssignJob =
+              monthFilteredJobs.find(j => j.id === quickAssignJobId) || monthFilteredJobs[0];
+            const effectiveQuickAssignSecIdx =
+              effectiveQuickAssignJob &&
+              quickAssignSectionIdx >= 0 &&
+              quickAssignSectionIdx < effectiveQuickAssignJob.sections.length
+                ? quickAssignSectionIdx
+                : 0;
 
             return (
               <div className="space-y-5">
@@ -1819,7 +2113,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                               ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm ring-2 ring-emerald-300'
                               : cnt > 0
                                 ? 'bg-slate-50 hover:bg-emerald-50/60 text-slate-800 border-slate-200 hover:border-emerald-300'
-                                : 'bg-slate-50/50 text-slate-400 border-slate-200/60'
+                                : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
                           }`}
                         >
                           <div className="flex items-center justify-between gap-1">
@@ -1830,7 +2124,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                   ? 'bg-white text-emerald-800'
                                   : cnt > 0
                                     ? 'bg-emerald-100 text-emerald-800'
-                                    : 'bg-slate-200 text-slate-500'
+                                    : 'bg-slate-100 text-slate-600'
                               }`}
                             >
                               {cnt} Job
@@ -1869,17 +2163,21 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                   </div>
                 </div>
 
-                {/* Staff Name Filter Bar (Muncul Sesuai Nama Staff) */}
-                <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2.5">
+                {/* Staff & Freelance Name Filter Bar + Quick Admin Scheduling */}
+                <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <User className="w-4 h-4 text-indigo-600" />
                       <span className="text-xs font-black text-indigo-950 uppercase tracking-wide">
-                        Filter Penugasan Sesuai Nama Staff:
+                        Filter & Pilih Penugasan Sesuai Nama Staff / Freelance:
                       </span>
                       {selectedStaffObj ? (
                         <span className="px-2.5 py-0.5 bg-indigo-600 text-white rounded-full text-xs font-black">
-                          {selectedStaffObj.name}{selectedStaffObj.nickname ? ` (${selectedStaffObj.nickname})` : ''} — {filteredJobs.length} Job
+                          Staff: {selectedStaffObj.name}{selectedStaffObj.nickname ? ` (${selectedStaffObj.nickname})` : ''} — {filteredJobs.length} Job
+                        </span>
+                      ) : selectedFreelanceObj ? (
+                        <span className="px-2.5 py-0.5 bg-emerald-600 text-white rounded-full text-xs font-black">
+                          Freelance: {selectedFreelanceObj.name} ({selectedFreelanceObj.division}) — {filteredJobs.length} Job
                         </span>
                       ) : (
                         <span className="px-2.5 py-0.5 bg-slate-800 text-white rounded-full text-xs font-bold">
@@ -1888,23 +2186,37 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setJobSelectedStaffId(currentUser.id)}
+                        onClick={() => handleSelectStaffPill(currentUser)}
                         className={`px-3 py-1 rounded-lg text-xs font-black cursor-pointer transition-all border ${
                           jobSelectedStaffId === currentUser.id
                             ? 'bg-indigo-600 text-white border-indigo-700 shadow-2xs'
                             : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-100'
                         }`}
                       >
-                        👤 Jadwal Saya ({currentUser.nickname || currentUser.name.split(' ')[0]}: {staffJobCounts.get(currentUser.id) || 0})
+                        👤 Jadwal Saya ({currentUser.nickname || currentUser.name.split(' ')[0]}: {monthStaffJobCounts.get(currentUser.id) || 0})
                       </button>
                       <button
                         type="button"
-                        onClick={() => setJobSelectedStaffId('ALL')}
+                        onClick={() => setShowFreelanceFilterPills(prev => !prev)}
+                        className={`px-3 py-1 rounded-lg text-xs font-black cursor-pointer transition-all border ${
+                          showFreelanceFilterPills || jobCrewTypeFilter === 'Freelance' || jobSelectedFreelanceName !== 'ALL'
+                            ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
+                            : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                        }`}
+                      >
+                        🤝 Pilih Kru Freelance ({OFFICIAL_FREELANCE_CREW_LIST.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setJobSelectedStaffId('ALL');
+                          setJobSelectedFreelanceName('ALL');
+                        }}
                         className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all border ${
-                          jobSelectedStaffId === 'ALL'
+                          jobSelectedStaffId === 'ALL' && jobSelectedFreelanceName === 'ALL'
                             ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
                             : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                         }`}
@@ -1914,44 +2226,187 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                     </div>
                   </div>
 
-                  {/* Quick Staff Pills */}
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {staffList
-                      .filter(st => st.id !== 'director-wahyu')
-                      .map(st => {
-                        const count = staffJobCounts.get(st.id) || 0;
-                        const isSelected = jobSelectedStaffId === st.id;
-                        const shortLabel = st.nickname ? `${st.nickname} (${st.name.split(' ')[0]})` : st.name;
-                        return (
-                          <button
-                            key={st.id}
-                            type="button"
-                            onClick={() => setJobSelectedStaffId(isSelected ? 'ALL' : st.id)}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
-                              isSelected
-                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs ring-2 ring-indigo-300'
-                                : count > 0
-                                  ? 'bg-white text-slate-800 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
-                                  : 'bg-slate-100/70 text-slate-400 border-slate-200/60 hover:bg-slate-100'
-                            }`}
-                            title={`${st.name} (${st.division}) — ${count} Jadwal Penugasan`}
-                          >
-                            <span>{shortLabel}</span>
-                            <span
-                              className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-black ${
+                  {/* Quick Staff Inhouse Pills — All 21 Staff Always Active & Selectable */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-mono font-bold uppercase text-indigo-900">
+                      Daftar Staff Inhouse (Klik nama staff untuk melihat / menjadwalkan penugasan):
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {staffList
+                        .filter(st => st.id !== 'director-wahyu')
+                        .map(st => {
+                          const wkCount = staffJobCounts.get(st.id) || 0;
+                          const moCount = monthStaffJobCounts.get(st.id) || 0;
+                          const displayCount = jobWeekFilter === 'ALL' ? moCount : wkCount;
+                          const isSelected = jobSelectedStaffId === st.id;
+                          const shortLabel = st.nickname ? `${st.nickname} (${st.name.split(' ')[0]})` : st.name;
+                          return (
+                            <button
+                              key={st.id}
+                              type="button"
+                              onClick={() => handleSelectStaffPill(st)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
                                 isSelected
-                                  ? 'bg-white text-indigo-700'
-                                  : count > 0
-                                    ? 'bg-indigo-100 text-indigo-800'
-                                    : 'bg-slate-200 text-slate-500'
+                                  ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs ring-2 ring-indigo-300'
+                                  : displayCount > 0
+                                    ? 'bg-white text-slate-900 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50'
+                                    : 'bg-white text-slate-700 border-slate-300 hover:border-indigo-400 hover:bg-indigo-50'
                               }`}
+                              title={`${st.name} (${st.division}) — Minggu ini: ${wkCount} Job | Total Bulan ini: ${moCount} Job (Klik untuk pilih / jadwalkan)`}
                             >
-                              {count}
-                            </span>
-                          </button>
-                        );
-                      })}
+                              <span>{shortLabel}</span>
+                              <span
+                                className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-black ${
+                                  isSelected
+                                    ? 'bg-white text-indigo-700'
+                                    : displayCount > 0
+                                      ? 'bg-indigo-100 text-indigo-800'
+                                      : moCount > 0
+                                        ? 'bg-amber-100 text-amber-800'
+                                        : 'bg-slate-100 text-slate-700'
+                                }`}
+                              >
+                                {jobWeekFilter !== 'ALL' && wkCount === 0 && moCount > 0 ? `${moCount} Bln` : displayCount}
+                              </span>
+                            </button>
+                          );
+                        })}
+                    </div>
                   </div>
+
+                  {/* Quick Freelance Crew Pills (Shown when toggled or when Hanya Kru Freelance is selected) */}
+                  {(showFreelanceFilterPills || jobCrewTypeFilter === 'Freelance' || jobSelectedFreelanceName !== 'ALL') && (
+                    <div className="pt-2 border-t border-indigo-200/70 space-y-1.5">
+                      <div className="text-[10px] font-mono font-bold uppercase text-emerald-900 flex items-center justify-between">
+                        <span>Daftar Kru Freelance Resmi (Klik nama freelance untuk melihat / menjadwalkan penugasan):</span>
+                        {jobSelectedFreelanceName !== 'ALL' && (
+                          <button
+                            type="button"
+                            onClick={() => setJobSelectedFreelanceName('ALL')}
+                            className="text-[10px] text-rose-600 hover:underline font-bold cursor-pointer"
+                          >
+                            Reset Pilihan Freelance ×
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
+                        {OFFICIAL_FREELANCE_CREW_LIST.map(fl => {
+                          const wkCount = freelanceJobCounts.get(fl.name) || 0;
+                          const moCount = monthFreelanceJobCounts.get(fl.name) || 0;
+                          const displayCount = jobWeekFilter === 'ALL' ? moCount : wkCount;
+                          const isSelected = jobSelectedFreelanceName.toLowerCase() === fl.name.toLowerCase();
+                          return (
+                            <button
+                              key={fl.id}
+                              type="button"
+                              onClick={() => handleSelectFreelancePill(fl.name)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                                isSelected
+                                  ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs ring-2 ring-emerald-300'
+                                  : displayCount > 0
+                                    ? 'bg-white text-slate-900 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50'
+                                    : 'bg-white text-slate-700 border-slate-300 hover:border-emerald-400 hover:bg-emerald-50'
+                              }`}
+                              title={`${fl.canonicalName} (Freelance ${fl.division}) — Minggu ini: ${wkCount} Job | Total Bulan ini: ${moCount} Job`}
+                            >
+                              <span>{fl.name}</span>
+                              <span
+                                className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-black ${
+                                  isSelected
+                                    ? 'bg-white text-emerald-700'
+                                    : displayCount > 0
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : moCount > 0
+                                        ? 'bg-amber-100 text-amber-800'
+                                        : 'bg-slate-100 text-slate-700'
+                                }`}
+                              >
+                                {jobWeekFilter !== 'ALL' && wkCount === 0 && moCount > 0 ? `${moCount} Bln` : displayCount}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Admin Quick-Schedule Bar when a Staff or Freelance is selected */}
+                  {canManageJobSchedule && (selectedStaffObj || selectedFreelanceObj) && effectiveQuickAssignJob && (
+                    <div className="pt-2.5 border-t border-indigo-200/80 bg-white/90 p-3 rounded-xl border flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+                      <div className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-mono font-black uppercase">
+                          ADMIN QUICK SCHEDULE
+                        </span>
+                        <span>
+                          Jadwalkan{' '}
+                          <strong className="text-indigo-700">
+                            {selectedStaffObj
+                              ? `${selectedStaffObj.nickname || selectedStaffObj.name} (Staff ${selectedStaffObj.division})`
+                              : `${selectedFreelanceObj?.name} (Freelance ${selectedFreelanceObj?.division})`}
+                          </strong>{' '}
+                          ke Event:
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={effectiveQuickAssignJob.id}
+                          onChange={(e) => {
+                            setQuickAssignJobId(e.target.value);
+                            setQuickAssignSectionIdx(0);
+                          }}
+                          className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 outline-none"
+                        >
+                          {monthFilteredJobs.map(j => (
+                            <option key={j.id} value={j.id}>
+                              {j.date} — {j.venue} ({j.dateLabel})
+                            </option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={effectiveQuickAssignSecIdx}
+                          onChange={(e) => setQuickAssignSectionIdx(Number(e.target.value))}
+                          className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 outline-none"
+                        >
+                          {effectiveQuickAssignJob.sections.map((s, idx) => (
+                            <option key={idx} value={idx}>
+                              Divisi {s.division} ({s.packageLabel})
+                            </option>
+                          ))}
+                        </select>
+
+                        <input
+                          type="text"
+                          value={quickAssignRoleNote}
+                          onChange={(e) => setQuickAssignRoleNote(e.target.value)}
+                          placeholder="Catatan tugas (opsional, misal: Campers / Pasang)"
+                          className="text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-medium text-slate-800 w-56 outline-none focus:border-indigo-500"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const personName = selectedStaffObj
+                              ? selectedStaffObj.nickname?.split('/')[0].trim() || selectedStaffObj.name
+                              : selectedFreelanceObj?.name || '';
+                            if (!personName) return;
+                            handleToggleCrewInJobSection(
+                              effectiveQuickAssignJob,
+                              effectiveQuickAssignSecIdx,
+                              personName,
+                              quickAssignRoleNote
+                            );
+                            setQuickAssignRoleNote('');
+                          }}
+                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black cursor-pointer shadow-2xs flex items-center gap-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Jadwalkan ke Event Ini</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Filters Bar */}
@@ -1990,7 +2445,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                     <select
                       value={jobDivisionFilter}
                       onChange={(e) => setJobDivisionFilter(e.target.value)}
-                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 outline-none"
+                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 outline-none cursor-pointer"
                     >
                       <option value="All">Semua Divisi Alat</option>
                       <option value="Audio">Audio / Sound</option>
@@ -2002,8 +2457,17 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
 
                     <select
                       value={jobCrewTypeFilter}
-                      onChange={(e) => setJobCrewTypeFilter(e.target.value as 'All' | 'Staff' | 'Freelance')}
-                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 outline-none"
+                      onChange={(e) => {
+                        const nextType = e.target.value as 'All' | 'Staff' | 'Freelance';
+                        setJobCrewTypeFilter(nextType);
+                        if (nextType === 'Freelance') {
+                          setJobSelectedStaffId('ALL');
+                          setShowFreelanceFilterPills(true);
+                        } else if (nextType === 'Staff') {
+                          setJobSelectedFreelanceName('ALL');
+                        }
+                      }}
+                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 outline-none cursor-pointer"
                     >
                       <option value="All">Semua Personil (Staff + Freelance)</option>
                       <option value="Staff">Hanya Staff Inhouse</option>
@@ -2076,10 +2540,80 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                 Loading / Berangkat: {job.loadingSchedule}
                               </span>
                             )}
-                            <span className="inline-flex items-center gap-1 font-bold text-slate-800 bg-white border border-slate-200 px-2.5 py-0.5 rounded shadow-2xs">
-                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                              Person in Charge (PIC): <span className="text-indigo-700 uppercase">{job.pic || '-'}</span>
-                            </span>
+
+                            {/* Editable PIC Badge for Admin */}
+                            {editingPicJobId === job.id && canManageJobSchedule ? (
+                              <div className="inline-flex flex-wrap items-center gap-1.5 bg-white border border-indigo-300 p-1 rounded-lg shadow-xs">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 ml-1" />
+                                <span className="text-[11px] font-bold text-slate-700">PIC:</span>
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    if (e.target.value) setEditingPicValue(e.target.value);
+                                  }}
+                                  className="text-[11px] px-1.5 py-0.5 bg-indigo-50 border border-indigo-200 rounded font-bold text-indigo-900 outline-none cursor-pointer"
+                                >
+                                  <option value="">-- Pilih Staff / Freelance --</option>
+                                  <optgroup label="Staff Inhouse">
+                                    {staffList.map(st => {
+                                      const label = st.nickname ? `${st.nickname} (${st.name})` : st.name;
+                                      return (
+                                        <option key={st.id} value={label}>
+                                          {label} — {st.division}
+                                        </option>
+                                      );
+                                    })}
+                                  </optgroup>
+                                  <optgroup label="Kru Freelance">
+                                    {OFFICIAL_FREELANCE_CREW_LIST.map(fl => (
+                                      <option key={fl.id} value={fl.name}>
+                                        {fl.name} ({fl.division})
+                                      </option>
+                                    ))}
+                                  </optgroup>
+                                </select>
+                                <input
+                                  type="text"
+                                  value={editingPicValue}
+                                  onChange={(e) => setEditingPicValue(e.target.value)}
+                                  className="text-xs px-2 py-0.5 border border-slate-300 rounded font-bold text-slate-800 w-44 outline-none focus:border-indigo-500"
+                                  placeholder="Nama PIC..."
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateJobPic(job, editingPicValue)}
+                                  className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[11px] font-black cursor-pointer"
+                                >
+                                  Simpan
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingPicJobId(null)}
+                                  className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[11px] font-bold cursor-pointer"
+                                >
+                                  Batal
+                                </button>
+                              </div>
+                            ) : (
+                              <span
+                                onClick={() => {
+                                  if (canManageJobSchedule) {
+                                    setEditingPicJobId(job.id);
+                                    setEditingPicValue(job.pic || '');
+                                  }
+                                }}
+                                className={`inline-flex items-center gap-1 font-bold text-slate-800 bg-white border border-slate-200 px-2.5 py-0.5 rounded shadow-2xs ${
+                                  canManageJobSchedule ? 'cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/40' : ''
+                                }`}
+                                title={canManageJobSchedule ? 'Klik untuk ubah / pilih Person in Charge (PIC)' : undefined}
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                Person in Charge (PIC): <span className="text-indigo-700 uppercase">{job.pic || '-'}</span>
+                                {canManageJobSchedule && (
+                                  <Edit className="w-3 h-3 text-slate-400 ml-1" />
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -2100,12 +2634,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                             <>
                               <button
                                 type="button"
-                                onClick={() => handleOpenEditJobModal(job)}
+                                onClick={() => handleOpenEditJobModal(job, 0)}
                                 className="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
                                 title="Edit Jadwal Penugasan"
                               >
                                 <Edit className="w-3.5 h-3.5" />
-                                <span>Edit</span>
+                                <span>Edit Job</span>
                               </button>
                               <button
                                 type="button"
@@ -2133,7 +2667,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
 
                       {/* Division Sections Grid */}
                       <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {job.sections.map((sec, sIdx) => (
+                        {job.sections.map((sec, sIdx) => {
+                          const pickerKey = `${job.id}::${sIdx}`;
+                          const isPickerOpen = activeCrewPickerKey === pickerKey;
+                          const searchLower = crewPickerSearch.toLowerCase().trim();
+
+                          return (
                           <div
                             key={`${job.id}-sec-${sIdx}`}
                             className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/40 space-y-3 flex flex-col justify-between"
@@ -2149,9 +2688,21 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                     {sec.packageLabel}
                                   </span>
                                 </div>
-                                <span className="text-[10px] font-mono font-semibold text-slate-500">
-                                  {sec.crew.length} Crew • {sec.equipment.length} Alat
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-mono font-semibold text-slate-500">
+                                    {sec.crew.length} Crew • {sec.equipment.length} Alat
+                                  </span>
+                                  {canManageJobSchedule && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEditJobModal(job, sIdx)}
+                                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 px-1.5 py-0.5 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-200 cursor-pointer"
+                                      title="Edit Paket & Alat Divisi Ini"
+                                    >
+                                      Edit Paket
+                                    </button>
+                                  )}
+                                </div>
                               </div>
 
                               {/* 1. Unit Alat (Equipment Manifest) */}
@@ -2176,12 +2727,47 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                 )}
                               </div>
 
-                              {/* 2. Staff & Freelance Crew */}
-                              <div>
-                                <div className="text-[10px] font-mono uppercase font-bold text-slate-500 mb-1.5 flex items-center gap-1">
-                                  <Users className="w-3 h-3 text-emerald-600" />
-                                  <span>Personil Penugasan (Staff Inhouse & Freelance):</span>
+                              {/* 2. Staff & Freelance Crew (Editable & Selectable by Admin) */}
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                  <div className="text-[10px] font-mono uppercase font-bold text-slate-500 flex items-center gap-1">
+                                    <Users className="w-3 h-3 text-emerald-600" />
+                                    <span>Personil Penugasan (Staff Inhouse & Freelance):</span>
+                                  </div>
+
+                                  {canManageJobSchedule && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (isPickerOpen) {
+                                          setActiveCrewPickerKey(null);
+                                        } else {
+                                          setActiveCrewPickerKey(pickerKey);
+                                          setCrewPickerSearch('');
+                                          setCrewPickerRoleNote('');
+                                        }
+                                      }}
+                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-all flex items-center gap-1 border ${
+                                        isPickerOpen
+                                          ? 'bg-slate-900 text-white border-slate-900'
+                                          : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-700 shadow-2xs'
+                                      }`}
+                                    >
+                                      {isPickerOpen ? (
+                                        <>
+                                          <Check className="w-3 h-3" />
+                                          <span>Selesai Pilih Crew</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Plus className="w-3 h-3" />
+                                          <span>Pilih / Edit Staff & Freelance</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
                                 </div>
+
                                 {sec.crew.length > 0 ? (
                                   <div className="flex flex-wrap gap-1.5">
                                     {sec.crew.map((member, mIdx) => {
@@ -2192,22 +2778,146 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                           member.name.toLowerCase() === (selectedStaffObj.nickname || '').toLowerCase() ||
                                           member.name.toLowerCase() === selectedStaffObj.name.toLowerCase())
                                       );
+                                      const isSelectedFreelanceMember = Boolean(
+                                        jobSelectedFreelanceName !== 'ALL' &&
+                                        member.name.toLowerCase() === jobSelectedFreelanceName.toLowerCase()
+                                      );
+                                      const isHighlighted = isSelectedStaffMember || isSelectedFreelanceMember;
+                                      const badgeEditKey = `${job.id}::${sIdx}::${mIdx}`;
+
+                                      if (editingCrewBadgeKey === badgeEditKey && canManageJobSchedule) {
+                                        return (
+                                          <div
+                                            key={mIdx}
+                                            className="w-full p-2.5 bg-white border-2 border-indigo-500 rounded-xl shadow-sm space-y-2"
+                                          >
+                                            <div className="text-[10px] font-mono font-black uppercase text-indigo-700 flex items-center justify-between">
+                                              <span>Edit / Ganti Personil Penugasan:</span>
+                                              <button
+                                                type="button"
+                                                onClick={() => setEditingCrewBadgeKey(null)}
+                                                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                                              >
+                                                <X className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                              <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                                                  Pilih dari Daftar Staff / Freelance:
+                                                </label>
+                                                <select
+                                                  value=""
+                                                  onChange={(e) => {
+                                                    if (e.target.value) setEditingCrewPersonName(e.target.value);
+                                                  }}
+                                                  className="w-full text-xs p-1.5 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 outline-none cursor-pointer"
+                                                >
+                                                  <option value="">-- Ganti dengan Staff / Freelance --</option>
+                                                  <optgroup label="Staff Inhouse Resmi">
+                                                    {staffList.map(st => {
+                                                      const nick = st.nickname?.split('/')[0].trim() || st.name;
+                                                      return (
+                                                        <option key={st.id} value={nick}>
+                                                          {nick} — {st.name} (STAFF {st.division})
+                                                        </option>
+                                                      );
+                                                    })}
+                                                  </optgroup>
+                                                  <optgroup label="Kru Freelance Resmi">
+                                                    {OFFICIAL_FREELANCE_CREW_LIST.map(fl => (
+                                                      <option key={fl.id} value={fl.name}>
+                                                        {fl.name} — {fl.canonicalName} (FREELANCE {fl.division})
+                                                      </option>
+                                                    ))}
+                                                  </optgroup>
+                                                </select>
+                                              </div>
+                                              <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                                                  Nama Personil:
+                                                </label>
+                                                <input
+                                                  type="text"
+                                                  value={editingCrewPersonName}
+                                                  onChange={(e) => setEditingCrewPersonName(e.target.value)}
+                                                  className="w-full text-xs p-1.5 border border-slate-300 rounded-lg font-bold text-slate-800"
+                                                  placeholder="Nama Staff / Freelance"
+                                                />
+                                              </div>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              <input
+                                                type="text"
+                                                value={editingCrewRoleNote}
+                                                onChange={(e) => setEditingCrewRoleNote(e.target.value)}
+                                                className="flex-1 text-xs p-1.5 border border-slate-300 rounded-lg font-medium text-slate-800"
+                                                placeholder="Role / Catatan Tugas (contoh: VJ + Zoom, Campers, VD, Pasang, Bongkaran)"
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  handleUpdateCrewMemberInSection(
+                                                    job,
+                                                    sIdx,
+                                                    mIdx,
+                                                    editingCrewPersonName,
+                                                    editingCrewRoleNote
+                                                  )
+                                                }
+                                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black cursor-pointer"
+                                              >
+                                                Simpan
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  handleRemoveCrewFromSection(job, sIdx, mIdx);
+                                                  setEditingCrewBadgeKey(null);
+                                                }}
+                                                className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold cursor-pointer"
+                                              >
+                                                Hapus
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+
                                       return (
                                         <div
                                           key={mIdx}
-                                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition-all ${
-                                            isSelectedStaffMember
+                                          onClick={() => {
+                                            if (canManageJobSchedule) {
+                                              setEditingCrewBadgeKey(badgeEditKey);
+                                              setEditingCrewPersonName(member.name);
+                                              setEditingCrewRoleNote(member.roleNote || '');
+                                            } else if (isStaff && member.staffId) {
+                                              const stObj = staffList.find(s => s.id === member.staffId);
+                                              if (stObj) handleSelectStaffPill(stObj);
+                                            } else {
+                                              handleSelectFreelancePill(member.name);
+                                            }
+                                          }}
+                                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                                            isHighlighted
                                               ? 'bg-indigo-600 text-white border-indigo-700 ring-2 ring-amber-400 shadow-sm'
                                               : isStaff
-                                                ? 'bg-indigo-50/90 text-indigo-950 border-indigo-200'
-                                                : 'bg-emerald-50/90 text-emerald-950 border-emerald-200'
+                                                ? 'bg-indigo-50/90 hover:bg-indigo-100 text-indigo-950 border-indigo-200'
+                                                : 'bg-emerald-50/90 hover:bg-emerald-100 text-emerald-950 border-emerald-200'
                                           }`}
-                                          title={member.canonicalName ? `${member.canonicalName} (${member.personnelType} - ${member.division || ''})` : member.name}
+                                          title={
+                                            canManageJobSchedule
+                                              ? `Klik untuk edit/ganti ${member.name} (${member.personnelType})`
+                                              : member.canonicalName
+                                                ? `${member.canonicalName} (${member.personnelType} - ${member.division || ''})`
+                                                : member.name
+                                          }
                                         >
                                           <span>{member.name}</span>
                                           <span
                                             className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-black uppercase ${
-                                              isSelectedStaffMember
+                                              isHighlighted
                                                 ? 'bg-amber-300 text-slate-950'
                                                 : isStaff
                                                   ? 'bg-indigo-600 text-white'
@@ -2221,12 +2931,221 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                               {member.roleNote}
                                             </span>
                                           )}
+                                          {canManageJobSchedule && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveCrewFromSection(job, sIdx, mIdx);
+                                              }}
+                                              className={`ml-0.5 px-1 rounded hover:bg-rose-500 hover:text-white transition-colors ${
+                                                isHighlighted ? 'text-white/80' : 'text-slate-400'
+                                              }`}
+                                              title={`Hapus ${member.name} dari penugasan ini`}
+                                            >
+                                              ×
+                                            </button>
+                                          )}
                                         </div>
                                       );
                                     })}
                                   </div>
                                 ) : (
-                                  <div className="text-[11px] text-slate-400 italic">Belum ada personil ditugaskan</div>
+                                  <div className="text-[11px] text-slate-400 italic">
+                                    Belum ada personil ditugaskan — klik "Pilih / Edit Staff & Freelance" untuk menjadwalkan.
+                                  </div>
+                                )}
+
+                                {/* Inline Admin Picker Panel for Staff Inhouse & Kru Freelance */}
+                                {isPickerOpen && canManageJobSchedule && (
+                                  <div className="mt-2 p-3 bg-white border-2 border-indigo-500 rounded-xl shadow-md space-y-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                                      <div className="flex items-center gap-1.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => setCrewPickerTab('Staff')}
+                                          className={`px-2.5 py-1 rounded-lg text-xs font-black cursor-pointer transition-all ${
+                                            crewPickerTab === 'Staff'
+                                              ? 'bg-indigo-600 text-white shadow-2xs'
+                                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                          }`}
+                                        >
+                                          👤 Pilih Staff Inhouse ({staffList.length})
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setCrewPickerTab('Freelance')}
+                                          className={`px-2.5 py-1 rounded-lg text-xs font-black cursor-pointer transition-all ${
+                                            crewPickerTab === 'Freelance'
+                                              ? 'bg-emerald-600 text-white shadow-2xs'
+                                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                          }`}
+                                        >
+                                          🤝 Pilih Kru Freelance ({OFFICIAL_FREELANCE_CREW_LIST.length})
+                                        </button>
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => setActiveCrewPickerKey(null)}
+                                        className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                                      >
+                                        Tutup ✕
+                                      </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <input
+                                        type="text"
+                                        value={crewPickerSearch}
+                                        onChange={(e) => setCrewPickerSearch(e.target.value)}
+                                        placeholder="Cari nama Staff / Freelance / Divisi..."
+                                        className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-800 outline-none focus:border-indigo-500"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={crewPickerRoleNote}
+                                        onChange={(e) => setCrewPickerRoleNote(e.target.value)}
+                                        placeholder="Catatan Role saat ditambahkan (misal: VJ + Zoom, Campers)"
+                                        className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-800 outline-none focus:border-indigo-500"
+                                      />
+                                    </div>
+
+                                    {crewPickerTab === 'Staff' ? (
+                                      <div className="space-y-1.5">
+                                        <div className="text-[10px] font-mono font-bold uppercase text-indigo-800">
+                                          Klik nama Staff Inhouse untuk menjadwalkan / membatalkan pada paket {sec.division}:
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                                          {staffList
+                                            .filter(st => {
+                                              if (!searchLower) return true;
+                                              return (
+                                                st.name.toLowerCase().includes(searchLower) ||
+                                                (st.nickname || '').toLowerCase().includes(searchLower) ||
+                                                st.division.toLowerCase().includes(searchLower)
+                                              );
+                                            })
+                                            .map(st => {
+                                              const primaryNick = st.nickname?.split('/')[0].trim() || st.name;
+                                              const isAssigned = sec.crew.some(
+                                                c =>
+                                                  c.staffId === st.id ||
+                                                  c.name.toLowerCase().trim() === primaryNick.toLowerCase() ||
+                                                  c.name.toLowerCase().trim() === st.name.toLowerCase()
+                                              );
+                                              return (
+                                                <button
+                                                  key={st.id}
+                                                  type="button"
+                                                  onClick={() =>
+                                                    handleToggleCrewInJobSection(
+                                                      job,
+                                                      sIdx,
+                                                      primaryNick,
+                                                      crewPickerRoleNote
+                                                    )
+                                                  }
+                                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border ${
+                                                    isAssigned
+                                                      ? 'bg-indigo-600 text-white border-indigo-700 shadow-2xs'
+                                                      : 'bg-slate-50 hover:bg-indigo-50 text-slate-800 border-slate-300 hover:border-indigo-400'
+                                                  }`}
+                                                >
+                                                  <span>{isAssigned ? '✓' : '+'}</span>
+                                                  <span>{st.nickname ? `${st.nickname} (${st.name.split(' ')[0]})` : st.name}</span>
+                                                  <span
+                                                    className={`text-[9px] font-mono px-1 rounded ${
+                                                      isAssigned ? 'bg-indigo-800 text-indigo-100' : 'bg-slate-200 text-slate-600'
+                                                    }`}
+                                                  >
+                                                    {st.division}
+                                                  </span>
+                                                </button>
+                                              );
+                                            })}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-1.5">
+                                        <div className="text-[10px] font-mono font-bold uppercase text-emerald-800">
+                                          Klik nama Kru Freelance untuk menjadwalkan / membatalkan pada paket {sec.division}:
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                                          {OFFICIAL_FREELANCE_CREW_LIST.filter(fl => {
+                                            if (!searchLower) return true;
+                                            return (
+                                              fl.name.toLowerCase().includes(searchLower) ||
+                                              fl.canonicalName.toLowerCase().includes(searchLower) ||
+                                              fl.division.toLowerCase().includes(searchLower)
+                                            );
+                                          }).map(fl => {
+                                            const isAssigned = sec.crew.some(
+                                              c =>
+                                                c.name.toLowerCase().trim() === fl.name.toLowerCase() ||
+                                                (c.canonicalName || '').toLowerCase() === fl.canonicalName.toLowerCase()
+                                            );
+                                            return (
+                                              <button
+                                                key={fl.id}
+                                                type="button"
+                                                onClick={() =>
+                                                  handleToggleCrewInJobSection(
+                                                    job,
+                                                    sIdx,
+                                                    fl.name,
+                                                    crewPickerRoleNote
+                                                  )
+                                                }
+                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border ${
+                                                  isAssigned
+                                                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
+                                                    : 'bg-slate-50 hover:bg-emerald-50 text-slate-800 border-slate-300 hover:border-emerald-400'
+                                                }`}
+                                              >
+                                                <span>{isAssigned ? '✓' : '+'}</span>
+                                                <span>{fl.name}</span>
+                                                <span
+                                                  className={`text-[9px] font-mono px-1 rounded ${
+                                                    isAssigned ? 'bg-emerald-800 text-emerald-100' : 'bg-slate-200 text-slate-600'
+                                                  }`}
+                                                >
+                                                  {fl.division}
+                                                </span>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Custom / Additional Crew Name Input */}
+                                    <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={crewPickerCustomName}
+                                        onChange={(e) => setCrewPickerCustomName(e.target.value)}
+                                        placeholder="Ketik nama personil lain jika belum ada di daftar..."
+                                        className="flex-1 text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-800 outline-none focus:border-indigo-500"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (!crewPickerCustomName.trim()) return;
+                                          handleToggleCrewInJobSection(
+                                            job,
+                                            sIdx,
+                                            crewPickerCustomName.trim(),
+                                            crewPickerRoleNote
+                                          );
+                                          setCrewPickerCustomName('');
+                                        }}
+                                        className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold cursor-pointer"
+                                      >
+                                        + Tambah Manual
+                                      </button>
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -2254,7 +3173,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                               </div>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -2264,10 +3184,46 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                     })}
 
                   {filteredJobs.length === 0 && (
-                    <div className="text-center py-12 bg-slate-50 border border-dashed border-slate-200 rounded-xl space-y-2">
+                    <div className="text-center py-12 bg-slate-50 border border-dashed border-slate-200 rounded-xl space-y-3">
                       <Briefcase className="w-10 h-10 text-slate-300 mx-auto" />
-                      <div className="text-sm font-bold text-slate-700">Tidak ada jadwal penugasan job pada minggu / filter yang dipilih</div>
-                      <p className="text-xs text-slate-500">Pilih tab Minggu 1–5 lainnya, klik "Semua Minggu", atau ubah filter nama staff di atas.</p>
+                      <div className="text-sm font-bold text-slate-700">
+                        {selectedStaffObj
+                          ? `Belum ada jadwal penugasan job untuk ${selectedStaffObj.name} (${selectedStaffObj.nickname || selectedStaffObj.division}) pada filter ini`
+                          : selectedFreelanceObj
+                            ? `Belum ada jadwal penugasan job untuk Kru Freelance ${selectedFreelanceObj.name} pada filter ini`
+                            : 'Tidak ada jadwal penugasan job pada minggu / filter yang dipilih'}
+                      </div>
+                      <p className="text-xs text-slate-500 max-w-lg mx-auto">
+                        {canManageJobSchedule && (selectedStaffObj || selectedFreelanceObj)
+                          ? 'Gunakan panel "ADMIN QUICK SCHEDULE" berwarna biru di atas untuk langsung menjadwalkan personil ini ke Event yang ada, atau klik "+ Tambah Jadwal Job".'
+                          : 'Pilih tab Minggu 1–5 lainnya, klik "Semua Minggu", atau ubah filter nama staff/freelance di atas.'}
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                        {jobWeekFilter !== 'ALL' && (
+                          <button
+                            type="button"
+                            onClick={() => setJobWeekFilter('ALL')}
+                            className="px-3.5 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold cursor-pointer"
+                          >
+                            Tampilkan Semua Minggu (1 Bulan Penuh)
+                          </button>
+                        )}
+                        {(jobSelectedStaffId !== 'ALL' || jobSelectedFreelanceName !== 'ALL' || jobDivisionFilter !== 'All' || jobCrewTypeFilter !== 'All') && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setJobSelectedStaffId('ALL');
+                              setJobSelectedFreelanceName('ALL');
+                              setJobDivisionFilter('All');
+                              setJobCrewTypeFilter('All');
+                              setJobWeekFilter('ALL');
+                            }}
+                            className="px-3.5 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-bold cursor-pointer"
+                          >
+                            Reset Semua Filter
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2275,14 +3231,14 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                 {/* Add / Edit Job Assignment Modal */}
                 {showJobFormModal && (
                   <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto p-6 space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                         <div>
                           <h3 className="text-base font-black text-slate-900">
                             {editingJobId ? 'Edit Jadwal Penugasan Job / Event' : 'Tambah Jadwal Penugasan Job / Event Baru'}
                           </h3>
                           <p className="text-xs text-slate-500">
-                            Lengkapi 5 komponen wajib: Tanggal & Venue, PIC, Unit Alat, Staff/Freelance Crew, dan Armada.
+                            Admin dapat memilih langsung Staff Inhouse & Kru Freelance untuk dijadwalkan pada setiap divisi event.
                           </p>
                         </div>
                         <button
@@ -2328,15 +3284,46 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                             />
                           </div>
                           <div>
-                            <label className="block font-bold text-slate-700 mb-1">Person in Charge (PIC) *</label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="Contoh: Jay / Fahrul / Agus / Wahyu"
-                              value={jobFormPic}
-                              onChange={(e) => setJobFormPic(e.target.value)}
-                              className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
-                            />
+                            <label className="block font-bold text-slate-700 mb-1">
+                              Person in Charge (PIC) *
+                            </label>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="text"
+                                required
+                                placeholder="Ketik atau pilih PIC..."
+                                value={jobFormPic}
+                                onChange={(e) => setJobFormPic(e.target.value)}
+                                className="flex-1 p-2 border border-slate-200 rounded-lg font-semibold"
+                              />
+                              <select
+                                value=""
+                                onChange={(e) => {
+                                  if (e.target.value) setJobFormPic(e.target.value);
+                                }}
+                                className="p-2 bg-indigo-50 border border-indigo-200 rounded-lg font-bold text-indigo-900 outline-none cursor-pointer max-w-[155px]"
+                                title="Pilih PIC dari Daftar Staff / Freelance"
+                              >
+                                <option value="">Pilih PIC ▾</option>
+                                <optgroup label="Staff Inhouse">
+                                  {staffList.map(st => {
+                                    const label = st.nickname ? `${st.nickname} (${st.name})` : st.name;
+                                    return (
+                                      <option key={st.id} value={label}>
+                                        {label} ({st.division})
+                                      </option>
+                                    );
+                                  })}
+                                </optgroup>
+                                <optgroup label="Kru Freelance">
+                                  {OFFICIAL_FREELANCE_CREW_LIST.map(fl => (
+                                    <option key={fl.id} value={fl.name}>
+                                      {fl.name} ({fl.division})
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              </select>
+                            </div>
                           </div>
                           <div>
                             <label className="block font-bold text-slate-700 mb-1">Jadwal Loading / Jam Berangkat</label>
@@ -2364,9 +3351,45 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                        {/* Multi-Section Selector Bar inside Modal */}
+                        <div className="pt-3 border-t border-slate-200 space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[11px] font-black uppercase text-slate-700">
+                              Pilih Paket Divisi pada Event Ini ({jobFormSectionsDraft.length} Paket):
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleAddModalSection}
+                              className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-black cursor-pointer flex items-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Tambah Paket Divisi Lain</span>
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {jobFormSectionsDraft.map((secItem, idx) => {
+                              const isCurrent = idx === jobFormSectionIdx;
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => handleSelectModalSection(idx)}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer transition-all border ${
+                                    isCurrent
+                                      ? 'bg-indigo-600 text-white border-indigo-700 shadow-2xs'
+                                      : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                                  }`}
+                                >
+                                  Paket {idx + 1}: {isCurrent ? jobFormDivision : secItem.division} ({isCurrent ? jobFormPackageLabel || '-' : secItem.packageLabel || '-'})
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                           <div>
-                            <label className="block font-bold text-slate-700 mb-1">Divisi Utama</label>
+                            <label className="block font-bold text-slate-700 mb-1">Divisi Paket #{jobFormSectionIdx + 1}</label>
                             <select
                               value={jobFormDivision}
                               onChange={(e) => setJobFormDivision(e.target.value as JobDivisionSection['division'])}
@@ -2383,7 +3406,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                             <label className="block font-bold text-slate-700 mb-1">Nama Paket Alat</label>
                             <input
                               type="text"
-                              placeholder="Contoh: Sound 20rb / LED 48Meter / Lighting"
+                              placeholder="Contoh: Sound 20rb / LED 48Meter / Stream + 2 Cam"
                               value={jobFormPackageLabel}
                               onChange={(e) => setJobFormPackageLabel(e.target.value)}
                               className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
@@ -2396,7 +3419,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                             Daftar Unit Alat (Satu baris per item alat)
                           </label>
                           <textarea
-                            rows={4}
+                            rows={3}
                             placeholder={"Midasha 32\n4 set dB + 1 set Vertec\n4 Qsc + 4 dB Tech"}
                             value={jobFormEquipmentText}
                             onChange={(e) => setJobFormEquipmentText(e.target.value)}
@@ -2407,11 +3430,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <label className="block font-bold text-slate-700 mb-1">
-                              Staff / Freelance Crew (Pisahkan koma, otomatis deteksi Staff vs Freelance)
+                              Staff / Freelance Crew Terjadwal (Bisa ketik atau klik pilih di bawah)
                             </label>
                             <input
                               type="text"
-                              placeholder="Contoh: Mboh, Dani, Butonk, Adul, Kiting (Bongkaran)"
+                              placeholder="Contoh: Mboh, Dani, Butonk, Uloh (VJ + Zoom), Chandra (Campers)"
                               value={jobFormCrewText}
                               onChange={(e) => setJobFormCrewText(e.target.value)}
                               className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
@@ -2423,11 +3446,77 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                             </label>
                             <input
                               type="text"
-                              placeholder="Contoh: Truck, Riz 2, Engkel Riz, Yosep"
+                              placeholder="Contoh: Truck, Riz 2, Engkel Riz, Serena, Yosep"
                               value={jobFormVehiclesText}
                               onChange={(e) => setJobFormVehiclesText(e.target.value)}
                               className="w-full p-2 border border-slate-200 rounded-lg font-semibold"
                             />
+                          </div>
+                        </div>
+
+                        {/* Interactive Staff & Freelance Multi-Select Chips in Modal */}
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                          <div className="space-y-1">
+                            <div className="text-[10px] font-mono font-black uppercase text-indigo-800">
+                              👤 Klik untuk Pilih / Hapus Staff Inhouse pada Paket Ini:
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {staffList.map(st => {
+                                const primaryNick = st.nickname?.split('/')[0].trim() || st.name;
+                                const activeTokens = jobFormCrewText
+                                  .split(',')
+                                  .map(t => t.replace(/\([^)]*\)/g, '').trim().toLowerCase())
+                                  .filter(Boolean);
+                                const isChecked =
+                                  activeTokens.includes(primaryNick.toLowerCase()) ||
+                                  activeTokens.includes(st.name.toLowerCase());
+                                return (
+                                  <button
+                                    key={st.id}
+                                    type="button"
+                                    onClick={() => handleTogglePersonInModalCrewText(primaryNick)}
+                                    className={`px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all border ${
+                                      isChecked
+                                        ? 'bg-indigo-600 text-white border-indigo-700 shadow-2xs'
+                                        : 'bg-white hover:bg-indigo-50 text-slate-700 border-slate-300'
+                                    }`}
+                                  >
+                                    {isChecked ? '✓ ' : '+ '}
+                                    {st.nickname ? `${st.nickname} (${st.division})` : `${st.name} (${st.division})`}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 pt-2 border-t border-slate-200">
+                            <div className="text-[10px] font-mono font-black uppercase text-emerald-800">
+                              🤝 Klik untuk Pilih / Hapus Kru Freelance pada Paket Ini:
+                            </div>
+                            <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1">
+                              {OFFICIAL_FREELANCE_CREW_LIST.map(fl => {
+                                const activeTokens = jobFormCrewText
+                                  .split(',')
+                                  .map(t => t.replace(/\([^)]*\)/g, '').trim().toLowerCase())
+                                  .filter(Boolean);
+                                const isChecked = activeTokens.includes(fl.name.toLowerCase());
+                                return (
+                                  <button
+                                    key={fl.id}
+                                    type="button"
+                                    onClick={() => handleTogglePersonInModalCrewText(fl.name)}
+                                    className={`px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all border ${
+                                      isChecked
+                                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
+                                        : 'bg-white hover:bg-emerald-50 text-slate-700 border-slate-300'
+                                    }`}
+                                  >
+                                    {isChecked ? '✓ ' : '+ '}
+                                    {fl.name} ({fl.division})
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
 

@@ -2887,6 +2887,7 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
 
 export {
   INITIAL_JOB_ASSIGNMENTS,
+  OFFICIAL_FREELANCE_CREW_LIST,
   resolveCrewMember,
   buildCrewList,
   formatFleetVehicleBadge

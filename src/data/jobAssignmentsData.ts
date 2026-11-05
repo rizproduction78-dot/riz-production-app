@@ -13,20 +13,31 @@ import { JobAssignment, JobCrewMember, JobDivisionSection } from '../types';
 const STAFF_NICKNAME_MAP: Record<string, { id: string; canonicalName: string; division: string }> = {
   wahyu: { id: 'director-wahyu', canonicalName: 'Wahyu', division: 'Admin' },
   fahrul: { id: 'staff-fahrul', canonicalName: 'M. Fahrulyana . A (Fahrul)', division: 'Admin' },
+  fahrulyana: { id: 'staff-fahrul', canonicalName: 'M. Fahrulyana . A (Fahrul)', division: 'Admin' },
+  mfahrulyana: { id: 'staff-fahrul', canonicalName: 'M. Fahrulyana . A (Fahrul)', division: 'Admin' },
+  mfahrulyanaa: { id: 'staff-fahrul', canonicalName: 'M. Fahrulyana . A (Fahrul)', division: 'Admin' },
   agus: { id: 'staff-agustino', canonicalName: 'Agustino Setiawan (Agus)', division: 'Admin' },
   agustino: { id: 'staff-agustino', canonicalName: 'Agustino Setiawan (Agus)', division: 'Admin' },
+  agustinosetiawan: { id: 'staff-agustino', canonicalName: 'Agustino Setiawan (Agus)', division: 'Admin' },
   caca: { id: 'staff-syalsa', canonicalName: 'Syalsa Sri Hestariana (Caca)', division: 'Admin' },
   syalsa: { id: 'staff-syalsa', canonicalName: 'Syalsa Sri Hestariana (Caca)', division: 'Admin' },
+  syalsasrihestariana: { id: 'staff-syalsa', canonicalName: 'Syalsa Sri Hestariana (Caca)', division: 'Admin' },
   seno: { id: 'staff-seno', canonicalName: 'Seno Subroto', division: 'Admin' },
+  senosubroto: { id: 'staff-seno', canonicalName: 'Seno Subroto', division: 'Admin' },
   udin: { id: 'staff-udin', canonicalName: 'Udin Saepudin (Mang Ube)', division: 'Gudang' },
+  udinsaepudin: { id: 'staff-udin', canonicalName: 'Udin Saepudin (Mang Ube)', division: 'Gudang' },
   ube: { id: 'staff-udin', canonicalName: 'Udin Saepudin (Mang Ube)', division: 'Gudang' },
   mangube: { id: 'staff-udin', canonicalName: 'Udin Saepudin (Mang Ube)', division: 'Gudang' },
   gatot: { id: 'staff-gatot', canonicalName: 'Gatot Wiliyanto', division: 'Gudang' },
+  gatotwiliyanto: { id: 'staff-gatot', canonicalName: 'Gatot Wiliyanto', division: 'Gudang' },
   aep: { id: 'staff-absobur', canonicalName: 'Aep Saepudin (Subur)', division: 'Gudang' },
+  aepsaepudin: { id: 'staff-absobur', canonicalName: 'Aep Saepudin (Subur)', division: 'Gudang' },
+  aepsubur: { id: 'staff-absobur', canonicalName: 'Aep Saepudin (Subur)', division: 'Gudang' },
   subur: { id: 'staff-absobur', canonicalName: 'Aep Saepudin (Subur)', division: 'Gudang' },
   abahsubur: { id: 'staff-absobur', canonicalName: 'Aep Saepudin (Subur)', division: 'Gudang' },
   mboh: { id: 'staff-rahmat', canonicalName: 'Muhamad Rahmat (Mboh)', division: 'Audio' },
   rahmat: { id: 'staff-rahmat', canonicalName: 'Muhamad Rahmat (Mboh)', division: 'Audio' },
+  muhamadrahmat: { id: 'staff-rahmat', canonicalName: 'Muhamad Rahmat (Mboh)', division: 'Audio' },
   unyink: { id: 'staff-unyin', canonicalName: 'Wahyudin (Unyim)', division: 'Audio' },
   unyim: { id: 'staff-unyin', canonicalName: 'Wahyudin (Unyim)', division: 'Audio' },
   unyin: { id: 'staff-unyin', canonicalName: 'Wahyudin (Unyim)', division: 'Audio' },
@@ -40,6 +51,7 @@ const STAFF_NICKNAME_MAP: Record<string, { id: string; canonicalName: string; di
   yudis: { id: 'staff-yudish', canonicalName: 'Yudishtira Purnama A (Yudis)', division: 'Audio' },
   yudish: { id: 'staff-yudish', canonicalName: 'Yudishtira Purnama A (Yudis)', division: 'Audio' },
   yudishtira: { id: 'staff-yudish', canonicalName: 'Yudishtira Purnama A (Yudis)', division: 'Audio' },
+  yudishtirapurnamaa: { id: 'staff-yudish', canonicalName: 'Yudishtira Purnama A (Yudis)', division: 'Audio' },
   opik: { id: 'staff-taufik', canonicalName: 'Taufik Diana (Opik)', division: 'Audio' },
   opick: { id: 'staff-taufik', canonicalName: 'Taufik Diana (Opik)', division: 'Audio' },
   opik165: { id: 'staff-taufik', canonicalName: 'Taufik Diana (Opik)', division: 'Audio' },
@@ -48,6 +60,7 @@ const STAFF_NICKNAME_MAP: Record<string, { id: string; canonicalName: string; di
   bulux: { id: 'staff-suryana', canonicalName: 'Suryana (Buluk)', division: 'Audio' },
   buluk: { id: 'staff-suryana', canonicalName: 'Suryana (Buluk)', division: 'Audio' },
   nana: { id: 'staff-suryana', canonicalName: 'Suryana (Buluk)', division: 'Audio' },
+  nanabuluk: { id: 'staff-suryana', canonicalName: 'Suryana (Buluk)', division: 'Audio' },
   suryana: { id: 'staff-suryana', canonicalName: 'Suryana (Buluk)', division: 'Audio' },
   heri: { id: 'staff-heri', canonicalName: 'Heri', division: 'Lighting' },
   herry: { id: 'staff-heri', canonicalName: 'Heri', division: 'Lighting' },
@@ -57,10 +70,14 @@ const STAFF_NICKNAME_MAP: Record<string, { id: string; canonicalName: string; di
   ayongsumarsih: { id: 'staff-ayong', canonicalName: 'Ayong Sumarsih', division: 'Videotron' },
   wigi: { id: 'staff-dedi', canonicalName: 'Dedi Agus Wigiantoro (Wigi)', division: 'Videotron' },
   dedi: { id: 'staff-dedi', canonicalName: 'Dedi Agus Wigiantoro (Wigi)', division: 'Videotron' },
+  dediaguswigiantoro: { id: 'staff-dedi', canonicalName: 'Dedi Agus Wigiantoro (Wigi)', division: 'Videotron' },
   irvan: { id: 'staff-irvan', canonicalName: 'Muhamad Irvan', division: 'Videotron' },
   irfan: { id: 'staff-irvan', canonicalName: 'Muhamad Irvan', division: 'Videotron' },
+  muhamadirvan: { id: 'staff-irvan', canonicalName: 'Muhamad Irvan', division: 'Videotron' },
   kharo: { id: 'staff-mulyana', canonicalName: 'Mulyana (Kharo)', division: 'Videotron' },
+  karo: { id: 'staff-mulyana', canonicalName: 'Mulyana (Kharo)', division: 'Videotron' },
   mulyana: { id: 'staff-mulyana', canonicalName: 'Mulyana (Kharo)', division: 'Videotron' },
+  mulyanakharo: { id: 'staff-mulyana', canonicalName: 'Mulyana (Kharo)', division: 'Videotron' },
   damri: { id: 'staff-damri', canonicalName: 'Damri', division: 'Service' },
   mangdamri: { id: 'staff-damri', canonicalName: 'Damri', division: 'Service' },
 };
@@ -127,6 +144,30 @@ const FREELANCE_NICKNAME_MAP: Record<string, { canonicalName: string; division: 
   kote: { canonicalName: 'KOTE', division: 'Lighting' },
   yosep: { canonicalName: 'YOSEP', division: 'Driver' },
 };
+
+export interface OfficialFreelanceOption {
+  id: string;
+  name: string;
+  canonicalName: string;
+  division: string;
+}
+
+export const OFFICIAL_FREELANCE_CREW_LIST: OfficialFreelanceOption[] = (() => {
+  const seenCanon = new Set<string>();
+  const list: OfficialFreelanceOption[] = [];
+  for (const [key, val] of Object.entries(FREELANCE_NICKNAME_MAP)) {
+    if (seenCanon.has(val.canonicalName)) continue;
+    seenCanon.add(val.canonicalName);
+    const display = key.charAt(0).toUpperCase() + key.slice(1);
+    list.push({
+      id: `fl-${key}`,
+      name: display === 'Aca' ? 'ACA' : display,
+      canonicalName: val.canonicalName,
+      division: val.division,
+    });
+  }
+  return list;
+})();
 
 /**
  * Helper mengubah daftar string nama kru menjadi objek JobCrewMember terstruktur
