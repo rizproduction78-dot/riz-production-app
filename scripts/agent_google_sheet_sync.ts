@@ -287,6 +287,18 @@ async function runAgent() {
           _source: 'google_sheet',
           equipment: 'Speaker Monitor DB Tech No. 15 (Audio)',
           priority: 'Tinggi'
+        },
+        {
+          id: 'fd-20261105-dani-kabel-ext',
+          dateCreated: '2026-11-05',
+          division: 'Audio',
+          status: 'Open',
+          pic: 'Ramdani',
+          targetDate: '2026-11-08',
+          issue: '2 kabel rusak yang Laen nya aman (saat maintenance kabel extension 5 meter)',
+          _source: 'google_sheet',
+          equipment: 'Kabel Extension 5 Meter (Audio)',
+          priority: 'Sedang'
         }
       ];
 
@@ -444,6 +456,35 @@ async function runAgent() {
           progress: 75,
           priority: 'Tinggi',
           pic: 'Iwan Kurniawan',
+          _source: 'google_sheet'
+        },
+        {
+          id: 'wo-20261105-dani-kabel-ext',
+          dateCreated: '2026-11-05',
+          findingId: 'fd-20261105-dani-kabel-ext',
+          equipment: 'Kabel Extension 5 Meter (Audio)',
+          title: 'Perbaikan 2 Unit Kabel Extension 5 Meter Rusak',
+          division: 'Audio',
+          deadline: '2026-11-08',
+          description: '[Temuan QC ID: fd-20261105-dani-kabel-ext] Maintenance kabel extension 5 meter: 2 kabel rusak yang Laen nya aman',
+          status: 'Pending',
+          progress: 0,
+          priority: 'Sedang',
+          pic: 'Ramdani',
+          _source: 'google_sheet'
+        },
+        {
+          id: 'wo-20261105-kharo-6kabinet-led',
+          dateCreated: '2026-11-05',
+          equipment: '6 Kabinet LED Videotron',
+          title: 'Service 6 Kabinet LED (1 Kabinet Ngacing & 5 Kabinet Ganti Jalur)',
+          division: 'Videotron',
+          deadline: '2026-11-05',
+          description: 'servise 6 kabinet (-1 kabinet ngacing, - 5 kabinet ganti jalur) — Status: Done',
+          status: 'Completed',
+          progress: 100,
+          priority: 'Sedang',
+          pic: 'Mulyana',
           _source: 'google_sheet'
         }
       ];

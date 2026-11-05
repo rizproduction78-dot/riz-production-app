@@ -509,8 +509,10 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const bEdited = b?._userEdited || b?._syncMeta?._userEdited ? 1 : 0;
       if (aEdited !== bEdited) return bEdited - aEdited;
 
-      const aSynced = a?._syncedAt ? new Date(a._syncedAt).getTime() : 0;
-      const bSynced = b?._syncedAt ? new Date(b._syncedAt).getTime() : 0;
+      const aSyncedRaw = a?._syncedAt || a?._syncMeta?._syncedAt || a?._syncMeta?.updatedAt;
+      const bSyncedRaw = b?._syncedAt || b?._syncMeta?._syncedAt || b?._syncMeta?.updatedAt;
+      const aSynced = aSyncedRaw ? new Date(aSyncedRaw).getTime() : 0;
+      const bSynced = bSyncedRaw ? new Date(bSyncedRaw).getTime() : 0;
       if (aSynced !== bSynced) return bSynced - aSynced;
 
       const aCanon = canonicalReportsMap.has(aId) ? 1 : 0;
@@ -595,8 +597,10 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const bEdited = b?._userEdited || b?._syncMeta?._userEdited ? 1 : 0;
       if (aEdited !== bEdited) return bEdited - aEdited;
 
-      const aSynced = a?._syncedAt ? new Date(a._syncedAt).getTime() : 0;
-      const bSynced = b?._syncedAt ? new Date(b._syncedAt).getTime() : 0;
+      const aSyncedRaw = a?._syncedAt || a?._syncMeta?._syncedAt || a?._syncMeta?.updatedAt;
+      const bSyncedRaw = b?._syncedAt || b?._syncMeta?._syncedAt || b?._syncMeta?.updatedAt;
+      const aSynced = aSyncedRaw ? new Date(aSyncedRaw).getTime() : 0;
+      const bSynced = bSyncedRaw ? new Date(bSyncedRaw).getTime() : 0;
       if (aSynced !== bSynced) return bSynced - aSynced;
 
       const aCanon = canonicalLogsMap.has(aId) ? 1 : 0;

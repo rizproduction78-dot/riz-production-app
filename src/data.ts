@@ -701,6 +701,71 @@ export const INITIAL_DAILY_TASKS: DailyTask[] = [
     dueDate: '2026-11-04',
     createdAt: '2026-11-04',
     createdBy: 'Iwan Kurniawan'
+  },
+  {
+    id: 'dt-20261105-01',
+    title: 'Maintenance Kabel Extention 50 Meter (No. 1-2) & 10 Meter (No. 1-11)',
+    description: '- maintenance kabel extention 50meter 1\n- maintenanace kabel extention 50meter 2\n- maintenance kabel extention 10meter 1\n-maintenance kabel extention 10meter 2\n--maintenance kabel extention 10meter 3\n--maintenance kabel extention 10meter 4\n--maintenance kabel extention 10meter 5\n--maintenance kabel extention 10meter 6\n--maintenance kabel extention 10meter 7\n--maintenance kabel extention 10meter 8\n-maintenance kabel extention 10meter 9\n-maintenance kabel extention 10meter 10\n-maintenance kabel extention 10meter 11\nREMARK:\nkondisi ok',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-rahmat',
+    assignedName: 'Muhamad Rahmat',
+    dueDate: '2026-11-05',
+    createdAt: '2026-11-05',
+    createdBy: 'Muhamad Rahmat'
+  },
+  {
+    id: 'dt-20261105-02',
+    title: 'Maintenance Kabel Extension 5 Meter',
+    description: 'Maintenance kabel extension 5 meter\nREMARK:\n2 kabel rusak yang Laen nya aman',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'In Progress',
+    assignedTo: 'staff-ramdani',
+    assignedName: 'Ramdani',
+    dueDate: '2026-11-05',
+    createdAt: '2026-11-05',
+    createdBy: 'Ramdani'
+  },
+  {
+    id: 'dt-20261105-03',
+    title: 'Maintenance Kabel Extension 10 Meter',
+    description: 'maintenance kabel extension 10 meter\nREMARK:\nkondisi ok',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-iwan',
+    assignedName: 'Iwan Kurniawan',
+    dueDate: '2026-11-05',
+    createdAt: '2026-11-05',
+    createdBy: 'Iwan Kurniawan'
+  },
+  {
+    id: 'dt-20261105-04',
+    title: 'Maintenance Kabel Extension 50 Meter & 25 Meter',
+    description: 'maintenance kabel extension 50 meter\nmaintenance kabel extension 25 meter\nREMARK:\nkondisi ok',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-taufik',
+    assignedName: 'Taufik Diana',
+    dueDate: '2026-11-05',
+    createdAt: '2026-11-05',
+    createdBy: 'Taufik Diana'
+  },
+  {
+    id: 'dt-20261105-05',
+    title: 'Service 6 Kabinet LED (1 Kabinet Ngacing & 5 Kabinet Ganti Jalur)',
+    description: 'servise 6 kabinet\n-1 kabinet ngacing\n- 5 kabinet ganti jalur\nREMARK:\ndone',
+    division: 'Videotron',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-mulyana',
+    assignedName: 'Mulyana',
+    dueDate: '2026-11-05',
+    createdAt: '2026-11-05',
+    createdBy: 'Mulyana'
   }
 ];
 

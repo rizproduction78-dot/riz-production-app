@@ -9,7 +9,7 @@ import { Staff, Division, DailyReport as DailyReportType, DailyTask, Finding, Lo
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, getMasterStaffList } from '../data';
 import { DIVISION_DAILY_TASK_REFERENCES } from '../data/divisionTaskTemplates';
 import { saveCloudDoc, deleteCloudDoc, subscribeCloudCollection, normalizeCollectionItems } from '../lib/cloudSync';
-import { getStaffDivisions, isStaffInDivision } from '../utils/kpiCalculator';
+import { getStaffDivisions, isStaffInDivision, isStaffMatch } from '../utils/kpiCalculator';
 import { getActiveMonthKey, formatMonthLabel } from '../data/staffSchedules';
 import { compressImageFile } from '../utils/imageUtils';
 import {
@@ -56,6 +56,7 @@ interface LogTaskModuleProps {
   currentUser: Staff;
   dailyReports: DailyReportType[];
   onAddReport: (report: Omit<DailyReportType, 'id'>) => void;
+  onUpdateReport?: (id: string, updatedFields: Partial<DailyReportType>) => void;
   onDeleteReport: (id: string) => void;
   onAddFinding?: (finding: Omit<Finding, 'id' | 'dateCreated'>) => void;
   onLogActivity: (username: string, role: string, action: string) => void;
@@ -92,6 +93,7 @@ export default function LogTaskModule({
   currentUser,
   dailyReports,
   onAddReport,
+  onUpdateReport,
   onDeleteReport,
   onAddFinding,
   onLogActivity,
@@ -415,6 +417,37 @@ export default function LogTaskModule({
       } catch (e) {}
       if (onUpdateTasks) onUpdateTasks(nextTasks);
       saveCloudDoc('daily_tasks', editingTask.id, updated, currentUser.name);
+
+      // Sinkronkan juga ke DailyReport & LogbookEntry QC berpasangan agar Produktivitas Staff & Top Performer ikut auto-update
+      if (onUpdateReport) {
+        const prevDate = String(editingTask.dueDate || editingTask.createdAt || '').slice(0, 10);
+        const prevStaff = String(editingTask.assignedName || '');
+        const pairedReport = dailyReports.find(
+          r => r.date === prevDate && (
+            String(r.staffName || '').toLowerCase() === prevStaff.toLowerCase() ||
+            isStaffMatch({ id: editingTask.assignedTo || '', name: prevStaff } as any, r.staffName)
+          )
+        );
+        if (pairedReport) {
+          let newAct = taskDesc || taskTitle;
+          let newNotes = pairedReport.notes || '';
+          const remarkSplit = (taskDesc || '').split(/\nREMARK:\n/i);
+          if (remarkSplit.length > 1) {
+            newAct = remarkSplit[0].trim();
+            newNotes = remarkSplit.slice(1).join('\n').trim();
+          }
+          onUpdateReport(pairedReport.id, {
+            date: taskDueDate || prevDate,
+            staffName: effectiveTaskAssignee,
+            division: effectiveTaskDivision,
+            activity: newAct,
+            notes: newNotes,
+            photos: taskPhotos.length > 0 ? taskPhotos : undefined,
+            photoUrl: taskPhotos[0] || undefined
+          });
+        }
+      }
+
       onLogActivity(currentUser.name, currentUser.role, `Memperbarui daily task "${taskTitle}"`);
     } else {
       const newTask: DailyTask = {

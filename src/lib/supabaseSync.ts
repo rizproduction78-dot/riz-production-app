@@ -73,6 +73,7 @@ function formatForSupabase(collectionName: string, docId: string, data: Record<s
     updatedBy: 'System',
     ...(data._syncMeta || {}),
     ...(data._userEdited || data._syncMeta?._userEdited ? { _userEdited: true } : {}),
+    ...(data._syncedAt || data._syncMeta?._syncedAt ? { _syncedAt: data._syncedAt || data._syncMeta?._syncedAt } : {}),
     ...(Array.isArray(data.rowDetails) ? { rowDetails: data.rowDetails } : {}),
   };
 
@@ -280,6 +281,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
     updatedBy: 'Supabase Cloud Sync'
   };
   const userEditedFlag = syncMeta?._userEdited ? { _userEdited: true } : {};
+  const syncedAtFlag = syncMeta?._syncedAt ? { _syncedAt: syncMeta._syncedAt } : {};
 
   switch (collectionName) {
     case 'master_staff':
@@ -317,6 +319,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         status: row.status || 'Submitted',
         _source: row.source || 'supabase',
         ...userEditedFlag,
+        ...syncedAtFlag,
         _syncMeta: syncMeta
       };
     }
@@ -339,6 +342,7 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         photos: Array.isArray(row.photos) ? row.photos : undefined,
         _source: row.source || 'supabase',
         ...userEditedFlag,
+        ...syncedAtFlag,
         _syncMeta: syncMeta
       };
     }

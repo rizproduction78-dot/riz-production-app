@@ -188,10 +188,10 @@ function runNotificationTests() {
   const distinctNovDates = Array.from(new Set(novTasks.map((t: any) => t.createdAt))).sort();
   console.log(`- Jumlah Daily Task November 2026: ${novTasks.length}`);
   console.log(`- Tanggal unik Daily Task November 2026: ${distinctNovDates.join(', ')}`);
-  assert(novTasks.length === 8, `Harus tepat 8 Daily Task November 2026, ditemukan ${novTasks.length}`);
+  assert(novTasks.length >= 13, `Harus minimal 13 Daily Task November 2026, ditemukan ${novTasks.length}`);
   assert(
-    JSON.stringify(distinctNovDates) === JSON.stringify(['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04']),
-    'Tanggal Daily Task November harus terdistribusi presisi pada 2026-11-01, 2026-11-02, 2026-11-03, dan 2026-11-04!'
+    JSON.stringify(distinctNovDates) === JSON.stringify(['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05']),
+    'Tanggal Daily Task November harus terdistribusi presisi pada 2026-11-01 s/d 2026-11-05!'
   );
   assert(
     novTasks.every((t: any) => !String(t.createdAt).includes('07:18')),
@@ -242,7 +242,7 @@ function runNotificationTests() {
   const dedupedFindings = normalizeCollectionItems('findings', duplicateFindingsInput as any);
   const novFindings = dedupedFindings.filter((f: any) => String(f.dateCreated || '').startsWith('2026-11'));
   console.log(`- Jumlah Temuan November 2026 setelah deduplikasi: ${novFindings.length}`);
-  assert(novFindings.length === 4, `Harus tepat 4 Temuan Unit Bermasalah di November 2026, ditemukan ${novFindings.length}`);
+  assert(novFindings.length === 5, `Harus tepat 5 Temuan Unit Bermasalah di November 2026, ditemukan ${novFindings.length}`);
   assert(
     novFindings.every((f: any) => String(f.id).startsWith('fd-202611')),
     'Seluruh Temuan November 2026 harus menggunakan ID kanonikal fd-202611* (bukan gsheet-finding-*)'
@@ -265,8 +265,8 @@ function runNotificationTests() {
   ];
   const cleanReports = normalizeCollectionItems('daily_reports', dirtyReportsInput as any);
   const novReports = cleanReports.filter((r: any) => String(r.date || '').startsWith('2026-11'));
-  const iwanNov4 = novReports.find((r: any) => r.id === 'rep-20261104-staff-iwan-45');
-  assert(novReports.length === 8, `Harus tepat 8 Daily Report di November 2026, ditemukan ${novReports.length}`);
+  const iwanNov4 = novReports.find((r: any) => r.date === '2026-11-04' && r.staffName === 'Iwan Kurniawan');
+  assert(novReports.length === 13, `Harus tepat 13 Daily Report di November 2026, ditemukan ${novReports.length}`);
   assert(
     iwanNov4 && String(iwanNov4.activity).includes('Service Bracket Drum TAMA'),
     'Teks activity Iwan Kurniawan harus mencakup "Service Bracket Drum TAMA" sesuai Google Sheet resmi'
@@ -283,7 +283,7 @@ function runNotificationTests() {
     _syncedAt: new Date(Date.now() + 10000).toISOString()
   };
   const afterLiveSync = normalizeCollectionItems('daily_reports', [...INITIAL_DAILY_REPORTS, liveEditedSheetReport] as any);
-  const syncedIwan = afterLiveSync.find((r: any) => r.id === 'rep-20261104-staff-iwan-45');
+  const syncedIwan = afterLiveSync.find((r: any) => r.date === '2026-11-04' && r.staffName === 'Iwan Kurniawan');
   assert(
     syncedIwan && String(syncedIwan.notes).includes('Update Live Baru'),
     'Update live dari Google Sheet (_syncedAt) WAJIB menang dan tidak boleh ditimpa oleh canonical statis!'

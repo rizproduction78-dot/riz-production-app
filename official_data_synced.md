@@ -142,15 +142,24 @@
 |  |  | DL 32 no 3 |  |  |  | OK |
 |  |  | DL 32 no 4 |  |  |  | OK |
 |  |  | mixer HD no 1 |  |  |  | OK |
-|  | - Mboh | -cleaning dl251 |  |  |  | -BERSIH |
-|  |  | -cleaning marani mir4801 |  |  |  | -BERSIH |
-|  |  | -cek all kabel LAN |  |  |  | -ALL terkoneksi dgn  baik |
-|  |  | -cleaning mixer HD967 |  |  |  |  |
-|  | - Jay |  |  |  | Cek UPS | Udah Ga bisa ngisi |
+|  | - Mboh | -cleaning dl251 NO 1 |  |  |  | -BERSIH |
+|  |  | -cleaning marani mir4801 NO 2 |  |  |  | -BERSIH |
+|  |  | -cek all kabel LAN 1 |  |  |  | - terkoneksi dgn  baik |
+|  |  | -cek all kabel LAN 2 |  |  |  | - terkoneksi dgn  baik |
+|  |  | -cek all kabel LAN 3 |  |  |  | - terkoneksi dgn  baik |
+|  |  | -cek all kabel LAN 4 |  |  |  | - terkoneksi dgn  baik |
+|  |  | -cek all kabel LAN 5 |  |  |  | - terkoneksi dgn  baik |
+|  |  | -cek all kabel LAN 6 |  |  |  | - terkoneksi dgn  baik |
+|  |  | -cek all kabel LAN 7 |  |  |  | - terkoneksi dgn  baik |
+|  |  | -cek all kabel LAN 8 |  |  |  | - terkoneksi dgn  baik |
+|  |  | -cek all kabel LAN 9 |  |  |  | - terkoneksi dgn  baik |
+|  |  | -cek all kabel LAN 10 |  |  |  | - terkoneksi dgn  baik |
+|  |  | -cleaning mixer HD967 NO1 |  |  |  | BERSIH |
+|  | - Jay |  |  |  | Cek UPS | Udah Ga bisa ngisi, harus service atau ganti |
 |  |  |  |  |  | Cleaning Rak Kantor |  |
 |  |  |  |  |  | Cleaning Tas Kamera |  |
 |  |  |  |  |  | Cek Box 1 Perlenk, SDI, HDMI |  |
-| 3 November 2026 | Yudish | cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD |  |  |  | WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event |
+| 3 November 2026 | - Yudish |  |  |  |  | WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event |
 |  |  | EWD no. 5 - 8 |  |  |  |  |
 |  |  | EWD no. 9 - 12 |  |  |  |  |
 |  |  | EWD no. 15 - 16 |  |  |  |  |
@@ -162,7 +171,7 @@
 |  |  | no. 1 - 8 |  |  |  |  |
 |  |  | repack WHM QLXD menjadi 2 box ukuran 2U ( baru ) |  |  |  | Distributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U. |
 |  |  | massing2 menjadi 2 WHM dalam 1 box |  |  |  |  |
-| 3 November 2026 | -Heri |  | -Rapih2 Kabel Bekas Pakai Perbok |  |  | - Rapih Sesuai Tulisan Dibok |
+|  | -Heri |  | -Rapih2 Kabel Bekas Pakai Perbok |  |  | - Rapih Sesuai Tulisan Dibok |
 |  |  |  | -Benerin Kabel Power 4x2.5 (25M) |  |  | - Sudah Kepasang Kembali Steker Nya |
 |  |  |  | -Cleaning All Beam 450 |  |  | -Bersih & Normal |
 |  |  |  | No. 1-2-3-4-5-6-7-8-9-10-11-12-13 |  |  |  |
@@ -173,16 +182,36 @@
 |  |  |  | 25-26-27-28-29-30-31-32-33-34-35 |  |  | No. 19 - Warm Separo |
 |  |  |  | 36-37-38-39-40-41-42-43-44-45-46 |  |  | No. 33 - Red Separo |
 |  |  |  | 47-48 |  |  |  |
-| 03 November 2026 | kharo |  |  | servise 8 kabinet led |  | 2 unit minta ganti recieving card |
-|  |  |  |  | - 6 kabinet ganti dead pixel |  |  |
-|  |  |  |  | -1 kabinet ganti ic warna |  |  |
-|  |  |  |  | - 1 kabinet ganti jalur |  |  |
-| 04 November 2026 | Butonk | Ganti twitter DB No 15 |  |  |  | Rekon-Kit Twitter masih bermasalah, suara kecil |
+|  | - Kharo |  |  | servise 8 kabinet led |  | 2 unit minta ganti recieving card |
+|  |  |  |  | - 6 kabinet ganti dead pixel |  | selesai |
+|  |  |  |  | -1 kabinet ganti ic warna |  | selesai |
+|  |  |  |  | - 1 kabinet ganti jalur |  | selesai |
+| 04 November 2026 | - Butonk | Ganti twitter DB No 15 |  |  |  | Rekon-Kit Twitter masih bermasalah, suara kecil |
 |  |  | Ganti twitter DB No 18 |  |  |  | Kondisi unit sudah OK |
 |  |  | Ganti twitter DB No 5 |  |  |  | Kondisi unit sudah OK |
 |  |  | Ganti Speaker DB no 5 |  |  |  | Kondisi unit sudah OK |
 |  |  | Proses  Test Unit DB tech maintenance |  |  |  | Service ulang, DB no 15 belum normal |
 |  |  | Service Bracket Drum TAMA |  |  |  | Kondisi unit sudah OK |
+| 05 November 2026 | mboh | - maintenance kabel extention 50meter 1 |  |  |  | kondisi ok |
+|  |  | - maintenanace kabel extention 50meter 2 |  |  |  | kondisi ok |
+|  |  | - maintenance kabel extention 10meter 1 |  |  |  | kondisi ok |
+|  |  | -maintenance kabel extention 10meter 2 |  |  |  | kondisi ok |
+|  |  | --maintenance kabel extention 10meter 3 |  |  |  | kondisi ok |
+|  |  | --maintenance kabel extention 10meter 4 |  |  |  | kondisi ok |
+|  |  | --maintenance kabel extention 10meter 5 |  |  |  | kondisi ok |
+|  |  | --maintenance kabel extention 10meter 6 |  |  |  | kondisi ok |
+|  |  | --maintenance kabel extention 10meter 7 |  |  |  | kondisi ok |
+|  |  | --maintenance kabel extention 10meter 8 |  |  |  | kondisi ok |
+|  |  | -maintenance kabel extention 10meter 9 |  |  |  | kondisi ok |
+|  |  | -maintenance kabel extention 10meter 10 |  |  |  | kondisi ok |
+|  |  | -maintenance kabel extention 10meter 11 |  |  |  | kondisi ok |
+| 05 November 2026 | Dani | Maintenance kabel extension 5 meter |  |  |  | 2 kabel rusak yang Laen nya aman |
+|  | Butong | maintenance kabel extension 10 meter |  |  |  | kondisi ok |
+|  | Opik | maintenance kabel extension 50 meter |  |  |  | kondisi ok |
+|  |  | maintenance kabel extension 25 meter |  |  |  | kondisi ok |
+| 05 Nov 2026 | kharo |  |  | servise 6 kabinet |  | done |
+|  |  |  |  | -1 kabinet ngacing |  | done |
+|  |  |  |  | - 5 kabinet ganti jalur |  | done |
 
 ## Desember 2026 (GID: 368237370)
 

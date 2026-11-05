@@ -3,7 +3,7 @@ import { DailyReport, LogbookEntry, Finding, WorkOrder } from '../types';
 /**
  * DATA KANONIKAL RESMI CLOUD FIRESTORE & GOOGLE SHEET PT. RIZ PRODUCTION MULTI KREASI
  * Disinkronkan langsung dari Cloud Firestore (wh-logbook-2026).
- * Total: 300 Daily Reports | 244 Logbook Entries | 59 Findings | 26 Work Orders
+ * Total: 305 Daily Reports | 251 Logbook Entries | 60 Findings | 28 Work Orders
  */
 
 export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
@@ -5302,40 +5302,76 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "date": "2026-11-02",
     "staffName": "Muhamad Rahmat",
     "division": "Audio",
-    "activity": "-cleaning dl251\n-cleaning marani mir4801\n-cek all kabel LAN\n-cleaning mixer HD967",
-    "notes": "-BERSIH\n-BERSIH\n-ALL terkoneksi dgn  baik",
+    "activity": "-cleaning dl251 NO 1\n-cleaning marani mir4801 NO 2\n-cek all kabel LAN 1\n-cek all kabel LAN 2\n-cek all kabel LAN 3\n-cek all kabel LAN 4\n-cek all kabel LAN 5\n-cek all kabel LAN 6\n-cek all kabel LAN 7\n-cek all kabel LAN 8\n-cek all kabel LAN 9\n-cek all kabel LAN 10\n-cleaning mixer HD967 NO1",
+    "notes": "-BERSIH\n-BERSIH\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\nBERSIH",
     "rowDetails": [
       {
-        "activity": "-cleaning dl251",
+        "activity": "-cleaning dl251 NO 1",
         "remark": "-BERSIH"
       },
       {
-        "activity": "-cleaning marani mir4801",
+        "activity": "-cleaning marani mir4801 NO 2",
         "remark": "-BERSIH"
       },
       {
-        "activity": "-cek all kabel LAN",
-        "remark": "-ALL terkoneksi dgn  baik"
+        "activity": "-cek all kabel LAN 1",
+        "remark": "- terkoneksi dgn  baik"
       },
       {
-        "activity": "-cleaning mixer HD967",
-        "remark": ""
+        "activity": "-cek all kabel LAN 2",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 3",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 4",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 5",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 6",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 7",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 8",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 9",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 10",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cleaning mixer HD967 NO1",
+        "remark": "BERSIH"
       }
     ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261102-staff-mulyadi-14",
+    "id": "rep-20261102-staff-mulyadi-23",
     "date": "2026-11-02",
     "staffName": "Mulyadi",
     "division": "Multimedia",
     "activity": "Cek UPS\nCleaning Rak Kantor\nCleaning Tas Kamera\nCek Box 1 Perlenk, SDI, HDMI",
-    "notes": "Udah Ga bisa ngisi",
+    "notes": "Udah Ga bisa ngisi, harus service atau ganti",
     "rowDetails": [
       {
         "activity": "Cek UPS",
-        "remark": "Udah Ga bisa ngisi"
+        "remark": "Udah Ga bisa ngisi, harus service atau ganti"
       },
       {
         "activity": "Cleaning Rak Kantor",
@@ -5354,16 +5390,16 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261103-staff-yudish-18",
+    "id": "rep-20261103-staff-yudish-27",
     "date": "2026-11-03",
     "staffName": "Yudishtira Purnama A",
     "division": "Audio",
-    "activity": "cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD\nEWD no. 5 - 8\nEWD no. 9 - 12\nEWD no. 15 - 16\nEWD no. 17 - 18\nSLXD no. 1 - 4\nSLXD no. 5 - 8\nQLXD no 9 - 12\ncleaning and check kelengkapan IEM Sennheisser G4\nno. 1 - 8\nrepack WHM QLXD menjadi 2 box ukuran 2U ( baru )\nmassing2 menjadi 2 WHM dalam 1 box",
+    "activity": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event\nEWD no. 5 - 8\nEWD no. 9 - 12\nEWD no. 15 - 16\nEWD no. 17 - 18\nSLXD no. 1 - 4\nSLXD no. 5 - 8\nQLXD no 9 - 12\ncleaning and check kelengkapan IEM Sennheisser G4\nno. 1 - 8\nrepack WHM QLXD menjadi 2 box ukuran 2U ( baru )\nmassing2 menjadi 2 WHM dalam 1 box",
     "notes": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event\nIEM semua dalam kondisi normal, kelengkapan oke.\nDistributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U.",
     "rowDetails": [
       {
-        "activity": "cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD",
-        "remark": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event"
+        "activity": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event",
+        "remark": ""
       },
       {
         "activity": "EWD no. 5 - 8",
@@ -5414,7 +5450,7 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261103-staff-heri-30",
+    "id": "rep-20261103-staff-heri-39",
     "date": "2026-11-03",
     "staffName": "Heri",
     "division": "Lighting",
@@ -5470,12 +5506,12 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261103-staff-mulyana-41",
+    "id": "rep-20261103-staff-mulyana-50",
     "date": "2026-11-03",
     "staffName": "Mulyana",
     "division": "Videotron",
     "activity": "servise 8 kabinet led\n- 6 kabinet ganti dead pixel\n-1 kabinet ganti ic warna\n- 1 kabinet ganti jalur",
-    "notes": "2 unit minta ganti recieving card",
+    "notes": "2 unit minta ganti recieving card\nselesai\nselesai\nselesai",
     "rowDetails": [
       {
         "activity": "servise 8 kabinet led",
@@ -5483,22 +5519,22 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
       },
       {
         "activity": "- 6 kabinet ganti dead pixel",
-        "remark": ""
+        "remark": "selesai"
       },
       {
         "activity": "-1 kabinet ganti ic warna",
-        "remark": ""
+        "remark": "selesai"
       },
       {
         "activity": "- 1 kabinet ganti jalur",
-        "remark": ""
+        "remark": "selesai"
       }
     ],
     "status": "Submitted",
     "_source": "google_sheet"
   },
   {
-    "id": "rep-20261104-staff-iwan-45",
+    "id": "rep-20261104-staff-iwan-54",
     "date": "2026-11-04",
     "staffName": "Iwan Kurniawan",
     "division": "Audio",
@@ -5528,6 +5564,146 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
       {
         "activity": "Service Bracket Drum TAMA",
         "remark": "Kondisi unit sudah OK"
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261105-staff-rahmat-60",
+    "date": "2026-11-05",
+    "staffName": "Muhamad Rahmat",
+    "division": "Audio",
+    "activity": "- maintenance kabel extention 50meter 1\n- maintenanace kabel extention 50meter 2\n- maintenance kabel extention 10meter 1\n-maintenance kabel extention 10meter 2\n--maintenance kabel extention 10meter 3\n--maintenance kabel extention 10meter 4\n--maintenance kabel extention 10meter 5\n--maintenance kabel extention 10meter 6\n--maintenance kabel extention 10meter 7\n--maintenance kabel extention 10meter 8\n-maintenance kabel extention 10meter 9\n-maintenance kabel extention 10meter 10\n-maintenance kabel extention 10meter 11",
+    "notes": "kondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok",
+    "rowDetails": [
+      {
+        "activity": "- maintenance kabel extention 50meter 1",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "- maintenanace kabel extention 50meter 2",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "- maintenance kabel extention 10meter 1",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "-maintenance kabel extention 10meter 2",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 3",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 4",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 5",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 6",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 7",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 8",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "-maintenance kabel extention 10meter 9",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "-maintenance kabel extention 10meter 10",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "-maintenance kabel extention 10meter 11",
+        "remark": "kondisi ok"
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261105-staff-ramdani-73",
+    "date": "2026-11-05",
+    "staffName": "Ramdani",
+    "division": "Audio",
+    "activity": "Maintenance kabel extension 5 meter",
+    "notes": "2 kabel rusak yang Laen nya aman",
+    "rowDetails": [
+      {
+        "activity": "Maintenance kabel extension 5 meter",
+        "remark": "2 kabel rusak yang Laen nya aman"
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261105-staff-iwan-74",
+    "date": "2026-11-05",
+    "staffName": "Iwan Kurniawan",
+    "division": "Audio",
+    "activity": "maintenance kabel extension 10 meter",
+    "notes": "kondisi ok",
+    "rowDetails": [
+      {
+        "activity": "maintenance kabel extension 10 meter",
+        "remark": "kondisi ok"
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261105-staff-taufik-75",
+    "date": "2026-11-05",
+    "staffName": "Taufik Diana",
+    "division": "Audio",
+    "activity": "maintenance kabel extension 50 meter\nmaintenance kabel extension 25 meter",
+    "notes": "kondisi ok\nkondisi ok",
+    "rowDetails": [
+      {
+        "activity": "maintenance kabel extension 50 meter",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "maintenance kabel extension 25 meter",
+        "remark": "kondisi ok"
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261105-staff-mulyana-77",
+    "date": "2026-11-05",
+    "staffName": "Mulyana",
+    "division": "Videotron",
+    "activity": "servise 6 kabinet\n-1 kabinet ngacing\n- 5 kabinet ganti jalur",
+    "notes": "done\ndone\ndone",
+    "rowDetails": [
+      {
+        "activity": "servise 6 kabinet",
+        "remark": "done"
+      },
+      {
+        "activity": "-1 kabinet ngacing",
+        "remark": "done"
+      },
+      {
+        "activity": "- 5 kabinet ganti jalur",
+        "remark": "done"
       }
     ],
     "status": "Submitted",
@@ -11314,6 +11490,38 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "_source": "google_sheet"
   },
   {
+    "id": "log-rep-20261013-staff-mulyana-98",
+    "date": "2026-10-13",
+    "division": "Videotron",
+    "staffName": "Mulyana",
+    "activity": "1. servise 6 kabinet led\n- 1 kabinet ganti jalur\n- 5 kabinet gamti dead pixel",
+    "result": "OK",
+    "followUp": "Pengecekan selesai aman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "1. servise 6 kabinet led\n- 1 kabinet gan": {
+        "status": "OK",
+        "notes": "Synced from Google Sheet"
+      }
+    },
+    "rowDetails": [
+      {
+        "activity": "1. servise 6 kabinet led",
+        "remark": ""
+      },
+      {
+        "activity": "- 1 kabinet ganti jalur",
+        "remark": ""
+      },
+      {
+        "activity": "- 5 kabinet gamti dead pixel",
+        "remark": ""
+      }
+    ],
+    "_source": "google_sheet"
+  },
+  {
     "id": "log-rep-20261014-staff-mulyana-102",
     "date": "2026-10-14",
     "division": "Videotron",
@@ -11670,57 +11878,93 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "date": "2026-11-02",
     "division": "Audio",
     "staffName": "Muhamad Rahmat",
-    "activity": "-cleaning dl251\n-cleaning marani mir4801\n-cek all kabel LAN\n-cleaning mixer HD967",
+    "activity": "-cleaning dl251 NO 1\n-cleaning marani mir4801 NO 2\n-cek all kabel LAN 1\n-cek all kabel LAN 2\n-cek all kabel LAN 3\n-cek all kabel LAN 4\n-cek all kabel LAN 5\n-cek all kabel LAN 6\n-cek all kabel LAN 7\n-cek all kabel LAN 8\n-cek all kabel LAN 9\n-cek all kabel LAN 10\n-cleaning mixer HD967 NO1",
     "result": "OK",
-    "followUp": "-BERSIH\n-BERSIH\n-ALL terkoneksi dgn  baik",
+    "followUp": "-BERSIH\n-BERSIH\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\nBERSIH",
     "status": "Close",
     "verification": "Auto-Synced",
     "checklists": {
-      "-cleaning dl251\n-cleaning marani mir4801": {
+      "-cleaning dl251 NO 1\n-cleaning marani mi": {
         "status": "OK",
-        "notes": "-BERSIH\n-BERSIH\n-ALL terkoneksi dgn  baik"
+        "notes": "-BERSIH\n-BERSIH\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\n- terkoneksi dgn  baik\nBERSIH"
       }
     },
     "rowDetails": [
       {
-        "activity": "-cleaning dl251",
+        "activity": "-cleaning dl251 NO 1",
         "remark": "-BERSIH"
       },
       {
-        "activity": "-cleaning marani mir4801",
+        "activity": "-cleaning marani mir4801 NO 2",
         "remark": "-BERSIH"
       },
       {
-        "activity": "-cek all kabel LAN",
-        "remark": "-ALL terkoneksi dgn  baik"
+        "activity": "-cek all kabel LAN 1",
+        "remark": "- terkoneksi dgn  baik"
       },
       {
-        "activity": "-cleaning mixer HD967",
-        "remark": ""
+        "activity": "-cek all kabel LAN 2",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 3",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 4",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 5",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 6",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 7",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 8",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 9",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cek all kabel LAN 10",
+        "remark": "- terkoneksi dgn  baik"
+      },
+      {
+        "activity": "-cleaning mixer HD967 NO1",
+        "remark": "BERSIH"
       }
     ],
     "_source": "google_sheet"
   },
   {
-    "id": "log-rep-20261102-staff-mulyadi-14",
+    "id": "log-rep-20261102-staff-mulyadi-23",
     "date": "2026-11-02",
     "division": "Multimedia",
     "staffName": "Mulyadi",
     "activity": "Cek UPS\nCleaning Rak Kantor\nCleaning Tas Kamera\nCek Box 1 Perlenk, SDI, HDMI",
     "result": "NG",
-    "followUp": "Udah Ga bisa ngisi",
+    "followUp": "Udah Ga bisa ngisi, harus service atau ganti",
     "status": "Open",
     "verification": "Auto-Synced",
     "checklists": {
       "Cek UPS\nCleaning Rak Kantor\nCleaning Tas": {
         "status": "NG",
-        "notes": "Udah Ga bisa ngisi"
+        "notes": "Udah Ga bisa ngisi, harus service atau ganti"
       }
     },
     "rowDetails": [
       {
         "activity": "Cek UPS",
-        "remark": "Udah Ga bisa ngisi"
+        "remark": "Udah Ga bisa ngisi, harus service atau ganti"
       },
       {
         "activity": "Cleaning Rak Kantor",
@@ -11738,25 +11982,25 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "log-rep-20261103-staff-yudish-18",
+    "id": "log-rep-20261103-staff-yudish-27",
     "date": "2026-11-03",
     "division": "Audio",
     "staffName": "Yudishtira Purnama A",
-    "activity": "cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD\nEWD no. 5 - 8\nEWD no. 9 - 12\nEWD no. 15 - 16\nEWD no. 17 - 18\nSLXD no. 1 - 4\nSLXD no. 5 - 8\nQLXD no 9 - 12\ncleaning and check kelengkapan IEM Sennheisser G4\nno. 1 - 8\nrepack WHM QLXD menjadi 2 box ukuran 2U ( baru )\nmassing2 menjadi 2 WHM dalam 1 box",
+    "activity": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event\nEWD no. 5 - 8\nEWD no. 9 - 12\nEWD no. 15 - 16\nEWD no. 17 - 18\nSLXD no. 1 - 4\nSLXD no. 5 - 8\nQLXD no 9 - 12\ncleaning and check kelengkapan IEM Sennheisser G4\nno. 1 - 8\nrepack WHM QLXD menjadi 2 box ukuran 2U ( baru )\nmassing2 menjadi 2 WHM dalam 1 box",
     "result": "OK",
     "followUp": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event\nIEM semua dalam kondisi normal, kelengkapan oke.\nDistributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U.",
     "status": "Close",
     "verification": "Auto-Synced",
     "checklists": {
-      "cleaning and check kelengkapan WHM EWD d": {
+      "WHM semua dalam kondisi normal, lengkap ": {
         "status": "OK",
         "notes": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event\nIEM semua dalam kondisi normal, kelengkapan oke.\nDistributor bekas nya masih di dalam box lama QLXD karena tidak cukup di satukan ke dalam box ukuran 2U."
       }
     },
     "rowDetails": [
       {
-        "activity": "cleaning and check kelengkapan WHM EWD dan Shure SLXD - QLXD",
-        "remark": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event"
+        "activity": "WHM semua dalam kondisi normal, lengkap dan siap di pakai untuk event",
+        "remark": ""
       },
       {
         "activity": "EWD no. 5 - 8",
@@ -11806,7 +12050,7 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "log-rep-20261103-staff-heri-30",
+    "id": "log-rep-20261103-staff-heri-39",
     "date": "2026-11-03",
     "division": "Lighting",
     "staffName": "Heri",
@@ -11870,7 +12114,43 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
     "_source": "google_sheet"
   },
   {
-    "id": "log-rep-20261104-staff-iwan-45",
+    "id": "log-rep-20261103-staff-mulyana-50",
+    "date": "2026-11-03",
+    "division": "Videotron",
+    "staffName": "Mulyana",
+    "activity": "servise 8 kabinet led\n- 6 kabinet ganti dead pixel\n-1 kabinet ganti ic warna\n- 1 kabinet ganti jalur",
+    "result": "OK",
+    "followUp": "2 unit minta ganti recieving card\nselesai\nselesai\nselesai",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "servise 8 kabinet led\n- 6 kabinet ganti ": {
+        "status": "OK",
+        "notes": "2 unit minta ganti recieving card\nselesai\nselesai\nselesai"
+      }
+    },
+    "rowDetails": [
+      {
+        "activity": "servise 8 kabinet led",
+        "remark": "2 unit minta ganti recieving card"
+      },
+      {
+        "activity": "- 6 kabinet ganti dead pixel",
+        "remark": "selesai"
+      },
+      {
+        "activity": "-1 kabinet ganti ic warna",
+        "remark": "selesai"
+      },
+      {
+        "activity": "- 1 kabinet ganti jalur",
+        "remark": "selesai"
+      }
+    ],
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261104-staff-iwan-54",
     "date": "2026-11-04",
     "division": "Audio",
     "staffName": "Iwan Kurniawan",
@@ -11909,6 +12189,186 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
       {
         "activity": "Service Bracket Drum TAMA",
         "remark": "Kondisi unit sudah OK"
+      }
+    ],
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261105-staff-rahmat-60",
+    "date": "2026-11-05",
+    "division": "Audio",
+    "staffName": "Muhamad Rahmat",
+    "activity": "- maintenance kabel extention 50meter 1\n- maintenanace kabel extention 50meter 2\n- maintenance kabel extention 10meter 1\n-maintenance kabel extention 10meter 2\n--maintenance kabel extention 10meter 3\n--maintenance kabel extention 10meter 4\n--maintenance kabel extention 10meter 5\n--maintenance kabel extention 10meter 6\n--maintenance kabel extention 10meter 7\n--maintenance kabel extention 10meter 8\n-maintenance kabel extention 10meter 9\n-maintenance kabel extention 10meter 10\n-maintenance kabel extention 10meter 11",
+    "result": "OK",
+    "followUp": "kondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "- maintenance kabel extention 50meter 1\n": {
+        "status": "OK",
+        "notes": "kondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok\nkondisi ok"
+      }
+    },
+    "rowDetails": [
+      {
+        "activity": "- maintenance kabel extention 50meter 1",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "- maintenanace kabel extention 50meter 2",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "- maintenance kabel extention 10meter 1",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "-maintenance kabel extention 10meter 2",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 3",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 4",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 5",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 6",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 7",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "--maintenance kabel extention 10meter 8",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "-maintenance kabel extention 10meter 9",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "-maintenance kabel extention 10meter 10",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "-maintenance kabel extention 10meter 11",
+        "remark": "kondisi ok"
+      }
+    ],
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261105-staff-ramdani-73",
+    "date": "2026-11-05",
+    "division": "Audio",
+    "staffName": "Ramdani",
+    "activity": "Maintenance kabel extension 5 meter",
+    "result": "NG",
+    "followUp": "2 kabel rusak yang Laen nya aman",
+    "status": "Open",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "Maintenance kabel extension 5 meter": {
+        "status": "NG",
+        "notes": "2 kabel rusak yang Laen nya aman"
+      }
+    },
+    "rowDetails": [
+      {
+        "activity": "Maintenance kabel extension 5 meter",
+        "remark": "2 kabel rusak yang Laen nya aman"
+      }
+    ],
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261105-staff-iwan-74",
+    "date": "2026-11-05",
+    "division": "Audio",
+    "staffName": "Iwan Kurniawan",
+    "activity": "maintenance kabel extension 10 meter",
+    "result": "OK",
+    "followUp": "kondisi ok",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "maintenance kabel extension 10 meter": {
+        "status": "OK",
+        "notes": "kondisi ok"
+      }
+    },
+    "rowDetails": [
+      {
+        "activity": "maintenance kabel extension 10 meter",
+        "remark": "kondisi ok"
+      }
+    ],
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261105-staff-taufik-75",
+    "date": "2026-11-05",
+    "division": "Audio",
+    "staffName": "Taufik Diana",
+    "activity": "maintenance kabel extension 50 meter\nmaintenance kabel extension 25 meter",
+    "result": "OK",
+    "followUp": "kondisi ok\nkondisi ok",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "maintenance kabel extension 50 meter\nmai": {
+        "status": "OK",
+        "notes": "kondisi ok\nkondisi ok"
+      }
+    },
+    "rowDetails": [
+      {
+        "activity": "maintenance kabel extension 50 meter",
+        "remark": "kondisi ok"
+      },
+      {
+        "activity": "maintenance kabel extension 25 meter",
+        "remark": "kondisi ok"
+      }
+    ],
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261105-staff-mulyana-77",
+    "date": "2026-11-05",
+    "division": "Videotron",
+    "staffName": "Mulyana",
+    "activity": "servise 6 kabinet\n-1 kabinet ngacing\n- 5 kabinet ganti jalur",
+    "result": "OK",
+    "followUp": "done\ndone\ndone",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "servise 6 kabinet\n-1 kabinet ngacing\n- 5": {
+        "status": "OK",
+        "notes": "done\ndone\ndone"
+      }
+    },
+    "rowDetails": [
+      {
+        "activity": "servise 6 kabinet",
+        "remark": "done"
+      },
+      {
+        "activity": "-1 kabinet ngacing",
+        "remark": "done"
+      },
+      {
+        "activity": "- 5 kabinet ganti jalur",
+        "remark": "done"
       }
     ],
     "_source": "google_sheet"
@@ -12986,6 +13446,18 @@ export const CANONICAL_FIRESTORE_FINDINGS: Finding[] = [
     "_source": "google_sheet",
     "equipment": "Speaker Monitor DB Tech No. 15 (Audio)",
     "priority": "Tinggi"
+  },
+  {
+    "id": "fd-20261105-dani-kabel-ext",
+    "dateCreated": "2026-11-05",
+    "division": "Audio",
+    "status": "Open",
+    "pic": "Ramdani",
+    "targetDate": "2026-11-08",
+    "issue": "2 kabel rusak yang Laen nya aman (saat maintenance kabel extension 5 meter)",
+    "_source": "google_sheet",
+    "equipment": "Kabel Extension 5 Meter (Audio)",
+    "priority": "Sedang"
   }
 ];
 
@@ -13461,6 +13933,35 @@ export const CANONICAL_FIRESTORE_WORK_ORDERS: WorkOrder[] = [
     "progress": 75,
     "priority": "Tinggi",
     "pic": "Iwan Kurniawan",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261105-dani-kabel-ext",
+    "dateCreated": "2026-11-05",
+    "findingId": "fd-20261105-dani-kabel-ext",
+    "equipment": "Kabel Extension 5 Meter (Audio)",
+    "title": "Perbaikan 2 Unit Kabel Extension 5 Meter Rusak",
+    "division": "Audio",
+    "deadline": "2026-11-08",
+    "description": "[Temuan QC ID: fd-20261105-dani-kabel-ext] Maintenance kabel extension 5 meter: 2 kabel rusak yang Laen nya aman",
+    "status": "Pending",
+    "progress": 0,
+    "priority": "Sedang",
+    "pic": "Ramdani",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "wo-20261105-kharo-6kabinet-led",
+    "dateCreated": "2026-11-05",
+    "equipment": "6 Kabinet LED Videotron",
+    "title": "Service 6 Kabinet LED (1 Kabinet Ngacing & 5 Kabinet Ganti Jalur)",
+    "division": "Videotron",
+    "deadline": "2026-11-05",
+    "description": "servise 6 kabinet (-1 kabinet ngacing, - 5 kabinet ganti jalur) — Status: Done",
+    "status": "Completed",
+    "progress": 100,
+    "priority": "Sedang",
+    "pic": "Mulyana",
     "_source": "google_sheet"
   }
 ];

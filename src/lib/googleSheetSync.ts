@@ -1165,6 +1165,23 @@ export async function pullDailyLogFromGviz(
       } catch {}
     }
 
+    const cachedLogsRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('riz_logbook_entries_v2') : null;
+    const cachedLogsMap = new Map<string, any>();
+    const cachedLogsByDateStaffMap = new Map<string, any>();
+    if (cachedLogsRaw) {
+      try {
+        const parsed = JSON.parse(cachedLogsRaw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((l: any) => {
+            if (l?.id) cachedLogsMap.set(l.id, l);
+            if (l?.date && l?.staffName && (l._source === 'google_sheet' || String(l.id || '').startsWith('log-rep-') || String(l.id || '').startsWith('gsheet-'))) {
+              cachedLogsByDateStaffMap.set(`${l.date}_${l.staffName}`, l);
+            }
+          });
+        }
+      } catch {}
+    }
+
     // Daftarkan seluruh finding yang sudah ada (dari INITIAL_FINDINGS + localStorage) berdasarkan (date, pic)
     // agar pullDailyLogFromGviz tidak pernah membuat duplikat gsheet-finding-* untuk staf & tanggal yang sama,
     // namun tetap dapat meng-update finding yang ada jika baris di Google Sheet diedit.
@@ -1237,8 +1254,20 @@ export async function pullDailyLogFromGviz(
       // 2. Simpan / Update LogbookEntry QC HANYA jika isQc === true
       if (entry.isQc && onSaveLogbookEntry) {
         const logDedupKey = `log-${entry.id}`;
-        if (!existingReportIds.has(logDedupKey) || isModified) {
-          const isNg = isFindingRemark(entry.notes);
+        const existingLog = cachedLogsMap.get(logDedupKey) || cachedLogsByDateStaffMap.get(`${entry.date}_${entry.staffName}`);
+        const isNg = isFindingRemark(entry.notes);
+        const expectedResult = isNg ? 'NG' : 'OK';
+        const expectedFollowUp = entry.notes || (isNg ? 'Perlu perbaikan teknis' : 'Pengecekan selesai aman');
+        const isLogModified = Boolean(
+          existingLog && (
+            existingLog.id !== logDedupKey ||
+            (existingLog.activity || '').trim() !== (entry.activity || '').trim() ||
+            (existingLog.followUp || '').trim() !== expectedFollowUp.trim() ||
+            existingLog.result !== expectedResult ||
+            (existingLog.division || '') !== (entry.division || '')
+          )
+        );
+        if (!existingReportIds.has(logDedupKey) || !existingLog || isModified || isLogModified) {
           const logDoc = {
             id: logDedupKey,
             date: entry.date,
@@ -1246,7 +1275,7 @@ export async function pullDailyLogFromGviz(
             staffName: entry.staffName,
             activity: entry.activity,
             result: isNg ? ('NG' as const) : ('OK' as const),
-            followUp: entry.notes || (isNg ? 'Perlu perbaikan teknis' : 'Pengecekan selesai aman'),
+            followUp: expectedFollowUp,
             status: isNg ? ('Open' as const) : ('Close' as const),
             verification: 'Supervisor Operasional',
             checklists: {

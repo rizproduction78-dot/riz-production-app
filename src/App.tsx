@@ -77,17 +77,20 @@ import {
   subscribeCloudCollection,
   saveCloudDoc,
   deleteCloudDoc,
+  clearDeletedId,
   forceSyncAllModules,
   subscribeSyncStatus,
   normalizeCollectionItems,
   SyncStatus
 } from './lib/cloudSync';
+import { checkIsQc } from './lib/dailySheetParser';
 import { workspaceManager } from './lib/workspaceConfig';
 import {
   pullDailyLogFromGviz,
   getGidForMonth,
   getDailyLogLastPull,
-  appendDailyReportToGoogleSheet
+  appendDailyReportToGoogleSheet,
+  isFindingRemark
 } from './lib/googleSheetSync';
 
 export default function App() {
@@ -361,7 +364,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v79_inventory_2026_official_codes';
+  const REF_SYNC_KEY = 'riz_ref_synced_v105_auto_replace_edited_logs_nov5';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
@@ -897,19 +900,88 @@ export default function App() {
         }
       );
 
-      // Update state lokal LANGSUNG secara reaktif (tanpa menimpa item yang sudah diedit user di aplikasi)
-      if (newReportDocs.length > 0) {
+      // Update state lokal LANGSUNG secara reaktif & rekonsiliasi bulan aktif (menulis ulang dengan membuang data lama yang diedit/dihapus)
+      const parsedEntries = result.parsedEntries || [];
+      const syncedMonthKey = result.monthKey || activeMonth;
+      const validSheetReportIds = new Set<string>(parsedEntries.map(e => e.id));
+      const validSheetLogIds = new Set<string>(parsedEntries.filter(e => e.isQc).map(e => `log-${e.id}`));
+
+      // Pastikan ID valid terbaru dari Google Sheet tidak terblokir oleh tombstone lama
+      validSheetReportIds.forEach(id => clearDeletedId('daily_reports', id));
+      validSheetLogIds.forEach(id => clearDeletedId('logbook_entries', id));
+
+      let localDataUpdated = newReportDocs.length > 0 || newLogDocs.length > 0 || newFindingDocs.length > 0;
+
+      if (result.success && parsedEntries.length > 0 && syncedMonthKey && syncedMonthKey !== 'all') {
+        const staleReportIdsToRemove = new Set<string>();
+        const staleLogIdsToRemove = new Set<string>();
+
         setDailyReports(prev => {
           const map = new Map<string, any>();
-          prev.forEach(r => { if (r?.id) map.set(r.id, r); });
+          prev.forEach(r => {
+            if (!r?.id) return;
+            const idStr = String(r.id);
+            const rDate = String(r.date || '');
+            const isInSyncedMonth = rDate.startsWith(syncedMonthKey);
+            const isSheetRow = r._source === 'google_sheet' || idStr.startsWith('rep-') || idStr.startsWith('gsheet-');
+            const isUserEdited = Boolean((r as any)._userEdited || r._syncMeta?._userEdited);
+            if (isInSyncedMonth && isSheetRow && !isUserEdited && !validSheetReportIds.has(idStr)) {
+              staleReportIdsToRemove.add(idStr);
+              return;
+            }
+            map.set(idStr, r);
+          });
           newReportDocs.forEach(d => {
             const existing = map.get(d.id);
             if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
             map.set(d.id, existing ? { ...existing, ...d } : d);
           });
+          if (staleReportIdsToRemove.size === 0 && newReportDocs.length === 0) return prev;
+          localDataUpdated = true;
           const merged = normalizeCollectionItems('daily_reports', Array.from(map.values()));
-          try { localStorage.setItem('riz_daily_reports_v2', JSON.stringify(merged)); } catch (_e) {}
+          try {
+            localStorage.setItem('riz_daily_reports_v2', JSON.stringify(merged));
+            localStorage.setItem('riz_daily_reports', JSON.stringify(merged));
+          } catch (_e) {}
           return merged as any;
+        });
+
+        staleReportIdsToRemove.forEach(staleId => {
+          deleteCloudDoc('daily_reports', staleId).catch(() => {});
+        });
+
+        setLogbookEntries(prev => {
+          const map = new Map<string, any>();
+          prev.forEach(l => {
+            if (!l?.id) return;
+            const idStr = String(l.id);
+            const lDate = String(l.date || '');
+            const isInSyncedMonth = lDate.startsWith(syncedMonthKey);
+            const isSheetRow = l._source === 'google_sheet' || idStr.startsWith('log-rep-') || idStr.startsWith('gsheet-');
+            const isUserEdited = Boolean((l as any)._userEdited || l._syncMeta?._userEdited);
+            if (isInSyncedMonth && isSheetRow && !isUserEdited && !validSheetLogIds.has(idStr)) {
+              staleLogIdsToRemove.add(idStr);
+              return;
+            }
+            map.set(idStr, l);
+          });
+          newLogDocs.forEach(d => {
+            const existing = map.get(d.id);
+            if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
+            map.set(d.id, existing ? { ...existing, ...d } : d);
+          });
+          if (staleLogIdsToRemove.size === 0 && newLogDocs.length === 0) return prev;
+          localDataUpdated = true;
+          const merged = normalizeCollectionItems('logbook_entries', Array.from(map.values()));
+          try {
+            localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(merged));
+            localStorage.setItem('riz_logbook_entries', JSON.stringify(merged));
+          } catch (_e) {}
+          return merged as any;
+        });
+
+        staleLogIdsToRemove.forEach(staleId => {
+          deleteCloudDoc('logbook_entries', staleId).catch(() => {});
         });
 
         // Sinkronkan juga DailyTask kanban (dt-YYYYMMDD-*) yang berpasangan dengan laporan Google Sheet
@@ -919,24 +991,30 @@ export default function App() {
             if (!t || !String(t.id || '').startsWith('dt-2026')) return t;
             if ((t as any)._userEdited || (t as any)._syncMeta?._userEdited) return t;
             const taskDate = String(t.dueDate || t.createdAt || '').slice(0, 10);
-            const matchedRep = newReportDocs.find(
-              r => r.date === taskDate && String(r.staffName || '').toLowerCase() === String(t.assignedName || '').toLowerCase()
+            if (!taskDate.startsWith(syncedMonthKey)) return t;
+            const matchedEntry = parsedEntries.find(
+              r => r.date === taskDate && (
+                String(r.staffName || '').toLowerCase() === String(t.assignedName || '').toLowerCase() ||
+                isStaffMatch({ id: t.assignedTo || '', name: t.assignedName || '' } as any, r.staffName)
+              )
             );
-            if (!matchedRep) return t;
-            const newDesc = matchedRep.notes
-              ? `${matchedRep.activity}\nREMARK:\n${matchedRep.notes}`
-              : matchedRep.activity;
-            if (t.description === newDesc) return t;
+            if (!matchedEntry) return t;
+            const newDesc = matchedEntry.notes
+              ? `${matchedEntry.activity}\nREMARK:\n${matchedEntry.notes}`
+              : matchedEntry.activity;
+            if (t.description === newDesc && t.division === matchedEntry.division) return t;
             changed = true;
             const nextTask = {
               ...t,
+              division: matchedEntry.division,
               description: newDesc,
-              _syncedAt: matchedRep._syncedAt
+              _syncedAt: result.timestamp
             };
             saveCloudDoc('daily_tasks', nextTask.id, nextTask, 'System Auto-Sync').catch(() => {});
             return nextTask;
           });
           if (!changed) return prev;
+          localDataUpdated = true;
           const merged = normalizeCollectionItems('daily_tasks', updated);
           try {
             localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(merged));
@@ -944,21 +1022,37 @@ export default function App() {
           } catch (_e) {}
           return merged;
         });
-      }
-      if (newLogDocs.length > 0) {
-        setLogbookEntries(prev => {
-          const map = new Map<string, any>();
-          prev.forEach(l => { if (l?.id) map.set(l.id, l); });
-          newLogDocs.forEach(d => {
-            const existing = map.get(d.id);
-            if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
-            map.set(d.id, existing ? { ...existing, ...d } : d);
+      } else {
+        if (newReportDocs.length > 0) {
+          setDailyReports(prev => {
+            const map = new Map<string, any>();
+            prev.forEach(r => { if (r?.id) map.set(r.id, r); });
+            newReportDocs.forEach(d => {
+              const existing = map.get(d.id);
+              if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
+              map.set(d.id, existing ? { ...existing, ...d } : d);
+            });
+            const merged = normalizeCollectionItems('daily_reports', Array.from(map.values()));
+            try { localStorage.setItem('riz_daily_reports_v2', JSON.stringify(merged)); } catch (_e) {}
+            return merged as any;
           });
-          const merged = normalizeCollectionItems('logbook_entries', Array.from(map.values()));
-          try { localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(merged)); } catch (_e) {}
-          return merged as any;
-        });
+        }
+        if (newLogDocs.length > 0) {
+          setLogbookEntries(prev => {
+            const map = new Map<string, any>();
+            prev.forEach(l => { if (l?.id) map.set(l.id, l); });
+            newLogDocs.forEach(d => {
+              const existing = map.get(d.id);
+              if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
+              map.set(d.id, existing ? { ...existing, ...d } : d);
+            });
+            const merged = normalizeCollectionItems('logbook_entries', Array.from(map.values()));
+            try { localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(merged)); } catch (_e) {}
+            return merged as any;
+          });
+        }
       }
+
       if (newFindingDocs.length > 0) {
         setFindings(prev => {
           const map = new Map<string, any>();
@@ -974,7 +1068,7 @@ export default function App() {
         });
       }
 
-      if (newReportDocs.length > 0 || newLogDocs.length > 0 || newFindingDocs.length > 0) {
+      if (localDataUpdated) {
         try {
           window.dispatchEvent(new CustomEvent('riz_local_data_updated', { detail: { source: 'google_sheet_sync' } }));
         } catch (_e) {}
@@ -1132,6 +1226,110 @@ export default function App() {
       return next;
     });
     deleteCloudDoc('daily_reports', id);
+
+    // Hapus juga pasangan LogbookEntry QC (log-<id>) jika ada agar metrik QC CHECKED & KPI ikut auto-update
+    const pairedLogId = `log-${id}`;
+    setLogbookEntries(prev => {
+      const hasPaired = prev.some(l => l.id === pairedLogId);
+      if (!hasPaired) return prev;
+      const next = prev.filter(l => l.id !== pairedLogId);
+      try {
+        localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(next));
+        localStorage.setItem('riz_logbook_entries', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    deleteCloudDoc('logbook_entries', pairedLogId).catch(() => {});
+  };
+
+  const handleUpdateReport = (id: string, updatedFields: Partial<DailyReportType>) => {
+    const nowIso = new Date().toISOString();
+    let updatedReportObj: any = null;
+
+    setDailyReports(prev => {
+      const next = prev.map(r => {
+        if (r.id !== id) return r;
+        const nextRep: any = {
+          ...r,
+          ...updatedFields,
+          _userEdited: true,
+          _syncedAt: nowIso,
+          _syncMeta: {
+            ...(r._syncMeta || {}),
+            updatedAt: nowIso,
+            updatedBy: currentUser?.name || 'User',
+            _userEdited: true,
+            _syncedAt: nowIso
+          }
+        };
+        updatedReportObj = nextRep;
+        saveCloudDoc('daily_reports', id, nextRep, currentUser?.name);
+        return nextRep;
+      });
+      const normalized = normalizeCollectionItems('daily_reports', next);
+      try {
+        localStorage.setItem('riz_daily_reports_v2', JSON.stringify(normalized));
+        localStorage.setItem('riz_daily_reports', JSON.stringify(normalized));
+      } catch (e) {}
+      return normalized as any;
+    });
+
+    if (updatedReportObj) {
+      const pairedLogId = `log-${id}`;
+      const isNowQc = checkIsQc(`${updatedReportObj.activity || ''} ${updatedReportObj.notes || ''}`);
+      const isNg = isFindingRemark(updatedReportObj.notes || '');
+
+      if (isNowQc) {
+        const logDoc: any = {
+          id: pairedLogId,
+          date: updatedReportObj.date,
+          division: updatedReportObj.division,
+          staffName: updatedReportObj.staffName,
+          activity: updatedReportObj.activity,
+          result: isNg ? ('NG' as const) : ('OK' as const),
+          followUp: updatedReportObj.notes || (isNg ? 'Perlu perbaikan teknis' : 'Pengecekan selesai aman'),
+          status: isNg ? ('Open' as const) : ('Close' as const),
+          verification: 'Supervisor Operasional',
+          checklists: {
+            [String(updatedReportObj.activity || '').substring(0, 40)]: {
+              status: isNg ? ('NG' as const) : ('OK' as const),
+              notes: updatedReportObj.notes || 'Kondisi operasional normal'
+            }
+          },
+          _userEdited: true,
+          _syncedAt: nowIso,
+          _syncMeta: {
+            updatedAt: nowIso,
+            updatedBy: currentUser?.name || 'User',
+            _userEdited: true,
+            _syncedAt: nowIso
+          }
+        };
+        setLogbookEntries(prev => {
+          const map = new Map<string, any>();
+          prev.forEach(l => { if (l?.id) map.set(l.id, l); });
+          map.set(pairedLogId, { ...(map.get(pairedLogId) || {}), ...logDoc });
+          const normalized = normalizeCollectionItems('logbook_entries', Array.from(map.values()));
+          try {
+            localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(normalized));
+            localStorage.setItem('riz_logbook_entries', JSON.stringify(normalized));
+          } catch (e) {}
+          return normalized as any;
+        });
+        saveCloudDoc('logbook_entries', pairedLogId, logDoc, currentUser?.name);
+      } else {
+        setLogbookEntries(prev => {
+          if (!prev.some(l => l.id === pairedLogId)) return prev;
+          const next = prev.filter(l => l.id !== pairedLogId);
+          try {
+            localStorage.setItem('riz_logbook_entries_v2', JSON.stringify(next));
+            localStorage.setItem('riz_logbook_entries', JSON.stringify(next));
+          } catch (e) {}
+          return next;
+        });
+        deleteCloudDoc('logbook_entries', pairedLogId).catch(() => {});
+      }
+    }
   };
 
   // Findings functions
@@ -2020,6 +2218,7 @@ export default function App() {
             currentUser={currentUser}
             dailyReports={dailyReports}
             onAddReport={handleAddReport}
+            onUpdateReport={handleUpdateReport}
             onDeleteReport={handleDeleteReport}
             onAddFinding={handleAddFinding}
             onLogActivity={handleLogActivity}

@@ -81,6 +81,7 @@ export const NAME_TO_STAFF_ID: Record<string, string> = {
   'iwan kurniawan / butonk': 'staff-iwan',
   'butonk': 'staff-iwan',
   'butong': 'staff-iwan',
+  'boetonk': 'staff-iwan',
   'iwan': 'staff-iwan',
   'yudishtira purnama a': 'staff-yudish',
   'yudishtira purnama a / yudish': 'staff-yudish',
@@ -263,7 +264,7 @@ export function normalizeCrewName(raw: string): string {
 }
 
 // Kata kunci QC: mendeteksi inspeksi teknis lapangan (qc, inspeksi, checklist, onhouse, p2h, cek, check, pengecekan, uji, testing, test unit)
-const QC_KEYWORDS = ['qc', 'inspeksi', 'checklist', 'onhouse', 'p2h', 'cek', 'check', 'pengecekan', 'uji', 'testing', 'test unit', 'kecuali no.'];
+const QC_KEYWORDS = ['qc', 'inspeksi', 'checklist', 'onhouse', 'p2h', 'cek', 'check', 'pengecekan', 'uji', 'testing', 'test unit', 'kecuali no.', 'kondisi ok', 'kabel rusak', 'recieving card', 'receiving card', 'servise 6 kabinet'];
 
 export function checkIsQc(text: string): boolean {
   if (!text) return false;
@@ -283,6 +284,7 @@ export function checkIsQc(text: string): boolean {
 export function parseDailySheet(rows: SheetRow[], fallbackMonthKey?: string): ParsedEntry[] {
   const entries: ParsedEntry[] = [];
   let lastDate: string = fallbackMonthKey && /^\d{4}-\d{2}$/.test(fallbackMonthKey) ? `${fallbackMonthKey}-01` : '';
+  let pendingRowsForDate: { date: string; activityText: string; remark: string; division: 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Umum'; rowNumber: number }[] = [];
 
   for (const row of rows) {
     const cells = row.cells || [];
@@ -298,6 +300,9 @@ export function parseDailySheet(rows: SheetRow[], fallbackMonthKey?: string): Pa
     if (rawDate) {
       const parsedDate = parseIndonesianDate(rawDate, fallbackMonthKey);
       if (parsedDate) {
+        if (parsedDate !== lastDate) {
+          pendingRowsForDate = [];
+        }
         lastDate = parsedDate;
       }
     }
@@ -323,9 +328,12 @@ export function parseDailySheet(rows: SheetRow[], fallbackMonthKey?: string): Pa
 
     // R1: Jika kolom Crew terisi
     if (rawCrew) {
-      // Jika kolom aktivitas C-F dan remark kosong, kru TIDAK melakukan aktivitas (contoh: baris 48 unying)
+      const sameDatePending = pendingRowsForDate.filter(p => p.date === currentDate);
+      pendingRowsForDate = [];
+
+      // Jika kolom aktivitas C-F dan remark kosong (serta tidak ada baris pending di tanggal yang sama), kru TIDAK melakukan aktivitas (contoh: baris 48 unying)
       // Wajib diabaikan, jangan pernah mengarang atau mengikutkan aktivitas staf lain!
-      if (!activityText && !remark) {
+      if (!activityText && !remark && sameDatePending.length === 0) {
         continue;
       }
 
@@ -343,15 +351,33 @@ export function parseDailySheet(rows: SheetRow[], fallbackMonthKey?: string): Pa
 
         const staffId = NAME_TO_STAFF_ID[normalized] || null;
         const staffName = staffId ? (STAFF_ID_TO_OFFICIAL_NAME[staffId] || part) : part;
-        const staffDiv = division !== 'Umum'
-          ? division
+        const pendingDiv = sameDatePending.find(p => p.division !== 'Umum')?.division;
+        const effectiveDiv = division !== 'Umum' ? division : (pendingDiv || 'Umum');
+        const staffDiv = effectiveDiv !== 'Umum'
+          ? effectiveDiv
           : (staffId ? (STAFF_ID_TO_DEFAULT_DIVISION[staffId] || 'Umum') : 'Umum');
 
-        const fullText = [activityText, remark].filter(Boolean).join(' ');
+        const combinedActivities = [
+          ...sameDatePending.map(p => p.activityText || p.remark).filter(Boolean),
+          ...(activityText || remark ? [activityText || remark] : [])
+        ];
+        const combinedRemarks = [
+          ...sameDatePending.map(p => p.activityText ? p.remark : '').filter(Boolean),
+          ...(activityText ? (remark ? [remark] : []) : (remark ? [remark] : []))
+        ];
+        const combinedRowDetails: ParsedRowDetail[] = [
+          ...sameDatePending.map(p => ({ activity: p.activityText || p.remark, remark: p.activityText ? p.remark : '' })),
+          ...(activityText || remark ? [{ activity: activityText || remark, remark: activityText ? remark : '' }] : [])
+        ];
+
+        const finalActivity = combinedActivities.join('\n');
+        const finalNotes = combinedRemarks.join('\n');
+        const fullText = [finalActivity, finalNotes].filter(Boolean).join(' ');
         const isQc = checkIsQc(fullText);
 
         const appId = cells[7] ? String(cells[7]).trim() : '';
-        const entryId = appId || `rep-${dateCompact}-${staffId || 'unknown'}-${row.rowNumber}`;
+        const firstRowNumber = sameDatePending.length > 0 ? sameDatePending[0].rowNumber : row.rowNumber;
+        const entryId = appId || `rep-${dateCompact}-${staffId || 'unknown'}-${firstRowNumber}`;
 
         entries.push({
           id: entryId,
@@ -359,31 +385,42 @@ export function parseDailySheet(rows: SheetRow[], fallbackMonthKey?: string): Pa
           staffName,
           staffId,
           division: staffDiv,
-          activity: activityText || remark,
-          notes: remark,
+          activity: finalActivity,
+          notes: finalNotes,
           isQc,
-          sheetRow: row.rowNumber,
-          rowDetails: [{ activity: activityText || remark, remark: activityText ? remark : '' }],
+          sheetRow: firstRowNumber,
+          rowDetails: combinedRowDetails,
           ...(!staffId ? { _unmatched: true } : {}),
         });
       }
     } else {
       // R2: Baris lanjutan (Crew kosong) -> detail/rincian dari entri di atasnya
-      // Teks digabung ke activity/notes entri sebelumnya, BUKAN laporan baru!
-      if (entries.length > 0 && (activityText || remark)) {
-        const lastEntry = entries[entries.length - 1];
-        if (activityText) {
-          lastEntry.activity += `\n${activityText}`;
-        }
-        if (remark) {
-          lastEntry.notes = lastEntry.notes ? `${lastEntry.notes}\n${remark}` : remark;
-        }
-        if (!lastEntry.rowDetails) {
-          lastEntry.rowDetails = [];
-        }
-        lastEntry.rowDetails.push({ activity: activityText, remark });
-        if (!lastEntry.isQc) {
-          lastEntry.isQc = checkIsQc(lastEntry.activity + ' ' + lastEntry.notes);
+      // Namun jika tanggal pada baris ini BERBEDA dengan tanggal entri terakhir (karena nama Crew ditaruh di tengah blok sel merge),
+      // simpan sementara di pendingRowsForDate agar menempel ke Crew pertama pada tanggal baru tersebut!
+      if (activityText || remark) {
+        const lastEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+        if (lastEntry && lastEntry.date === currentDate) {
+          if (activityText) {
+            lastEntry.activity += `\n${activityText}`;
+          }
+          if (remark) {
+            lastEntry.notes = lastEntry.notes ? `${lastEntry.notes}\n${remark}` : remark;
+          }
+          if (!lastEntry.rowDetails) {
+            lastEntry.rowDetails = [];
+          }
+          lastEntry.rowDetails.push({ activity: activityText, remark });
+          if (!lastEntry.isQc) {
+            lastEntry.isQc = checkIsQc(lastEntry.activity + ' ' + lastEntry.notes);
+          }
+        } else {
+          pendingRowsForDate.push({
+            date: currentDate,
+            activityText,
+            remark,
+            division,
+            rowNumber: row.rowNumber
+          });
         }
       }
     }
