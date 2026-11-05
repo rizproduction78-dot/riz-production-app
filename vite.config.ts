@@ -18,7 +18,15 @@ export default defineConfig(() => {
       allowedHosts: true as const,
       cors: true,
       hmr: process.env.DISABLE_HMR !== 'true',
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      watch:
+        process.env.DISABLE_HMR === 'true'
+          ? null
+          : {
+              awaitWriteFinish: {
+                stabilityThreshold: 120,
+                pollInterval: 40,
+              },
+            },
     },
   };
 });
