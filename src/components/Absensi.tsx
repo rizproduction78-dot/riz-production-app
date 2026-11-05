@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Staff,
+  Asset,
   AttendanceLog,
   WorkSchedule,
   JobAssignment,
@@ -18,6 +19,9 @@ import {
 import {
   STAFF_LIST,
   getMasterStaffList,
+  INITIAL_ASSETS,
+  normalizeAssetsMaster,
+  getInventoryAssetTypeInfo,
   INITIAL_JOB_ASSIGNMENTS,
   OFFICIAL_FREELANCE_CREW_LIST,
   resolveCrewMember,
@@ -413,6 +417,20 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   const [jobCrewTypeFilter, setJobCrewTypeFilter] = useState<'All' | 'Staff' | 'Freelance'>('All');
   const [jobSearchQuery, setJobSearchQuery] = useState<string>('');
 
+  // Master Inventory Assets state (133 Kelompok Aset Gudang Resmi)
+  const [inventoryAssets, setInventoryAssets] = useState<Asset[]>(() => {
+    try {
+      const raw = localStorage.getItem('riz_assets');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return normalizeAssetsMaster(parsed);
+        }
+      }
+    } catch {}
+    return INITIAL_ASSETS;
+  });
+
   // Inline Crew Picker / Editor state per Job Section (Admin)
   const [activeCrewPickerKey, setActiveCrewPickerKey] = useState<string | null>(null);
   const [crewPickerTab, setCrewPickerTab] = useState<'Staff' | 'Freelance'>('Staff');
@@ -424,6 +442,21 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   const [editingCrewRoleNote, setEditingCrewRoleNote] = useState<string>('');
   const [editingPicJobId, setEditingPicJobId] = useState<string | null>(null);
   const [editingPicValue, setEditingPicValue] = useState<string>('');
+
+  // Inline Equipment Picker (Inventory + Manual) & Editor state per Job Section (Admin)
+  const [activeEquipPickerKey, setActiveEquipPickerKey] = useState<string | null>(null);
+  const [equipPickerDivFilter, setEquipPickerDivFilter] = useState<'ALL' | 'Sound' | 'Lighting' | 'Multimedia' | 'Videotron'>('ALL');
+  const [equipPickerSearch, setEquipPickerSearch] = useState<string>('');
+  const [equipPickerQty, setEquipPickerQty] = useState<string>('');
+  const [equipPickerManualText, setEquipPickerManualText] = useState<string>('');
+  const [editingEquipBadgeKey, setEditingEquipBadgeKey] = useState<string | null>(null);
+  const [editingEquipValue, setEditingEquipValue] = useState<string>('');
+
+  // Modal Equipment Picker (Inventory + Manual) state
+  const [modalEquipDivFilter, setModalEquipDivFilter] = useState<'ALL' | 'Sound' | 'Lighting' | 'Multimedia' | 'Videotron'>('ALL');
+  const [modalEquipSearch, setModalEquipSearch] = useState<string>('');
+  const [modalEquipQty, setModalEquipQty] = useState<string>('');
+  const [modalEquipManualInput, setModalEquipManualInput] = useState<string>('');
 
   // Quick-Schedule Selected Staff/Freelance to an existing Job
   const [quickAssignJobId, setQuickAssignJobId] = useState<string>('');
@@ -478,7 +511,22 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       },
       INITIAL_JOB_ASSIGNMENTS
     );
-    return () => unsubJobs();
+    const unsubAssets = subscribeCloudCollection<Asset>(
+      'assets',
+      'riz_assets',
+      (data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setInventoryAssets(normalizeAssetsMaster(data));
+        } else {
+          setInventoryAssets(INITIAL_ASSETS);
+        }
+      },
+      INITIAL_ASSETS
+    );
+    return () => {
+      unsubJobs();
+      unsubAssets();
+    };
   }, []);
 
   const canManageJobSchedule =
@@ -595,6 +643,163 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     setEditingPicJobId(null);
   };
 
+  const mapSectionDivToAssetDiv = (
+    div: JobDivisionSection['division'] | undefined
+  ): 'ALL' | 'Sound' | 'Lighting' | 'Multimedia' | 'Videotron' => {
+    if (div === 'Audio') return 'Sound';
+    if (div === 'Lighting') return 'Lighting';
+    if (div === 'Multimedia') return 'Multimedia';
+    if (div === 'Videotron') return 'Videotron';
+    return 'ALL';
+  };
+
+  const getBaseInventoryAssetName = (assetName: string): string => {
+    return assetName.replace(/\s*\(\d+[^)]*\)\s*$/, '').trim();
+  };
+
+  const formatInventoryEquipmentLabel = (asset: Asset, customQty?: string): string => {
+    const cleanQty = (customQty || '').trim();
+    if (!cleanQty) return asset.name;
+    const baseName = getBaseInventoryAssetName(asset.name);
+    const formattedQty = /^\d+$/.test(cleanQty) ? `${cleanQty} Unit` : cleanQty;
+    return `${baseName} (${formattedQty})`;
+  };
+
+  const findMatchingAssetIndexInEquipment = (asset: Asset, equipmentList: string[]): number => {
+    const fullLower = asset.name.toLowerCase().trim();
+    const baseLower = getBaseInventoryAssetName(asset.name).toLowerCase();
+    return equipmentList.findIndex(item => {
+      const itemLower = item.toLowerCase().trim();
+      const itemBaseLower = getBaseInventoryAssetName(item).toLowerCase();
+      return itemLower === fullLower || (baseLower.length > 0 && itemBaseLower === baseLower);
+    });
+  };
+
+  const handleToggleInventoryAssetInSection = (
+    job: JobAssignment,
+    sectionIdx: number,
+    asset: Asset,
+    customQty?: string
+  ) => {
+    const sec = job.sections[sectionIdx];
+    if (!sec) return;
+    const formattedLabel = formatInventoryEquipmentLabel(asset, customQty);
+    const existingIdx = findMatchingAssetIndexInEquipment(asset, sec.equipment);
+    const hasCustomQty = Boolean(customQty && customQty.trim());
+
+    let nextEquipment: string[];
+    let actionLabel: string;
+    if (existingIdx >= 0) {
+      if (hasCustomQty && sec.equipment[existingIdx] !== formattedLabel) {
+        nextEquipment = sec.equipment.map((eq, i) => (i === existingIdx ? formattedLabel : eq));
+        actionLabel = `Memperbarui unit alat inventory "${formattedLabel}" pada jadwal ${job.dateLabel} (${sec.division})`;
+      } else {
+        nextEquipment = sec.equipment.filter((_, i) => i !== existingIdx);
+        actionLabel = `Menghapus unit alat "${sec.equipment[existingIdx]}" dari jadwal ${job.dateLabel} (${sec.division})`;
+      }
+    } else {
+      nextEquipment = [...sec.equipment, formattedLabel];
+      actionLabel = `Menambahkan unit alat inventory "${formattedLabel}" ke jadwal ${job.dateLabel} (${sec.division})`;
+    }
+
+    const nextSections = job.sections.map((s, idx) =>
+      idx === sectionIdx ? { ...s, equipment: nextEquipment } : s
+    );
+    persistUpdatedJobAssignment({ ...job, sections: nextSections }, actionLabel);
+  };
+
+  const handleAddManualEquipmentToSection = (
+    job: JobAssignment,
+    sectionIdx: number,
+    manualInput: string
+  ) => {
+    const sec = job.sections[sectionIdx];
+    const cleanedItems = manualInput
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (!sec || cleanedItems.length === 0) return;
+
+    const nextEquipment = [...sec.equipment, ...cleanedItems];
+    const nextSections = job.sections.map((s, idx) =>
+      idx === sectionIdx ? { ...s, equipment: nextEquipment } : s
+    );
+    persistUpdatedJobAssignment(
+      { ...job, sections: nextSections },
+      `Menambahkan unit alat manual "${cleanedItems.join(', ')}" ke jadwal ${job.dateLabel} (${sec.division})`
+    );
+  };
+
+  const handleRemoveEquipmentFromSection = (
+    job: JobAssignment,
+    sectionIdx: number,
+    eqIdx: number
+  ) => {
+    const sec = job.sections[sectionIdx];
+    if (!sec) return;
+    const removedItem = sec.equipment[eqIdx];
+    const nextEquipment = sec.equipment.filter((_, idx) => idx !== eqIdx);
+    const nextSections = job.sections.map((s, idx) =>
+      idx === sectionIdx ? { ...s, equipment: nextEquipment } : s
+    );
+    persistUpdatedJobAssignment(
+      { ...job, sections: nextSections },
+      `Menghapus unit alat "${removedItem || 'Alat'}" dari jadwal ${job.dateLabel} (${sec.division})`
+    );
+  };
+
+  const handleUpdateEquipmentInSection = (
+    job: JobAssignment,
+    sectionIdx: number,
+    eqIdx: number,
+    nextValue: string
+  ) => {
+    const sec = job.sections[sectionIdx];
+    const trimmed = nextValue.trim();
+    if (!sec || !trimmed) return;
+    const nextEquipment = sec.equipment.map((eq, idx) => (idx === eqIdx ? trimmed : eq));
+    const nextSections = job.sections.map((s, idx) =>
+      idx === sectionIdx ? { ...s, equipment: nextEquipment } : s
+    );
+    persistUpdatedJobAssignment(
+      { ...job, sections: nextSections },
+      `Memperbarui unit alat menjadi "${trimmed}" pada jadwal ${job.dateLabel} (${sec.division})`
+    );
+    setEditingEquipBadgeKey(null);
+  };
+
+  const handleToggleInventoryAssetInModalText = (asset: Asset, customQty?: string) => {
+    const lines = jobFormEquipmentText
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+    const formattedLabel = formatInventoryEquipmentLabel(asset, customQty);
+    const existingIdx = findMatchingAssetIndexInEquipment(asset, lines);
+    const hasCustomQty = Boolean(customQty && customQty.trim());
+
+    let nextLines: string[];
+    if (existingIdx >= 0) {
+      if (hasCustomQty && lines[existingIdx] !== formattedLabel) {
+        nextLines = lines.map((line, idx) => (idx === existingIdx ? formattedLabel : line));
+      } else {
+        nextLines = lines.filter((_, idx) => idx !== existingIdx);
+      }
+    } else {
+      nextLines = [...lines, formattedLabel];
+    }
+    setJobFormEquipmentText(nextLines.join('\n'));
+  };
+
+  const handleAddManualEquipmentToModalText = (manualInput: string) => {
+    const trimmed = manualInput.trim();
+    if (!trimmed) return;
+    const lines = jobFormEquipmentText
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+    setJobFormEquipmentText([...lines, trimmed].join('\n'));
+  };
+
   const syncCurrentModalSectionToDraft = (draftList: JobDivisionSection[], idx: number): JobDivisionSection[] => {
     const rawCrewTokens = jobFormCrewText
       .split(',')
@@ -628,7 +833,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   };
 
   const loadSectionIntoModalFields = (sec: JobDivisionSection | undefined) => {
-    setJobFormDivision(sec?.division || 'Audio');
+    const div = sec?.division || 'Audio';
+    setJobFormDivision(div);
     setJobFormPackageLabel(sec?.packageLabel || '');
     setJobFormEquipmentText((sec?.equipment || []).join('\n'));
     setJobFormCrewText(
@@ -637,6 +843,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
         .join(', ')
     );
     setJobFormVehiclesText((sec?.vehicles || []).join(', '));
+    setModalEquipDivFilter(mapSectionDivToAssetDiv(div));
+    setModalEquipSearch('');
+    setModalEquipQty('');
+    setModalEquipManualInput('');
   };
 
   const handleSelectModalSection = (targetIdx: number) => {
@@ -2671,6 +2881,20 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                           const pickerKey = `${job.id}::${sIdx}`;
                           const isPickerOpen = activeCrewPickerKey === pickerKey;
                           const searchLower = crewPickerSearch.toLowerCase().trim();
+                          const isEquipPickerOpen = activeEquipPickerKey === pickerKey;
+                          const equipSearchLower = equipPickerSearch.toLowerCase().trim();
+                          const filteredSectionInventory = inventoryAssets.filter(asset => {
+                            if (equipPickerDivFilter !== 'ALL' && asset.division !== equipPickerDivFilter) {
+                              return false;
+                            }
+                            if (!equipSearchLower) return true;
+                            const typeInfo = getInventoryAssetTypeInfo(asset);
+                            return (
+                              asset.name.toLowerCase().includes(equipSearchLower) ||
+                              asset.code.toLowerCase().includes(equipSearchLower) ||
+                              typeInfo.typeGroup.toLowerCase().includes(equipSearchLower)
+                            );
+                          });
 
                           return (
                           <div
@@ -2705,25 +2929,343 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                 </div>
                               </div>
 
-                              {/* 1. Unit Alat (Equipment Manifest) */}
-                              <div>
-                                <div className="text-[10px] font-mono uppercase font-bold text-slate-500 mb-1.5 flex items-center gap-1">
-                                  <Package className="w-3 h-3 text-indigo-600" />
-                                  <span>Unit Alat & Spesifikasi Teknis:</span>
+                              {/* 1. Unit Alat (Equipment Manifest - Selectable from Inventory & Manual Input) */}
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                  <div className="text-[10px] font-mono uppercase font-bold text-slate-500 flex items-center gap-1">
+                                    <Package className="w-3 h-3 text-indigo-600" />
+                                    <span>Unit Alat & Spesifikasi Teknis:</span>
+                                  </div>
+                                  {canManageJobSchedule && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (isEquipPickerOpen) {
+                                          setActiveEquipPickerKey(null);
+                                        } else {
+                                          setActiveEquipPickerKey(pickerKey);
+                                          setEquipPickerDivFilter(mapSectionDivToAssetDiv(sec.division));
+                                          setEquipPickerSearch('');
+                                          setEquipPickerQty('');
+                                          setEquipPickerManualText('');
+                                        }
+                                      }}
+                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-black cursor-pointer transition-all flex items-center gap-1 border ${
+                                        isEquipPickerOpen
+                                          ? 'bg-slate-900 text-white border-slate-900'
+                                          : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 shadow-2xs'
+                                      }`}
+                                    >
+                                      {isEquipPickerOpen ? (
+                                        <>
+                                          <X className="w-3 h-3" />
+                                          <span>Tutup Pilihan Alat</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Plus className="w-3 h-3" />
+                                          <span>Pilih Inventory / Tulis Manual</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
                                 </div>
+
                                 {sec.equipment.length > 0 ? (
                                   <div className="flex flex-wrap gap-1.5">
-                                    {sec.equipment.map((eq, eqIdx) => (
-                                      <span
-                                        key={eqIdx}
-                                        className="px-2 py-1 bg-white border border-slate-200 rounded-md text-[11px] font-semibold text-slate-800 shadow-2xs"
-                                      >
-                                        • {eq}
-                                      </span>
-                                    ))}
+                                    {sec.equipment.map((eq, eqIdx) => {
+                                      const equipBadgeKey = `${job.id}::${sIdx}::${eqIdx}`;
+                                      const isEditingThisEquip = editingEquipBadgeKey === equipBadgeKey;
+                                      const matchedInvAsset = inventoryAssets.find(
+                                        a =>
+                                          a.name.toLowerCase().trim() === eq.toLowerCase().trim() ||
+                                          getBaseInventoryAssetName(a.name).toLowerCase() ===
+                                            getBaseInventoryAssetName(eq).toLowerCase()
+                                      );
+
+                                      if (isEditingThisEquip && canManageJobSchedule) {
+                                        return (
+                                          <div
+                                            key={eqIdx}
+                                            className="w-full p-2.5 bg-white border-2 border-indigo-500 rounded-xl shadow-sm space-y-2"
+                                          >
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-[10px] font-mono font-black uppercase text-indigo-700">
+                                                Edit Unit Alat (Pilih dari Inventory atau Tulis Manual)
+                                              </span>
+                                              <button
+                                                type="button"
+                                                onClick={() => setEditingEquipBadgeKey(null)}
+                                                className="text-[10px] font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
+                                              >
+                                                Batal
+                                              </button>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                              <select
+                                                value=""
+                                                onChange={(e) => {
+                                                  if (e.target.value) {
+                                                    setEditingEquipValue(e.target.value);
+                                                  }
+                                                }}
+                                                className="px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
+                                              >
+                                                <option value="">-- Ganti dari Daftar Inventory Gudang --</option>
+                                                {(['Sound', 'Lighting', 'Multimedia', 'Videotron'] as const).map(divName => (
+                                                  <optgroup key={divName} label={`Inventory Divisi ${divName}`}>
+                                                    {inventoryAssets
+                                                      .filter(a => a.division === divName)
+                                                      .map(a => (
+                                                        <option key={a.id} value={a.name}>
+                                                          {a.name} [{a.code}]
+                                                        </option>
+                                                      ))}
+                                                  </optgroup>
+                                                ))}
+                                              </select>
+                                              <input
+                                                type="text"
+                                                value={editingEquipValue}
+                                                onChange={(e) => setEditingEquipValue(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleUpdateEquipmentInSection(job, sIdx, eqIdx, editingEquipValue);
+                                                  }
+                                                }}
+                                                placeholder="Atau tulis manual nama unit alat / spesifikasi..."
+                                                className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
+                                              />
+                                            </div>
+                                            <div className="flex items-center justify-end gap-1.5">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  handleUpdateEquipmentInSection(job, sIdx, eqIdx, editingEquipValue)
+                                                }
+                                                className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-black cursor-pointer"
+                                              >
+                                                Simpan Alat
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+
+                                      return (
+                                        <span
+                                          key={eqIdx}
+                                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border rounded-md text-[11px] font-semibold text-slate-800 shadow-2xs transition-all ${
+                                            matchedInvAsset
+                                              ? 'border-indigo-200 bg-indigo-50/40'
+                                              : 'border-slate-200'
+                                          }`}
+                                        >
+                                          <button
+                                            type="button"
+                                            disabled={!canManageJobSchedule}
+                                            onClick={() => {
+                                              if (!canManageJobSchedule) return;
+                                              setEditingEquipBadgeKey(equipBadgeKey);
+                                              setEditingEquipValue(eq);
+                                            }}
+                                            className={`inline-flex items-center gap-1.5 text-left ${
+                                              canManageJobSchedule ? 'cursor-pointer hover:underline' : ''
+                                            }`}
+                                            title={
+                                              canManageJobSchedule
+                                                ? 'Klik untuk mengedit / mengganti unit alat ini'
+                                                : eq
+                                            }
+                                          >
+                                            <span>• {eq}</span>
+                                            {matchedInvAsset && (
+                                              <span className="px-1 py-0.2 rounded text-[9px] font-mono font-black uppercase bg-indigo-100 text-indigo-700">
+                                                INV
+                                              </span>
+                                            )}
+                                          </button>
+                                          {canManageJobSchedule && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveEquipmentFromSection(job, sIdx, eqIdx);
+                                              }}
+                                              className="ml-0.5 w-4 h-4 rounded-full inline-flex items-center justify-center text-slate-400 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                                              title={`Hapus "${eq}" dari daftar alat`}
+                                            >
+                                              <X className="w-2.5 h-2.5" />
+                                            </button>
+                                          )}
+                                        </span>
+                                      );
+                                    })}
                                   </div>
                                 ) : (
-                                  <div className="text-[11px] text-slate-400 italic">Sesuai paket standar {sec.packageLabel}</div>
+                                  <div className="text-[11px] text-slate-400 italic">
+                                    Sesuai paket standar {sec.packageLabel} (Klik &ldquo;+ Pilih Inventory / Tulis Manual&rdquo; untuk menambah unit alat)
+                                  </div>
+                                )}
+
+                                {/* Admin Inline Equipment Picker: Pilih dari Inventory & Tulis Manual */}
+                                {canManageJobSchedule && isEquipPickerOpen && (
+                                  <div className="mt-2 p-3 bg-white border-2 border-indigo-600 rounded-xl shadow-md space-y-3">
+                                    {/* A. Tulis Manual Unit Alat (Apabila Tidak Ada di Daftar Inventory) */}
+                                    <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg space-y-1.5">
+                                      <div className="text-[10px] font-mono font-black uppercase text-amber-900 flex items-center justify-between">
+                                        <span>✍️ Tulis Manual Unit Alat (Apabila Tidak Ada di Daftar Inventory):</span>
+                                        <span className="text-[9px] font-semibold text-amber-700">Bebas Ketik Spesifikasi / Alat Tambahan</span>
+                                      </div>
+                                      <div className="flex flex-col sm:flex-row gap-1.5">
+                                        <input
+                                          type="text"
+                                          value={equipPickerManualText}
+                                          onChange={(e) => setEquipPickerManualText(e.target.value)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && equipPickerManualText.trim()) {
+                                              e.preventDefault();
+                                              handleAddManualEquipmentToSection(job, sIdx, equipPickerManualText);
+                                              setEquipPickerManualText('');
+                                            }
+                                          }}
+                                          placeholder="Contoh: 6001 2, Sub Double 2, ART4, M32 + DL 32 1 / Stand Set / Genset 60 KVA..."
+                                          className="flex-1 px-2.5 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (!equipPickerManualText.trim()) return;
+                                            handleAddManualEquipmentToSection(job, sIdx, equipPickerManualText);
+                                            setEquipPickerManualText('');
+                                          }}
+                                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-black cursor-pointer shrink-0 flex items-center justify-center gap-1"
+                                        >
+                                          <Plus className="w-3.5 h-3.5" />
+                                          <span>Tambah Manual</span>
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* B. Pilih dari Daftar Inventory Gudang Resmi (133 Kelompok Aset) */}
+                                    <div className="space-y-2">
+                                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                        <span className="text-[10px] font-mono font-black uppercase text-indigo-900">
+                                          📦 Pilih dari Daftar Inventory Gudang Resmi ({filteredSectionInventory.length} Kelompok Unit):
+                                        </span>
+                                        <div className="flex flex-wrap gap-1">
+                                          {(
+                                            [
+                                              { id: 'ALL', label: 'Semua Divisi (133)' },
+                                              { id: 'Sound', label: 'Audio / Sound (70)' },
+                                              { id: 'Lighting', label: 'Lighting (28)' },
+                                              { id: 'Multimedia', label: 'Multimedia (26)' },
+                                              { id: 'Videotron', label: 'Videotron (9)' }
+                                            ] as const
+                                          ).map(tab => (
+                                            <button
+                                              key={tab.id}
+                                              type="button"
+                                              onClick={() => setEquipPickerDivFilter(tab.id)}
+                                              className={`px-2 py-0.5 rounded text-[10px] font-black cursor-pointer border transition-all ${
+                                                equipPickerDivFilter === tab.id
+                                                  ? 'bg-indigo-600 text-white border-indigo-600'
+                                                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                              }`}
+                                            >
+                                              {tab.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                                        <div className="sm:col-span-2 relative">
+                                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                                          <input
+                                            type="text"
+                                            value={equipPickerSearch}
+                                            onChange={(e) => setEquipPickerSearch(e.target.value)}
+                                            placeholder="Cari unit inventory (nama alat, kode AST, atau type)..."
+                                            className="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                          />
+                                        </div>
+                                        <input
+                                          type="text"
+                                          value={equipPickerQty}
+                                          onChange={(e) => setEquipPickerQty(e.target.value)}
+                                          placeholder="Qty Pakai (opsional, misal: 4 Unit)"
+                                          className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        />
+                                      </div>
+
+                                      {/* Dropdown Cepat Pilih Inventory */}
+                                      <div>
+                                        <select
+                                          value=""
+                                          onChange={(e) => {
+                                            const selectedId = e.target.value;
+                                            if (!selectedId) return;
+                                            const found = inventoryAssets.find(a => a.id === selectedId);
+                                            if (found) {
+                                              handleToggleInventoryAssetInSection(job, sIdx, found, equipPickerQty);
+                                            }
+                                          }}
+                                          className="w-full px-2.5 py-1.5 bg-indigo-50/60 border border-indigo-200 rounded-lg text-xs font-bold text-slate-800"
+                                        >
+                                          <option value="">
+                                            -- Klik Pilih Cepat dari Dropdown Inventory ({filteredSectionInventory.length} Unit) --
+                                          </option>
+                                          {filteredSectionInventory.map(asset => {
+                                            const typeInfo = getInventoryAssetTypeInfo(asset);
+                                            const isSelected = findMatchingAssetIndexInEquipment(asset, sec.equipment) >= 0;
+                                            return (
+                                              <option key={asset.id} value={asset.id}>
+                                                {isSelected ? '✓ ' : '+ '}
+                                                {asset.name} — [{typeInfo.typeGroup}] ({asset.code})
+                                              </option>
+                                            );
+                                          })}
+                                        </select>
+                                      </div>
+
+                                      {/* Daftar Chip Inventory yang Bisa Diklik Langsung */}
+                                      <div className="max-h-48 overflow-y-auto pr-1 flex flex-wrap gap-1.5 pt-1 border-t border-slate-100">
+                                        {filteredSectionInventory.map(asset => {
+                                          const isSelected = findMatchingAssetIndexInEquipment(asset, sec.equipment) >= 0;
+                                          const typeInfo = getInventoryAssetTypeInfo(asset);
+                                          return (
+                                            <button
+                                              key={asset.id}
+                                              type="button"
+                                              onClick={() =>
+                                                handleToggleInventoryAssetInSection(job, sIdx, asset, equipPickerQty)
+                                              }
+                                              className={`px-2 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all flex items-center gap-1 border text-left ${
+                                                isSelected
+                                                  ? 'bg-indigo-600 text-white border-indigo-700 shadow-2xs'
+                                                  : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 border-slate-200 hover:border-indigo-300'
+                                              }`}
+                                              title={`${asset.name} (${typeInfo.typeGroup} • ${asset.code})`}
+                                            >
+                                              <span>{isSelected ? '✓' : '+'}</span>
+                                              <span>{asset.name}</span>
+                                              <span
+                                                className={`text-[9px] font-mono px-1 py-0.2 rounded ${
+                                                  isSelected
+                                                    ? 'bg-indigo-800 text-indigo-100'
+                                                    : 'bg-slate-200/80 text-slate-600'
+                                                }`}
+                                              >
+                                                {typeInfo.shortTypeLabel}
+                                              </span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </div>
                                 )}
                               </div>
 
@@ -3392,7 +3934,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                             <label className="block font-bold text-slate-700 mb-1">Divisi Paket #{jobFormSectionIdx + 1}</label>
                             <select
                               value={jobFormDivision}
-                              onChange={(e) => setJobFormDivision(e.target.value as JobDivisionSection['division'])}
+                              onChange={(e) => {
+                                const nextDiv = e.target.value as JobDivisionSection['division'];
+                                setJobFormDivision(nextDiv);
+                                setModalEquipDivFilter(mapSectionDivToAssetDiv(nextDiv));
+                              }}
                               className="w-full p-2 border border-slate-200 rounded-lg font-bold"
                             >
                               <option value="Audio">Audio / Sound</option>
@@ -3414,17 +3960,191 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                           </div>
                         </div>
 
-                        <div>
-                          <label className="block font-bold text-slate-700 mb-1">
-                            Daftar Unit Alat (Satu baris per item alat)
-                          </label>
-                          <textarea
-                            rows={3}
-                            placeholder={"Midasha 32\n4 set dB + 1 set Vertec\n4 Qsc + 4 dB Tech"}
-                            value={jobFormEquipmentText}
-                            onChange={(e) => setJobFormEquipmentText(e.target.value)}
-                            className="w-full p-2 border border-slate-200 rounded-lg font-mono text-xs"
-                          />
+                        {/* Unit Alat & Spesifikasi Teknis: Pilih dari Inventory ATAU Tulis Manual */}
+                        <div className="p-3 bg-indigo-50/40 border border-indigo-200 rounded-xl space-y-2.5">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <label className="font-black text-slate-800 flex items-center gap-1.5">
+                              <Package className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Unit Alat & Spesifikasi Teknis (Pilih dari Inventory atau Tulis Manual)</span>
+                            </label>
+                            <div className="flex flex-wrap gap-1">
+                              {(
+                                [
+                                  { id: 'ALL', label: 'Semua Divisi (133)' },
+                                  { id: 'Sound', label: 'Sound (70)' },
+                                  { id: 'Lighting', label: 'Lighting (28)' },
+                                  { id: 'Multimedia', label: 'Multimedia (26)' },
+                                  { id: 'Videotron', label: 'Videotron (9)' }
+                                ] as const
+                              ).map(tab => (
+                                <button
+                                  key={tab.id}
+                                  type="button"
+                                  onClick={() => setModalEquipDivFilter(tab.id)}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-black cursor-pointer border transition-all ${
+                                    modalEquipDivFilter === tab.id
+                                      ? 'bg-indigo-600 text-white border-indigo-600'
+                                      : 'bg-white text-slate-600 border-slate-300 hover:bg-indigo-50'
+                                  }`}
+                                >
+                                  {tab.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 1. Pilih dari Daftar Inventory Gudang Resmi */}
+                          {(() => {
+                            const modalSearchLower = modalEquipSearch.toLowerCase().trim();
+                            const currentEquipLines = jobFormEquipmentText
+                              .split('\n')
+                              .map(s => s.trim())
+                              .filter(Boolean);
+                            const filteredModalAssets = inventoryAssets.filter(asset => {
+                              if (modalEquipDivFilter !== 'ALL' && asset.division !== modalEquipDivFilter) {
+                                return false;
+                              }
+                              if (!modalSearchLower) return true;
+                              const typeInfo = getInventoryAssetTypeInfo(asset);
+                              return (
+                                asset.name.toLowerCase().includes(modalSearchLower) ||
+                                asset.code.toLowerCase().includes(modalSearchLower) ||
+                                typeInfo.typeGroup.toLowerCase().includes(modalSearchLower)
+                              );
+                            });
+
+                            return (
+                              <div className="space-y-2 bg-white p-2.5 rounded-lg border border-indigo-100">
+                                <div className="text-[10px] font-mono font-black uppercase text-indigo-800">
+                                  📦 1. Pilih Unit Alat dari Daftar Inventory Gudang ({filteredModalAssets.length} Kelompok Unit):
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
+                                  <div className="md:col-span-2 relative">
+                                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                                    <input
+                                      type="text"
+                                      value={modalEquipSearch}
+                                      onChange={(e) => setModalEquipSearch(e.target.value)}
+                                      placeholder="Cari unit inventory (nama alat, kode AST, atau type)..."
+                                      className="w-full pl-8 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold"
+                                    />
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={modalEquipQty}
+                                    onChange={(e) => setModalEquipQty(e.target.value)}
+                                    placeholder="Qty Pakai (opsional, misal: 4 Unit)"
+                                    className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold"
+                                  />
+                                </div>
+
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    const selectedId = e.target.value;
+                                    if (!selectedId) return;
+                                    const found = inventoryAssets.find(a => a.id === selectedId);
+                                    if (found) {
+                                      handleToggleInventoryAssetInModalText(found, modalEquipQty);
+                                    }
+                                  }}
+                                  className="w-full p-1.5 bg-indigo-50/60 border border-indigo-200 rounded-lg text-xs font-bold text-slate-800"
+                                >
+                                  <option value="">
+                                    -- Klik Pilih Cepat dari Dropdown Inventory ({filteredModalAssets.length} Unit) --
+                                  </option>
+                                  {filteredModalAssets.map(asset => {
+                                    const typeInfo = getInventoryAssetTypeInfo(asset);
+                                    const isSelected = findMatchingAssetIndexInEquipment(asset, currentEquipLines) >= 0;
+                                    return (
+                                      <option key={asset.id} value={asset.id}>
+                                        {isSelected ? '✓ ' : '+ '}
+                                        {asset.name} — [{typeInfo.typeGroup}] ({asset.code})
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+
+                                <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto pr-1 pt-1 border-t border-slate-100">
+                                  {filteredModalAssets.map(asset => {
+                                    const isSelected = findMatchingAssetIndexInEquipment(asset, currentEquipLines) >= 0;
+                                    const typeInfo = getInventoryAssetTypeInfo(asset);
+                                    return (
+                                      <button
+                                        key={asset.id}
+                                        type="button"
+                                        onClick={() => handleToggleInventoryAssetInModalText(asset, modalEquipQty)}
+                                        className={`px-2 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all border flex items-center gap-1 ${
+                                          isSelected
+                                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-2xs'
+                                            : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 border-slate-300'
+                                        }`}
+                                      >
+                                        <span>{isSelected ? '✓' : '+'}</span>
+                                        <span>{asset.name}</span>
+                                        <span
+                                          className={`text-[9px] font-mono px-1 rounded ${
+                                            isSelected ? 'bg-indigo-800 text-indigo-100' : 'bg-slate-200 text-slate-600'
+                                          }`}
+                                        >
+                                          {typeInfo.shortTypeLabel}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* 2. Tulis Manual Apabila Tidak Ada di Daftar Inventory */}
+                          <div className="space-y-1.5 bg-amber-50/70 p-2.5 rounded-lg border border-amber-200">
+                            <div className="text-[10px] font-mono font-black uppercase text-amber-900">
+                              ✍️ 2. Tulis Manual Unit Alat (Apabila Tidak Ada di Daftar Inventory):
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-1.5">
+                              <input
+                                type="text"
+                                value={modalEquipManualInput}
+                                onChange={(e) => setModalEquipManualInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && modalEquipManualInput.trim()) {
+                                    e.preventDefault();
+                                    handleAddManualEquipmentToModalText(modalEquipManualInput);
+                                    setModalEquipManualInput('');
+                                  }
+                                }}
+                                placeholder="Ketik manual unit alat / spesifikasi teknis yang tidak ada di daftar inventory..."
+                                className="flex-1 px-2.5 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-semibold"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!modalEquipManualInput.trim()) return;
+                                  handleAddManualEquipmentToModalText(modalEquipManualInput);
+                                  setModalEquipManualInput('');
+                                }}
+                                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-black cursor-pointer shrink-0 flex items-center justify-center gap-1"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Tambah Manual</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* 3. Daftar Unit Alat Terpilih (Bisa Diedit Bebas per Baris) */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                              Daftar Unit Alat Terjadwal pada Paket Ini (Satu baris per item alat — bisa ketik/edit manual):
+                            </label>
+                            <textarea
+                              rows={3}
+                              placeholder={"6001 2, Sub Double 2, ART4, M32 + DL 32 1, WHM 4\nStand Set"}
+                              value={jobFormEquipmentText}
+                              onChange={(e) => setJobFormEquipmentText(e.target.value)}
+                              className="w-full p-2 bg-white border border-slate-300 rounded-lg font-mono text-xs"
+                            />
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
