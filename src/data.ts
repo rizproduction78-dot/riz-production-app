@@ -2990,6 +2990,7 @@ export {
   OFFICIAL_FREELANCE_CREW_LIST,
   resolveCrewMember,
   buildCrewList,
-  formatFleetVehicleBadge
+  formatFleetVehicleBadge,
+  normalizeJobAssignmentsMaster
 } from './data/jobAssignmentsData';
 

@@ -18,7 +18,8 @@ import {
   INITIAL_FREELANCE_WORKERS,
   INITIAL_VEHICLES,
   INITIAL_JOB_ASSIGNMENTS,
-  normalizeVehiclesMaster
+  normalizeVehiclesMaster,
+  normalizeJobAssignmentsMaster
 } from './data';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from './data/september2026Schedule';
 import { getActiveMonthKey, ALL_MONTHLY_SCHEDULES, formatMonthLabel } from './data/staffSchedules';
@@ -363,8 +364,8 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  // Forced one-time re-sync for all official data from Google Sheet reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v108_notification_komit_nov5_sync';
+  // Forced one-time re-sync for all official data from Google Sheet & Google Calendar reference while preserving 100% of user edits
+  const REF_SYNC_KEY = 'riz_ref_synced_v109_gcal_live_sync_2026';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
@@ -417,7 +418,11 @@ export default function App() {
     localStorage.setItem('riz_freelance_workers', JSON.stringify(normalizeCollectionItems('freelance_workers', mergeById(INITIAL_FREELANCE_WORKERS, 'riz_freelance_workers'))));
     localStorage.setItem('riz_master_vehicles', JSON.stringify(normalizeVehiclesMaster(mergeById(INITIAL_VEHICLES, 'riz_master_vehicles'))));
     localStorage.setItem('riz_assets', JSON.stringify(normalizeCollectionItems('assets', mergeById(INITIAL_ASSETS, 'riz_assets'))));
-    localStorage.setItem('riz_job_assignments_v1', JSON.stringify(normalizeCollectionItems('job_assignments', mergeById(INITIAL_JOB_ASSIGNMENTS, 'riz_job_assignments_v1'))));
+    localStorage.removeItem('riz_job_assignments_v1');
+    localStorage.setItem(
+      'riz_job_assignments_gcal_v2',
+      JSON.stringify(normalizeJobAssignmentsMaster(mergeById(INITIAL_JOB_ASSIGNMENTS, 'riz_job_assignments_gcal_v2')))
+    );
     localStorage.removeItem('riz_notification_known_revisions_v4');
     localStorage.removeItem('riz_notification_read_ids_v4');
     ALL_MONTHLY_SCHEDULES.forEach(sch => {

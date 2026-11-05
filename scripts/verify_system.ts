@@ -48,11 +48,12 @@ assert(Array.isArray(INITIAL_FLEET_DRIVERS), 'Fleet drivers initial list is a va
 assert(OFFICIAL_SEPTEMBER_2026_SCHEDULE.length > 0, 'September 2026 schedule populated', `Rows: ${OFFICIAL_SEPTEMBER_2026_SCHEDULE.length}`);
 assert(Boolean(OFFICIAL_COMPETENCY_MATRICES['Audio']), 'Competency matrices contain Audio division');
 
-// 3b. Test Official Job Assignments (Staff & Freelance Crew Schedule via App & Google Calendar)
-assert(INITIAL_JOB_ASSIGNMENTS.length >= 49, 'Official Job Assignments populated (Nov & Dec 2026)', `Count: ${INITIAL_JOB_ASSIGNMENTS.length}`);
+// 3b. Test Official Job Assignments (Staff & Freelance Crew Schedule via App & Google Calendar rizproduction78@gmail.com)
+assert(INITIAL_JOB_ASSIGNMENTS.length >= 500, 'Official Job Assignments populated from Google Calendar (rizproduction78@gmail.com)', `Count: ${INITIAL_JOB_ASSIGNMENTS.length}`);
+const octJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-10');
 const novJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-11');
 const decJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-12');
-assert(novJobs.length >= 40 && decJobs.length >= 5, 'Job Assignments cover both November 2026 and December 2026', `Nov: ${novJobs.length}, Dec: ${decJobs.length}`);
+assert(octJobs.length >= 55 && novJobs.length >= 35 && decJobs.length >= 5, 'Job Assignments cover October, November, and December 2026 from Google Calendar', `Oct: ${octJobs.length}, Nov: ${novJobs.length}, Dec: ${decJobs.length}`);
 const sampleStaffCrew = resolveCrewMember('Mboh');
 const sampleFreelanceCrew = resolveCrewMember('Adul', 'Audio', 'Bongkaran');
 assert(sampleStaffCrew.personnelType === 'Staff' && sampleStaffCrew.staffId === 'staff-rahmat', 'resolveCrewMember accurately maps Inhouse Staff (Mboh -> staff-rahmat)');

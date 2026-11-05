@@ -26,7 +26,8 @@ import {
   OFFICIAL_FREELANCE_CREW_LIST,
   resolveCrewMember,
   buildCrewList,
-  formatFleetVehicleBadge
+  formatFleetVehicleBadge,
+  normalizeJobAssignmentsMaster
 } from '../data';
 import {
   SHIFT_LEGEND,
@@ -403,13 +404,15 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   );
   const [divisionFilter, setDivisionFilter] = useState<string>('All');
 
-  // Job Assignments State (Staff & Freelance Event / Job Schedule)
+  // Job Assignments State (Staff & Freelance Event / Job Schedule — Synced from Google Calendar rizproduction78@gmail.com)
   const [jobAssignments, setJobAssignments] = useState<JobAssignment[]>(() => {
     try {
-      const saved = localStorage.getItem('riz_job_assignments_v1');
+      const saved = localStorage.getItem('riz_job_assignments_gcal_v2');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return normalizeJobAssignmentsMaster(parsed);
+        }
       }
     } catch {}
     return INITIAL_JOB_ASSIGNMENTS;
@@ -424,10 +427,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     currentUser.id === 'director-wahyu';
 
   const [jobMonthFilter, setJobMonthFilter] = useState<string>(() => {
-    if (activeMonth === '2026-12') return '2026-12';
+    if (activeMonth && /^2026-\d{2}$/.test(activeMonth)) return activeMonth;
     return '2026-11';
   });
-  const [jobWeekFilter, setJobWeekFilter] = useState<'ALL' | 'W1' | 'W2' | 'W3' | 'W4' | 'W5'>('W1');
+  const [jobWeekFilter, setJobWeekFilter] = useState<'ALL' | 'W1' | 'W2' | 'W3' | 'W4' | 'W5'>('ALL');
   const [jobSelectedStaffId, setJobSelectedStaffId] = useState<string>(() =>
     isManagementOrOwner ? 'ALL' : currentUser.id
   );
@@ -502,7 +505,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   useEffect(() => {
     setJobSelectedStaffId(isManagementOrOwner ? 'ALL' : currentUser.id);
     setJobSelectedFreelanceName('ALL');
-    setJobWeekFilter('W1');
+    setJobWeekFilter('ALL');
   }, [currentUser.id, isManagementOrOwner]);
 
   useEffect(() => {
@@ -542,19 +545,18 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   } | null>(null);
 
   useEffect(() => {
-    if (activeMonth === '2026-11' || activeMonth === '2026-12') {
+    if (activeMonth && /^2026-\d{2}$/.test(activeMonth)) {
       setJobMonthFilter(activeMonth);
     }
   }, [activeMonth]);
 
   useEffect(() => {
     const unsubJobs = subscribeCloudCollection<JobAssignment>(
-      'job_assignments',
-      'riz_job_assignments_v1',
+      'job_assignments_gcal',
+      'riz_job_assignments_gcal_v2',
       (data) => {
         if (Array.isArray(data) && data.length > 0) {
-          const sorted = [...data].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
-          setJobAssignments(sorted);
+          setJobAssignments(normalizeJobAssignmentsMaster(data));
         } else {
           setJobAssignments(INITIAL_JOB_ASSIGNMENTS);
         }
@@ -602,9 +604,9 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     setJobAssignments(prev => {
       const exists = prev.some(j => j.id === finalJob.id);
       const next = exists ? prev.map(j => (j.id === finalJob.id ? finalJob : j)) : [finalJob, ...prev];
-      const sorted = [...next].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+      const sorted = normalizeJobAssignmentsMaster(next);
       try {
-        localStorage.setItem('riz_job_assignments_v1', JSON.stringify(sorted));
+        localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(sorted));
       } catch {}
       const nextCfg = saveGoogleCalendarSyncConfig({
         lastSyncedAt: nowIso,
@@ -613,7 +615,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       setGcalConfig(nextCfg);
       return sorted;
     });
-    saveCloudDoc('job_assignments', finalJob.id, finalJob, currentUser.name);
+    saveCloudDoc('job_assignments_gcal', finalJob.id, finalJob, currentUser.name);
     if (gcalConfig.autoSyncOnSave) {
       pushJobAssignmentToGoogleCalendarLive(finalJob, gcalConfig).catch(() => {});
     }
@@ -1345,18 +1347,16 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
         setJobAssignments(prev => {
           const map = new Map<string, JobAssignment>(prev.map(j => [j.id, j]));
           res.jobs.forEach(imp => {
-            map.set(imp.id, { ...imp, _userEdited: true });
+            const existing = map.get(imp.id);
+            if (!existing || !existing._userEdited) {
+              map.set(imp.id, imp);
+            }
           });
-          const sorted = Array.from(map.values()).sort((a, b) =>
-            String(a.date || '').localeCompare(String(b.date || ''))
-          );
+          const sorted = normalizeJobAssignmentsMaster(Array.from(map.values()));
           try {
-            localStorage.setItem('riz_job_assignments_v1', JSON.stringify(sorted));
+            localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(sorted));
           } catch {}
           return sorted;
-        });
-        res.jobs.forEach(imp => {
-          saveCloudDoc('job_assignments', imp.id, { ...imp, _userEdited: true }, currentUser.name);
         });
         setGcalSyncFeedback({
           type: 'success',
@@ -1388,11 +1388,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     setJobAssignments(prev => {
       const next = prev.map(j => (j.id === job.id ? updated : j));
       try {
-        localStorage.setItem('riz_job_assignments_v1', JSON.stringify(next));
+        localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(next));
       } catch {}
       return next;
     });
-    saveCloudDoc('job_assignments', updated.id, updated, currentUser.name);
+    saveCloudDoc('job_assignments_gcal', updated.id, updated, currentUser.name);
     onLogActivity(currentUser.name, currentUser.role, `Mengubah status Job "${job.dateLabel}" menjadi ${nextStatus}`);
   };
 
@@ -1401,11 +1401,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     setJobAssignments(prev => {
       const next = prev.filter(j => j.id !== job.id);
       try {
-        localStorage.setItem('riz_job_assignments_v1', JSON.stringify(next));
+        localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(next));
       } catch {}
       return next;
     });
-    deleteCloudDoc('job_assignments', job.id);
+    deleteCloudDoc('job_assignments_gcal', job.id);
     onLogActivity(currentUser.name, currentUser.role, `Menghapus Jadwal Penugasan Job: ${job.dateLabel}`);
   };
 
@@ -1425,16 +1425,14 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
         importedJobs.forEach(imp => {
           map.set(imp.id, { ...imp, _userEdited: true });
         });
-        const sorted = Array.from(map.values()).sort((a, b) =>
-          String(a.date || '').localeCompare(String(b.date || ''))
-        );
+        const sorted = normalizeJobAssignmentsMaster(Array.from(map.values()));
         try {
-          localStorage.setItem('riz_job_assignments_v1', JSON.stringify(sorted));
+          localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(sorted));
         } catch {}
         return sorted;
       });
       importedJobs.forEach(imp => {
-        saveCloudDoc('job_assignments', imp.id, { ...imp, _userEdited: true }, currentUser.name);
+        saveCloudDoc('job_assignments_gcal', imp.id, { ...imp, _userEdited: true }, currentUser.name);
       });
       onLogActivity(
         currentUser.name,
@@ -2626,8 +2624,23 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
             };
 
             const getWeekRangeLabel = (weekCode: 'W1' | 'W2' | 'W3' | 'W4' | 'W5', mKey: string): string => {
-              const mName = mKey === '2026-12' ? 'Des 2026' : mKey === '2026-11' ? 'Nov 2026' : 'Bulan Aktif';
-              const maxDay = mKey === '2026-12' ? 31 : 30;
+              const monthNamesMap: Record<string, { short: string; days: number }> = {
+                '2026-01': { short: 'Jan 2026', days: 31 },
+                '2026-02': { short: 'Feb 2026', days: 28 },
+                '2026-03': { short: 'Mar 2026', days: 31 },
+                '2026-04': { short: 'Apr 2026', days: 30 },
+                '2026-05': { short: 'Mei 2026', days: 31 },
+                '2026-06': { short: 'Jun 2026', days: 30 },
+                '2026-07': { short: 'Jul 2026', days: 31 },
+                '2026-08': { short: 'Agu 2026', days: 31 },
+                '2026-09': { short: 'Sep 2026', days: 30 },
+                '2026-10': { short: 'Okt 2026', days: 31 },
+                '2026-11': { short: 'Nov 2026', days: 30 },
+                '2026-12': { short: 'Des 2026', days: 31 }
+              };
+              const mInfo = monthNamesMap[mKey] || { short: 'Bulan Aktif', days: 31 };
+              const mName = mInfo.short;
+              const maxDay = mInfo.days;
               switch (weekCode) {
                 case 'W1': return `Minggu 1 (Tgl 1–7 ${mName})`;
                 case 'W2': return `Minggu 2 (Tgl 8–14 ${mName})`;
@@ -3579,7 +3592,17 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                 {/* Filters Bar */}
                 <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 text-xs font-bold">
+                    <div className="flex flex-wrap items-center bg-white border border-slate-200 rounded-lg p-0.5 text-xs font-bold">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setJobMonthFilter('2026-10');
+                          if (onActiveMonthChange) onActiveMonthChange('2026-10');
+                        }}
+                        className={`px-3 py-1.5 rounded-md cursor-pointer transition-all ${jobMonthFilter === '2026-10' ? 'bg-indigo-600 text-white font-black' : 'text-slate-600 hover:text-slate-900'}`}
+                      >
+                        Oktober 2026
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
@@ -3608,6 +3631,33 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                         Semua Bulan ({jobAssignments.length})
                       </button>
                     </div>
+
+                    <select
+                      value={jobMonthFilter}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setJobMonthFilter(val);
+                        if (val !== 'ALL' && onActiveMonthChange) {
+                          onActiveMonthChange(val);
+                        }
+                      }}
+                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-indigo-900 outline-none cursor-pointer"
+                      title="Pilih Bulan Jadwal Google Calendar (Januari - Desember 2026)"
+                    >
+                      <option value="ALL">📅 Semua Bulan Google Calendar ({jobAssignments.length} Event)</option>
+                      <option value="2026-01">Januari 2026</option>
+                      <option value="2026-02">Februari 2026</option>
+                      <option value="2026-03">Maret 2026</option>
+                      <option value="2026-04">April 2026</option>
+                      <option value="2026-05">Mei 2026</option>
+                      <option value="2026-06">Juni 2026</option>
+                      <option value="2026-07">Juli 2026</option>
+                      <option value="2026-08">Agustus 2026</option>
+                      <option value="2026-09">September 2026</option>
+                      <option value="2026-10">Oktober 2026</option>
+                      <option value="2026-11">November 2026</option>
+                      <option value="2026-12">Desember 2026</option>
+                    </select>
 
                     <select
                       value={jobDivisionFilter}

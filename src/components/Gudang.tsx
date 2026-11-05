@@ -22,6 +22,7 @@ import {
   INITIAL_VEHICLES,
   INITIAL_FLEET_DRIVERS,
   INITIAL_JOB_ASSIGNMENTS,
+  normalizeJobAssignmentsMaster,
   normalizeVehiclesMaster,
   normalizeAssetsMaster,
   formatServiceDateIndonesian,
@@ -272,16 +273,16 @@ export default function Gudang({
   const [localJobAssignments] = useState<JobAssignment[]>(() => {
     try {
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        const saved = localStorage.getItem('riz_job_assignments_v1');
+        const saved = localStorage.getItem('riz_job_assignments_gcal_v2');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) return normalizeJobAssignmentsMaster(parsed);
         }
       }
     } catch (e) {}
     return INITIAL_JOB_ASSIGNMENTS;
   });
-  const activeJobAssignments = propJobAssignments !== undefined ? propJobAssignments : localJobAssignments;
+  const activeJobAssignments = propJobAssignments !== undefined ? normalizeJobAssignmentsMaster(propJobAssignments) : localJobAssignments;
 
   const inventoryCalcCtx = {
     findings,
