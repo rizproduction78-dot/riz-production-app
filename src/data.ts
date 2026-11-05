@@ -2852,7 +2852,10 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
       const itemCode = String(item.code || '').toUpperCase().trim();
       if (!itemId && !itemCode) return;
 
-      const canonical = (itemId ? resultById.get(itemId) : undefined) || (itemCode ? canonicalByCode.get(itemCode) : undefined);
+      const canonical =
+        (itemId ? resultById.get(itemId) : undefined) ||
+        (itemCode ? resultById.get(itemCode.toLowerCase()) : undefined) ||
+        (itemCode ? canonicalByCode.get(itemCode) : undefined);
       if (canonical) {
         const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
         resultById.set(canonical.id, {
@@ -2871,6 +2874,10 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
             : canonical.repairHistory
         });
       } else {
+        // Abaikan entri warisan 2024 (ast-aud-071+, ast-lgt-029+, ast-mm-027+, ast-led-010+) yang sudah tidak ada di Sheet 2026
+        if (/^ast-(aud|lgt|mm|led)-\d+$/i.test(itemId) || /^AST-(AUD|LGT|MM|LED)-\d+$/i.test(itemCode)) {
+          return;
+        }
         const key = itemId || `ast-custom-${itemCode}`;
         resultById.set(key, {
           ...(item as Asset),

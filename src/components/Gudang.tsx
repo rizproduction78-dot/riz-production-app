@@ -642,7 +642,7 @@ export default function Gudang({
   const [isLiveWebcamRunning, setIsLiveWebcamRunning] = useState<boolean>(false);
   const [cameraStatusNote, setCameraStatusNote] = useState<string>('Mode Simulator Kamera & Laser Scanner Aktif');
   const [simulatorTargetDiv, setSimulatorTargetDiv] = useState<'ALL' | 'Audio' | 'Lighting' | 'Multimedia' | 'Videotron'>('ALL');
-  const [simulatorTargetCode, setSimulatorTargetCode] = useState<string>('AST-AUD-001');
+  const [simulatorTargetCode, setSimulatorTargetCode] = useState<string>('MJXH18277');
   const scannerVideoRef = useRef<HTMLVideoElement | null>(null);
   const scannerStreamRef = useRef<MediaStream | null>(null);
 
@@ -1316,7 +1316,7 @@ export default function Gudang({
   // Asset scanning with camera / input — HANYA unit yang berhasil di-scan yang masuk ke daftar
   const handleSimulateQRScan = (codeToScan?: string) => {
     setIsCameraScannerActive(true);
-    const targetCode = (codeToScan || scanSearchInput || simulatorTargetCode || 'AST-AUD-001').trim();
+    const targetCode = (codeToScan || scanSearchInput || simulatorTargetCode || 'MJXH18277').trim();
     if (!scanSearchInput.trim() && targetCode) {
       setScanSearchInput(targetCode);
     }
@@ -1326,10 +1326,10 @@ export default function Gudang({
     setTimeout(() => {
       const qLower = targetCode.toLowerCase();
       const found =
-        localAssets.find(a => a.code.toLowerCase() === qLower) ||
+        localAssets.find(a => a.code.toLowerCase() === qLower || a.id.toLowerCase() === qLower) ||
         localAssets.find(a =>
+          a.serialNumber.toLowerCase().includes(qLower) ||
           a.code.toLowerCase().includes(qLower) ||
-          a.serialNumber.toLowerCase() === qLower ||
           a.name.toLowerCase().includes(qLower)
         );
 
@@ -1388,7 +1388,7 @@ export default function Gudang({
       matchedFromFileName?.code ||
       scanSearchInput.trim() ||
       simulatorTargetCode ||
-      'AST-AUD-001';
+      'MJXH18277';
     const reader = new FileReader();
     reader.onloadend = () => {
       if (typeof reader.result === 'string') {
@@ -2454,7 +2454,7 @@ export default function Gudang({
           {
             key: 'Audio' as const,
             title: 'Divisi Audio / Sound System',
-            sheetName: 'Inventory SOUND MAR 2024',
+            sheetName: 'Inventory SOUND 2026',
             Icon: Volume2,
             headerBg: 'from-blue-600 to-indigo-700',
             badgeBg: 'bg-blue-50 text-blue-700 border-blue-200'
@@ -2462,7 +2462,7 @@ export default function Gudang({
           {
             key: 'Lighting' as const,
             title: 'Divisi Lighting & Special Effects',
-            sheetName: 'Inventory LIGHTING MAR 2024',
+            sheetName: 'Inventory LIGHTING 2026',
             Icon: Lightbulb,
             headerBg: 'from-amber-500 to-orange-600',
             badgeBg: 'bg-amber-50 text-amber-800 border-amber-200'
@@ -2470,7 +2470,7 @@ export default function Gudang({
           {
             key: 'Multimedia' as const,
             title: 'Divisi Multimedia & Live Streaming',
-            sheetName: 'INVENTORY STREEMING MAR 2024',
+            sheetName: 'INVENTORY STREEMING 2026',
             Icon: Video,
             headerBg: 'from-purple-600 to-violet-700',
             badgeBg: 'bg-purple-50 text-purple-700 border-purple-200'
@@ -2478,7 +2478,7 @@ export default function Gudang({
           {
             key: 'Videotron' as const,
             title: 'Divisi Videotron & LED Display',
-            sheetName: 'INVENTORY LED MAR 2024',
+            sheetName: 'INVENTORY LED 2026',
             Icon: Tv,
             headerBg: 'from-emerald-600 to-teal-700',
             badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -2540,7 +2540,7 @@ export default function Gudang({
                   {
                     divKey: 'Videotron' as const,
                     label: 'DIVISI VIDEOTRON / LED',
-                    subTitle: 'LED P3.9 60m (30 Box) & VX6s',
+                    subTitle: 'LED Hybrid P3.9 80m (40 Box) & VX600s/VX1000',
                     Icon: Tv,
                     cardClass: 'border-emerald-100 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300',
                     iconBoxClass: 'bg-emerald-600 text-white',
@@ -3352,7 +3352,7 @@ export default function Gudang({
               <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 space-y-3">
                 <input
                   type="text"
-                  placeholder="e.g. AST-AUD-001 atau AST-LGT-001"
+                  placeholder="e.g. MJXH18277, AVANDA210A.24.06.254, C450B-01"
                   value={scanSearchInput}
                   onChange={(e) => {
                     setScanSearchInput(e.target.value);
@@ -3379,7 +3379,7 @@ export default function Gudang({
                   <span>
                     {isScanningSimulated
                       ? 'Memindai Barcode...'
-                      : `Pindai Barcode (Scan ${scanSearchInput.trim() || activeTargetAsset?.code || 'AST-AUD-001'})`}
+                      : `Pindai Barcode (Scan ${scanSearchInput.trim() || activeTargetAsset?.code || 'MJXH18277'})`}
                   </span>
                 </button>
               </div>
@@ -3482,7 +3482,7 @@ export default function Gudang({
                       Belum Ada Unit yang Berhasil Di-Scan (0 Unit)
                     </div>
                     <p className="text-[10px] text-slate-400 leading-relaxed">
-                      Unit yang belum di-scan tidak bisa muncul di daftar ini. Masukkan kode barcode (contoh: <span className="font-mono font-bold text-slate-600">AST-AUD-001</span> atau <span className="font-mono font-bold text-slate-600">AST-LGT-001</span>) lalu tekan <span className="font-bold text-indigo-600">Pindai Barcode (Scan)</span>.
+                      Unit yang belum di-scan tidak bisa muncul di daftar ini. Masukkan kode barcode / serial number resmi (contoh: <span className="font-mono font-bold text-slate-600">MJXH18277</span> atau <span className="font-mono font-bold text-slate-600">C450B-01</span>) lalu tekan <span className="font-bold text-indigo-600">Pindai Barcode (Scan)</span>.
                     </p>
                   </div>
                 )}
@@ -3784,7 +3784,7 @@ export default function Gudang({
                   <div>
                     <h3 className="font-bold text-slate-700 text-sm">Menunggu Scan Barcode</h3>
                     <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                      Kamera Simulator Scanner sudah aktif di sebelah kiri. Arahkan target kamera atau klik tombol di bawah untuk langsung memindai unit <strong className="text-indigo-600 font-mono">{activeTargetAsset?.code || 'AST-AUD-001'}</strong>.
+                      Kamera Simulator Scanner sudah aktif di sebelah kiri. Arahkan target kamera atau klik tombol di bawah untuk langsung memindai unit <strong className="text-indigo-600 font-mono">{activeTargetAsset?.code || 'MJXH18277'}</strong>.
                     </p>
                   </div>
                   {activeTargetAsset && (
