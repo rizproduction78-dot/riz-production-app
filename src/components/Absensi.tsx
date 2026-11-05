@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Staff,
   Asset,
@@ -1017,6 +1017,103 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   // Camera simulation
   const [cameraActive, setCameraActive] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isLiveSelfieCamera, setIsLiveSelfieCamera] = useState(false);
+  const attendanceVideoRef = useRef<HTMLVideoElement | null>(null);
+  const attendanceStreamRef = useRef<MediaStream | null>(null);
+
+  const handleStopSelfieCamera = () => {
+    if (attendanceStreamRef.current) {
+      attendanceStreamRef.current.getTracks().forEach(t => t.stop());
+      attendanceStreamRef.current = null;
+    }
+    if (attendanceVideoRef.current) {
+      attendanceVideoRef.current.srcObject = null;
+    }
+    setIsLiveSelfieCamera(false);
+    setCameraActive(false);
+  };
+
+  const handleStartSelfieCamera = async () => {
+    setCameraActive(true);
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+      try {
+        if (attendanceStreamRef.current) {
+          attendanceStreamRef.current.getTracks().forEach(t => t.stop());
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
+          audio: false
+        });
+        attendanceStreamRef.current = stream;
+        setIsLiveSelfieCamera(true);
+        setTimeout(() => {
+          if (attendanceVideoRef.current) {
+            attendanceVideoRef.current.srcObject = stream;
+            attendanceVideoRef.current.play().catch(() => {});
+          }
+        }, 50);
+      } catch {
+        setIsLiveSelfieCamera(false);
+      }
+    } else {
+      setIsLiveSelfieCamera(false);
+    }
+  };
+
+  const handleCaptureSimulatedSelfie = () => {
+    setIsCapturing(true);
+    setTimeout(() => {
+      try {
+        if (isLiveSelfieCamera && attendanceVideoRef.current && attendanceVideoRef.current.videoWidth > 0) {
+          const canvas = document.createElement('canvas');
+          canvas.width = attendanceVideoRef.current.videoWidth;
+          canvas.height = attendanceVideoRef.current.videoHeight;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(attendanceVideoRef.current, 0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+            ctx.fillRect(0, canvas.height - 44, canvas.width, 44);
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 13px monospace';
+            ctx.fillText(
+              `${currentUser.name} (${currentUser.division}) • ${new Date().toLocaleString('id-ID')}`,
+              12,
+              canvas.height - 16
+            );
+            setPhotoSimulated(canvas.toDataURL('image/jpeg', 0.85));
+            setIsCapturing(false);
+            handleStopSelfieCamera();
+            return;
+          }
+        }
+      } catch {}
+
+      const nowLabel = new Date().toLocaleString('id-ID');
+      const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="300" viewBox="0 0 480 300">
+        <defs>
+          <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#0f172a"/>
+            <stop offset="100%" stop-color="#1e1b4b"/>
+          </linearGradient>
+        </defs>
+        <rect width="480" height="300" fill="url(#bg)"/>
+        <rect x="18" y="18" width="444" height="264" rx="14" fill="none" stroke="#34d399" stroke-width="2" stroke-dasharray="8 4"/>
+        <circle cx="240" cy="110" r="42" fill="#312e81" stroke="#818cf8" stroke-width="3"/>
+        <text x="240" y="118" text-anchor="middle" fill="#ffffff" font-family="monospace" font-size="24" font-weight="bold">${(currentUser.nickname || currentUser.name).slice(0, 2).toUpperCase()}</text>
+        <text x="240" y="182" text-anchor="middle" fill="#34d399" font-family="monospace" font-size="13" font-weight="bold">VERIFIKASI KAMERA ABSENSI AKTIF</text>
+        <text x="240" y="206" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="15" font-weight="bold">${currentUser.name} (${currentUser.division})</text>
+        <text x="240" y="230" text-anchor="middle" fill="#cbd5e1" font-family="monospace" font-size="11">${nowLabel}</text>
+        <text x="240" y="252" text-anchor="middle" fill="#93c5fd" font-family="monospace" font-size="10">HQ Bogor: ${OFFICIAL_COMPANY_GPS_COORDINATES}</text>
+      </svg>`;
+      const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
+      setPhotoSimulated(dataUrl);
+      if (!gpsSimulated) {
+        setGpsSimulated(`${OFFICIAL_COMPANY_GPS_COORDINATES} (${OFFICIAL_COMPANY_PLUS_CODE})`);
+      }
+      setIsCapturing(false);
+      handleStopSelfieCamera();
+    }, 180);
+  };
 
   // Pagination or filters for schedule grid
   const [scheduleSearch, setScheduleSearch] = useState('');
@@ -1466,20 +1563,22 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
                               <Camera className="w-3.5 h-3.5 text-indigo-600" />
-                              Foto Selfie Verifikasi
+                              Foto Selfie Verifikasi (Simulator Kamera)
                             </span>
-                            {photoSimulated && (
-                              <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-mono">Terlampir</span>
-                            )}
+                            {photoSimulated ? (
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold">Terlampir</span>
+                            ) : cameraActive ? (
+                              <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-mono font-bold animate-pulse">Kamera Aktif</span>
+                            ) : null}
                           </div>
 
                           {photoSimulated ? (
                             <div className="relative group">
-                              <img src={photoSimulated} alt="Selfie Absen" className="w-full h-32 object-cover rounded-lg shadow-sm border border-slate-200" />
+                              <img src={photoSimulated} alt="Selfie Absen" className="w-full h-36 object-cover rounded-lg shadow-sm border border-slate-200" />
                               <button
                                 type="button"
                                 onClick={() => setPhotoSimulated('')}
-                                className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                               >
                                 <X className="w-4 h-4" />
                               </button>
@@ -1492,25 +1591,84 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                 📁 Folder Bukti Absensi (Drive) ↗
                               </a>
                             </div>
-                          ) : (
-                            <div className="h-32 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-500 bg-slate-50 relative overflow-hidden">
-                              <Camera className="w-8 h-8 mb-2 text-slate-300" />
-                              <span className="text-xs font-medium">Foto Selfie Area/Wajah</span>
-                              <label className="mt-2 text-[11px] text-indigo-600 font-bold hover:underline cursor-pointer">
-                                Buka Kamera / Pilih File
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  capture="user"
-                                  className="hidden"
-                                  onChange={handlePhotoUpload}
+                          ) : cameraActive ? (
+                            <div className="rounded-xl overflow-hidden border-2 border-indigo-600 bg-slate-950 text-white space-y-2 p-3">
+                              <div className="relative h-36 rounded-lg bg-slate-900 overflow-hidden flex flex-col items-center justify-center">
+                                <video
+                                  ref={attendanceVideoRef}
+                                  autoPlay
+                                  playsInline
+                                  muted
+                                  className={`absolute inset-0 w-full h-full object-cover ${
+                                    isLiveSelfieCamera ? 'opacity-90' : 'hidden'
+                                  }`}
                                 />
-                              </label>
+                                <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-emerald-400" />
+                                <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-emerald-400" />
+                                <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-emerald-400" />
+                                <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-emerald-400" />
+                                {!isLiveSelfieCamera && (
+                                  <div className="relative z-10 text-center px-3 space-y-1">
+                                    <div className="w-10 h-10 rounded-full bg-indigo-600/40 border border-indigo-400 flex items-center justify-center mx-auto text-xs font-mono font-black">
+                                      {(currentUser.nickname || currentUser.name).slice(0, 2).toUpperCase()}
+                                    </div>
+                                    <div className="text-[10px] font-mono text-emerald-400 font-bold uppercase">
+                                      ● SIMULATOR KAMERA SELFIE AKTIF
+                                    </div>
+                                    <div className="text-[11px] font-bold text-white">
+                                      {currentUser.name} ({currentUser.division})
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  onClick={handleCaptureSimulatedSelfie}
+                                  disabled={isCapturing}
+                                  className="flex-1 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5"
+                                >
+                                  <Camera className="w-3.5 h-3.5" />
+                                  <span>{isCapturing ? 'Menjepret Foto...' : 'Jepret Foto Selfie'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleStopSelfieCamera}
+                                  className="py-1.5 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold cursor-pointer"
+                                >
+                                  Tutup
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-3 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-500 bg-slate-50 relative overflow-hidden space-y-2">
+                              <Camera className="w-7 h-7 text-indigo-500" />
+                              <span className="text-xs font-semibold text-slate-700">Foto Selfie Area / Wajah</span>
+                              <div className="flex flex-wrap items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={handleStartSelfieCamera}
+                                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[11px] font-bold cursor-pointer flex items-center gap-1 shadow-2xs"
+                                >
+                                  <Camera className="w-3.5 h-3.5" />
+                                  <span>Aktifkan Simulator Kamera</span>
+                                </button>
+                                <label className="px-3 py-1.5 bg-white hover:bg-slate-100 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold cursor-pointer">
+                                  Pilih File Foto
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="user"
+                                    className="hidden"
+                                    onChange={handlePhotoUpload}
+                                  />
+                                </label>
+                              </div>
                               <a
                                 href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-1.5 text-[10px] text-indigo-600 hover:text-indigo-800 font-bold block transition-colors underline"
+                                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold block transition-colors underline"
                               >
                                 📁 Folder Drive Bukti Absensi ↗
                               </a>

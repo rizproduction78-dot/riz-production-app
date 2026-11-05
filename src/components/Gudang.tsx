@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PrintHeader } from './PrintHeader';
 import {
   Staff,
@@ -637,6 +637,62 @@ export default function Gudang({
   const [isScanningSimulated, setIsScanningSimulated] = useState(false);
   const [scanSearchInput, setScanSearchInput] = useState('');
   const [scanMessage, setScanMessage] = useState('');
+  // Active Camera Scanner Viewfinder & Simulator states
+  const [isCameraScannerActive, setIsCameraScannerActive] = useState<boolean>(true);
+  const [isLiveWebcamRunning, setIsLiveWebcamRunning] = useState<boolean>(false);
+  const [cameraStatusNote, setCameraStatusNote] = useState<string>('Mode Simulator Kamera & Laser Scanner Aktif');
+  const [simulatorTargetDiv, setSimulatorTargetDiv] = useState<'ALL' | 'Audio' | 'Lighting' | 'Multimedia' | 'Videotron'>('ALL');
+  const [simulatorTargetCode, setSimulatorTargetCode] = useState<string>('AST-AUD-001');
+  const scannerVideoRef = useRef<HTMLVideoElement | null>(null);
+  const scannerStreamRef = useRef<MediaStream | null>(null);
+
+  const stopLiveCameraScanner = () => {
+    if (scannerStreamRef.current) {
+      scannerStreamRef.current.getTracks().forEach(track => track.stop());
+      scannerStreamRef.current = null;
+    }
+    if (scannerVideoRef.current) {
+      scannerVideoRef.current.srcObject = null;
+    }
+    setIsLiveWebcamRunning(false);
+  };
+
+  const startLiveCameraScanner = async () => {
+    setIsCameraScannerActive(true);
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+      try {
+        stopLiveCameraScanner();
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false
+        });
+        scannerStreamRef.current = stream;
+        setIsLiveWebcamRunning(true);
+        setCameraStatusNote('Kamera Perangkat (Live Stream) Aktif — Arahkan ke Barcode / QR Asset');
+        setTimeout(() => {
+          if (scannerVideoRef.current) {
+            scannerVideoRef.current.srcObject = stream;
+            scannerVideoRef.current.play().catch(() => {});
+          }
+        }, 50);
+      } catch {
+        setIsLiveWebcamRunning(false);
+        setCameraStatusNote('Simulator Kamera Interaktif Aktif (Kamera perangkat tidak diizinkan / mode simulasi)');
+      }
+    } else {
+      setIsLiveWebcamRunning(false);
+      setCameraStatusNote('Simulator Kamera Interaktif Aktif');
+    }
+  };
+
+  useEffect(() => {
+    if (warehouseSubTab !== 'scanner') {
+      stopLiveCameraScanner();
+    }
+    return () => {
+      stopLiveCameraScanner();
+    };
+  }, [warehouseSubTab]);
   const [scannedRecords, setScannedRecords] = useState<ScannedAssetRecord[]>(() => {
     try {
       if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -1215,13 +1271,13 @@ export default function Gudang({
 
   // Asset scanning with camera / input — HANYA unit yang berhasil di-scan yang masuk ke daftar
   const handleSimulateQRScan = (codeToScan?: string) => {
-    const targetCode = (codeToScan || scanSearchInput || '').trim();
-    if (!targetCode) {
-      alert('Silakan ketik kode barcode asset (contoh: AST-AUD-001 atau AST-LGT-001) terlebih dahulu!');
-      return;
+    setIsCameraScannerActive(true);
+    const targetCode = (codeToScan || scanSearchInput || simulatorTargetCode || 'AST-AUD-001').trim();
+    if (!scanSearchInput.trim() && targetCode) {
+      setScanSearchInput(targetCode);
     }
     setIsScanningSimulated(true);
-    setScanMessage('Memindai barcode/QR asset...');
+    setScanMessage(`🎥 Kamera Laser Scanner aktif memindai barcode/QR [${targetCode.toUpperCase()}]...`);
 
     setTimeout(() => {
       const qLower = targetCode.toLowerCase();
@@ -1234,6 +1290,8 @@ export default function Gudang({
         );
 
       if (found) {
+        setSimulatorTargetCode(found.code);
+        setScanSearchInput(found.code);
         const scanRes = registerScannedAsset(found);
         setScannedAsset(found);
         if (scanRes.isDuplicate) {
@@ -1255,7 +1313,28 @@ export default function Gudang({
         setScanMessage(`ERROR: Barcode / Kode Asset "${targetCode}" tidak ditemukan. Unit yang belum berhasil di-scan tidak dapat muncul di daftar.`);
       }
       setIsScanningSimulated(false);
-    }, 150);
+    }, 220);
+  };
+
+  const handleBarcodeImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fileNameClean = file.name.replace(/\.[^.]+$/, '').trim();
+    const matchedFromFileName = localAssets.find(
+      a =>
+        fileNameClean.toLowerCase().includes(a.code.toLowerCase()) ||
+        a.name.toLowerCase().includes(fileNameClean.toLowerCase())
+    );
+    const codeToUse = matchedFromFileName?.code || scanSearchInput.trim() || simulatorTargetCode || 'AST-AUD-001';
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setScannedPhoto(reader.result);
+      }
+      handleSimulateQRScan(codeToUse);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   // Update Asset from Gudang page
@@ -3021,30 +3100,204 @@ export default function Gudang({
       })()}
 
       {/* VIEW 2: BARCODE & QR SCANNER SIMULATOR FOR SCAN ASSET */}
-      {warehouseSubTab === 'scanner' && (
+      {warehouseSubTab === 'scanner' && (() => {
+        const simulatorFilteredAssets = localAssets.filter(a => {
+          if (simulatorTargetDiv !== 'ALL' && a.division !== simulatorTargetDiv) return false;
+          return true;
+        });
+        const activeTargetAsset =
+          localAssets.find(a => a.code.toLowerCase() === (scanSearchInput.trim() || simulatorTargetCode).toLowerCase()) ||
+          simulatorFilteredAssets.find(a => a.code === simulatorTargetCode) ||
+          simulatorFilteredAssets[0] ||
+          localAssets[0];
+
+        return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Scanning Box Control */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-6 text-center">
-              <div className="mx-auto w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                <Smartphone className="w-6 h-6 animate-pulse" />
+            <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4 text-center">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-left">
+                  <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <Smartphone className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">Simulator Scanner Barcode / QR</h3>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.2 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                      {isLiveWebcamRunning ? 'KAMERA LIVE AKTIF' : 'SIMULATOR KAMERA AKTIF'}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isLiveWebcamRunning) {
+                      stopLiveCameraScanner();
+                      setCameraStatusNote('Mode Simulator Kamera & Laser Scanner Aktif');
+                    } else {
+                      startLiveCameraScanner();
+                    }
+                  }}
+                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-extrabold uppercase cursor-pointer transition-all flex items-center gap-1 border shrink-0 ${
+                    isLiveWebcamRunning
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-700'
+                      : 'bg-slate-900 hover:bg-indigo-700 text-white border-slate-900'
+                  }`}
+                  title="Nyalakan / Matikan Kamera Perangkat (Webcam / Kamera HP)"
+                >
+                  <Camera className="w-3 h-3" />
+                  <span>{isLiveWebcamRunning ? 'Stop Kamera Live' : 'Kamera Live'}</span>
+                </button>
               </div>
 
-              <div>
-                <h3 className="font-bold text-slate-800 text-sm">Simulator Scanner Barcode / QR</h3>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Ketik kode barcode/QR atau nama unit aset lalu klik Pindai Barcode (Scan). Hanya unit yang berhasil di-scan yang akan muncul di daftar bawah.
-                </p>
-              </div>
+              {/* VIEWFINDER SIMULATOR KAMERA & LASER SCANNER AKTIF */}
+              {isCameraScannerActive && (
+                <div className="rounded-xl overflow-hidden border-2 border-indigo-600 bg-slate-950 text-white shadow-md text-left">
+                  {/* Top Camera HUD Bar */}
+                  <div className="px-3 py-2 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between gap-2 text-[10px] font-mono">
+                    <div className="flex items-center gap-1.5 text-emerald-400 font-bold truncate">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      <span className="truncate">{cameraStatusNote}</span>
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded bg-indigo-600/30 border border-indigo-400/40 text-indigo-200 shrink-0">
+                      Petugas: {currentUser.name}
+                    </span>
+                  </div>
 
-              {/* Simulation scanner UI */}
+                  {/* Camera Lens / Viewfinder Frame */}
+                  <div className="relative h-48 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 flex flex-col items-center justify-center p-4 overflow-hidden">
+                    {/* Optional Live Webcam Stream */}
+                    <video
+                      ref={scannerVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`absolute inset-0 w-full h-full object-cover ${
+                        isLiveWebcamRunning ? 'opacity-80' : 'hidden'
+                      }`}
+                    />
+
+                    {/* Corner Target Brackets */}
+                    <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-emerald-400 rounded-tl pointer-events-none" />
+                    <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-emerald-400 rounded-tr pointer-events-none" />
+                    <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-emerald-400 rounded-bl pointer-events-none" />
+                    <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-emerald-400 rounded-br pointer-events-none" />
+
+                    {/* Animated Laser Scan Beam */}
+                    <div
+                      className={`w-full max-w-[260px] h-0.5 bg-gradient-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_12px_#f43f5e] transition-all duration-300 z-10 ${
+                        isScanningSimulated ? 'scale-x-110 bg-emerald-400 shadow-[0_0_16px_#34d399]' : 'animate-pulse'
+                      }`}
+                    />
+
+                    {/* Simulated Barcode Card in Camera Sight */}
+                    {activeTargetAsset && (
+                      <div
+                        onClick={() => handleSimulateQRScan(activeTargetAsset.code)}
+                        title="Klik pada label barcode di viewfinder kamera untuk langsung memindai"
+                        className={`relative z-10 mt-2 px-3.5 py-2.5 rounded-xl border backdrop-blur-xs cursor-pointer transition-all max-w-[260px] w-full text-center ${
+                          isScanningSimulated
+                            ? 'bg-emerald-950/90 border-emerald-400 ring-2 ring-emerald-400/50 scale-105'
+                            : 'bg-slate-900/85 hover:bg-slate-900 border-indigo-400/60 hover:border-emerald-400'
+                        }`}
+                      >
+                        <div className="text-[9px] font-mono uppercase tracking-widest text-indigo-300 mb-1">
+                          TARGET LENSA KAMERA ({activeTargetAsset.division})
+                        </div>
+                        {/* Visual Barcode Bars */}
+                        <div className="py-1 px-2 bg-white text-slate-950 rounded font-mono font-black tracking-[0.22em] text-xs select-none">
+                          ||| |||| | ||| || |||| |||
+                        </div>
+                        <div className="mt-1.5 font-mono text-xs font-extrabold text-emerald-300">
+                          {activeTargetAsset.code}
+                        </div>
+                        <div className="text-[11px] font-bold text-white truncate">
+                          {activeTargetAsset.name}
+                        </div>
+                        <div className="mt-1 text-[9px] font-mono text-amber-300">
+                          {isScanningSimulated ? '⚡ MEMINDAI BARCODE...' : '👆 Klik Label Kamera untuk Scan Instan'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Camera Target Selector (Simulasi Arahkan Kamera ke Unit) */}
+                  <div className="p-3 bg-slate-900 border-t border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-mono font-bold uppercase text-indigo-300">
+                        🎯 Arahkan Kamera Simulator ke Unit:
+                      </span>
+                      <label className="text-[10px] font-mono font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer flex items-center gap-1">
+                        <Camera className="w-3 h-3" />
+                        <span>Foto/Upload Barcode</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleBarcodeImageUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1">
+                      {(['ALL', 'Audio', 'Lighting', 'Multimedia', 'Videotron'] as const).map(divKey => (
+                        <button
+                          key={divKey}
+                          type="button"
+                          onClick={() => {
+                            setSimulatorTargetDiv(divKey);
+                            const firstInDiv = localAssets.find(a => divKey === 'ALL' || a.division === divKey);
+                            if (firstInDiv) {
+                              setSimulatorTargetCode(firstInDiv.code);
+                              setScanSearchInput(firstInDiv.code);
+                            }
+                          }}
+                          className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase cursor-pointer transition-all ${
+                            simulatorTargetDiv === divKey
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          {divKey === 'ALL' ? 'Semua (133)' : divKey}
+                        </button>
+                      ))}
+                    </div>
+
+                    <select
+                      value={activeTargetAsset?.code || simulatorTargetCode}
+                      onChange={(e) => {
+                        const nextCode = e.target.value;
+                        setSimulatorTargetCode(nextCode);
+                        setScanSearchInput(nextCode);
+                      }}
+                      className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-mono font-bold text-white focus:outline-none focus:border-indigo-400"
+                    >
+                      {simulatorFilteredAssets.map(a => (
+                        <option key={a.id} value={a.code}>
+                          [{a.code}] {a.name} ({a.condition})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Simulation scanner input & main Scan Trigger */}
               <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 space-y-3">
                 <input
                   type="text"
                   placeholder="e.g. AST-AUD-001 atau AST-LGT-001"
                   value={scanSearchInput}
-                  onChange={(e) => setScanSearchInput(e.target.value)}
+                  onChange={(e) => {
+                    setScanSearchInput(e.target.value);
+                    if (e.target.value.trim()) {
+                      setSimulatorTargetCode(e.target.value.trim().toUpperCase());
+                    }
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -3057,10 +3310,15 @@ export default function Gudang({
                 <button
                   type="button"
                   onClick={() => handleSimulateQRScan()}
-                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold uppercase transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  disabled={isScanningSimulated}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg text-xs font-bold uppercase transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-xs"
                 >
-                  <Camera className="w-3.5 h-3.5" />
-                  Pindai Barcode (Scan)
+                  <Camera className="w-4 h-4" />
+                  <span>
+                    {isScanningSimulated
+                      ? 'Memindai Barcode...'
+                      : `Pindai Barcode (Scan ${scanSearchInput.trim() || activeTargetAsset?.code || 'AST-AUD-001'})`}
+                  </span>
                 </button>
               </div>
 
@@ -3464,16 +3722,27 @@ export default function Gudang({
                   <div>
                     <h3 className="font-bold text-slate-700 text-sm">Menunggu Scan Barcode</h3>
                     <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                      Silakan pilih aset demo atau gunakan form scan di sebelah kiri untuk menampilkan detail data alat. Anda dapat merubah lokasi penyimpanan serta kondisi aset setelah scan dikonfirmasi.
+                      Kamera Simulator Scanner sudah aktif di sebelah kiri. Arahkan target kamera atau klik tombol di bawah untuk langsung memindai unit <strong className="text-indigo-600 font-mono">{activeTargetAsset?.code || 'AST-AUD-001'}</strong>.
                     </p>
                   </div>
+                  {activeTargetAsset && (
+                    <button
+                      type="button"
+                      onClick={() => handleSimulateQRScan(activeTargetAsset.code)}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase inline-flex items-center gap-2 cursor-pointer shadow-xs"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Pindai Barcode {activeTargetAsset.code} Sekarang</span>
+                    </button>
+                  )}
                 </div>
               )}
 
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* VIEW 3: TATA KELOLA PENGGUNAAN KENDARAAN & BIAYA SEWA ANGKUT LOGISTIK (TRI-PARTY GOVERNANCE) */}
       {warehouseSubTab === 'armada_governance' && (
