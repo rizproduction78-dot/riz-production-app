@@ -6,19 +6,40 @@
 import React, { useState, useEffect } from 'react';
 import { STAFF_LIST, getMasterStaffList, normalizeStaffMaster } from '../data';
 import { Staff } from '../types';
-import { LogIn, Shield, User, Key, ClipboardList, Package, Award, LayoutDashboard, X, Lock, CheckCircle, RotateCcw, AlertCircle } from 'lucide-react';
+import { LogIn, Shield, User, Key, ClipboardList, Package, Award, LayoutDashboard, X, Lock, CheckCircle, RotateCcw, AlertCircle, Smartphone, Download, Share } from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc } from '../lib/cloudSync';
 
 interface LoginScreenProps {
   onLogin: (staff: Staff) => void;
   onLogActivity: (username: string, role: string, action: string) => void;
   staffList?: Staff[];
+  onInstallPWA?: () => void;
+  canInstallPWA?: boolean;
+  isAppInstalled?: boolean;
+  isIOSDevice?: boolean;
 }
 
-export default function LoginScreen({ onLogin, onLogActivity, staffList: propsStaffList }: LoginScreenProps) {
+export default function LoginScreen({
+  onLogin,
+  onLogActivity,
+  staffList: propsStaffList,
+  onInstallPWA,
+  canInstallPWA,
+  isAppInstalled = false,
+  isIOSDevice = false
+}: LoginScreenProps) {
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showMobileInstallGuide, setShowMobileInstallGuide] = useState(false);
+
+  const handleTriggerInstall = () => {
+    if (canInstallPWA && onInstallPWA) {
+      onInstallPWA();
+    } else {
+      setShowMobileInstallGuide(true);
+    }
+  };
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [modalMode, setModalMode] = useState<'change' | 'forgot'>('change');
@@ -453,7 +474,7 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
               </div>
             )}
 
-            <div>
+            <div className="space-y-2.5">
               <button
                 type="submit"
                 disabled={isLoggingIn}
@@ -468,6 +489,23 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
                 </span>
                 {isLoggingIn ? 'Memverifikasi Cloud...' : 'Masuk ke Sistem'}
               </button>
+
+              {!isAppInstalled && (
+                <button
+                  type="button"
+                  onClick={handleTriggerInstall}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
+                  title="Install aplikasi RIZ-PRO LOG ke layar utama ponsel (Android / iOS)"
+                >
+                  <Smartphone className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span>
+                    {isIOSDevice
+                      ? 'Install Aplikasi ke Ponsel (iPhone / iOS)'
+                      : 'Install Aplikasi ke Ponsel (Android / iOS)'}
+                  </span>
+                  <Download className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                </button>
+              )}
             </div>
             <div className="text-center mt-4 flex items-center justify-center gap-3 text-xs">
               <button
@@ -706,6 +744,80 @@ export default function LoginScreen({ onLogin, onLogActivity, staffList: propsSt
                 </form>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile App Install Instructions Modal (Accessible directly from Login Screen) */}
+      {showMobileInstallGuide && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50">
+          <div className="bg-[#0f172a] text-white border border-slate-700 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Install Aplikasi RIZ-PRO LOG di Ponsel</h3>
+                  <p className="text-[11px] text-slate-400">Pasang di layar utama Android atau iPhone/iPad (iOS)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileInstallGuide(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300">
+              {canInstallPWA && onInstallPWA && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMobileInstallGuide(false);
+                    onInstallPWA();
+                  }}
+                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Install Otomatis Sekarang</span>
+                </button>
+              )}
+
+              <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
+                <div className="font-bold text-blue-400 text-xs flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Ponsel Android (Chrome):</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-300">
+                  <li>Ketuk ikon menu <strong>Titik Tiga (⋮)</strong> di pojok kanan atas browser Chrome.</li>
+                  <li>Pilih menu <strong>"Install aplikasi"</strong> atau <strong>"Tambahkan ke layar utama" (Add to Home screen)</strong>.</li>
+                  <li>Tekan <strong>Install / Tambah</strong> untuk menyelesaikan pemasangan.</li>
+                </ol>
+              </div>
+
+              <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
+                <div className="font-bold text-indigo-400 text-xs flex items-center gap-1.5">
+                  <Share className="w-3.5 h-3.5" />
+                  <span>iPhone / iPad (iOS Safari):</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-300">
+                  <li>Buka halaman ini di browser <strong>Safari</strong>.</li>
+                  <li>Ketuk tombol <strong>Bagikan / Share</strong> (ikon kotak dengan panah ke atas) di bagian bawah layar.</li>
+                  <li>Pilih <strong>"Tambah ke Layar Utama" (Add to Home Screen)</strong> lalu ketuk <strong>Tambah / Add</strong>.</li>
+                </ol>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowMobileInstallGuide(false)}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-lg shadow-blue-500/20"
+            >
+              Saya Mengerti
+            </button>
           </div>
         </div>
       )}

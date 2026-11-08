@@ -1839,6 +1839,10 @@ export default function App() {
         onLogin={setCurrentUser}
         onLogActivity={handleLogActivity}
         staffList={staffList}
+        onInstallPWA={handleInstallPWA}
+        canInstallPWA={Boolean(deferredInstallPrompt)}
+        isAppInstalled={isAppInstalled}
+        isIOSDevice={isIOSDevice}
       />
     );
   }
@@ -2058,19 +2062,6 @@ export default function App() {
 
         {/* Drawer Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar touch-scroll">
-          {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
-            <button
-              onClick={() => {
-                handleInstallPWA();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer"
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>{isIOSDevice ? "Install di iPhone/iPad (iOS)" : "Install Aplikasi (PWA)"}</span>
-            </button>
-          )}
-
           <div className="space-y-4">
             {Object.entries(groupedNavItems).map(([category, items]) => (
               <div key={category} className="space-y-1.5">
@@ -2211,16 +2202,6 @@ export default function App() {
               </select>
             </div>
 
-            {((deferredInstallPrompt || isIOSDevice) && !isAppInstalled) && (
-              <button
-                onClick={handleInstallPWA}
-                className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                title={isIOSDevice ? "Panduan Pasang di iPhone/iPad" : "Install PWA ke HP / Komputer"}
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>{isIOSDevice ? "Install di iOS" : "Install PWA"}</span>
-              </button>
-            )}
             <button
               onClick={handleManualSync}
               disabled={syncStatus.isSyncing}
@@ -2479,66 +2460,6 @@ export default function App() {
           />
         )}
       </main>
-
-      {/* iOS PWA Add to Home Screen Instructions Modal */}
-      {showIOSInstallGuide && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-[#0f172a] text-white border border-slate-700 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg">
-                  <Smartphone className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">Pasang di iPhone / iPad (iOS)</h3>
-                  <p className="text-[11px] text-slate-400">Jalankan RIZ-PRO LOG seperti aplikasi bawaan iOS</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowIOSInstallGuide(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-slate-300">
-              <div className="flex items-start gap-3 p-3 bg-slate-900/80 rounded-xl border border-slate-800">
-                <span className="flex-none w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center">1</span>
-                <div>
-                  <span className="font-semibold text-white">Buka di Browser Safari:</span>
-                  <p className="text-slate-400 text-[11px] mt-0.5">Pastikan Anda membuka tautan sistem ini menggunakan browser resmi Safari di iPhone/iPad.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-slate-900/80 rounded-xl border border-slate-800">
-                <span className="flex-none w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center">2</span>
-                <div className="space-y-1">
-                  <span className="font-semibold text-white flex items-center gap-1.5">
-                    Ketuk tombol Bagikan <Share className="w-3.5 h-3.5 text-blue-400 inline" /> (Share)
-                  </span>
-                  <p className="text-slate-400 text-[11px]">Tombol kotak dengan panah ke atas di bilah navigasi Safari bagian bawah layar.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-slate-900/80 rounded-xl border border-slate-800">
-                <span className="flex-none w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center">3</span>
-                <div>
-                  <span className="font-semibold text-white">Pilih "Tambah ke Layar Utama" (Add to Home Screen)</span>
-                  <p className="text-slate-400 text-[11px] mt-0.5">Gulir ke bawah pada menu bagikan, pilih <strong>Add to Home Screen</strong> dan tekan <strong>Tambah / Add</strong> di pojok kanan atas.</p>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowIOSInstallGuide(false)}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-lg shadow-blue-500/20"
-            >
-              Saya Mengerti
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
