@@ -19,13 +19,18 @@ import {
   formatFleetVehicleBadge,
   resolveCrewMember,
   isStrictJobOrEventCalendarEntry,
+  enrichJobAssignmentCrewLinkage,
   NON_JOB_CALENDAR_SUMMARY_PATTERNS,
   INITIAL_JOB_ASSIGNMENTS,
   normalizeJobAssignmentsMaster
 } from '../data/jobAssignmentsData';
 import { saveCloudDoc, deleteCloudDoc } from './cloudSync';
 
-export { isStrictJobOrEventCalendarEntry, NON_JOB_CALENDAR_SUMMARY_PATTERNS };
+export {
+  isStrictJobOrEventCalendarEntry,
+  enrichJobAssignmentCrewLinkage,
+  NON_JOB_CALENDAR_SUMMARY_PATTERNS
+};
 
 export const OFFICIAL_GOOGLE_CALENDAR_ID = 'rizproduction78@gmail.com';
 export const OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL = 'https://calendar.google.com/calendar/u/0/r/settings/export';
@@ -766,19 +771,21 @@ export function parseGoogleCalendarIcsToJobAssignments(icsText: string): JobAssi
     const canonicalId =
       baseId.startsWith('gcal-') || baseId.startsWith('job-') ? baseId : `gcal-${baseId}`;
 
-    parsedJobs.push({
-      id: canonicalId,
-      monthKey,
-      date: dateIso,
-      dateLabel,
-      venue: cleanVenue,
-      loadingSchedule,
-      pic,
-      status: 'Terjadwal',
-      notes: description || undefined,
-      sections,
-      gcalSynced: true
-    });
+    parsedJobs.push(
+      enrichJobAssignmentCrewLinkage({
+        id: canonicalId,
+        monthKey,
+        date: dateIso,
+        dateLabel,
+        venue: cleanVenue,
+        loadingSchedule,
+        pic,
+        status: 'Terjadwal',
+        notes: description || undefined,
+        sections,
+        gcalSynced: true
+      })
+    );
   });
 
   return parsedJobs;
@@ -1130,10 +1137,11 @@ function mapJobSectionDivisionToTaskDivision(div: JobDivisionSection['division']
  * Membangun daftar penugasan kerja operasional 5W (`DailyTask[]`) untuk setiap Crew (Freelance)
  * maupun Staff (Inhouse) yang ditugaskan pada suatu Job / Event Google Calendar.
  */
-export function buildDailyTasksFromJobAssignment(job: JobAssignment): DailyTask[] {
-  if (!job || !isStrictJobOrEventCalendarEntry(job.venue || job.dateLabel || '', job.notes)) {
+export function buildDailyTasksFromJobAssignment(rawJob: JobAssignment): DailyTask[] {
+  if (!rawJob || !isStrictJobOrEventCalendarEntry(rawJob.venue || rawJob.dateLabel || '', rawJob.notes)) {
     return [];
   }
+  const job = enrichJobAssignmentCrewLinkage(rawJob);
 
   const tasks: DailyTask[] = [];
   const seenTaskIds = new Set<string>();
@@ -1202,18 +1210,31 @@ export function buildDailyTasksFromJobAssignment(job: JobAssignment): DailyTask[
 /**
  * Menyinkronkan seluruh penugasan Crew & Staff dari daftar JobAssignment ke dalam
  * daftar tugas operasional (`DailyTask` di `riz_daily_tasks_v2` & Cloud `daily_tasks`).
- * Hanya memproses Job/Event pada bulan berjalan atau yang memiliki kru ditugaskan.
+ * Hanya memproses Job/Event pada bulan aktif atau yang telah di-assessment/diedit.
  */
 export function syncJobAssignmentsToCrewDailyTasks(
   jobs: JobAssignment[],
-  updatedBy = 'Google Calendar Auto-Sync'
+  updatedBy = 'Google Calendar Auto-Sync',
+  pushToCloud = false
 ): DailyTask[] {
   const validJobs = (jobs || []).filter(j =>
     isStrictJobOrEventCalendarEntry(j.venue || j.dateLabel || '', j.notes)
   );
 
+  // Bila menerima dataset tahunan penuh (>50 jadwal), fokuskan pembentukan DailyTask aktif pada periode operasional berjalan (Nov-Des 2026) atau jadwal yang telah di-assessment manual oleh Admin
+  const scopedJobs =
+    validJobs.length > 50
+      ? validJobs.filter(
+          j =>
+            j._userEdited ||
+            j.adminAssessmentStatus ||
+            String(j.date || '').startsWith('2026-11') ||
+            String(j.date || '').startsWith('2026-12')
+        )
+      : validJobs;
+
   const generatedJobTasks: DailyTask[] = [];
-  for (const job of validJobs) {
+  for (const job of scopedJobs) {
     const jobTasks = buildDailyTasksFromJobAssignment(job);
     generatedJobTasks.push(...jobTasks);
   }
@@ -1270,12 +1291,14 @@ export function syncJobAssignmentsToCrewDailyTasks(
     localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(mergedList));
     localStorage.setItem('riz_daily_tasks', JSON.stringify(mergedList));
 
-    changedOrNewTasks.forEach(t => {
-      saveCloudDoc('daily_tasks', t.id, t, updatedBy).catch(() => {});
-    });
-    removedJobTaskIds.forEach(id => {
-      deleteCloudDoc('daily_tasks', id).catch(() => {});
-    });
+    if (pushToCloud) {
+      changedOrNewTasks.forEach(t => {
+        saveCloudDoc('daily_tasks', t.id, t, updatedBy).catch(() => {});
+      });
+      removedJobTaskIds.forEach(id => {
+        deleteCloudDoc('daily_tasks', id).catch(() => {});
+      });
+    }
 
     window.dispatchEvent(new CustomEvent('riz-daily-tasks-synced', { detail: mergedList }));
     return mergedList;

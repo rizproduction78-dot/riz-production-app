@@ -114,14 +114,15 @@ Setiap entri `JobAssignment` yang lolos filter Job/Event memiliki keterkaitan la
    - Menambahkan fungsi `buildDailyTasksFromJobAssignment(job)` dan `syncJobAssignmentsToCrewDailyTasks(jobs)` untuk mengaitkan setiap penugasan Job/Event dengan bentuk penugasan kerja (`DailyTask` 5W) bagi setiap crew/staff.
 
 2. **[`src/data/jobAssignmentsData.ts`](file:///Users/senosubroto/Documents/AI%20BUILDER/log_task_book_riz-production-app/src/data/jobAssignmentsData.ts)**
-   - Membersihkan `INITIAL_JOB_ASSIGNMENTS` dari seluruh item non-Job/Event (Meeting, Survey, Visit Kantor, Pajak, Loan/KUR/KGS, Cionk Ijin, Hampers, Undangan, Training, Webinar).
+   - Membersihkan `INITIAL_JOB_ASSIGNMENTS` dari seluruh item non-Job/Event (Meeting, Survey, Visit Kantor, Pajak, Loan/KUR/KGS, Cionk Ijin, Hampers, Undangan, Training, Webinar, serta catatan non-event `RP 9-16` dan kode `MD` tanpa lampiran).
    - Menambahkan 3 jadwal Job/Event terbaru bulan November 2026 dari Google Calendar `rizproduction78@gmail.com` (`Shutt Shoot Brick Hall 15rb`, `Discovery Evocentro`, `Bu Ghita The Adrres Cibubur`).
-   - Memperketat `normalizeJobAssignmentsMaster` agar selalu menyaring item dengan `isStrictJobOrEventCalendarEntry(item.venue, item.notes)` sehingga item non-Job dari cache lama (`localStorage` / Cloud) otomatis tereliminasi.
+   - Menambahkan fungsi `enrichJobAssignmentCrewLinkage(job)` untuk mengaitkan setiap Job/Event dengan kru eksplisit yang tertulis di Google Calendar (`Rebing`, `Ugan`, `Wigi`, `Dani`, `Heri`, `Iwan`, `Ayong`, `Mboh`, dll.) serta Team Leader divisi terkait (`Mboh` untuk `Audio`, `Ayong` untuk `Videotron`, `Heri` untuk `Lighting`, `Jay` untuk `Multimedia`, `Mang Ube` untuk `Produksi`/`Umum`).
+   - Memperketat `normalizeJobAssignmentsMaster` agar selalu menyaring item dengan `isStrictJobOrEventCalendarEntry(item.venue, item.notes)` dan menerapkan `enrichJobAssignmentCrewLinkage` sehingga item non-Job dari cache lama (`localStorage` / Cloud) otomatis tereliminasi.
 
-3. **[`src/components/Absensi.tsx`](file:///Users/senosubroto/Documents/AI%20BUILDER/log_task_book_riz-production-app/src/components/Absensi.tsx) & [`src/App.tsx`](file:///Users/senosubroto/Documents/AI%20BUILDER/log_task_book_riz-production-app/src/App.tsx)**
+3. **[`src/components/Absensi.tsx`](file:///Users/senosubroto/Documents/AI%20BUILDER/log_task_book_riz-production-app/src/components/Absensi.tsx), [`src/components/LogTaskModule.tsx`](file:///Users/senosubroto/Documents/AI%20BUILDER/log_task_book_riz-production-app/src/components/LogTaskModule.tsx), & [`src/App.tsx`](file:///Users/senosubroto/Documents/AI%20BUILDER/log_task_book_riz-production-app/src/App.tsx)**
    - Mengaktifkan *Auto-Update* Google Calendar (`rizproduction78@gmail.com`) saat modul Jadwal Penugasan aktif dan secara berkala (interval 5 menit & saat fokus jendela kembali) tanpa mengubah tata letak kosmetik UI.
-   - Menghubungkan setiap penyimpanan/perubahan penugasan kru pada `JobAssignment` (`persistUpdatedJobAssignment`, `handlePullLiveFromGoogleCalendar`, `handleImportGoogleCalendarIcs`) dengan `syncJobAssignmentsToCrewDailyTasks` agar penugasan kerja setiap crew/staff selalu sinkron end-to-end.
-   - Memperbarui `REF_SYNC_KEY` di `src/App.tsx` untuk membersihkan entri non-Job dari cache peramban secara otomatis.
+   - Menghubungkan setiap penyimpanan/perubahan penugasan kru pada `JobAssignment` (`persistUpdatedJobAssignment`, `handlePullLiveFromGoogleCalendar`, `handleImportGoogleCalendarIcs`) dengan `syncJobAssignmentsToCrewDailyTasks` agar penugasan kerja setiap crew/staff selalu sinkron end-to-end ke `App.tsx` dan `LogTaskModule.tsx`.
+   - Memperbarui `REF_SYNC_KEY` (`riz_ref_synced_v111_gcal_crew_work_linkage_2026`) di `src/App.tsx` untuk membersihkan entri non-Job dari cache peramban secara otomatis dan menyinkronkan penugasan kerja kru/staf saat inisialisasi.
 
 4. **[`scripts/test_gcal_job_event_filter.ts`](file:///Users/senosubroto/Documents/AI%20BUILDER/log_task_book_riz-production-app/scripts/test_gcal_job_event_filter.ts)**
    - Unit & integration test untuk memverifikasi:

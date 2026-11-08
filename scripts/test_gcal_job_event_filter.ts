@@ -6,6 +6,7 @@ import {
 import {
   parseGoogleCalendarIcsToJobAssignments,
   buildDailyTasksFromJobAssignment,
+  syncJobAssignmentsToCrewDailyTasks,
 } from '../src/lib/googleCalendarSync';
 
 function assert(condition: boolean, message: string) {
@@ -44,6 +45,8 @@ const blockedSamples = [
   'Training Grand MA',
   'Yamaha training DM5',
   'WhitepaperIndustriEvent',
+  '9 Nov 2026 RP 9-16',
+  '30 Mar 2026 MD',
 ];
 
 for (const sample of blockedSamples) {
@@ -133,9 +136,38 @@ assert(parsedFromIcs[0].venue === 'Keanu Bucketlist', 'Venue ICS yang lolos haru
 assert(parsedFromIcs[0].sections.length >= 2, 'Divisi dan alat harus ter-ekstrak dari deskripsi ICS');
 console.log('✅ parseGoogleCalendarIcsToJobAssignments memblokir VEVENT Meeting dan mengekstrak VEVENT Job/Event beserta divisi & alat.');
 
-// 6. Verify 5W Crew Work Assignment (DailyTask) generation from JobAssignment
+// 6. Verify 5W Crew Work Assignment (DailyTask) generation & Crew Linkage across INITIAL_JOB_ASSIGNMENTS
+const jobsWithoutCrew = INITIAL_JOB_ASSIGNMENTS.filter(
+  j => !j.sections || j.sections.every(s => !s.crew || s.crew.length === 0)
+);
+assert(
+  jobsWithoutCrew.length === 0,
+  `Seluruh Job/Event di INITIAL_JOB_ASSIGNMENTS wajib memiliki keterkaitan penugasan crew/staff, ditemukan ${jobsWithoutCrew.length} kosong`
+);
+
+const rebingJob = INITIAL_JOB_ASSIGNMENTS.find(j => j.venue.includes('Rebing Harris Cibinong'))!;
+assert(Boolean(rebingJob), 'Job Rebing Harris Cibinong harus ada di INITIAL_JOB_ASSIGNMENTS');
+assert(
+  rebingJob.sections.some(s => s.crew.some(c => c.canonicalName === 'REBING' && c.personnelType === 'Freelance')),
+  'Job Rebing Harris Cibinong wajib menugaskan Rebing (Freelance Audio)'
+);
+
+const uganJob = INITIAL_JOB_ASSIGNMENTS.find(j => j.venue.includes('Ugan order'))!;
+assert(Boolean(uganJob), 'Job Ugan order harus ada di INITIAL_JOB_ASSIGNMENTS');
+assert(
+  uganJob.sections.some(s => s.crew.some(c => c.canonicalName === 'UGAN')) &&
+    uganJob.sections.some(s => s.crew.some(c => c.staffId === 'staff-heri')),
+  'Job Ugan order wajib menugaskan Ugan (Freelance Lighting) dan Heri (Team Leader Lighting)'
+);
+
 const keanuJob = INITIAL_JOB_ASSIGNMENTS.find(j => j.id === 'gcal-5abeh08spshtjrg0age00r2lkj')!;
 assert(Boolean(keanuJob), 'Job Keanu Bucketlist harus ditemukan di INITIAL_JOB_ASSIGNMENTS');
+const activeSyncedTasks = syncJobAssignmentsToCrewDailyTasks(INITIAL_JOB_ASSIGNMENTS);
+assert(
+  activeSyncedTasks.length >= 25,
+  `syncJobAssignmentsToCrewDailyTasks wajib menghasilkan >= 25 DailyTask penugasan aktif, dapat: ${activeSyncedTasks.length}`
+);
+
 const generatedFromIcsJob = buildDailyTasksFromJobAssignment(parsedFromIcs[0]);
 assert(
   generatedFromIcsJob.length >= 4,
@@ -151,7 +183,7 @@ assert(
 assert(opikTask!.division === 'Audio', `Divisi tugas Opik harus Audio, dapat: ${opikTask!.division}`);
 assert(opikTask!.title.includes('Keanu Bucketlist'), 'Judul tugas harus mencantumkan nama Job/Event');
 console.log(
-  `✅ buildDailyTasksFromJobAssignment menghasilkan ${generatedFromIcsJob.length} penugasan kerja (5W DailyTask) terstruktur untuk setiap Crew & Staff.`
+  `✅ Seluruh ${INITIAL_JOB_ASSIGNMENTS.length} Job/Event memiliki penugasan Crew/Staff terstruktur & menghasilkan ${activeSyncedTasks.length} DailyTask 5W aktif.`
 );
 
 console.log('=== SEMUA TEST LULUS 100% ===');

@@ -53,7 +53,7 @@ assert(INITIAL_JOB_ASSIGNMENTS.length >= 490, 'Official Job Assignments populate
 const octJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-10');
 const novJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-11');
 const decJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-12');
-assert(octJobs.length >= 55 && novJobs.length >= 35 && decJobs.length >= 5, 'Job Assignments cover October, November, and December 2026 from Google Calendar', `Oct: ${octJobs.length}, Nov: ${novJobs.length}, Dec: ${decJobs.length}`);
+assert(octJobs.length >= 55 && novJobs.length >= 34 && decJobs.length >= 5, 'Job Assignments cover October, November, and December 2026 from Google Calendar', `Oct: ${octJobs.length}, Nov: ${novJobs.length}, Dec: ${decJobs.length}`);
 const sampleStaffCrew = resolveCrewMember('Mboh');
 const sampleFreelanceCrew = resolveCrewMember('Adul', 'Audio', 'Bongkaran');
 assert(sampleStaffCrew.personnelType === 'Staff' && sampleStaffCrew.staffId === 'staff-rahmat', 'resolveCrewMember accurately maps Inhouse Staff (Mboh -> staff-rahmat)');

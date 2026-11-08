@@ -646,7 +646,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       try {
         localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(sorted));
       } catch {}
-      syncJobAssignmentsToCrewDailyTasks(sorted, currentUser.name);
+      syncJobAssignmentsToCrewDailyTasks(sorted, currentUser.name, true);
       const nextCfg = saveGoogleCalendarSyncConfig({
         lastSyncedAt: nowIso,
         lastSyncCount: sorted.length
@@ -1395,7 +1395,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
           try {
             localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(sorted));
           } catch {}
-          syncJobAssignmentsToCrewDailyTasks(sorted, currentUser.name);
+          syncJobAssignmentsToCrewDailyTasks(sorted, currentUser.name, true);
           return sorted;
         });
         setGcalSyncFeedback({
@@ -1430,7 +1430,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       try {
         localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(next));
       } catch {}
-      syncJobAssignmentsToCrewDailyTasks(next, currentUser.name);
+      syncJobAssignmentsToCrewDailyTasks(next, currentUser.name, true);
       return next;
     });
     saveCloudDoc('job_assignments_gcal', updated.id, updated, currentUser.name);
@@ -1444,7 +1444,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       try {
         localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(next));
       } catch {}
-      syncJobAssignmentsToCrewDailyTasks(next, currentUser.name);
+      syncJobAssignmentsToCrewDailyTasks(next, currentUser.name, true);
       return next;
     });
     deleteCloudDoc('job_assignments_gcal', job.id);
@@ -1471,7 +1471,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
         try {
           localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(sorted));
         } catch {}
-        syncJobAssignmentsToCrewDailyTasks(sorted, currentUser.name);
+        syncJobAssignmentsToCrewDailyTasks(sorted, currentUser.name, true);
         return sorted;
       });
       importedJobs.forEach(imp => {

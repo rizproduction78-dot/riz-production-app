@@ -269,11 +269,13 @@ export const NON_JOB_CALENDAR_SUMMARY_PATTERNS: RegExp[] = [
   /\b(konsultasi\s+pajak|urus\s+pajak|aulia\s+loan|\bloan\b|bank\s+sumsel\s+kur|\bkur\b|bayar\s+kgs\s+pt)\b/i,
   /\b(cionk\s+ijin|\bijin\b|\bizin\b|\bcuti\b)\b/i,
   /\b(pengiriman\s+hampers|bagi\s+hampers|^undangan\b|adenya\s+meried|bukber\s+gabungan|training\s+grand\s*ma|yamaha\s+training|livewebinar|whitepaperindustrievent)\b/i,
+  /^RP\s+\d+\s*-\s*\d+$/i,
 ];
 
 /**
  * Filter ketat: Mengembalikan `true` HANYA jika entri Google Calendar adalah murni Job / Event Produksi,
- * dan `false` apabila merupakan Meeting, Survey, Visit Kantor, Pajak/Loan/KUR/KGS, Izin, Hampers, Undangan, atau Training.
+ * dan `false` apabila merupakan Meeting, Survey, Visit Kantor, Pajak/Loan/KUR/KGS, Izin, Hampers, Undangan, Training,
+ * atau kode catatan internal non-event (seperti "RP 9-16" atau kode "MD" tanpa deskripsi/lampiran event).
  */
 export function isStrictJobOrEventCalendarEntry(
   summaryOrVenue: string,
@@ -281,17 +283,24 @@ export function isStrictJobOrEventCalendarEntry(
 ): boolean {
   const cleanSummary = String(summaryOrVenue || '')
     .replace(/^\[[^\]]+\]\s*/g, '')
+    .replace(/^\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}\s+/i, '')
     .trim();
   if (!cleanSummary) return false;
 
   for (const pattern of NON_JOB_CALENDAR_SUMMARY_PATTERNS) {
-    if (pattern.test(cleanSummary)) {
+    if (pattern.test(cleanSummary) || pattern.test(String(summaryOrVenue || '').trim())) {
       return false;
     }
   }
 
-  // Cek tambahan bila judul generik tetapi deskripsi murni rapat/webinar/pajak tanpa spek event
   const cleanDesc = String(descriptionOrNotes || '').trim();
+
+  // Kode singkat "MD" tanpa lampiran/catatan spesifikasi event bukan merupakan jadwal Job/Event
+  if (/^MD$/i.test(cleanSummary) && !cleanDesc) {
+    return false;
+  }
+
+  // Cek tambahan bila judul generik tetapi deskripsi murni rapat/webinar/pajak tanpa spek event
   if (cleanDesc && /\b(livewebinar\.com|zoom\.us\/j\/|rapat\s+pengurus)\b/i.test(cleanDesc)) {
     const hasProductionSpec = /\b(sound|led|videotron|lighting|beam|parled|fresnel|genset|backline|multicam|rigging|p2\.\d|p3\.\d)\b/i.test(
       `${cleanSummary} ${cleanDesc}`
@@ -302,6 +311,149 @@ export function isStrictJobOrEventCalendarEntry(
   }
 
   return true;
+}
+
+const DIVISION_DEFAULT_TEAM_LEADER: Record<
+  JobDivisionSection['division'],
+  { rawName: string; roleNote: string }
+> = {
+  Audio: { rawName: 'Mboh', roleNote: 'Team Leader & Koordinator Sound' },
+  Videotron: { rawName: 'Ayong', roleNote: 'Team Leader & Koordinator LED Videotron' },
+  Lighting: { rawName: 'Heri', roleNote: 'Team Leader & Koordinator Lighting' },
+  Multimedia: { rawName: 'Jay', roleNote: 'Team Leader & Koordinator Multimedia' },
+  Produksi: { rawName: 'Mang Ube', roleNote: 'Team Leader Gudang & Logistik Event' },
+  Umum: { rawName: 'Mang Ube', roleNote: 'Team Leader Gudang & Logistik Event' },
+};
+
+const EXPLICIT_CREW_DETECTION_PATTERNS: Array<{
+  regex: RegExp;
+  rawName: string;
+  roleNote: string;
+}> = [
+  { regex: /\b(rebing)\b/i, rawName: 'Rebing', roleNote: 'Kru / Operator Sound Event' },
+  { regex: /\b(mboh|muhamad\s+rahmat)\b/i, rawName: 'Mboh', roleNote: 'Team Leader & Kru Sound' },
+  { regex: /\b(unyink|unyim|unyin|wahyudin)\b/i, rawName: 'Unyim', roleNote: 'Kru Sound System' },
+  { regex: /\b(butonk|butong|iwan\s+kurniawan|\biwan\b)\b/i, rawName: 'Iwan', roleNote: 'Kru Sound System' },
+  { regex: /\b(yudis|yudish|yudishtira)\b/i, rawName: 'Yudis', roleNote: 'Kru Sound System' },
+  { regex: /\b(opik|opick|taufik\s+diana)\b/i, rawName: 'Opik', roleNote: 'Kru Sound System' },
+  { regex: /\b(buluk|bulux|suryana)\b/i, rawName: 'Buluk', roleNote: 'Kru Sound System' },
+  { regex: /\b(ramdani)\b/i, rawName: 'Dani', roleNote: 'Kru Sound System' },
+  { regex: /\b(heri|herry)\b/i, rawName: 'Heri', roleNote: 'Team Leader & Incharge Lighting' },
+  { regex: /\b(mulyadi|\bjay\b)\b/i, rawName: 'Jay', roleNote: 'Team Leader & Incharge Multimedia' },
+  { regex: /\b(ayong)\b/i, rawName: 'Ayong', roleNote: 'Team Leader & Incharge Videotron' },
+  { regex: /\b(wigi|wigie|dedi\s+agus)\b/i, rawName: 'Wigi', roleNote: 'Kru Videotron LED' },
+  { regex: /\b(irvan|irfan)\b/i, rawName: 'Irvan', roleNote: 'Kru Videotron LED' },
+  { regex: /\b(kharo|mulyana)\b/i, rawName: 'Kharo', roleNote: 'Kru Videotron & Service' },
+  { regex: /\b(mang\s*ube|udin\s+saepudin)\b/i, rawName: 'Mang Ube', roleNote: 'Team Leader Gudang & Loading' },
+  { regex: /\b(gatot\s+wiliyanto|\bgatot\b)\b/i, rawName: 'Gatot', roleNote: 'Staff Gudang & Loading' },
+  { regex: /\b(aep\s+saepudin|abah\s+subur|\bsubur\b)\b/i, rawName: 'Subur', roleNote: 'Staff Gudang & Loading' },
+  { regex: /\b(damri)\b/i, rawName: 'Damri', roleNote: 'Team Leader Service & Maintenance' },
+  { regex: /\b(adin)\b/i, rawName: 'Adin', roleNote: 'Kru Freelance Audio' },
+  { regex: /\b(jordy)\b/i, rawName: 'Jordy', roleNote: 'Kru Freelance Audio' },
+  { regex: /\b(fiki)\b/i, rawName: 'Fiki', roleNote: 'Kru Freelance Videotron' },
+  { regex: /\b(ugan)\b/i, rawName: 'Ugan', roleNote: 'Kru Freelance Lighting' },
+  { regex: /\b(ghele)\b/i, rawName: 'Ghele', roleNote: 'Kru Freelance Lighting' },
+  { regex: /\b(endin|ndin)\b/i, rawName: 'Endin', roleNote: 'Kru Freelance Lighting' },
+  { regex: /\b(isal)\b/i, rawName: 'Isal', roleNote: 'Kru Freelance Lighting' },
+  { regex: /\b(uloh|ulloh)\b/i, rawName: 'Uloh', roleNote: 'Kru Freelance Multimedia' },
+  { regex: /\b(richad|richard)\b/i, rawName: 'Richad', roleNote: 'Kru Freelance Multimedia' },
+  { regex: /\b(ariq)\b/i, rawName: 'Ariq', roleNote: 'Kru Freelance Multimedia' },
+  { regex: /\b(timbul)\b/i, rawName: 'Timbul', roleNote: 'Kru Freelance Audio' },
+  { regex: /\b(yopy|yopi)\b/i, rawName: 'Yopy', roleNote: 'Kru Freelance Videotron' },
+  { regex: /\b(woyo)\b/i, rawName: 'Woyo', roleNote: 'Kru Freelance Audio & Armada' },
+];
+
+/**
+ * Menghubungkan setiap jadwal Job/Event Google Calendar secara otomatis dengan bentuk
+ * penugasan kerja bagi Crew (Freelance) maupun Staff (Inhouse) berdasarkan:
+ * 1. Nama kru/staf eksplisit yang tertulis pada judul venue, catatan/notes, atau kolom PIC di Google Calendar.
+ * 2. Koordinator / Team Leader struktural resmi divisi terkait (Audio -> Mboh, Videotron -> Ayong,
+ *    Lighting -> Heri, Multimedia -> Jay, Produksi -> Mang Ube) apabila seksi divisi belum memiliki staf inhouse.
+ */
+export function enrichJobAssignmentCrewLinkage(job: JobAssignment): JobAssignment {
+  if (!job || !Array.isArray(job.sections) || job.sections.length === 0) {
+    return job;
+  }
+
+  const combinedText = `${job.venue || ''} | ${job.notes || ''} | ${
+    job.pic && job.pic !== 'Admin / Tim Operasional' ? job.pic : ''
+  }`;
+
+  const extractedMembers: JobCrewMember[] = [];
+  const seenCanonical = new Set<string>();
+
+  for (const pat of EXPLICIT_CREW_DETECTION_PATTERNS) {
+    if (pat.regex.test(combinedText)) {
+      const resolved = resolveCrewMember(pat.rawName, 'Umum', pat.roleNote);
+      if (!seenCanonical.has(resolved.canonicalName)) {
+        seenCanonical.add(resolved.canonicalName);
+        extractedMembers.push(resolved);
+      }
+    }
+  }
+
+  const enrichedSections: JobDivisionSection[] = job.sections.map((sec, idx) => {
+    const existingCrew = Array.isArray(sec.crew) ? [...sec.crew] : [];
+    const sectionSeen = new Set<string>(existingCrew.map(c => c.canonicalName));
+
+    // Tambahkan kru eksplisit yang cocok dengan divisi section (atau ke section pertama bila hanya 1 section)
+    for (const member of extractedMembers) {
+      const matchesDiv =
+        job.sections.length === 1 ||
+        member.division === sec.division ||
+        (sec.division === 'Produksi' && member.division === 'Gudang') ||
+        idx === 0;
+      if (matchesDiv && !sectionSeen.has(member.canonicalName)) {
+        sectionSeen.add(member.canonicalName);
+        existingCrew.push(member);
+      }
+    }
+
+    // Pastikan setiap section divisi pada Job/Event yang belum diedit manual memiliki koordinator Staff Inhouse resmi
+    if (!job._userEdited) {
+      const hasInhouseStaff = existingCrew.some(c => c.personnelType === 'Staff');
+      if (!hasInhouseStaff) {
+        const leaderDef =
+          DIVISION_DEFAULT_TEAM_LEADER[sec.division] || DIVISION_DEFAULT_TEAM_LEADER.Produksi;
+        const leaderMember = resolveCrewMember(leaderDef.rawName, sec.division, leaderDef.roleNote);
+        if (!sectionSeen.has(leaderMember.canonicalName)) {
+          sectionSeen.add(leaderMember.canonicalName);
+          existingCrew.push(leaderMember);
+        }
+      }
+    }
+
+    const sectionPicName =
+      sec.sectionPic ||
+      (existingCrew.length > 0 ? existingCrew.map(c => c.name).slice(0, 2).join(' & ') : undefined);
+
+    return {
+      ...sec,
+      crew: existingCrew,
+      ...(sectionPicName ? { sectionPic: sectionPicName } : {}),
+    };
+  });
+
+  let updatedPic = job.pic;
+  if (!updatedPic || updatedPic === 'Admin / Tim Operasional' || updatedPic === '-') {
+    const allAssignedNames: string[] = [];
+    for (const sec of enrichedSections) {
+      for (const c of sec.crew) {
+        if (!allAssignedNames.includes(c.name)) {
+          allAssignedNames.push(c.name);
+        }
+      }
+    }
+    if (allAssignedNames.length > 0) {
+      updatedPic = allAssignedNames.slice(0, 3).join(', ');
+    }
+  }
+
+  return {
+    ...job,
+    pic: updatedPic,
+    sections: enrichedSections,
+  };
 }
 
 /**
@@ -12735,11 +12887,12 @@ const RAW_INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
 
 /**
  * Dataset Resmi Job/Event yang telah difilter ketat (HANYA Job/Event produksi,
- * mengecualikan Meeting, Tech Meeting, Rapat, Survey/Survei, Visit Kantor, Pajak, Loan/KUR/KGS, Izin, Hampers, Undangan, Training).
+ * mengecualikan Meeting, Tech Meeting, Rapat, Survey/Survei, Visit Kantor, Pajak, Loan/KUR/KGS, Izin, Hampers, Undangan, Training)
+ * serta dihubungkan otomatis dengan penugasan kerja Crew Freelance & Staff Inhouse per divisi.
  */
 export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = RAW_INITIAL_JOB_ASSIGNMENTS.filter(item =>
   isStrictJobOrEventCalendarEntry(item.venue || item.dateLabel || '', item.notes)
-);
+).map(enrichJobAssignmentCrewLinkage);
 
 /**
  * Normalisasi & Sinkronisasi Master Jadwal Event Google Calendar (rizproduction78@gmail.com)
@@ -12747,6 +12900,7 @@ export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = RAW_INITIAL_JOB_ASSIGNME
  * 1. Hanya jadwal yang bersifat Job/Event yang masuk (Meeting, Survey, Visit, Loan/Pajak/Izin/Undangan otomatis diblokir).
  * 2. Jadwal lama dari Google Doc otomatis dibersihkan dan digantikan oleh jadwal resmi Google Calendar.
  * 3. Hasil Assessment Admin (Unit Alat / Spesifikasi Teknis & Penugasan Staff / Freelance) tetap dipertahankan 100%.
+ * 4. Setiap Job/Event memiliki keterkaitan penugasan kerja Crew/Staff terstruktur di `sections[].crew`.
  */
 export function normalizeJobAssignmentsMaster(rawItems?: JobAssignment[] | null): JobAssignment[] {
   const canonicalMap = new Map<string, JobAssignment>();
@@ -12781,18 +12935,20 @@ export function normalizeJobAssignmentsMaster(rawItems?: JobAssignment[] | null)
               s =>
                 s.specAssessmentStatus ||
                 s.crewAssessmentStatus ||
-                (s.equipmentAssessments && Object.keys(s.equipmentAssessments).length > 0) ||
-                (Array.isArray(s.crew) && s.crew.length > 0)
+                (s.equipmentAssessments && Object.keys(s.equipmentAssessments).length > 0)
             ))
         ) {
-          canonicalMap.set(idStr, {
-            ...canonicalMap.get(idStr)!,
-            ...raw,
-            gcalSynced: true,
-          });
+          canonicalMap.set(
+            idStr,
+            enrichJobAssignmentCrewLinkage({
+              ...canonicalMap.get(idStr)!,
+              ...raw,
+              gcalSynced: true,
+            })
+          );
         }
       } else if (raw._userEdited || idStr.startsWith('gcal-') || idStr.startsWith('job-custom-')) {
-        canonicalMap.set(idStr, { ...raw, gcalSynced: true });
+        canonicalMap.set(idStr, enrichJobAssignmentCrewLinkage({ ...raw, gcalSynced: true }));
       }
     }
   }

@@ -3036,6 +3036,7 @@ export {
   OFFICIAL_FREELANCE_CREW_LIST,
   NON_JOB_CALENDAR_SUMMARY_PATTERNS,
   isStrictJobOrEventCalendarEntry,
+  enrichJobAssignmentCrewLinkage,
   resolveCrewMember,
   buildCrewList,
   formatFleetVehicleBadge,

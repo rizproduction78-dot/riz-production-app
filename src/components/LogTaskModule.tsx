@@ -346,7 +346,19 @@ export default function LogTaskModule({
       },
       tasks
     );
-    return () => unsub();
+    const handleDailyTasksSynced = (e: Event) => {
+      const customEvt = e as CustomEvent<DailyTask[]>;
+      if (Array.isArray(customEvt.detail)) {
+        const normalized = normalizeCollectionItems('daily_tasks', customEvt.detail);
+        setTasks(normalized);
+        if (onUpdateTasks) onUpdateTasks(normalized);
+      }
+    };
+    window.addEventListener('riz-daily-tasks-synced', handleDailyTasksSynced);
+    return () => {
+      window.removeEventListener('riz-daily-tasks-synced', handleDailyTasksSynced);
+      unsub();
+    };
   }, []);
 
   // Save to local storage whenever tasks change
