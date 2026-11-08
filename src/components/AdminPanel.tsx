@@ -112,6 +112,7 @@ import {
   saveCloudDoc,
   deleteCloudDoc
 } from '../lib/cloudSync';
+import { pullCollectionFromSupabase } from '../lib/supabaseSync';
 import {
   DEFAULT_SPREADSHEET_ID,
   DEFAULT_SPREADSHEET_URL,
@@ -406,6 +407,7 @@ export default function AdminPanel({
       return;
     }
 
+    const nowIso = new Date().toISOString();
     let updatedStaffObj: Staff = activeStaffForEdit;
     const updated = staffList.map(s => {
       if (s.id === activeStaffForEdit.id) {
@@ -420,8 +422,14 @@ export default function AdminPanel({
           phone: staffFormData.phone?.trim() || '',
           email: staffFormData.email?.trim() || '',
           avatar: staffFormData.avatar || s.avatar || '',
-          ...(staffFormData.password?.trim() ? { password: staffFormData.password.trim(), passwordRequest: '' } : {})
-        };
+          ...(staffFormData.password?.trim() ? { password: staffFormData.password.trim(), passwordRequest: '' } : {}),
+          _userEdited: true,
+          _syncMeta: {
+            updatedAt: nowIso,
+            updatedBy: currentUser.name,
+            _userEdited: true
+          }
+        } as Staff;
         return updatedStaffObj;
       }
       return s;
@@ -457,16 +465,20 @@ export default function AdminPanel({
     if (!window.confirm(confirmMessage)) return;
 
     try {
+      const nowIso = new Date().toISOString();
       const updatedStaff: Staff = {
         ...targetStaff,
         password: 'riz123',
-        passwordRequest: ''
-      };
+        passwordRequest: '',
+        _userEdited: true,
+        _syncMeta: {
+          updatedAt: nowIso,
+          updatedBy: currentUser.name,
+          _userEdited: true
+        }
+      } as Staff;
 
-      // 1. Simpan ke penyimpanan master_staff
-      await saveCloudDoc('master_staff', targetStaff.id, updatedStaff, currentUser.name);
-
-      // 2. Perbarui state lokal dan localStorage
+      // 1. Perbarui state lokal dan localStorage
       setStaffList(prev => {
         const next = prev.map(s => s.id === targetStaff.id ? updatedStaff : s);
         try {
@@ -476,6 +488,9 @@ export default function AdminPanel({
         }
         return next;
       });
+
+      // 2. Simpan ke penyimpanan master_staff & cloud vault
+      await saveCloudDoc('master_staff', targetStaff.id, updatedStaff, currentUser.name);
 
       onLogActivity(
         currentUser.name,
@@ -1897,7 +1912,10 @@ export default function AdminPanel({
             <span>Sync & DB</span>
           </button>
           <button
-            onClick={() => setActiveTab('password_approvals')}
+            onClick={() => {
+              setActiveTab('password_approvals');
+              pullCollectionFromSupabase('master_staff').catch(() => {});
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'password_approvals' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
@@ -3881,14 +3899,25 @@ export default function AdminPanel({
                               onClick={async () => {
                                 try {
                                   const isResetReq = staff.passwordRequest === 'RESET_REQUEST_DEFAULT';
-                                  const newPw = isResetReq ? 'riz123' : (staff.passwordRequest || 'riz123');
-                                  const updatedStaff: Staff = { ...staff, password: newPw, passwordRequest: '' };
-                                  await saveCloudDoc('master_staff', staff.id, updatedStaff, currentUser.name);
+                                  const newPw = isResetReq ? 'riz123' : String(staff.passwordRequest || 'riz123').trim();
+                                  const nowIso = new Date().toISOString();
+                                  const updatedStaff: Staff = {
+                                    ...staff,
+                                    password: newPw,
+                                    passwordRequest: '',
+                                    _userEdited: true,
+                                    _syncMeta: {
+                                      updatedAt: nowIso,
+                                      updatedBy: currentUser.name,
+                                      _userEdited: true
+                                    }
+                                  } as Staff;
                                   setStaffList(prev => {
                                     const next = prev.map(s => s.id === staff.id ? updatedStaff : s);
                                     try { localStorage.setItem('riz_master_staff_list', JSON.stringify(next)); } catch {}
                                     return next;
                                   });
+                                  await saveCloudDoc('master_staff', staff.id, updatedStaff, currentUser.name);
                                   onLogActivity(currentUser.name, currentUser.role, `Menyetujui password baru untuk ${staff.name} (${newPw === 'riz123' ? 'default riz123' : 'password kustom'})`);
                                   alert(`Password baru untuk ${staff.name} berhasil disetujui dan aktif! Staf dapat langsung masuk menggunakan password tersebut.`);
                                 } catch(e) {
@@ -3903,13 +3932,23 @@ export default function AdminPanel({
                             <button
                               onClick={async () => {
                                 try {
-                                  const updatedStaff: Staff = { ...staff, passwordRequest: '' };
-                                  await saveCloudDoc('master_staff', staff.id, updatedStaff, currentUser.name);
+                                  const nowIso = new Date().toISOString();
+                                  const updatedStaff: Staff = {
+                                    ...staff,
+                                    passwordRequest: '',
+                                    _userEdited: true,
+                                    _syncMeta: {
+                                      updatedAt: nowIso,
+                                      updatedBy: currentUser.name,
+                                      _userEdited: true
+                                    }
+                                  } as Staff;
                                   setStaffList(prev => {
                                     const next = prev.map(s => s.id === staff.id ? updatedStaff : s);
                                     try { localStorage.setItem('riz_master_staff_list', JSON.stringify(next)); } catch {}
                                     return next;
                                   });
+                                  await saveCloudDoc('master_staff', staff.id, updatedStaff, currentUser.name);
                                   alert(`Pengajuan ganti password untuk ${staff.name} ditolak.`);
                                 } catch(e) {
                                   console.error(e);

@@ -284,7 +284,12 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
   const syncedAtFlag = syncMeta?._syncedAt ? { _syncedAt: syncMeta._syncedAt } : {};
 
   switch (collectionName) {
-    case 'master_staff':
+    case 'master_staff': {
+      const hasCustomPwOrReq = Boolean((row.password && row.password !== 'riz123') || row.password_request);
+      const staffMeta = {
+        ...syncMeta,
+        ...(hasCustomPwOrReq ? { _userEdited: true } : {})
+      };
       return {
         id: row.id,
         name: row.name || '',
@@ -298,11 +303,12 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
         avatar: row.avatar || undefined,
         phone: row.phone || undefined,
         email: row.email || undefined,
-        password: row.password || 'riz123',
-        passwordRequest: row.password_request || '',
-        ...userEditedFlag,
-        _syncMeta: syncMeta
+        password: row.password ? String(row.password).trim() : 'riz123',
+        passwordRequest: row.password_request ? String(row.password_request).trim() : '',
+        ...(hasCustomPwOrReq ? { _userEdited: true } : userEditedFlag),
+        _syncMeta: staffMeta
       };
+    }
 
     case 'daily_reports': {
       const idDate = extractCanonicalDateFromId(row.id);
@@ -448,6 +454,66 @@ export function formatFromSupabase(collectionName: string, row: Record<string, a
 }
 
 /**
+ * Persist staff password & passwordRequest to local lock and Supabase system_configs vault
+ * so password changes and Admin approvals never get lost or overwritten by bulk syncs.
+ */
+export async function syncStaffPasswordVault(
+  staffId: string,
+  password: string | undefined | null,
+  passwordRequest: string | undefined | null,
+  updatedBy: string = 'User',
+  updatedAtIso?: string
+): Promise<void> {
+  if (!staffId) return;
+  const nowIso = updatedAtIso || new Date().toISOString();
+  const cleanPw = password !== undefined && password !== null && String(password).trim() !== ''
+    ? String(password).trim()
+    : 'riz123';
+  const cleanReq = passwordRequest !== undefined && passwordRequest !== null
+    ? String(passwordRequest).trim()
+    : '';
+
+  const entry = {
+    password: cleanPw,
+    passwordRequest: cleanReq,
+    updatedAt: nowIso,
+    updatedBy
+  };
+
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('riz_staff_passwords_lock_v1');
+      const map = raw ? JSON.parse(raw) : {};
+      map[staffId] = entry;
+      localStorage.setItem('riz_staff_passwords_lock_v1', JSON.stringify(map));
+    } catch {}
+  }
+
+  if (!isSupabaseConfigured || !supabase) return;
+  try {
+    const { data: existingRow } = await supabase
+      .from('system_configs')
+      .select('data')
+      .eq('key', 'staff_passwords_v1')
+      .maybeSingle();
+
+    const currentMap = (existingRow?.data && typeof existingRow.data === 'object' && !Array.isArray(existingRow.data))
+      ? { ...existingRow.data }
+      : {};
+    currentMap[staffId] = entry;
+
+    await supabase.from('system_configs').upsert({
+      key: 'staff_passwords_v1',
+      data: currentMap,
+      updated_by: updatedBy,
+      updated_at: nowIso
+    }, { onConflict: 'key' });
+  } catch (err) {
+    console.warn('[Supabase Sync] Warning syncing staff_passwords_v1 vault:', err);
+  }
+}
+
+/**
  * Upsert a single document to Supabase in the background
  */
 export async function saveSupabaseDoc(
@@ -474,6 +540,15 @@ export async function saveSupabaseDoc(
     const { error } = await supabase.from(tableName).upsert(payload, { onConflict: 'id' });
     if (error) {
       console.warn(`[Supabase Sync] Warning upserting ${collectionName}/${docId}:`, error.message);
+    }
+    if (collectionName === 'master_staff' && (data.password !== undefined || data.passwordRequest !== undefined)) {
+      await syncStaffPasswordVault(
+        docId,
+        payload.password || 'riz123',
+        payload.password_request || '',
+        data._syncMeta?.updatedBy || 'User',
+        payload.updated_at
+      );
     }
   } catch (err) {
     console.warn(`[Supabase Sync] Failed to sync ${collectionName}/${docId}:`, err);
@@ -539,9 +614,51 @@ export async function pushCollectionToSupabase(
   }
 
   try {
-    const formattedRows = items.map((item, idx) =>
+    let formattedRows = items.map((item, idx) =>
       formatForSupabase(collectionName, item.id || `doc-${idx + 1}`, item)
     );
+
+    // Protect master_staff passwords & password_request from being wiped by bulk sync
+    if (collectionName === 'master_staff') {
+      try {
+        const [{ data: existingStaffRows }, { data: vaultRow }] = await Promise.all([
+          supabase.from('master_staff').select('id, password, password_request, updated_at'),
+          supabase.from('system_configs').select('data').eq('key', 'staff_passwords_v1').maybeSingle()
+        ]);
+        const remoteStaffMap = new Map<string, any>();
+        if (Array.isArray(existingStaffRows)) {
+          existingStaffRows.forEach(r => { if (r?.id) remoteStaffMap.set(r.id, r); });
+        }
+        const vaultMap = (vaultRow?.data && typeof vaultRow.data === 'object' && !Array.isArray(vaultRow.data))
+          ? vaultRow.data
+          : {};
+
+        formattedRows = formattedRows.map((row: any, idx: number) => {
+          const rawItem = items[idx] || {};
+          const itemTime = rawItem._syncMeta?.updatedAt ? new Date(rawItem._syncMeta.updatedAt).getTime() : 0;
+          const remoteRow = remoteStaffMap.get(row.id);
+          const vaultEntry = vaultMap[row.id];
+          const remoteTime = Math.max(
+            remoteRow?.updated_at ? new Date(remoteRow.updated_at).getTime() : 0,
+            vaultEntry?.updatedAt ? new Date(vaultEntry.updatedAt).getTime() : 0
+          );
+          const remotePw = vaultEntry?.password || remoteRow?.password || null;
+          const remoteReq = (vaultEntry?.passwordRequest !== undefined ? vaultEntry.passwordRequest : remoteRow?.password_request) || null;
+
+          // If remote has a newer timestamp or if local item has default/empty password while remote has a custom password/request
+          if (remoteTime > itemTime || (!rawItem._userEdited && (remotePw || remoteReq))) {
+            return {
+              ...row,
+              password: remotePw !== null ? remotePw : row.password,
+              password_request: remoteReq !== null ? remoteReq : row.password_request,
+            };
+          }
+          return row;
+        });
+      } catch (e) {
+        console.warn('[Supabase Sync] Warning checking existing master_staff passwords before bulk push:', e);
+      }
+    }
 
     // Upsert in chunks of 100 to avoid payload size limit
     const chunkSize = 100;
@@ -615,7 +732,88 @@ export async function pullCollectionFromSupabase<T = any>(collectionName: string
 
     if (rows.length === 0) return [];
 
-    const formatted = rows.map(r => formatFromSupabase(collectionName, r));
+    let formatted = rows.map(r => formatFromSupabase(collectionName, r));
+
+    // Hydrate master_staff with authoritative passwords from staff_passwords_v1 vault if present
+    if (collectionName === 'master_staff') {
+      try {
+        const { data: vaultRow } = await supabase
+          .from('system_configs')
+          .select('data')
+          .eq('key', 'staff_passwords_v1')
+          .maybeSingle();
+
+        const remoteVault = (vaultRow?.data && typeof vaultRow.data === 'object' && !Array.isArray(vaultRow.data))
+          ? vaultRow.data
+          : {};
+
+        let mergedVault: Record<string, any> = { ...remoteVault };
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+          try {
+            const rawLocalVault = localStorage.getItem('riz_staff_passwords_lock_v1');
+            const localVault = rawLocalVault ? JSON.parse(rawLocalVault) : {};
+            Object.keys(localVault).forEach(sid => {
+              const lEntry = localVault[sid];
+              const rEntry = remoteVault[sid];
+              const lTime = lEntry?.updatedAt ? new Date(lEntry.updatedAt).getTime() : 0;
+              const rTime = rEntry?.updatedAt ? new Date(rEntry.updatedAt).getTime() : 0;
+              // If remote resolved a pending passwordRequest (Admin approved/rejected), remote wins even if clocks differ
+              const adminResolvedRequest = Boolean(lEntry?.passwordRequest && rEntry && !rEntry.passwordRequest);
+              if (!rEntry && lTime > 0) {
+                mergedVault[sid] = lEntry;
+              } else if (rEntry && (adminResolvedRequest || rTime >= lTime)) {
+                mergedVault[sid] = rEntry;
+              } else if (lEntry) {
+                mergedVault[sid] = lEntry;
+              }
+            });
+          } catch {}
+        }
+
+        formatted = formatted.map((staffItem: any) => {
+          const sid = String(staffItem?.id || '');
+          const vEntry = mergedVault[sid];
+          const rowTime = staffItem._syncMeta?.updatedAt ? new Date(staffItem._syncMeta.updatedAt).getTime() : 0;
+          const vTime = vEntry?.updatedAt ? new Date(vEntry.updatedAt).getTime() : 0;
+
+          if (vEntry && vTime >= rowTime) {
+            const finalPw = vEntry.password ? String(vEntry.password).trim() : (staffItem.password || 'riz123');
+            const finalReq = vEntry.passwordRequest !== undefined ? String(vEntry.passwordRequest).trim() : (staffItem.passwordRequest || '');
+            return {
+              ...staffItem,
+              password: finalPw,
+              passwordRequest: finalReq,
+              _userEdited: true,
+              _syncMeta: {
+                ...(staffItem._syncMeta || {}),
+                updatedAt: vEntry.updatedAt || staffItem._syncMeta?.updatedAt || new Date().toISOString(),
+                updatedBy: vEntry.updatedBy || staffItem._syncMeta?.updatedBy || 'Supabase Cloud Sync',
+                _userEdited: true
+              }
+            };
+          } else {
+            // Update vault entry from master_staff row if master_staff row is newer
+            if ((staffItem.password && staffItem.password !== 'riz123') || staffItem.passwordRequest) {
+              mergedVault[sid] = {
+                password: staffItem.password || 'riz123',
+                passwordRequest: staffItem.passwordRequest || '',
+                updatedAt: staffItem._syncMeta?.updatedAt || new Date().toISOString(),
+                updatedBy: staffItem._syncMeta?.updatedBy || 'Supabase Cloud Sync'
+              };
+            }
+            return staffItem;
+          }
+        });
+
+        if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+          try {
+            localStorage.setItem('riz_staff_passwords_lock_v1', JSON.stringify(mergedVault));
+          } catch {}
+        }
+      } catch (e) {
+        console.warn('[Supabase Pull] Warning hydrating staff_passwords_v1:', e);
+      }
+    }
 
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       const cacheKey = COLLECTION_CACHE_KEY_MAP[collectionName];
@@ -654,7 +852,15 @@ export async function pullCollectionFromSupabase<T = any>(collectionName: string
                   const localUserEdited = Boolean(local._userEdited || local._syncMeta?._userEdited);
                   const remoteUserEdited = Boolean(remote._userEdited || remote._syncMeta?._userEdited);
 
-                  if (localUserEdited && !remoteUserEdited && remoteUpdatedAt <= localUpdatedAt) {
+                  if (collectionName === 'master_staff') {
+                    // For master_staff: if Admin approved/rejected a pending request or updated password in Cloud, always accept remote
+                    const requestWasResolvedRemotely = Boolean(local.passwordRequest && !remote.passwordRequest);
+                    const passwordChangedRemotely = Boolean(remote.password && remote.password !== local.password && (remote.password !== 'riz123' || requestWasResolvedRemotely));
+                    const requestAddedRemotely = Boolean(remote.passwordRequest && remote.passwordRequest !== local.passwordRequest);
+                    if (requestWasResolvedRemotely || passwordChangedRemotely || requestAddedRemotely || remoteUpdatedAt >= localUpdatedAt || (!localUserEdited && localUpdatedAt === 0)) {
+                      map.set(id, { ...local, ...remote });
+                    }
+                  } else if (localUserEdited && !remoteUserEdited && remoteUpdatedAt <= localUpdatedAt) {
                     // Pertahankan hasil editan user lokal agar tidak tertimpa data default lama dari server
                   } else if (remoteUpdatedAt > localUpdatedAt || (!localUserEdited && localUpdatedAt === 0)) {
                     map.set(id, { ...local, ...remote });

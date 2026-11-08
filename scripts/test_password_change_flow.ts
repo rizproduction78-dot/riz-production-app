@@ -151,6 +151,53 @@ async function runTest() {
   }
   console.log('✓ PASS: Cloud fallback berhasil memverifikasi password baru dan menyinkronkan data lokal seketika!');
 
+  // TEST 7: Verifikasi Resolusi Konflik Timestamp di normalizeStaffMaster (Stale Props vs Newer Approval / Reset)
+  console.log('\n[TEST 7] Verifikasi Resolusi Konflik Timestamp di normalizeStaffMaster (Cross-State Merge):');
+  const t1 = '2026-11-09T01:00:00.000Z'; // Saat user mengajukan password (masih memegang password lama)
+  const t2 = '2026-11-09T01:05:00.000Z'; // Saat Admin menyetujui password baru
+  const t3 = '2026-11-09T01:10:00.000Z'; // Saat Admin me-reset password kembali ke riz123
+
+  const userPendingEntry = {
+    ...userStaff,
+    password: 'riz123',
+    passwordRequest: 'SandiBaruUser99',
+    _userEdited: true,
+    _syncMeta: { updatedAt: t1, updatedBy: userStaff.name, _userEdited: true }
+  };
+
+  const adminApprovedEntry = {
+    ...userStaff,
+    password: 'SandiBaruUser99',
+    passwordRequest: '',
+    _userEdited: true,
+    _syncMeta: { updatedAt: t2, updatedBy: 'Admin', _userEdited: true }
+  };
+
+  // Urutan [userPendingEntry, adminApprovedEntry] ataupun sebaliknya harus memenangkan adminApprovedEntry (t2 > t1)
+  const mergedA = normalizeStaffMaster([userPendingEntry, adminApprovedEntry]).find(s => s.id === 'director-wahyu')!;
+  const mergedB = normalizeStaffMaster([adminApprovedEntry, userPendingEntry]).find(s => s.id === 'director-wahyu')!;
+
+  if (mergedA.password !== 'SandiBaruUser99' || mergedA.passwordRequest !== '') {
+    throw new Error(`FAIL: Merge A gagal memenangkan approval terbaru! Didapat pw="${mergedA.password}", req="${mergedA.passwordRequest}"`);
+  }
+  if (mergedB.password !== 'SandiBaruUser99' || mergedB.passwordRequest !== '') {
+    throw new Error(`FAIL: Merge B gagal memenangkan approval terbaru! Didapat pw="${mergedB.password}", req="${mergedB.passwordRequest}"`);
+  }
+
+  // Uji Reset kembali ke riz123 dengan timestamp t3 > t2
+  const adminResetEntry = {
+    ...userStaff,
+    password: 'riz123',
+    passwordRequest: '',
+    _userEdited: true,
+    _syncMeta: { updatedAt: t3, updatedBy: 'Admin', _userEdited: true }
+  };
+  const mergedReset = normalizeStaffMaster([adminApprovedEntry, adminResetEntry]).find(s => s.id === 'director-wahyu')!;
+  if (mergedReset.password !== 'riz123' || mergedReset.passwordRequest !== '') {
+    throw new Error(`FAIL: Reset ke riz123 dengan timestamp lebih baru gagal menang! Didapat pw="${mergedReset.password}"`);
+  }
+  console.log('✓ PASS: Resolusi konflik timestamp memenangkan approval Admin terbaru dan reset password secara akurat!');
+
   console.log('\n================================================================');
   console.log('  SEMUA PENGUJIAN METODE PERGANTIAN PASSWORD LULUS 100%!');
   console.log('================================================================');

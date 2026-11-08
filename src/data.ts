@@ -258,12 +258,34 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
 
     if (staffMap.has(canonicalId)) {
       const existing = staffMap.get(canonicalId)!;
-      const effectivePassword = (canonicalStaff.password && canonicalStaff.password !== 'riz123')
-        ? canonicalStaff.password
-        : (existing.password || canonicalStaff.password || 'riz123');
-      const effectivePasswordRequest = (canonicalStaff.passwordRequest !== undefined && canonicalStaff.passwordRequest !== null)
-        ? canonicalStaff.passwordRequest
-        : (existing.passwordRequest || '');
+      const existingTime = (existing as any)._syncMeta?.updatedAt
+        ? new Date((existing as any)._syncMeta.updatedAt).getTime()
+        : 0;
+      const incomingTime = (canonicalStaff as any)._syncMeta?.updatedAt
+        ? new Date((canonicalStaff as any)._syncMeta.updatedAt).getTime()
+        : 0;
+
+      let effectivePassword: string;
+      let effectivePasswordRequest: string;
+
+      if (incomingTime > 0 && incomingTime >= existingTime) {
+        effectivePassword = canonicalStaff.password || existing.password || 'riz123';
+        effectivePasswordRequest = (canonicalStaff.passwordRequest !== undefined && canonicalStaff.passwordRequest !== null)
+          ? canonicalStaff.passwordRequest
+          : (existing.passwordRequest || '');
+      } else if (existingTime > 0 && existingTime > incomingTime) {
+        effectivePassword = existing.password || canonicalStaff.password || 'riz123';
+        effectivePasswordRequest = (existing.passwordRequest !== undefined && existing.passwordRequest !== null)
+          ? existing.passwordRequest
+          : (canonicalStaff.passwordRequest || '');
+      } else {
+        effectivePassword = (canonicalStaff.password && canonicalStaff.password !== 'riz123')
+          ? canonicalStaff.password
+          : (existing.password || canonicalStaff.password || 'riz123');
+        effectivePasswordRequest = (canonicalStaff.passwordRequest !== undefined && canonicalStaff.passwordRequest !== null)
+          ? canonicalStaff.passwordRequest
+          : (existing.passwordRequest || '');
+      }
 
       canonicalStaff = {
         ...existing,
@@ -271,6 +293,30 @@ export function normalizeStaffMaster(rawList: any[]): Staff[] {
         password: effectivePassword,
         passwordRequest: effectivePasswordRequest,
       };
+    }
+
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        const rawPwLocks = localStorage.getItem('riz_staff_passwords_lock_v1');
+        if (rawPwLocks) {
+          const pwLocks = JSON.parse(rawPwLocks);
+          const lockEntry = pwLocks?.[canonicalId];
+          if (lockEntry && typeof lockEntry === 'object') {
+            const lockTime = lockEntry.updatedAt ? new Date(lockEntry.updatedAt).getTime() : 0;
+            const staffTime = (canonicalStaff as any)._syncMeta?.updatedAt
+              ? new Date((canonicalStaff as any)._syncMeta.updatedAt).getTime()
+              : 0;
+            if (lockTime >= staffTime) {
+              if (lockEntry.password !== undefined && lockEntry.password !== null && String(lockEntry.password).trim() !== '') {
+                canonicalStaff.password = String(lockEntry.password).trim();
+              }
+              if (lockEntry.passwordRequest !== undefined && lockEntry.passwordRequest !== null) {
+                canonicalStaff.passwordRequest = String(lockEntry.passwordRequest);
+              }
+            }
+          }
+        }
+      } catch {}
     }
 
     staffMap.set(canonicalId, { ...canonicalStaff, id: canonicalId });

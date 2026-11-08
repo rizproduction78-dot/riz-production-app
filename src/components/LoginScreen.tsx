@@ -8,6 +8,7 @@ import { STAFF_LIST, getMasterStaffList, normalizeStaffMaster } from '../data';
 import { Staff } from '../types';
 import { LogIn, Shield, User, Key, ClipboardList, Package, Award, LayoutDashboard, X, Lock, CheckCircle, RotateCcw, AlertCircle, Smartphone, Download, Share } from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc } from '../lib/cloudSync';
+import { pullCollectionFromSupabase, syncStaffPasswordVault } from '../lib/supabaseSync';
 
 interface LoginScreenProps {
   onLogin: (staff: Staff) => void;
@@ -58,7 +59,7 @@ export default function LoginScreen({
   // Keep synced with cloud and prop updates
   useEffect(() => {
     if (propsStaffList && propsStaffList.length > 0) {
-      setLocalStaffList(normalizeStaffMaster(propsStaffList));
+      setLocalStaffList(prev => normalizeStaffMaster([...propsStaffList, ...prev]));
     }
   }, [propsStaffList]);
 
@@ -68,16 +69,19 @@ export default function LoginScreen({
       'riz_master_staff_list',
       (items) => {
         if (Array.isArray(items)) {
-          setLocalStaffList(normalizeStaffMaster(items));
+          setLocalStaffList(prev => normalizeStaffMaster([...prev, ...items]));
         }
       },
       STAFF_LIST
     );
+    pullCollectionFromSupabase('master_staff').catch(() => {});
     return () => unsub();
   }, []);
 
-  const rawStaffList = (propsStaffList && propsStaffList.length > 0) ? propsStaffList : localStaffList;
-  const activeStaffList = normalizeStaffMaster(rawStaffList);
+  const activeStaffList = normalizeStaffMaster([
+    ...(propsStaffList || []),
+    ...localStaffList
+  ]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +97,7 @@ export default function LoginScreen({
     }
 
     // Check against custom password or default master password riz123 (case-insensitive & trim whitespace)
-    const expectedPassword = staff.password || 'riz123';
+    const expectedPassword = (staff.password || 'riz123').trim();
     const inputPassword = password.trim() || 'riz123';
 
     if (
@@ -109,46 +113,100 @@ export default function LoginScreen({
     // (Menjamin staf yang baru disetujui ganti password langsung bisa login seketika dari perangkat/browser manapun)
     setIsLoggingIn(true);
     setError('');
+    let isPendingRequestMatch = Boolean(
+      staff.passwordRequest &&
+      staff.passwordRequest !== 'RESET_REQUEST_DEFAULT' &&
+      inputPassword.toLowerCase() === staff.passwordRequest.trim().toLowerCase()
+    );
+
     try {
       const { supabase, isSupabaseConfigured } = await import('../lib/supabase');
       if (isSupabaseConfigured && supabase) {
-        const { data: remoteRow, error: remoteErr } = await supabase
-          .from('master_staff')
-          .select('*')
-          .eq('id', staff.id)
-          .maybeSingle();
+        const [{ data: remoteRow, error: remoteErr }, { data: vaultRow }] = await Promise.all([
+          supabase
+            .from('master_staff')
+            .select('*')
+            .eq('id', staff.id)
+            .maybeSingle(),
+          supabase
+            .from('system_configs')
+            .select('data')
+            .eq('key', 'staff_passwords_v1')
+            .maybeSingle()
+        ]);
 
-        if (remoteRow && !remoteErr) {
-          const remotePw = remoteRow.password || 'riz123';
-          if (inputPassword.toLowerCase() === remotePw.toLowerCase()) {
-            const { formatFromSupabase } = await import('../lib/supabaseSync');
-            const formatted = formatFromSupabase('master_staff', remoteRow) as Staff;
-            const mergedStaff: Staff = { ...staff, ...formatted, password: remotePw };
+        const vaultEntry = (vaultRow?.data && typeof vaultRow.data === 'object' && !Array.isArray(vaultRow.data))
+          ? (vaultRow.data as Record<string, any>)[staff.id]
+          : null;
 
-            // Update cache lokal langsung
-            try {
-              const saved = localStorage.getItem('riz_master_staff_list');
-              let list = saved ? JSON.parse(saved) : [];
-              if (Array.isArray(list)) {
-                const idx = list.findIndex((s: any) => s.id === staff.id);
-                if (idx >= 0) list[idx] = { ...list[idx], ...mergedStaff };
-                else list.unshift(mergedStaff);
-                localStorage.setItem('riz_master_staff_list', JSON.stringify(list));
-              }
-            } catch {}
+        const rowTime = remoteRow?.updated_at ? new Date(remoteRow.updated_at).getTime() : 0;
+        const vaultTime = vaultEntry?.updatedAt ? new Date(vaultEntry.updatedAt).getTime() : 0;
 
-            setLocalStaffList(prev => prev.map(s => s.id === staff.id ? mergedStaff : s));
-            onLogActivity(staff.name, `${staff.division} - ${staff.role}`, 'Mencoba login berhasil (sinkronisasi cloud)');
-            onLogin(mergedStaff);
-            setIsLoggingIn(false);
-            return;
-          }
+        const candidatePasswords = new Set<string>();
+        if (remoteRow?.password) candidatePasswords.add(String(remoteRow.password).trim());
+        if (vaultEntry?.password) candidatePasswords.add(String(vaultEntry.password).trim());
+
+        const matchedPw = Array.from(candidatePasswords).find(
+          pw => pw && inputPassword.toLowerCase() === pw.toLowerCase()
+        );
+
+        if (matchedPw) {
+          const { formatFromSupabase } = await import('../lib/supabaseSync');
+          const formatted = (remoteRow && !remoteErr)
+            ? (formatFromSupabase('master_staff', remoteRow) as Staff)
+            : staff;
+          const nowIso = (vaultTime >= rowTime ? vaultEntry?.updatedAt : remoteRow?.updated_at) || new Date().toISOString();
+          const mergedStaff: Staff = {
+            ...staff,
+            ...formatted,
+            password: matchedPw,
+            passwordRequest: '',
+            _userEdited: true,
+            _syncMeta: {
+              updatedAt: nowIso,
+              updatedBy: vaultEntry?.updatedBy || 'Supabase Cloud Sync',
+              _userEdited: true
+            }
+          } as Staff;
+
+          await syncStaffPasswordVault(staff.id, matchedPw, '', vaultEntry?.updatedBy || staff.name, nowIso);
+
+          // Update cache lokal langsung
+          try {
+            const saved = localStorage.getItem('riz_master_staff_list');
+            let list = saved ? JSON.parse(saved) : [];
+            if (Array.isArray(list)) {
+              const idx = list.findIndex((s: any) => s.id === staff.id);
+              if (idx >= 0) list[idx] = { ...list[idx], ...mergedStaff };
+              else list.unshift(mergedStaff);
+              localStorage.setItem('riz_master_staff_list', JSON.stringify(list));
+            }
+            window.dispatchEvent(new CustomEvent('riz_collection_updated', {
+              detail: { collectionName: 'master_staff', docId: staff.id, data: mergedStaff }
+            }));
+          } catch {}
+
+          setLocalStaffList(prev => normalizeStaffMaster(prev.map(s => s.id === staff.id ? mergedStaff : s)));
+          onLogActivity(staff.name, `${staff.division} - ${staff.role}`, 'Mencoba login berhasil (sinkronisasi cloud)');
+          onLogin(mergedStaff);
+          setIsLoggingIn(false);
+          return;
+        }
+
+        const remoteReq = String(vaultEntry?.passwordRequest || remoteRow?.password_request || '').trim();
+        if (remoteReq && remoteReq !== 'RESET_REQUEST_DEFAULT' && inputPassword.toLowerCase() === remoteReq.toLowerCase()) {
+          isPendingRequestMatch = true;
         }
       }
     } catch (cloudErr) {
       console.warn('Real-time password check fallback error:', cloudErr);
     } finally {
       setIsLoggingIn(false);
+    }
+
+    if (isPendingRequestMatch) {
+      setError('Password baru yang Anda ajukan masih menunggu persetujuan (Approve) dari Admin. Sementara menunggu, Anda dapat masuk menggunakan password sebelumnya atau default (riz123).');
+      return;
     }
 
     setError('Password salah! Silakan coba lagi.');
@@ -193,29 +251,63 @@ export default function LoginScreen({
         return;
       }
 
-      const expectedPassword = staff.password || 'riz123';
-      if (oldPassword.trim().toLowerCase() !== expectedPassword.toLowerCase()) {
+      const expectedPassword = (staff.password || 'riz123').trim();
+      const cleanOldInput = oldPassword.trim();
+      let isOldPasswordValid =
+        cleanOldInput.toLowerCase() === expectedPassword.toLowerCase() ||
+        cleanOldInput.toLowerCase() === 'riz123';
+
+      if (!isOldPasswordValid) {
+        try {
+          const { supabase, isSupabaseConfigured } = await import('../lib/supabase');
+          if (isSupabaseConfigured && supabase) {
+            const [{ data: remoteRow }, { data: vaultRow }] = await Promise.all([
+              supabase.from('master_staff').select('password').eq('id', reqStaffId).maybeSingle(),
+              supabase.from('system_configs').select('data').eq('key', 'staff_passwords_v1').maybeSingle()
+            ]);
+            const remotePw = String(remoteRow?.password || '').trim();
+            const vaultPw = String((vaultRow?.data as any)?.[reqStaffId]?.password || '').trim();
+            if (
+              (remotePw && cleanOldInput.toLowerCase() === remotePw.toLowerCase()) ||
+              (vaultPw && cleanOldInput.toLowerCase() === vaultPw.toLowerCase())
+            ) {
+              isOldPasswordValid = true;
+            }
+          }
+        } catch {}
+      }
+
+      if (!isOldPasswordValid) {
         setReqError('Password lama salah! Jika Anda lupa password lama, silakan gunakan opsi "Lupa Password".');
         return;
       }
 
-      if (newPassword.trim().toLowerCase() === expectedPassword.toLowerCase()) {
+      if (newPassword.trim().toLowerCase() === cleanOldInput.toLowerCase()) {
         setReqError('Password baru tidak boleh sama dengan password saat ini.');
         return;
       }
 
       try {
         const cleanNewPassword = newPassword.trim();
+        const nowIso = new Date().toISOString();
         const updatedStaff: Staff = {
           ...staff,
           password: cleanNewPassword,
-          passwordRequest: '' // Bersihkan antrean pengajuan lama jika ada
-        };
+          passwordRequest: '', // Bersihkan antrean pengajuan lama jika ada
+          _userEdited: true,
+          _syncMeta: {
+            updatedAt: nowIso,
+            updatedBy: staff.name,
+            _userEdited: true
+          }
+        } as Staff;
 
-        // 1. Simpan ke sistem cloud & cache dengan data staf lengkap
-        await saveCloudDoc('master_staff', reqStaffId, updatedStaff, staff.name);
+        // 1. Perbarui state lokal LoginScreen & localStorage secara sinkron
+        setLocalStaffList(prev => {
+          const next = prev.map(s => s.id === reqStaffId ? updatedStaff : s);
+          return normalizeStaffMaster(next);
+        });
 
-        // 2. Perbarui localStorage secara sinkron
         try {
           const saved = localStorage.getItem('riz_master_staff_list');
           let list = saved ? JSON.parse(saved) : [];
@@ -234,16 +326,13 @@ export default function LoginScreen({
           console.warn('LocalStorage error:', err);
         }
 
-        // 3. Perbarui state lokal LoginScreen
-        setLocalStaffList(prev => {
-          const next = prev.map(s => s.id === reqStaffId ? updatedStaff : s);
-          return normalizeStaffMaster(next);
-        });
+        // 2. Simpan ke sistem cloud & vault dengan data staf lengkap
+        await saveCloudDoc('master_staff', reqStaffId, updatedStaff, staff.name);
 
-        // 4. Catat aktivitas audit
+        // 3. Catat aktivitas audit
         onLogActivity(staff.name, `${staff.division} - ${staff.role}`, 'Mengganti password akun (langsung aktif)');
 
-        // 5. Pre-fill login screen dengan nama staf & password baru
+        // 4. Pre-fill login screen dengan nama staf & password baru
         setSelectedStaffId(reqStaffId);
         setPassword(cleanNewPassword);
         setError('');
@@ -276,21 +365,38 @@ export default function LoginScreen({
         }
 
         const requestValue = desiredPw || 'RESET_REQUEST_DEFAULT';
+        const nowIso = new Date().toISOString();
         const updatedStaff: Staff = {
           ...staff,
-          passwordRequest: requestValue
-        };
+          passwordRequest: requestValue,
+          _userEdited: true,
+          _syncMeta: {
+            updatedAt: nowIso,
+            updatedBy: staff.name,
+            _userEdited: true
+          }
+        } as Staff;
 
-        await saveCloudDoc('master_staff', reqStaffId, updatedStaff, staff.name);
+        setLocalStaffList(prev => {
+          const next = prev.map(s => s.id === reqStaffId ? updatedStaff : s);
+          return normalizeStaffMaster(next);
+        });
 
         try {
           const saved = localStorage.getItem('riz_master_staff_list');
           if (saved) {
             const list = JSON.parse(saved);
-            const next = list.map((s: any) => s.id === reqStaffId ? { ...s, passwordRequest: requestValue } : s);
+            const next = list.map((s: any) => s.id === reqStaffId ? { ...s, ...updatedStaff } : s);
             localStorage.setItem('riz_master_staff_list', JSON.stringify(next));
           }
         } catch {}
+
+        await saveCloudDoc('master_staff', reqStaffId, updatedStaff, staff.name);
+
+        if (desiredPw) {
+          setSelectedStaffId(reqStaffId);
+          setPassword(desiredPw);
+        }
 
         const logMsg = desiredPw 
           ? `Mengajukan permohonan ganti password baru ke Admin` 
@@ -417,8 +523,18 @@ export default function LoginScreen({
                     id="staff-select"
                     value={selectedStaffId}
                     onChange={(e) => {
-                      setSelectedStaffId(e.target.value);
+                      const val = e.target.value;
+                      setSelectedStaffId(val);
                       setError('');
+                      if (val) {
+                        pullCollectionFromSupabase('master_staff')
+                          .then((cloudStaff) => {
+                            if (Array.isArray(cloudStaff) && cloudStaff.length > 0) {
+                              setLocalStaffList(normalizeStaffMaster(cloudStaff));
+                            }
+                          })
+                          .catch(() => {});
+                      }
                     }}
                     className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-700 text-sm bg-slate-50/50"
                   >
@@ -459,6 +575,9 @@ export default function LoginScreen({
                   <input
                     id="password"
                     type="password"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -649,6 +768,9 @@ export default function LoginScreen({
                         </label>
                         <input
                           type="password"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
                           placeholder="Masukkan password saat ini"
                           value={oldPassword}
                           onChange={(e) => setOldPassword(e.target.value)}
@@ -659,6 +781,9 @@ export default function LoginScreen({
                         <label className="block text-xs font-bold text-slate-700 mb-1">Password Baru</label>
                         <input
                           type="password"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
                           placeholder="Minimal 4 karakter"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
@@ -669,6 +794,9 @@ export default function LoginScreen({
                         <label className="block text-xs font-bold text-slate-700 mb-1">Konfirmasi Password Baru</label>
                         <input
                           type="password"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
                           placeholder="Ketik ulang password baru"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
@@ -694,6 +822,9 @@ export default function LoginScreen({
                         </label>
                         <input
                           type="password"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
                           placeholder="Kosongkan jika ingin reset ke riz123"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
@@ -706,6 +837,9 @@ export default function LoginScreen({
                           <label className="block text-xs font-bold text-slate-700 mb-1">Konfirmasi Password Baru</label>
                           <input
                             type="password"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck={false}
                             placeholder="Ketik ulang password baru"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
