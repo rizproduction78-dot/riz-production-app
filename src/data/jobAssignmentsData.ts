@@ -254,12 +254,61 @@ function createSection(
   };
 }
 
+/**
+ * Pola kata kunci jadwal non-Job / non-Event pada Google Calendar (rizproduction78@gmail.com)
+ * yang WAJIB diblokir agar tidak masuk sebagai penugasan Job/Event:
+ * 1. Meeting / Tech Meeting / Techmet / Rapat / Meet Up / Kopdar / Zoom
+ * 2. Survey / Survei Lokasi / Visit Kantor / Kunjungan Kantor
+ * 3. Pajak / Pinjaman / Loan / KUR / Bayar KGS PT / Cicilan
+ * 4. Izin / Cuti Personel (contoh: CIONK IJIN)
+ * 5. Pengiriman/Bagi Hampers, Undangan Pribadi, Bukber, Training, Livewebinar
+ */
+export const NON_JOB_CALENDAR_SUMMARY_PATTERNS: RegExp[] = [
+  /\b(meeting|tech\s*meet(?:ing)?|techmet|rapat|meet\s*up|met'?up|kopdar|zoom\s+okk)\b/i,
+  /\b(survey|survei|visit\s+kantor|kunjungan\s+kantor)\b/i,
+  /\b(konsultasi\s+pajak|urus\s+pajak|aulia\s+loan|\bloan\b|bank\s+sumsel\s+kur|\bkur\b|bayar\s+kgs\s+pt)\b/i,
+  /\b(cionk\s+ijin|\bijin\b|\bizin\b|\bcuti\b)\b/i,
+  /\b(pengiriman\s+hampers|bagi\s+hampers|^undangan\b|adenya\s+meried|bukber\s+gabungan|training\s+grand\s*ma|yamaha\s+training|livewebinar|whitepaperindustrievent)\b/i,
+];
+
+/**
+ * Filter ketat: Mengembalikan `true` HANYA jika entri Google Calendar adalah murni Job / Event Produksi,
+ * dan `false` apabila merupakan Meeting, Survey, Visit Kantor, Pajak/Loan/KUR/KGS, Izin, Hampers, Undangan, atau Training.
+ */
+export function isStrictJobOrEventCalendarEntry(
+  summaryOrVenue: string,
+  descriptionOrNotes?: string
+): boolean {
+  const cleanSummary = String(summaryOrVenue || '')
+    .replace(/^\[[^\]]+\]\s*/g, '')
+    .trim();
+  if (!cleanSummary) return false;
+
+  for (const pattern of NON_JOB_CALENDAR_SUMMARY_PATTERNS) {
+    if (pattern.test(cleanSummary)) {
+      return false;
+    }
+  }
+
+  // Cek tambahan bila judul generik tetapi deskripsi murni rapat/webinar/pajak tanpa spek event
+  const cleanDesc = String(descriptionOrNotes || '').trim();
+  if (cleanDesc && /\b(livewebinar\.com|zoom\.us\/j\/|rapat\s+pengurus)\b/i.test(cleanDesc)) {
+    const hasProductionSpec = /\b(sound|led|videotron|lighting|beam|parled|fresnel|genset|backline|multicam|rigging|p2\.\d|p3\.\d)\b/i.test(
+      `${cleanSummary} ${cleanDesc}`
+    );
+    if (!hasProductionSpec) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 /**
  * DATASET RESMI JADWAL PENUGASAN EVENT 2026 (SINKRON LANGSUNG GOOGLE CALENDAR RIZ PRODUCTION: rizproduction78@gmail.com)
  * Unit Alat / Spesifikasi Teknis dan Penugasan Staff / Crew Freelance dapat di-assessment langsung oleh Admin.
  */
-export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
+const RAW_INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
   // ============================================================================
   // BULAN JANUARI 2026 (GOOGLE CALENDAR SYNC)
   // ============================================================================
@@ -11668,46 +11717,6 @@ export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
   // BULAN NOVEMBER 2026 (GOOGLE CALENDAR SYNC)
   // ============================================================================
   {
-    id: "gcal-2h6fpvr4h8jpla6j1fkqcsgmhf",
-    monthKey: "2026-11",
-    date: "2026-11-02",
-    dateLabel: "2 Nov 2026",
-    venue: "survey ruang design jam",
-    loadingSchedule: "Sesuai Jadwal Google Calendar",
-    pic: "Admin / Tim Operasional",
-    status: "Selesai",
-    gcalSynced: true,
-    sections: [
-      createSection(
-        "Audio",
-        "Sound System & Backline",
-        ["Order Event: survey ruang design jam (Menunggu Detail / Assessment Spek Admin)"],
-        [],
-        []
-      ),
-    ],
-  },
-  {
-    id: "gcal-6doboso1v3mhh3tkf4pgp92g94",
-    monthKey: "2026-11",
-    date: "2026-11-03",
-    dateLabel: "3 Nov 2026",
-    venue: "met'up pengurus dikantor",
-    loadingSchedule: "Sesuai Jadwal Google Calendar",
-    pic: "Admin / Tim Operasional",
-    status: "Selesai",
-    gcalSynced: true,
-    sections: [
-      createSection(
-        "Audio",
-        "Sound System & Backline",
-        ["Order Event: met'up pengurus dikantor (Menunggu Detail / Assessment Spek Admin)"],
-        [],
-        []
-      ),
-    ],
-  },
-  {
     id: "gcal-0738iac1aaemu025bvr7shpnvr",
     monthKey: "2026-11",
     date: "2026-11-04",
@@ -11766,26 +11775,6 @@ export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
         "Audio",
         "Sound System & Backline",
         ["Rony Satu rumah Sound 10rb Sis Cilandak request GR jam 15.00"],
-        [],
-        []
-      ),
-    ],
-  },
-  {
-    id: "gcal-6136e6u0qrqempr6nsf5q7vr2t",
-    monthKey: "2026-11",
-    date: "2026-11-05",
-    dateLabel: "5 Nov 2026",
-    venue: "BU PUNTIAH VISIT KANTOR",
-    loadingSchedule: "Sesuai Jadwal Google Calendar",
-    pic: "Admin / Tim Operasional",
-    status: "Terjadwal",
-    gcalSynced: true,
-    sections: [
-      createSection(
-        "Audio",
-        "Sound System & Backline",
-        ["Order Event: BU PUNTIAH VISIT KANTOR (Menunggu Detail / Assessment Spek Admin)"],
         [],
         []
       ),
@@ -12162,6 +12151,28 @@ export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
     ],
   },
   {
+    id: "gcal-6abhpjh0edgs1steb9n4b7jo5s",
+    monthKey: "2026-11",
+    date: "2026-11-13",
+    endDate: "2026-11-14",
+    dateLabel: "13-14 Nov 2026",
+    venue: "Shutt Shoot Brick Hall 15rb",
+    loadingSchedule: "Sesuai Jadwal Google Calendar",
+    pic: "Admin / Tim Operasional",
+    status: "Terjadwal",
+    gcalSynced: true,
+    notes: "- Sound System 15rb \n- Riders RAN",
+    sections: [
+      createSection(
+        "Audio",
+        "Sound System 15rb",
+        ["Sound System 15rb", "Riders RAN"],
+        [],
+        []
+      ),
+    ],
+  },
+  {
     id: "gcal-6kqjic1m6gqmab9o6gsmcb9k64qj2b9p70sj8b9lc4s3apb6ckpm8d3274",
     monthKey: "2026-11",
     date: "2026-11-16",
@@ -12176,6 +12187,26 @@ export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
         "Audio",
         "Sound System & Backline",
         ["Order Event: Sani BGR (Menunggu Detail / Assessment Spek Admin)"],
+        [],
+        []
+      ),
+    ],
+  },
+  {
+    id: "gcal-74sj0cj468p34bb16gpmcb9k6osmcbb26komcbb46ss3ie9h70pjidb5cg",
+    monthKey: "2026-11",
+    date: "2026-11-17",
+    dateLabel: "17 Nov 2026",
+    venue: "Discovery Evocentro",
+    loadingSchedule: "Sesuai Jadwal Google Calendar",
+    pic: "Admin / Tim Operasional",
+    status: "Terjadwal",
+    gcalSynced: true,
+    sections: [
+      createSection(
+        "Audio",
+        "Sound System & Backline",
+        ["Order Event: Discovery Evocentro (Menunggu Detail / Assessment Spek Admin)"],
         [],
         []
       ),
@@ -12244,6 +12275,27 @@ export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
     ],
   },
   {
+    id: "gcal-78rqe2ag1l5pc36jrk3cm3sugf",
+    monthKey: "2026-11",
+    date: "2026-11-19",
+    dateLabel: "19 Nov 2026",
+    venue: "Bu Ghita The Adrres Cibubur",
+    loadingSchedule: "Sesuai Jadwal Google Calendar",
+    pic: "Admin / Tim Operasional",
+    status: "Terjadwal",
+    gcalSynced: true,
+    notes: "led p3,9 Ukuran 2x3 Meter \nlevel tinggi 1,5 Meter",
+    sections: [
+      createSection(
+        "Videotron",
+        "LED P3.9 Ukuran 2x3 Meter",
+        ["led p3,9 Ukuran 2x3 Meter", "level tinggi 1,5 Meter"],
+        [],
+        []
+      ),
+    ],
+  },
+  {
     id: "gcal-6so3ephic4pjcb9j74sjcb9k61h3cb9pcgpj8b9h6grj0phj6sr3cdb16g",
     monthKey: "2026-11",
     date: "2026-11-19",
@@ -12302,26 +12354,26 @@ export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
     pic: "Admin / Tim Operasional",
     status: "Terjadwal",
     gcalSynced: true,
-    notes: "- Sound 5000\n- LED 3x6\n- Lighting 8 Beam \n- Gate \n- Backdrop\n- Photobooth 360\n- Genset",
+    notes: "- Sound 7000\n- LED 3x10\n- Lighting Beam\n- Gate\n- Backdrop\n- Photobooth 360\n- Genset",
     sections: [
       createSection(
         "Audio",
-        "Sound 5000",
-        ["Sound 5000"],
+        "Sound 7000",
+        ["Sound 7000"],
         [],
         []
       ),
       createSection(
         "Videotron",
-        "LED 3x6",
-        ["LED 3x6"],
+        "LED 3x10",
+        ["LED 3x10"],
         [],
         []
       ),
       createSection(
         "Lighting",
-        "Lighting 8 Beam",
-        ["Lighting 8 Beam"],
+        "Lighting Beam",
+        ["Lighting Beam"],
         [],
         []
       ),
@@ -12334,8 +12386,8 @@ export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
       ),
       createSection(
         "Produksi",
-        "Gate",
-        ["Gate", "Backdrop"],
+        "Gate & Genset",
+        ["Gate", "Backdrop", "Genset"],
         [],
         []
       ),
@@ -12376,27 +12428,6 @@ export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
         "Audio",
         "Sound System & Backline",
         ["Order Event: KEVIN RR (Menunggu Detail / Assessment Spek Admin)"],
-        [],
-        []
-      ),
-    ],
-  },
-  {
-    id: "gcal-7l4847se8btc754smrse4ck7d7",
-    monthKey: "2026-11",
-    date: "2026-11-23",
-    endDate: "2026-11-24",
-    dateLabel: "23-24 Nov 2026",
-    venue: "Kopdar Imigrasi",
-    loadingSchedule: "Sesuai Jadwal Google Calendar",
-    pic: "Admin / Tim Operasional",
-    status: "Terjadwal",
-    gcalSynced: true,
-    sections: [
-      createSection(
-        "Audio",
-        "Sound System & Backline",
-        ["Order Event: Kopdar Imigrasi (Menunggu Detail / Assessment Spek Admin)"],
         [],
         []
       ),
@@ -12703,19 +12734,35 @@ export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
 ];
 
 /**
+ * Dataset Resmi Job/Event yang telah difilter ketat (HANYA Job/Event produksi,
+ * mengecualikan Meeting, Tech Meeting, Rapat, Survey/Survei, Visit Kantor, Pajak, Loan/KUR/KGS, Izin, Hampers, Undangan, Training).
+ */
+export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = RAW_INITIAL_JOB_ASSIGNMENTS.filter(item =>
+  isStrictJobOrEventCalendarEntry(item.venue || item.dateLabel || '', item.notes)
+);
+
+/**
  * Normalisasi & Sinkronisasi Master Jadwal Event Google Calendar (rizproduction78@gmail.com)
- * Memastikan jadwal lama dari Google Doc otomatis dibersihkan dan digantikan oleh jadwal resmi Google Calendar,
- * sambil mempertahankan hasil Assessment Admin (Unit Alat / Spesifikasi Teknis & Penugasan Staff / Freelance).
+ * Memastikan:
+ * 1. Hanya jadwal yang bersifat Job/Event yang masuk (Meeting, Survey, Visit, Loan/Pajak/Izin/Undangan otomatis diblokir).
+ * 2. Jadwal lama dari Google Doc otomatis dibersihkan dan digantikan oleh jadwal resmi Google Calendar.
+ * 3. Hasil Assessment Admin (Unit Alat / Spesifikasi Teknis & Penugasan Staff / Freelance) tetap dipertahankan 100%.
  */
 export function normalizeJobAssignmentsMaster(rawItems?: JobAssignment[] | null): JobAssignment[] {
   const canonicalMap = new Map<string, JobAssignment>();
   for (const item of INITIAL_JOB_ASSIGNMENTS) {
+    if (!isStrictJobOrEventCalendarEntry(item.venue || item.dateLabel || '', item.notes)) continue;
     canonicalMap.set(item.id, item);
   }
 
   if (Array.isArray(rawItems) && rawItems.length > 0) {
     for (const raw of rawItems) {
       if (!raw || typeof raw !== 'object' || !raw.id) continue;
+      // Blokir entri non-Job/Event (Meeting, Survey, Visit, Loan, Pajak, Izin, Hampers, Undangan, Training)
+      if (!isStrictJobOrEventCalendarEntry(raw.venue || raw.dateLabel || '', raw.notes)) {
+        canonicalMap.delete(String(raw.id));
+        continue;
+      }
       const idStr = String(raw.id);
       // Blokir seluruh ID jadwal lama yang bersumber dari Google Doc (job-20261103-qbig-bsd, job-20261119-japfa-gadog, dll.)
       const isLegacyGoogleDocJob =

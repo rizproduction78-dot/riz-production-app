@@ -7,7 +7,10 @@
  */
 
 import {
+  DailyTask,
+  Division,
   JobAssignment,
+  JobCrewMember,
   JobDivisionSection,
   OFFICIAL_GOOGLE_CALENDAR_WEB_URL,
   OFFICIAL_COMPANY_ADDRESS as OFFICIAL_HQ_ADDRESS
@@ -15,9 +18,14 @@ import {
 import {
   formatFleetVehicleBadge,
   resolveCrewMember,
+  isStrictJobOrEventCalendarEntry,
+  NON_JOB_CALENDAR_SUMMARY_PATTERNS,
   INITIAL_JOB_ASSIGNMENTS,
   normalizeJobAssignmentsMaster
 } from '../data/jobAssignmentsData';
+import { saveCloudDoc, deleteCloudDoc } from './cloudSync';
+
+export { isStrictJobOrEventCalendarEntry, NON_JOB_CALENDAR_SUMMARY_PATTERNS };
 
 export const OFFICIAL_GOOGLE_CALENDAR_ID = 'rizproduction78@gmail.com';
 export const OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL = 'https://calendar.google.com/calendar/u/0/r/settings/export';
@@ -540,8 +548,16 @@ export function parseGoogleCalendarIcsToJobAssignments(icsText: string): JobAssi
       cleanVenue = cleanedSummary.split('—')[0].split(' - PIC:')[0].trim() || 'Event Google Calendar';
     }
 
+    // FILTER KETAT: Hanya proses jadwal yang bersifat Job/Event, blokir Meeting, Survey, Visit, Pajak, Loan/KUR/KGS, Izin, Hampers, Undangan, Training
+    if (
+      !isStrictJobOrEventCalendarEntry(cleanedSummary || cleanVenue, description) ||
+      !isStrictJobOrEventCalendarEntry(cleanVenue, description)
+    ) {
+      return;
+    }
+
     // Extract PIC if present in SUMMARY or DESCRIPTION
-    let pic = 'Team Leader / Admin';
+    let pic = 'Admin / Tim Operasional';
     const picInDesc = description.match(/Person in Charge \(PIC\):\s*([^\n]+)/i);
     const picInSummary = summary.match(/PIC:\s*([^)\n]+)/i);
     if (picInDesc && picInDesc[1]) {
@@ -555,7 +571,7 @@ export function parseGoogleCalendarIcsToJobAssignments(icsText: string): JobAssi
       loadingSchedule = loadInDesc[1].trim();
     }
 
-    // Parse sections from DESCRIPTION if formatted, or create a default section
+    // Parse sections from DESCRIPTION if formatted, or infer division sections from raw Google Calendar text
     const sections: JobDivisionSection[] = [];
     const sectionRegex = /\d+\.\s*\[(AUDIO|LIGHTING|VIDEOTRON|MULTIMEDIA|PRODUKSI|UMUM)\]\s*([^\n]+)\n\s*•\s*Unit Alat:\s*([^\n]+)\n\s*•\s*Staff Inhouse[^:]*:\s*([^\n]+)\n\s*•\s*Kru Freelance[^:]*:\s*([^\n]+)\n\s*•\s*Armada Mobilisasi:\s*([^\n]+)/gi;
     let secMatch: RegExpExecArray | null;
@@ -605,21 +621,153 @@ export function parseGoogleCalendarIcsToJobAssignments(icsText: string): JobAssi
     }
 
     if (sections.length === 0) {
-      sections.push({
-        division: 'Audio',
-        packageLabel: cleanedSummary || cleanVenue,
-        equipment: description ? [description.slice(0, 140)] : [],
-        crew: pic && pic !== '-' ? [resolveCrewMember(pic.split('(')[0].trim(), 'Audio')] : [],
-        vehicles: []
-      });
+      const rawLines = description
+        .split(/\r?\n/)
+        .map(l => l.replace(/^[-•*⁠\s]+/, '').trim())
+        .filter(Boolean);
+
+      const extractedCrew: JobCrewMember[] = [];
+      const crewLineMatch = description.match(/(?:crew|kru|personil|operator|teknisi)\s*[:=-]\s*([^\n]+)/i);
+      if (crewLineMatch && crewLineMatch[1]) {
+        crewLineMatch[1]
+          .split(/[,/&]+/)
+          .map(s => s.trim())
+          .filter(Boolean)
+          .forEach(nameToken => {
+            extractedCrew.push(resolveCrewMember(nameToken, 'Audio'));
+          });
+      }
+      // Deteksi juga baris daftar nama kru (dipisahkan koma) apabila belum ada prefix "Crew:"
+      for (const line of rawLines) {
+        if (line.includes(',') && !/\b(sound|led|lighting|beam|parled|fresnel|genset|kva|meter|watt|unit|pcs|jt)\b/i.test(line)) {
+          const tokens = line
+            .split(/[,/&]+/)
+            .map(s => s.trim())
+            .filter(Boolean);
+          if (tokens.length >= 2 && tokens.every(t => t.length <= 24 && /^[a-zA-Z\s().'-]+$/.test(t))) {
+            tokens.forEach(nameToken => {
+              const resolved = resolveCrewMember(nameToken, 'Audio');
+              if (!extractedCrew.some(c => c.name.toLowerCase() === resolved.name.toLowerCase())) {
+                extractedCrew.push(resolved);
+              }
+            });
+          }
+        }
+      }
+      if (
+        pic &&
+        pic !== '-' &&
+        pic !== 'Team Leader / Admin' &&
+        pic !== 'Admin / Tim Operasional'
+      ) {
+        const resolvedPic = resolveCrewMember(pic.split('(')[0].trim(), 'Audio', 'PIC Event');
+        if (!extractedCrew.some(c => c.name.toLowerCase() === resolvedPic.name.toLowerCase())) {
+          extractedCrew.push(resolvedPic);
+        }
+      }
+
+      const audioEq: string[] = [];
+      const videoEq: string[] = [];
+      const lightEq: string[] = [];
+      const multiEq: string[] = [];
+      const prodEq: string[] = [];
+
+      for (const line of rawLines) {
+        if (/^(crew|kru|personil|pic|jadwal loading)/i.test(line)) continue;
+        if (/\b(led|videotron|p\s*[123]\.\d|novastar|level\s+led)\b/i.test(line)) {
+          videoEq.push(line);
+        } else if (/\b(lighting|par\s*led|parled|fresnel|freshnell|beam|stormy|stromy|hazer|hazzer|follow\s*spot|avo|grand\s*ma)\b/i.test(line)) {
+          lightEq.push(line);
+        } else if (/\b(multicam|streaming|zoom|tv|matador|projector|proyektor|laptop|cam|photobooth|vj)\b/i.test(line)) {
+          multiEq.push(line);
+        } else if (/\b(genset|kva|backdrop|gate|rigging|tenda|stage|panggung)\b/i.test(line)) {
+          prodEq.push(line);
+        } else if (/\b(sound|pa\b|sub|monitor|mixer|midas|m32|backline|drum|ampli|mic|whm|iem|headset|clip\s*on|rcf|watt|rb)\b/i.test(line)) {
+          audioEq.push(line);
+        }
+      }
+
+      if (audioEq.length > 0) {
+        sections.push({
+          division: 'Audio',
+          packageLabel: audioEq[0].slice(0, 48),
+          equipment: audioEq,
+          crew: extractedCrew.filter(c => !c.division || c.division === 'Audio' || c.division === 'Umum'),
+          vehicles: []
+        });
+      }
+      if (videoEq.length > 0) {
+        sections.push({
+          division: 'Videotron',
+          packageLabel: videoEq[0].slice(0, 48),
+          equipment: videoEq,
+          crew: extractedCrew.filter(c => c.division === 'Videotron'),
+          vehicles: []
+        });
+      }
+      if (lightEq.length > 0) {
+        sections.push({
+          division: 'Lighting',
+          packageLabel: lightEq[0].slice(0, 48),
+          equipment: lightEq,
+          crew: extractedCrew.filter(c => c.division === 'Lighting'),
+          vehicles: []
+        });
+      }
+      if (multiEq.length > 0) {
+        sections.push({
+          division: 'Multimedia',
+          packageLabel: multiEq[0].slice(0, 48),
+          equipment: multiEq,
+          crew: extractedCrew.filter(c => c.division === 'Multimedia'),
+          vehicles: []
+        });
+      }
+      if (prodEq.length > 0) {
+        sections.push({
+          division: 'Produksi',
+          packageLabel: prodEq[0].slice(0, 48),
+          equipment: prodEq,
+          crew: [],
+          vehicles: []
+        });
+      }
+
+      if (sections.length === 0) {
+        const inferredDiv: JobDivisionSection['division'] = /\b(led|videotron|p[23]\.\d)\b/i.test(cleanVenue)
+          ? 'Videotron'
+          : /\b(lighting|beam)\b/i.test(cleanVenue)
+            ? 'Lighting'
+            : /\b(vj|multicam|stream|zoom)\b/i.test(cleanVenue)
+              ? 'Multimedia'
+              : 'Audio';
+        sections.push({
+          division: inferredDiv,
+          packageLabel:
+            inferredDiv === 'Videotron'
+              ? 'LED Videotron & Visual'
+              : inferredDiv === 'Lighting'
+                ? 'Lighting System & Effect'
+                : inferredDiv === 'Multimedia'
+                  ? 'Multimedia, Cam & Live Stream'
+                  : 'Sound System & Backline',
+          equipment: description
+            ? [description.slice(0, 140)]
+            : [`Order Event: ${cleanVenue} (Menunggu Detail / Assessment Spek Admin)`],
+          crew: extractedCrew,
+          vehicles: []
+        });
+      }
     }
 
     const baseId = uid
       ? uid.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '')
-      : `job-gcal-${yyyy}${mm}${dd}-${idx + 1}`;
+      : `gcal-${yyyy}${mm}${dd}-${idx + 1}`;
+    const canonicalId =
+      baseId.startsWith('gcal-') || baseId.startsWith('job-') ? baseId : `gcal-${baseId}`;
 
     parsedJobs.push({
-      id: baseId.startsWith('job-') ? baseId : `job-gcal-${baseId}`,
+      id: canonicalId,
       monthKey,
       date: dateIso,
       dateLabel,
@@ -627,8 +775,9 @@ export function parseGoogleCalendarIcsToJobAssignments(icsText: string): JobAssi
       loadingSchedule,
       pic,
       status: 'Terjadwal',
+      notes: description || undefined,
       sections,
-      _userEdited: true
+      gcalSynced: true
     });
   });
 
@@ -888,6 +1037,7 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
         const convertedIcsLines: string[] = ['BEGIN:VCALENDAR', 'VERSION:2.0'];
         items.forEach((ev: any) => {
           if (!ev || ev.status === 'cancelled') return;
+          if (!isStrictJobOrEventCalendarEntry(ev.summary || '', ev.description || '')) return;
           const startStr = ev.start?.date
             ? `DTSTART;VALUE=DATE:${String(ev.start.date).replace(/-/g, '')}`
             : ev.start?.dateTime
@@ -903,7 +1053,8 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
           convertedIcsLines.push('END:VEVENT');
         });
         convertedIcsLines.push('END:VCALENDAR');
-        const jobs = parseGoogleCalendarIcsToJobAssignments(convertedIcsLines.join('\r\n'));
+        const parsedIcs = parseGoogleCalendarIcsToJobAssignments(convertedIcsLines.join('\r\n'));
+        const jobs = normalizeJobAssignmentsMaster(parsedIcs);
         saveGoogleCalendarSyncConfig({
           lastSyncedAt: new Date().toISOString(),
           lastSyncCount: jobs.length
@@ -911,7 +1062,7 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
         return {
           ok: true,
           jobs,
-          message: `Berhasil menarik ${jobs.length} jadwal event langsung dari Google Calendar API (${calId}).`
+          message: `Berhasil menarik ${jobs.length} jadwal Job/Event langsung dari Google Calendar API (${calId}).`
         };
       }
     } catch {}
@@ -943,7 +1094,7 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
         return {
           ok: true,
           jobs,
-          message: `Berhasil menarik & menyinkronkan ${jobs.length} jadwal event langsung dari Google Calendar (${calId}).`
+          message: `Berhasil menarik & menyinkronkan ${jobs.length} jadwal Job/Event langsung dari Google Calendar (${calId}).`
         };
       }
     } catch {}
@@ -958,6 +1109,177 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
   return {
     ok: true,
     jobs: canonicalJobs,
-    message: `Berhasil menyinkronkan ${canonicalJobs.length} jadwal event resmi dari Google Calendar (${calId}).`
+    message: `Berhasil menyinkronkan ${canonicalJobs.length} jadwal Job/Event resmi dari Google Calendar (${calId}).`
   };
+}
+
+/**
+ * Konversi divisi bagian JobAssignment menjadi tipe Division standar aplikasi
+ */
+function mapJobSectionDivisionToTaskDivision(div: JobDivisionSection['division']): Division {
+  if (div === 'Audio' || div === 'Lighting' || div === 'Videotron' || div === 'Multimedia') {
+    return div;
+  }
+  if (div === 'Produksi') {
+    return 'Gudang';
+  }
+  return 'Umum';
+}
+
+/**
+ * Membangun daftar penugasan kerja operasional 5W (`DailyTask[]`) untuk setiap Crew (Freelance)
+ * maupun Staff (Inhouse) yang ditugaskan pada suatu Job / Event Google Calendar.
+ */
+export function buildDailyTasksFromJobAssignment(job: JobAssignment): DailyTask[] {
+  if (!job || !isStrictJobOrEventCalendarEntry(job.venue || job.dateLabel || '', job.notes)) {
+    return [];
+  }
+
+  const tasks: DailyTask[] = [];
+  const seenTaskIds = new Set<string>();
+
+  const taskStatus: DailyTask['status'] =
+    job.status === 'Selesai'
+      ? 'Done'
+      : job.status === 'Loading / Setup' ||
+          job.status === 'Berlangsung (Show)' ||
+          job.status === 'Bongkaran'
+        ? 'In Progress'
+        : 'Pending';
+
+  const dateRangeText =
+    job.endDate && job.endDate !== job.date ? `${job.date} s/d ${job.endDate}` : job.date;
+
+  for (const sec of job.sections || []) {
+    const taskDiv = mapJobSectionDivisionToTaskDivision(sec.division);
+    const equipSummary =
+      sec.equipment && sec.equipment.length > 0 ? sec.equipment.join(', ') : `Paket ${sec.packageLabel}`;
+    const vehicleSummary =
+      sec.vehicles && sec.vehicles.length > 0
+        ? sec.vehicles.map(v => formatFleetVehicleBadge(v)).join(', ')
+        : 'Armada Operasional RIZ';
+
+    for (const member of sec.crew || []) {
+      if (!member || !member.name || member.assessmentStatus === 'Diganti') continue;
+      const personKey = String(member.staffId || member.name)
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '');
+      if (!personKey) continue;
+
+      const taskId = `jobtask-${job.id}-${sec.division.toLowerCase()}-${personKey}`;
+      if (seenTaskIds.has(taskId)) continue;
+      seenTaskIds.add(taskId);
+
+      const roleBadge = member.roleNote ? ` (${member.roleNote})` : '';
+      const title = `[PENUGASAN JOB] ${job.venue} — ${sec.packageLabel}${roleBadge}`;
+      const description = [
+        `WHEN: ${job.dateLabel} (${dateRangeText}) | Loading: ${job.loadingSchedule || 'Sesuai Jadwal Google Calendar'}`,
+        `WHERE: ${job.venue}`,
+        `WHO: ${member.canonicalName || member.name} (${member.personnelType}${member.roleNote ? ` • Peran: ${member.roleNote}` : ''}) | PIC Event: ${job.pic || '-'}`,
+        `WHAT: Divisi ${sec.division} (${sec.packageLabel}) | Alat: ${equipSummary} | Armada: ${vehicleSummary}`,
+        `WHY: ${job.notes ? job.notes.replace(/\r?\n/g, ' | ') : 'Eksekusi penugasan Job/Event Google Calendar PT. Riz Production Multi Kreasi'}`
+      ].join('\n');
+
+      tasks.push({
+        id: taskId,
+        title,
+        description,
+        division: taskDiv,
+        priority: 'Tinggi',
+        status: taskStatus,
+        assignedTo: member.staffId || member.name,
+        assignedName: member.canonicalName || member.name,
+        dueDate: job.date,
+        createdAt: job.date,
+        createdBy: job.adminAssessedBy || job.pic || 'Google Calendar Auto-Sync'
+      });
+    }
+  }
+
+  return tasks;
+}
+
+/**
+ * Menyinkronkan seluruh penugasan Crew & Staff dari daftar JobAssignment ke dalam
+ * daftar tugas operasional (`DailyTask` di `riz_daily_tasks_v2` & Cloud `daily_tasks`).
+ * Hanya memproses Job/Event pada bulan berjalan atau yang memiliki kru ditugaskan.
+ */
+export function syncJobAssignmentsToCrewDailyTasks(
+  jobs: JobAssignment[],
+  updatedBy = 'Google Calendar Auto-Sync'
+): DailyTask[] {
+  const validJobs = (jobs || []).filter(j =>
+    isStrictJobOrEventCalendarEntry(j.venue || j.dateLabel || '', j.notes)
+  );
+
+  const generatedJobTasks: DailyTask[] = [];
+  for (const job of validJobs) {
+    const jobTasks = buildDailyTasksFromJobAssignment(job);
+    generatedJobTasks.push(...jobTasks);
+  }
+
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return generatedJobTasks;
+  }
+
+  try {
+    const rawExisting = localStorage.getItem('riz_daily_tasks_v2') || localStorage.getItem('riz_daily_tasks');
+    const existingTasks: DailyTask[] = rawExisting ? JSON.parse(rawExisting) : [];
+    const generatedMap = new Map<string, DailyTask>(generatedJobTasks.map(t => [t.id, t]));
+    const nextMap = new Map<string, DailyTask>();
+
+    const removedJobTaskIds: string[] = [];
+    if (Array.isArray(existingTasks)) {
+      for (const item of existingTasks) {
+        if (!item || !item.id) continue;
+        if (String(item.id).startsWith('jobtask-')) {
+          if (!generatedMap.has(item.id)) {
+            removedJobTaskIds.push(item.id);
+            continue;
+          }
+          const fresh = generatedMap.get(item.id)!;
+          // Pertahankan status Done bila staff sudah menyelesaikan tugas
+          nextMap.set(item.id, {
+            ...fresh,
+            status: item.status === 'Done' ? 'Done' : fresh.status
+          });
+        } else {
+          nextMap.set(item.id, item);
+        }
+      }
+    }
+
+    const changedOrNewTasks: DailyTask[] = [];
+    for (const [id, task] of generatedMap.entries()) {
+      const prev = nextMap.get(id);
+      if (
+        !prev ||
+        prev.title !== task.title ||
+        prev.description !== task.description ||
+        prev.assignedTo !== task.assignedTo ||
+        prev.dueDate !== task.dueDate
+      ) {
+        changedOrNewTasks.push(task);
+      }
+      if (!nextMap.has(id)) {
+        nextMap.set(id, task);
+      }
+    }
+
+    const mergedList = Array.from(nextMap.values());
+    localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(mergedList));
+    localStorage.setItem('riz_daily_tasks', JSON.stringify(mergedList));
+
+    changedOrNewTasks.forEach(t => {
+      saveCloudDoc('daily_tasks', t.id, t, updatedBy).catch(() => {});
+    });
+    removedJobTaskIds.forEach(id => {
+      deleteCloudDoc('daily_tasks', id).catch(() => {});
+    });
+
+    window.dispatchEvent(new CustomEvent('riz-daily-tasks-synced', { detail: mergedList }));
+    return mergedList;
+  } catch {
+    return generatedJobTasks;
+  }
 }

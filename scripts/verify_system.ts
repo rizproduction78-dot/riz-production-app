@@ -49,7 +49,7 @@ assert(OFFICIAL_SEPTEMBER_2026_SCHEDULE.length > 0, 'September 2026 schedule pop
 assert(Boolean(OFFICIAL_COMPETENCY_MATRICES['Audio']), 'Competency matrices contain Audio division');
 
 // 3b. Test Official Job Assignments (Staff & Freelance Crew Schedule via App & Google Calendar rizproduction78@gmail.com)
-assert(INITIAL_JOB_ASSIGNMENTS.length >= 500, 'Official Job Assignments populated from Google Calendar (rizproduction78@gmail.com)', `Count: ${INITIAL_JOB_ASSIGNMENTS.length}`);
+assert(INITIAL_JOB_ASSIGNMENTS.length >= 490, 'Official Job Assignments populated from Google Calendar (rizproduction78@gmail.com, strict Job/Event only)', `Count: ${INITIAL_JOB_ASSIGNMENTS.length}`);
 const octJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-10');
 const novJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-11');
 const decJobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-12');

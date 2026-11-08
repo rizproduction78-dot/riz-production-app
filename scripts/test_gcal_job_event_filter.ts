@@ -1,0 +1,157 @@
+import {
+  INITIAL_JOB_ASSIGNMENTS,
+  normalizeJobAssignmentsMaster,
+  isStrictJobOrEventCalendarEntry,
+} from '../src/data/jobAssignmentsData';
+import {
+  parseGoogleCalendarIcsToJobAssignments,
+  buildDailyTasksFromJobAssignment,
+} from '../src/lib/googleCalendarSync';
+
+function assert(condition: boolean, message: string) {
+  if (!condition) {
+    console.error(`❌ ASSERTION FAILED: ${message}`);
+    process.exit(1);
+  }
+}
+
+console.log('=== TEST: STRICT GOOGLE CALENDAR JOB/EVENT FILTER & CREW WORK ASSIGNMENT LINKAGE ===');
+
+// 1. Verify non-Job / non-Event summaries are strictly rejected
+const blockedSamples = [
+  'Meeting event Hyundai jam 15.00 online',
+  'Meeting online Djarum Padel',
+  'Techmet Rancamaya',
+  'Technet Rancamaya & Survey Jagorawi',
+  'Techmeeting Lorin 14.00',
+  "met'up pengurus dikantor",
+  'Kopdar Imigrasi',
+  'SURVEI PURI BEGAWAN D',
+  'Survey event Rancamaya golf & hotel',
+  'survey ruang design jam',
+  'BU PUNTIAH VISIT KANTOR',
+  'Konsultasi Pajak ( Pak Hendra )',
+  'Woyo urus pajak engkel',
+  'Aulia Loan',
+  'Bank Sumsel KUR',
+  'BAYAR KGS PT',
+  'CIONK IJIN',
+  'PENGIRIMAN HAMPERS CLIENT',
+  'bagi hampers crew',
+  'Undangan Bpk Dian Bracom',
+  'Bagas adenya meried',
+  'Bukber Gabungan RI',
+  'Training Grand MA',
+  'Yamaha training DM5',
+  'WhitepaperIndustriEvent',
+];
+
+for (const sample of blockedSamples) {
+  assert(
+    !isStrictJobOrEventCalendarEntry(sample, ''),
+    `Sample non-job "${sample}" seharusnya diblokir oleh isStrictJobOrEventCalendarEntry`
+  );
+}
+console.log(`✅ Semua ${blockedSamples.length} pola non-Job (Meeting/Survey/Pajak/KUR/Ijin/Hampers/dll) berhasil diblokir.`);
+
+// 2. Verify valid Job/Event entries pass
+const validJobSamples = [
+  'Pak Wendi Rancamaya',
+  'Shutt Shoot Brick Hall 15rb',
+  'Discovery Evocentro',
+  'Bu Ghita The Adrres Cibubur',
+  'Keanu Bucketlist',
+  'Natalan GBI',
+  'Hyundai Gowa Cibinong 5jt',
+];
+
+for (const validSample of validJobSamples) {
+  assert(
+    isStrictJobOrEventCalendarEntry(validSample, ''),
+    `Sample Job/Event "${validSample}" seharusnya lolos isStrictJobOrEventCalendarEntry`
+  );
+}
+console.log(`✅ Semua ${validJobSamples.length} jadwal Job/Event produksi valid berhasil lolos filter.`);
+
+// 3. Verify INITIAL_JOB_ASSIGNMENTS and normalizeJobAssignmentsMaster contain 0 non-Job entries
+for (const job of INITIAL_JOB_ASSIGNMENTS) {
+  assert(
+    isStrictJobOrEventCalendarEntry(job.venue, job.notes || ''),
+    `INITIAL_JOB_ASSIGNMENTS masih memiliki entri non-Job: ${job.id} (${job.venue})`
+  );
+}
+const nov2026Venues = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-11').map(j => j.venue);
+assert(nov2026Venues.includes('Shutt Shoot Brick Hall 15rb'), 'Shutt Shoot Brick Hall 15rb wajib ada di November 2026');
+assert(nov2026Venues.includes('Discovery Evocentro'), 'Discovery Evocentro wajib ada di November 2026');
+assert(nov2026Venues.includes('Bu Ghita The Adrres Cibubur'), 'Bu Ghita The Adrres Cibubur wajib ada di November 2026');
+assert(nov2026Venues.includes('Keanu Bucketlist'), 'Keanu Bucketlist wajib ada di November 2026');
+console.log(`✅ INITIAL_JOB_ASSIGNMENTS (${INITIAL_JOB_ASSIGNMENTS.length} jadwal Job/Event) 100% bersih dari jadwal non-Job.`);
+
+// 4. Verify normalizeJobAssignmentsMaster purges injected non-Job items
+const pollutedList = [
+  ...INITIAL_JOB_ASSIGNMENTS.slice(0, 3),
+  {
+    id: 'job-fake-meeting-999',
+    date: '2026-11-12',
+    dateLabel: '12 November - Techmet & Survey Klien',
+    monthKey: '2026-11',
+    venue: 'Techmet & Survey Klien',
+    loadingSchedule: 'Sesuai Jadwal Google Calendar',
+    pic: 'Admin / Tim Operasional',
+    status: 'Terjadwal' as const,
+    sections: [],
+  },
+];
+const cleanedList = normalizeJobAssignmentsMaster(pollutedList);
+assert(
+  !cleanedList.some(j => j.id === 'job-fake-meeting-999'),
+  'normalizeJobAssignmentsMaster wajib membuang entri Techmet & Survey Klien'
+);
+console.log('✅ normalizeJobAssignmentsMaster otomatis memfilter keluar entri non-Job.');
+
+// 5. Verify ICS parser filters out non-Job VEVENTs and parses valid Job/Event VEVENTs with sections & crew
+const sampleIcs = [
+  'BEGIN:VCALENDAR',
+  'BEGIN:VEVENT',
+  'UID:meeting-123@google.com',
+  'DTSTART;VALUE=DATE:20261114',
+  'SUMMARY:Meeting Vendor Panggung 14.00',
+  'DESCRIPTION:Rapat koordinasi di kantor',
+  'END:VEVENT',
+  'BEGIN:VEVENT',
+  'UID:job-keanu-20261120@google.com',
+  'DTSTART;VALUE=DATE:20261120',
+  'SUMMARY:Keanu Bucketlist',
+  'DESCRIPTION:Sound 7000\\nLED 3x10\\nLighting Beam\\nOpik, Dani, Ayong, Heri',
+  'END:VEVENT',
+  'END:VCALENDAR',
+].join('\r\n');
+
+const parsedFromIcs = parseGoogleCalendarIcsToJobAssignments(sampleIcs);
+assert(parsedFromIcs.length === 1, `Seharusnya hanya 1 Job/Event yang diimpor dari ICS, dapat: ${parsedFromIcs.length}`);
+assert(parsedFromIcs[0].venue === 'Keanu Bucketlist', 'Venue ICS yang lolos harus Keanu Bucketlist');
+assert(parsedFromIcs[0].sections.length >= 2, 'Divisi dan alat harus ter-ekstrak dari deskripsi ICS');
+console.log('✅ parseGoogleCalendarIcsToJobAssignments memblokir VEVENT Meeting dan mengekstrak VEVENT Job/Event beserta divisi & alat.');
+
+// 6. Verify 5W Crew Work Assignment (DailyTask) generation from JobAssignment
+const keanuJob = INITIAL_JOB_ASSIGNMENTS.find(j => j.id === 'gcal-5abeh08spshtjrg0age00r2lkj')!;
+assert(Boolean(keanuJob), 'Job Keanu Bucketlist harus ditemukan di INITIAL_JOB_ASSIGNMENTS');
+const generatedFromIcsJob = buildDailyTasksFromJobAssignment(parsedFromIcs[0]);
+assert(
+  generatedFromIcsJob.length >= 4,
+  `Seharusnya menghasilkan >= 4 DailyTask kru untuk Keanu Bucketlist, dapat: ${generatedFromIcsJob.length}`
+);
+const opikTask = generatedFromIcsJob.find(
+  t => t.assignedTo === 'staff-taufik' || (t.assignedName && t.assignedName.includes('Taufik'))
+);
+assert(
+  Boolean(opikTask),
+  'Opik (Taufik Diana) wajib mendapatkan DailyTask penugasan kerja dari Job Keanu Bucketlist'
+);
+assert(opikTask!.division === 'Audio', `Divisi tugas Opik harus Audio, dapat: ${opikTask!.division}`);
+assert(opikTask!.title.includes('Keanu Bucketlist'), 'Judul tugas harus mencantumkan nama Job/Event');
+console.log(
+  `✅ buildDailyTasksFromJobAssignment menghasilkan ${generatedFromIcsJob.length} penugasan kerja (5W DailyTask) terstruktur untuk setiap Crew & Staff.`
+);
+
+console.log('=== SEMUA TEST LULUS 100% ===');

@@ -365,7 +365,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet & Google Calendar reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v109_gcal_live_sync_2026';
+  const REF_SYNC_KEY = 'riz_ref_synced_v110_gcal_strict_job_event_2026';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
@@ -747,7 +747,16 @@ export default function App() {
       []
     );
 
+    const handleDailyTasksSynced = (e: Event) => {
+      const customEvt = e as CustomEvent<DailyTask[]>;
+      if (Array.isArray(customEvt.detail)) {
+        setDailyTasks(normalizeCollectionItems('daily_tasks', customEvt.detail));
+      }
+    };
+    window.addEventListener('riz-daily-tasks-synced', handleDailyTasksSynced);
+
     return () => {
+      window.removeEventListener('riz-daily-tasks-synced', handleDailyTasksSynced);
       unsubStatus();
       unsubLogbook();
       unsubReports();
