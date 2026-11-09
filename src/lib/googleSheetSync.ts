@@ -1121,6 +1121,7 @@ export async function pullDailyLogFromGviz(
 
   const cacheBust = Date.now();
   const csvUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}&_t=${cacheBust}`;
+  const exportCsvUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/export?format=csv&gid=${gid}&_t=${cacheBust}`;
   const jsonUrl = `https://docs.google.com/spreadsheets/d/${DAILY_LOG_SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}&_t=${cacheBust}`;
 
   let newReports = 0;
@@ -1139,6 +1140,18 @@ export async function pullDailyLogFromGviz(
         rawCellMatrix = parsedCsv.data as string[][];
       }
     } catch {}
+
+    // Secondary pipeline: direct export CSV endpoint
+    if (rawCellMatrix.length === 0) {
+      try {
+        const expRes = await fetch(exportCsvUrl, { cache: 'no-store' });
+        if (expRes.ok) {
+          const expText = await expRes.text();
+          const parsedExp = Papa.parse(expText, { skipEmptyLines: true });
+          rawCellMatrix = parsedExp.data as string[][];
+        }
+      } catch {}
+    }
 
     // Fallback pipeline: gviz JSON response
     if (rawCellMatrix.length === 0) {
@@ -1255,8 +1268,9 @@ export async function pullDailyLogFromGviz(
     for (const entry of parsedEntries) {
       // 1. Simpan Daily Report: Baru atau jika ada perubahan teks di Google Sheet
       const existing = cachedReportsMap.get(entry.id) || cachedReportsByDateStaffMap.get(`${entry.date}_${entry.staffName}`);
+      const isLockedHistoricalBaseline = Boolean(existing && entry.date <= '2026-11-05');
       const isNew = !existingReportIds.has(entry.id) && !existing;
-      const isModified = Boolean(
+      const isModified = !isLockedHistoricalBaseline && Boolean(
         existing && (
           existing.id !== entry.id ||
           (existing.activity || '').trim() !== (entry.activity || '').trim() ||
@@ -1293,10 +1307,11 @@ export async function pullDailyLogFromGviz(
       if (entry.isQc && onSaveLogbookEntry) {
         const logDedupKey = `log-${entry.id}`;
         const existingLog = cachedLogsMap.get(logDedupKey) || cachedLogsByDateStaffMap.get(`${entry.date}_${entry.staffName}`);
+        const isLockedHistoricalLog = Boolean(existingLog && entry.date <= '2026-11-05');
         const isNg = isFindingRemark(entry.notes);
         const expectedResult = isNg ? 'NG' : 'OK';
         const expectedFollowUp = entry.notes || (isNg ? 'Perlu perbaikan teknis' : 'Pengecekan selesai aman');
-        const isLogModified = Boolean(
+        const isLogModified = !isLockedHistoricalLog && Boolean(
           existingLog && (
             existingLog.id !== logDedupKey ||
             (existingLog.activity || '').trim() !== (entry.activity || '').trim() ||
@@ -1306,7 +1321,7 @@ export async function pullDailyLogFromGviz(
             JSON.stringify(existingLog.rowDetails || []) !== JSON.stringify(entry.rowDetails || [])
           )
         );
-        if (!existingReportIds.has(logDedupKey) || !existingLog || isModified || isLogModified) {
+        if ((!existingReportIds.has(logDedupKey) && !existingLog) || isModified || isLogModified) {
           const logDoc = {
             id: logDedupKey,
             date: entry.date,

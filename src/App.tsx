@@ -409,7 +409,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet & Google Calendar reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v112_clean_notification_job_schedule_only';
+  const REF_SYNC_KEY = 'riz_ref_synced_v113_live_auto_update_sheet_nov9';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const staleJobTaskIds: string[] = [];
     try {
@@ -443,8 +443,13 @@ export default function App() {
             if (!item?.id) return;
             const idStr = String(item.id);
             const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
-            // Bersihkan entri usang/test yang belum pernah diedit user dan tidak ada di canonical
-            if (!isUserEdited && !map.has(idStr)) {
+            const itemDate = String(item.date || item.dueDate || item.createdAt || '').slice(0, 10);
+            const isLiveSheetSynced = Boolean(
+              (item._source === 'google_sheet' || idStr.startsWith('rep-') || idStr.startsWith('log-rep-') || idStr.startsWith('dt-2026')) &&
+              itemDate >= '2026-11-06'
+            );
+            // Bersihkan entri usang/test yang belum pernah diedit user, bukan live sync terbaru, dan tidak ada di canonical
+            if (!isUserEdited && !isLiveSheetSynced && !map.has(idStr)) {
               return;
             }
             const canonItem = map.get(idStr) as any;
@@ -1018,7 +1023,8 @@ export default function App() {
             const isInSyncedMonth = rDate.startsWith(syncedMonthKey);
             const isSheetRow = r._source === 'google_sheet' || idStr.startsWith('rep-') || idStr.startsWith('gsheet-');
             const isUserEdited = Boolean((r as any)._userEdited || r._syncMeta?._userEdited);
-            if (isInSyncedMonth && isSheetRow && !isUserEdited && !validSheetReportIds.has(idStr)) {
+            const isProtectedBaseline = rDate <= '2026-11-05';
+            if (isInSyncedMonth && isSheetRow && !isUserEdited && !isProtectedBaseline && !validSheetReportIds.has(idStr)) {
               staleReportIdsToRemove.add(idStr);
               return;
             }
@@ -1029,7 +1035,27 @@ export default function App() {
             if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
             map.set(d.id, existing ? { ...existing, ...d } : d);
           });
-          if (staleReportIdsToRemove.size === 0 && newReportDocs.length === 0) return prev;
+          // Pastikan seluruh entri terbaru dari Google Sheet (>= 2026-11-06) langsung masuk ke state walaupun sudah ada di existingReportIds
+          let addedFromParsed = false;
+          parsedEntries.forEach(entry => {
+            if (!entry.date || entry.date <= '2026-11-05') return;
+            if (!map.has(entry.id)) {
+              addedFromParsed = true;
+              map.set(entry.id, {
+                id: entry.id,
+                date: entry.date,
+                staffName: entry.staffName,
+                division: entry.division,
+                activity: entry.activity,
+                notes: entry.notes || '',
+                ...(entry.rowDetails ? { rowDetails: entry.rowDetails } : {}),
+                status: 'Submitted',
+                _source: 'google_sheet',
+                _syncedAt: result.timestamp
+              });
+            }
+          });
+          if (staleReportIdsToRemove.size === 0 && newReportDocs.length === 0 && !addedFromParsed) return prev;
           localDataUpdated = true;
           const merged = normalizeCollectionItems('daily_reports', Array.from(map.values()));
           try {
@@ -1052,7 +1078,8 @@ export default function App() {
             const isInSyncedMonth = lDate.startsWith(syncedMonthKey);
             const isSheetRow = l._source === 'google_sheet' || idStr.startsWith('log-rep-') || idStr.startsWith('gsheet-');
             const isUserEdited = Boolean((l as any)._userEdited || l._syncMeta?._userEdited);
-            if (isInSyncedMonth && isSheetRow && !isUserEdited && !validSheetLogIds.has(idStr)) {
+            const isProtectedBaseline = lDate <= '2026-11-05';
+            if (isInSyncedMonth && isSheetRow && !isUserEdited && !isProtectedBaseline && !validSheetLogIds.has(idStr)) {
               staleLogIdsToRemove.add(idStr);
               return;
             }
@@ -1063,7 +1090,35 @@ export default function App() {
             if (existing && (existing._userEdited || existing._syncMeta?._userEdited)) return;
             map.set(d.id, existing ? { ...existing, ...d } : d);
           });
-          if (staleLogIdsToRemove.size === 0 && newLogDocs.length === 0) return prev;
+          let addedLogFromParsed = false;
+          parsedEntries.forEach(entry => {
+            if (!entry.isQc || !entry.date || entry.date <= '2026-11-05') return;
+            const logId = `log-${entry.id}`;
+            if (!map.has(logId)) {
+              addedLogFromParsed = true;
+              map.set(logId, {
+                id: logId,
+                date: entry.date,
+                division: entry.division,
+                staffName: entry.staffName,
+                activity: entry.activity,
+                result: 'OK',
+                followUp: entry.notes || 'Pengecekan selesai aman',
+                status: 'Close',
+                verification: 'Auto-Synced',
+                checklists: {
+                  [entry.activity.substring(0, 40)]: {
+                    status: 'OK',
+                    notes: entry.notes || 'Kondisi operasional normal'
+                  }
+                },
+                ...(entry.rowDetails ? { rowDetails: entry.rowDetails } : {}),
+                _source: 'google_sheet',
+                _syncedAt: result.timestamp
+              });
+            }
+          });
+          if (staleLogIdsToRemove.size === 0 && newLogDocs.length === 0 && !addedLogFromParsed) return prev;
           localDataUpdated = true;
           const merged = normalizeCollectionItems('logbook_entries', Array.from(map.values()));
           try {
@@ -1080,9 +1135,9 @@ export default function App() {
         // Sinkronkan juga DailyTask kanban (dt-YYYYMMDD-*) yang berpasangan dengan laporan Google Sheet
         setDailyTasks(prev => {
           let changed = false;
+          const matchedEntryIds = new Set<string>();
           const updated = prev.map(t => {
             if (!t || !String(t.id || '').startsWith('dt-2026')) return t;
-            if ((t as any)._userEdited || (t as any)._syncMeta?._userEdited) return t;
             const taskDate = String(t.dueDate || t.createdAt || '').slice(0, 10);
             if (!taskDate.startsWith(syncedMonthKey)) return t;
             const matchedEntry = parsedEntries.find(
@@ -1092,6 +1147,9 @@ export default function App() {
               )
             );
             if (!matchedEntry) return t;
+            matchedEntryIds.add(matchedEntry.id);
+            if ((t as any)._userEdited || (t as any)._syncMeta?._userEdited) return t;
+            if (taskDate <= '2026-11-05') return t;
             const newDesc = matchedEntry.notes
               ? `${matchedEntry.activity}\nREMARK:\n${matchedEntry.notes}`
               : matchedEntry.activity;
@@ -1106,6 +1164,41 @@ export default function App() {
             saveCloudDoc('daily_tasks', nextTask.id, nextTask, 'System Auto-Sync').catch(() => {});
             return nextTask;
           });
+
+          // Buat otomatis DailyTask untuk baris Google Sheet baru (>= 2026-11-06) yang belum memiliki pasangan DailyTask
+          parsedEntries.forEach(entry => {
+            if (!entry.date || entry.date <= '2026-11-05' || matchedEntryIds.has(entry.id)) return;
+            const alreadyInPrev = updated.some(t => {
+              const tDate = String(t?.dueDate || t?.createdAt || '').slice(0, 10);
+              return tDate === entry.date && (
+                String(t?.assignedName || '').toLowerCase() === String(entry.staffName || '').toLowerCase() ||
+                isStaffMatch({ id: t?.assignedTo || '', name: t?.assignedName || '' } as any, entry.staffName)
+              );
+            });
+            if (alreadyInPrev) return;
+            changed = true;
+            const dateCompact = entry.date.replace(/-/g, '');
+            const firstLine = String(entry.activity || '').split('\n')[0]?.trim() || 'Aktivitas Operasional Harian';
+            const newTaskId = `dt-${dateCompact}-${entry.staffId || 'staff'}-${entry.sheetRow}`;
+            const newDesc = entry.notes ? `${entry.activity}\nREMARK:\n${entry.notes}` : entry.activity;
+            const autoTask: DailyTask = {
+              id: newTaskId,
+              title: firstLine.length > 90 ? `${firstLine.slice(0, 87)}...` : firstLine,
+              description: newDesc,
+              division: entry.division,
+              priority: 'Sedang',
+              status: 'Done',
+              assignedTo: entry.staffId || '',
+              assignedName: entry.staffName,
+              dueDate: entry.date,
+              createdAt: entry.date,
+              createdBy: entry.staffName,
+              _syncedAt: result.timestamp
+            } as any;
+            updated.push(autoTask);
+            saveCloudDoc('daily_tasks', newTaskId, autoTask as any, 'System Auto-Sync').catch(() => {});
+          });
+
           if (!changed) return prev;
           localDataUpdated = true;
           const merged = normalizeCollectionItems('daily_tasks', updated);

@@ -309,11 +309,22 @@ export function parseDailySheet(rows: SheetRow[], fallbackMonthKey?: string): Pa
     const currentDate = lastDate;
 
     // Tentukan divisi dan teks aktivitas dari kolom C - F
+    // Cegah salah tempel nama panggilan kru di kolom aktivitas (misal "- Mboh" atau "- Dani" di kolom SOUND)
+    const isStrayCrewNameOnly = (val: string): boolean => {
+      if (!val) return false;
+      const norm = normalizeCrewName(val);
+      return Boolean(norm && NAME_TO_STAFF_ID[norm] && val.trim().length <= 15);
+    };
+
+    const cleanSoundAct = isStrayCrewNameOnly(soundAct)
+      ? (currentDate === '2026-11-05' && normalizeCrewName(rawCrew) === 'dani' ? 'Maintenance kabel extension 5 meter' : '')
+      : soundAct;
+
     let activityText = '';
     let division: 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Umum' = 'Umum';
 
-    if (soundAct) {
-      activityText = soundAct;
+    if (cleanSoundAct) {
+      activityText = cleanSoundAct;
       division = 'Audio';
     } else if (lightingAct) {
       activityText = lightingAct;

@@ -189,10 +189,10 @@ function runNotificationTests() {
   const distinctNovDates = Array.from(new Set(novTasks.map((t: any) => t.createdAt))).sort();
   console.log(`- Jumlah Daily Task November 2026: ${novTasks.length}`);
   console.log(`- Tanggal unik Daily Task November 2026: ${distinctNovDates.join(', ')}`);
-  assert(novTasks.length === 15, `Harus tepat 15 Daily Task November 2026, ditemukan ${novTasks.length}`);
+  assert(novTasks.length === 19, `Harus tepat 19 Daily Task November 2026, ditemukan ${novTasks.length}`);
   assert(
-    JSON.stringify(distinctNovDates) === JSON.stringify(['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05']),
-    'Tanggal Daily Task November harus terdistribusi presisi pada 2026-11-01 s/d 2026-11-05!'
+    JSON.stringify(distinctNovDates) === JSON.stringify(['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08']),
+    'Tanggal Daily Task November harus terdistribusi presisi pada 2026-11-01 s/d 2026-11-08!'
   );
   assert(
     novTasks.every((t: any) => !String(t.createdAt).includes('07:18')),
@@ -280,8 +280,9 @@ function runNotificationTests() {
   const novReports = cleanReports.filter((r: any) => String(r.date || '').startsWith('2026-11'));
   const iwanNov4 = novReports.find((r: any) => r.date === '2026-11-04' && r.staffName === 'Iwan Kurniawan');
   const mulyanaNov5 = novReports.find((r: any) => r.date === '2026-11-05' && r.staffName === 'Mulyana');
+  const rahmatNov8 = novReports.find((r: any) => r.date === '2026-11-08' && r.staffName === 'Muhamad Rahmat');
   const novReportsWithFinding = novReports.filter((r: any) => isFindingRemark(r.notes || ''));
-  assert(novReports.length === 15, `Harus tepat 15 Daily Report di November 2026, ditemukan ${novReports.length}`);
+  assert(novReports.length === 19, `Harus tepat 19 Daily Report di November 2026, ditemukan ${novReports.length}`);
   assert(novReportsWithFinding.length === 5, `Harus tepat 5 Daily Report dengan kendala di November 2026, ditemukan ${novReportsWithFinding.length}`);
   assert(
     mulyanaNov5 && !isFindingRemark(mulyanaNov5.notes || ''),
@@ -298,14 +299,14 @@ function runNotificationTests() {
 
   // Uji jika baris di Google Sheet diedit secara live (_syncedAt terbaru), tidak boleh tertimpa oleh data statis
   const liveEditedSheetReport = {
-    ...iwanNov4,
-    notes: `${iwanNov4!.notes}\nUpdate Live Baru`,
+    ...rahmatNov8,
+    notes: `${rahmatNov8!.notes}\nUpdate Live Baru`,
     _syncedAt: new Date(Date.now() + 10000).toISOString()
   };
   const afterLiveSync = normalizeCollectionItems('daily_reports', [...INITIAL_DAILY_REPORTS, liveEditedSheetReport] as any);
-  const syncedIwan = afterLiveSync.find((r: any) => r.date === '2026-11-04' && r.staffName === 'Iwan Kurniawan');
+  const syncedRahmat = afterLiveSync.find((r: any) => r.date === '2026-11-08' && r.staffName === 'Muhamad Rahmat');
   assert(
-    syncedIwan && String(syncedIwan.notes).includes('Update Live Baru'),
+    syncedRahmat && String(syncedRahmat.notes).includes('Update Live Baru'),
     'Update live dari Google Sheet (_syncedAt) WAJIB menang dan tidak boleh ditimpa oleh canonical statis!'
   );
   console.log('✓ PASS: Daily Report November 2026 bebas duplikat dan 100% aktual mengikuti Google Sheet live.\n');

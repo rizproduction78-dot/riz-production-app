@@ -5776,6 +5776,90 @@ export const CANONICAL_FIRESTORE_DAILY_REPORTS: DailyReport[] = [
     ],
     "status": "Submitted",
     "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261106-staff-mulyadi-91",
+    "date": "2026-11-06",
+    "staffName": "Mulyadi",
+    "division": "Multimedia",
+    "activity": "buat colase kkuwa\nbuat colase pesantren darul ilmi",
+    "notes": "done\ndone",
+    "rowDetails": [
+      {
+        "activity": "buat colase kkuwa",
+        "remark": "done"
+      },
+      {
+        "activity": "buat colase pesantren darul ilmi",
+        "remark": "done"
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261107-staff-mulyadi-93",
+    "date": "2026-11-07",
+    "staffName": "Mulyadi",
+    "division": "Multimedia",
+    "activity": "buat colase TMii\ncolase dufan\ncolase velodrome\najinamoto",
+    "notes": "",
+    "rowDetails": [
+      {
+        "activity": "buat colase TMii",
+        "remark": ""
+      },
+      {
+        "activity": "colase dufan",
+        "remark": ""
+      },
+      {
+        "activity": "colase velodrome",
+        "remark": ""
+      },
+      {
+        "activity": "ajinamoto",
+        "remark": ""
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261108-staff-ramdani-97",
+    "date": "2026-11-08",
+    "staffName": "Ramdani",
+    "division": "Audio",
+    "activity": "Cek dan Maintenance Snake Cable 16 channel",
+    "notes": "Semua Aman",
+    "rowDetails": [
+      {
+        "activity": "Cek dan Maintenance Snake Cable 16 channel",
+        "remark": "Semua Aman"
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
+  },
+  {
+    "id": "rep-20261108-staff-rahmat-98",
+    "date": "2026-11-08",
+    "staffName": "Muhamad Rahmat",
+    "division": "Audio",
+    "activity": "Cek dan Maintenance snake cable 8 channel\nCek dan Maintenance snake Aux",
+    "notes": "Semua Aman\nAman",
+    "rowDetails": [
+      {
+        "activity": "Cek dan Maintenance snake cable 8 channel",
+        "remark": "Semua Aman"
+      },
+      {
+        "activity": "Cek dan Maintenance snake Aux",
+        "remark": "Aman"
+      }
+    ],
+    "status": "Submitted",
+    "_source": "google_sheet"
   }
 ];
 
@@ -12497,6 +12581,58 @@ export const CANONICAL_FIRESTORE_LOGBOOK_ENTRIES: LogbookEntry[] = [
       {
         "activity": "- Benerin Bok Freshnel 200W ganti siku (1Bok)",
         "remark": "- Sudah Beres (Bener)"
+      }
+    ],
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261108-staff-ramdani-97",
+    "date": "2026-11-08",
+    "division": "Audio",
+    "staffName": "Ramdani",
+    "activity": "Cek dan Maintenance Snake Cable 16 channel",
+    "result": "OK",
+    "followUp": "Semua Aman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "Cek dan Maintenance Snake Cable 16 chann": {
+        "status": "OK",
+        "notes": "Semua Aman"
+      }
+    },
+    "rowDetails": [
+      {
+        "activity": "Cek dan Maintenance Snake Cable 16 channel",
+        "remark": "Semua Aman"
+      }
+    ],
+    "_source": "google_sheet"
+  },
+  {
+    "id": "log-rep-20261108-staff-rahmat-98",
+    "date": "2026-11-08",
+    "division": "Audio",
+    "staffName": "Muhamad Rahmat",
+    "activity": "Cek dan Maintenance snake cable 8 channel\nCek dan Maintenance snake Aux",
+    "result": "OK",
+    "followUp": "Semua Aman\nAman",
+    "status": "Close",
+    "verification": "Auto-Synced",
+    "checklists": {
+      "Cek dan Maintenance snake cable 8 channe": {
+        "status": "OK",
+        "notes": "Semua Aman\nAman"
+      }
+    },
+    "rowDetails": [
+      {
+        "activity": "Cek dan Maintenance snake cable 8 channel",
+        "remark": "Semua Aman"
+      },
+      {
+        "activity": "Cek dan Maintenance snake Aux",
+        "remark": "Aman"
       }
     ],
     "_source": "google_sheet"

@@ -342,9 +342,10 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const canonical = canonicalMap.get(rawId);
       const idDate = extractDateFromRecordId(rawId);
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
+      const isLiveSynced = getLiveGvizSyncTimestamp(item) > 0 || Boolean(idDate && idDate >= '2026-11-06');
 
-      // Eliminasi task dt-202610* / dt-202611* usang dari cache/Supabase yang bukan bagian dari canonical resmi dan bukan editan user
-      if (!canonical && !isUserEdited && (rawId.startsWith('dt-202610') || rawId.startsWith('dt-202611'))) {
+      // Eliminasi task dt-202610* / dt-20261101..05 usang dari cache/Supabase yang bukan bagian dari canonical resmi, bukan live sync terbaru, dan bukan editan user
+      if (!canonical && !isUserEdited && !isLiveSynced && (rawId.startsWith('dt-202610') || rawId.startsWith('dt-202611'))) {
         return;
       }
 
@@ -560,7 +561,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     const staffDateSheetSet = new Set<string>();
     const canonicalReportsMap = new Map<string, any>((INITIAL_DAILY_REPORTS || []).map((r: any) => [String(r.id), r]));
 
-    // Sort: 1. User-edited, 2. Latest live _syncedAt (newer than canonical baseline), 3. Canonical ID, 4. Non-gsheet-
+    // Sort: 1. User-edited, 2. Canonical ID (for verified <= 2026-11-05 baseline), 3. Latest live _syncedAt, 4. Non-gsheet-
     const sortedItems = [...items].sort((a: any, b: any) => {
       const aId = String(a?.id || '');
       const bId = String(b?.id || '');
@@ -568,12 +569,18 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const bEdited = b?._userEdited || b?._syncMeta?._userEdited ? 1 : 0;
       if (aEdited !== bEdited) return bEdited - aEdited;
 
+      const aDate = String(a?.date || '');
+      const bDate = String(b?.date || '');
+      const aCanon = canonicalReportsMap.has(aId) ? 1 : 0;
+      const bCanon = canonicalReportsMap.has(bId) ? 1 : 0;
+      if (aDate <= '2026-11-05' && bDate <= '2026-11-05' && aCanon !== bCanon) {
+        return bCanon - aCanon;
+      }
+
       const aSynced = getLiveGvizSyncTimestamp(a);
       const bSynced = getLiveGvizSyncTimestamp(b);
       if (aSynced !== bSynced) return bSynced - aSynced;
 
-      const aCanon = canonicalReportsMap.has(aId) ? 1 : 0;
-      const bCanon = canonicalReportsMap.has(bId) ? 1 : 0;
       if (aCanon !== bCanon) return bCanon - aCanon;
 
       const aIsGsheet = aId.startsWith('gsheet-');
@@ -592,7 +599,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (rawId.startsWith('dr-test') || rawId.startsWith('test-')) return;
 
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
-      const isLiveSynced = getLiveGvizSyncTimestamp(item) > 0;
+      const isLiveSynced = getLiveGvizSyncTimestamp(item) > 0 || String(item.date || '') >= '2026-11-06';
       const canonical = canonicalReportsMap.get(rawId);
 
       // Eliminasi baris rep-202610* / rep-202611* usang (shifted row ID lama dari Supabase/cache)
@@ -656,7 +663,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
     const staffDateSheetSet = new Set<string>();
     const canonicalLogsMap = new Map<string, any>((INITIAL_LOGBOOK_ENTRIES || []).map((l: any) => [String(l.id), l]));
 
-    // Sort: 1. User-edited, 2. Latest live _syncedAt (newer than canonical baseline), 3. Canonical ID, 4. Non-gsheet-
+    // Sort: 1. User-edited, 2. Canonical ID (for verified <= 2026-11-05 baseline), 3. Latest live _syncedAt, 4. Non-gsheet-
     const sortedItems = [...items].sort((a: any, b: any) => {
       const aId = String(a?.id || '');
       const bId = String(b?.id || '');
@@ -664,12 +671,18 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       const bEdited = b?._userEdited || b?._syncMeta?._userEdited ? 1 : 0;
       if (aEdited !== bEdited) return bEdited - aEdited;
 
+      const aDate = String(a?.date || '');
+      const bDate = String(b?.date || '');
+      const aCanon = canonicalLogsMap.has(aId) ? 1 : 0;
+      const bCanon = canonicalLogsMap.has(bId) ? 1 : 0;
+      if (aDate <= '2026-11-05' && bDate <= '2026-11-05' && aCanon !== bCanon) {
+        return bCanon - aCanon;
+      }
+
       const aSynced = getLiveGvizSyncTimestamp(a);
       const bSynced = getLiveGvizSyncTimestamp(b);
       if (aSynced !== bSynced) return bSynced - aSynced;
 
-      const aCanon = canonicalLogsMap.has(aId) ? 1 : 0;
-      const bCanon = canonicalLogsMap.has(bId) ? 1 : 0;
       if (aCanon !== bCanon) return bCanon - aCanon;
 
       const aIsGsheet = aId.startsWith('gsheet-');
@@ -688,7 +701,7 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (rawId.startsWith('lg-test') || rawId.startsWith('test-')) return;
 
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
-      const isLiveSynced = getLiveGvizSyncTimestamp(item) > 0;
+      const isLiveSynced = getLiveGvizSyncTimestamp(item) > 0 || String(item.date || '') >= '2026-11-06';
       const canonical = canonicalLogsMap.get(rawId);
 
       if (!canonical && !isUserEdited && !isLiveSynced && (rawId.startsWith('log-rep-202610') || rawId.startsWith('log-rep-202611'))) {
@@ -1087,7 +1100,9 @@ export async function saveCloudDoc(
       deviceOS: deviceInfo.os,
       deviceType: deviceInfo.deviceType,
       browser: deviceInfo.browser,
-      ...(isUserEdited ? { _userEdited: true } : {})
+      ...(isUserEdited ? { _userEdited: true } : {}),
+      ...((data._syncedAt || data._syncMeta?._syncedAt) ? { _syncedAt: data._syncedAt || data._syncMeta?._syncedAt } : {}),
+      ...((data.rowDetails || data._syncMeta?.rowDetails) ? { rowDetails: data.rowDetails || data._syncMeta?.rowDetails } : {})
     }
   };
 

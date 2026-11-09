@@ -36,7 +36,7 @@ export interface BalancedSheetTaskItem {
   isTechnicalWork: boolean;
 }
 
-const NON_QC_ACTIVITY_PATTERNS = /^(?:[-*•\d.)\s]*)(?:buat\s+dudukan|repack\b|rapih|ngerapihin|merapihkan|beres[\s-]*beres|nyuci\s+pemberat|pembuatan\s+storytelling|belajar\b|training\b|prepare\b|pengembalian\s+alat|bantu\s+team|mencatat\s+serial|pencatatan\s+serial|melanjutkan\s+pencatatan|marking\b|setup\s+layout)/i;
+const NON_QC_ACTIVITY_PATTERNS = /^(?:[-*•\d.)\s]*)(?:buat\s+dudukan|buat\s+colase|colase\b|repack\b|rapih|ngerapihin|merapihkan|beres[\s-]*beres|nyuci\s+pemberat|pembuatan\s+storytelling|belajar\b|training\b|prepare\b|pengembalian\s+alat|bantu\s+team|mencatat\s+serial|pencatatan\s+serial|melanjutkan\s+pencatatan|marking\b|setup\s+layout)/i;
 
 const NON_EQUIPMENT_CLEANING_PATTERNS = /\b(?:rak\s+kantor|kamar\s+mandi|toilet|ruangan|lantai|halaman|sampah|meja\s+kerja)\b/i;
 

@@ -97,29 +97,56 @@ export default function Dashboard({
     return formatMonthLabel(activeMonth);
   });
 
-  // Update targetMonth and date pickers when activeMonth changes
+  const [today, setToday] = React.useState(() => new Date().toISOString().split('T')[0]);
+  const [isUserCustomDate, setIsUserCustomDate] = React.useState(false);
+
+  const latestInMonth = React.useMemo(() => {
+    if (!activeMonth || activeMonth === 'all' || !/^\d{4}-\d{2}$/.test(activeMonth)) {
+      return today;
+    }
+    const monthDates = [
+      ...dailyReports.filter(r => r.date && r.date.startsWith(activeMonth)).map(r => r.date),
+      ...logbookEntries.filter(e => e.date && e.date.startsWith(activeMonth)).map(e => e.date)
+    ].filter(Boolean).sort();
+    return monthDates.length > 0
+      ? monthDates[monthDates.length - 1]
+      : (today.startsWith(activeMonth) ? today : `${activeMonth}-01`);
+  }, [dailyReports, logbookEntries, activeMonth, today]);
+
+  // Update targetMonth when activeMonth changes
   React.useEffect(() => {
     setTargetMonth(formatMonthLabel(activeMonth));
-    if (activeMonth && activeMonth !== 'all' && /^\d{4}-\d{2}$/.test(activeMonth)) {
-      const todayIso = new Date().toISOString().split('T')[0];
-      const monthDates = [
-        ...dailyReports.filter(r => r.date && r.date.startsWith(activeMonth)).map(r => r.date),
-        ...logbookEntries.filter(e => e.date && e.date.startsWith(activeMonth)).map(e => e.date)
-      ].filter(Boolean).sort();
-      const latestInMonth = monthDates.length > 0
-        ? monthDates[monthDates.length - 1]
-        : (todayIso.startsWith(activeMonth) ? todayIso : `${activeMonth}-01`);
-      setTargetDate(latestInMonth);
-      setTargetStartDate(`${activeMonth}-01`);
-      setTargetEndDate(latestInMonth);
-    }
+    setIsUserCustomDate(false);
   }, [activeMonth]);
 
-  // Auto-sync Google Sheet saat Dashboard dimuat (baik di server internal maupun cloud)
+  // Auto-update date pickers when activeMonth or latestInMonth advances
+  React.useEffect(() => {
+    if (activeMonth && activeMonth !== 'all' && /^\d{4}-\d{2}$/.test(activeMonth)) {
+      if (!isUserCustomDate) {
+        setTargetDate(latestInMonth);
+      }
+      setTargetStartDate(`${activeMonth}-01`);
+      setTargetEndDate(today.startsWith(activeMonth) && today > latestInMonth ? today : latestInMonth);
+    }
+  }, [activeMonth, latestInMonth, today, isUserCustomDate]);
+
+  // Auto-sync Google Sheet & perbarui tanggal live secara otomatis saat berada di Dashboard
   React.useEffect(() => {
     if (onSyncDailyLogFromSheet) {
       onSyncDailyLogFromSheet().catch(e => console.warn('[Dashboard] GSheet auto-sync info:', e));
     }
+    const refreshLive = () => {
+      setToday(new Date().toISOString().split('T')[0]);
+      if (onSyncDailyLogFromSheet) {
+        onSyncDailyLogFromSheet().catch(() => {});
+      }
+    };
+    const interval = setInterval(refreshLive, 30 * 1000);
+    window.addEventListener('focus', refreshLive);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', refreshLive);
+    };
   }, []);
 
   const [notesKendala, setNotesKendala] = React.useState('');
@@ -137,43 +164,62 @@ export default function Dashboard({
 
 
   // Date and Calculations
-  const today = new Date().toISOString().split('T')[0];
+  const effectiveHarianDate = React.useMemo(() => {
+    const hasTodayData = dailyReports.some(r => r.date === today) || logbookEntries.some(e => e.date === today);
+    return hasTodayData ? today : latestInMonth;
+  }, [dailyReports, logbookEntries, today, latestInMonth]);
   
-  // Total jobs today (Daily Reports + QC logs submitted today)
+  // Total jobs today (Daily Reports + QC logs submitted on effectiveHarianDate)
   const totalJobsToday = 
-    dailyReports.filter(r => r.date === today).length + 
-    logbookEntries.filter(e => e.date === today).length;
+    dailyReports.filter(r => r.date === effectiveHarianDate).length + 
+    logbookEntries.filter(e => e.date === effectiveHarianDate).length;
 
   const isAllMonths = activeMonth === 'all';
 
-  // Filtered operational datasets based on chosen report type
+  // Filtered operational datasets based on chosen report type (Urutan Tanggal Terbaru di Atas)
   const activeDailyReports = React.useMemo(() => {
-    if (activeTab === 'harian') return dailyReports.filter(r => r.date === today);
-    if (activeTab === 'daily_report') return dailyReports.filter(r => r.date === targetDate);
-    if (activeTab === 'weekly_report') return dailyReports.filter(r => r.date && r.date >= targetStartDate && r.date <= targetEndDate);
-    return dailyReports.filter(r => isAllMonths || r.date?.startsWith(activeMonth)); // monthly_report & graphic_view
-  }, [dailyReports, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, today]);
+    const list = activeTab === 'harian'
+      ? dailyReports.filter(r => r.date === effectiveHarianDate)
+      : activeTab === 'daily_report'
+      ? dailyReports.filter(r => isUserCustomDate ? r.date === targetDate : (isAllMonths || r.date?.startsWith(activeMonth)))
+      : activeTab === 'weekly_report'
+      ? dailyReports.filter(r => r.date && r.date >= targetStartDate && r.date <= targetEndDate)
+      : dailyReports.filter(r => isAllMonths || r.date?.startsWith(activeMonth)); // monthly_report & graphic_view
+    return [...list].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  }, [dailyReports, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, effectiveHarianDate, isUserCustomDate]);
 
   const activeLogbookEntries = React.useMemo(() => {
-    if (activeTab === 'harian') return logbookEntries.filter(e => e.date === today);
-    if (activeTab === 'daily_report') return logbookEntries.filter(e => e.date === targetDate);
-    if (activeTab === 'weekly_report') return logbookEntries.filter(e => e.date && e.date >= targetStartDate && e.date <= targetEndDate);
-    return logbookEntries.filter(e => isAllMonths || e.date?.startsWith(activeMonth)); // monthly_report & graphic_view
-  }, [logbookEntries, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, today]);
+    const list = activeTab === 'harian'
+      ? logbookEntries.filter(e => e.date === effectiveHarianDate)
+      : activeTab === 'daily_report'
+      ? logbookEntries.filter(e => isUserCustomDate ? e.date === targetDate : (isAllMonths || e.date?.startsWith(activeMonth)))
+      : activeTab === 'weekly_report'
+      ? logbookEntries.filter(e => e.date && e.date >= targetStartDate && e.date <= targetEndDate)
+      : logbookEntries.filter(e => isAllMonths || e.date?.startsWith(activeMonth)); // monthly_report & graphic_view
+    return [...list].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  }, [logbookEntries, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, effectiveHarianDate, isUserCustomDate]);
 
   const activeFindings = React.useMemo(() => {
-    if (activeTab === 'harian') return findings.filter(f => f.dateCreated === today || (f as any).date === today || f.targetDate === today);
-    if (activeTab === 'daily_report') return findings.filter(f => f.dateCreated === targetDate || (f as any).date === targetDate || f.targetDate === targetDate);
-    if (activeTab === 'weekly_report') return findings.filter(f => (f.dateCreated && f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate && f.targetDate >= targetStartDate && f.targetDate <= targetEndDate));
-    return findings.filter(f => isAllMonths || f.dateCreated?.startsWith(activeMonth) || (f as any).date?.startsWith(activeMonth) || f.targetDate?.startsWith(activeMonth)); // monthly_report & graphic_view
-  }, [findings, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, today]);
+    const list = activeTab === 'harian'
+      ? findings.filter(f => f.dateCreated === effectiveHarianDate || (f as any).date === effectiveHarianDate || f.targetDate === effectiveHarianDate)
+      : activeTab === 'daily_report'
+      ? findings.filter(f => isUserCustomDate
+          ? (f.dateCreated === targetDate || (f as any).date === targetDate || f.targetDate === targetDate)
+          : (isAllMonths || f.dateCreated?.startsWith(activeMonth) || (f as any).date?.startsWith(activeMonth) || f.targetDate?.startsWith(activeMonth)))
+      : activeTab === 'weekly_report'
+      ? findings.filter(f => (f.dateCreated && f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate && f.targetDate >= targetStartDate && f.targetDate <= targetEndDate))
+      : findings.filter(f => isAllMonths || f.dateCreated?.startsWith(activeMonth) || (f as any).date?.startsWith(activeMonth) || f.targetDate?.startsWith(activeMonth)); // monthly_report & graphic_view
+    return [...list].sort((a, b) => String(b.dateCreated || '').localeCompare(String(a.dateCreated || '')));
+  }, [findings, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, effectiveHarianDate, isUserCustomDate]);
 
   const activeWorkOrders = React.useMemo(() => {
     if (activeTab === 'harian') {
-      return workOrders.filter(w => w.dateCreated === today || (w as any).date === today || w.deadline === today);
+      return workOrders.filter(w => w.dateCreated === effectiveHarianDate || (w as any).date === effectiveHarianDate || w.deadline === effectiveHarianDate);
     }
     if (activeTab === 'daily_report') {
-      return workOrders.filter(w => w.dateCreated === targetDate || (w as any).date === targetDate || w.deadline === targetDate);
+      return workOrders.filter(w => isUserCustomDate
+        ? (w.dateCreated === targetDate || (w as any).date === targetDate || w.deadline === targetDate)
+        : (isAllMonths || w.dateCreated?.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline?.startsWith(activeMonth)));
     }
     if (activeTab === 'weekly_report') {
       return workOrders.filter(w => 
@@ -182,7 +228,7 @@ export default function Dashboard({
       );
     }
     return workOrders.filter(w => isAllMonths || w.dateCreated?.startsWith(activeMonth) || (w as any).date?.startsWith(activeMonth) || w.deadline?.startsWith(activeMonth)); // monthly_report
-  }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, today]);
+  }, [workOrders, activeTab, targetDate, targetStartDate, targetEndDate, activeMonth, isAllMonths, effectiveHarianDate, isUserCustomDate]);
 
   const activeDailyTasks = React.useMemo(() => {
     if (activeTab === 'harian') {
@@ -1157,12 +1203,29 @@ export default function Dashboard({
             <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
               <label className="text-xs font-bold text-slate-700 font-mono">PERIODE :</label>
               {activeTab === 'daily_report' && (
-                <input
-                  type="date"
-                  value={targetDate}
-                  onChange={(e) => setTargetDate(e.target.value)}
-                  className="bg-white border border-slate-300 text-xs font-bold text-slate-800 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={isUserCustomDate ? targetDate : (today.startsWith(activeMonth) ? today : latestInMonth)}
+                    onChange={(e) => {
+                      setTargetDate(e.target.value);
+                      setIsUserCustomDate(Boolean(e.target.value));
+                    }}
+                    className="bg-white border border-slate-300 text-xs font-bold text-slate-800 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  {isUserCustomDate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserCustomDate(false);
+                        setTargetDate(latestInMonth);
+                      }}
+                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                    >
+                      Auto-Update
+                    </button>
+                  )}
+                </div>
               )}
               {activeTab === 'weekly_report' && (
                 <div className="flex items-center gap-1">

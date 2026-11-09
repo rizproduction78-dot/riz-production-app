@@ -43,12 +43,27 @@ export default function Reports({
 }: ReportsProps) {
   // Master Staff Dynamic State with Cloud Subscription
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
+  const [currentIsoDate, setCurrentIsoDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [isSingleDateFilter, setIsSingleDateFilter] = useState<boolean>(false);
 
-  // Auto-sync Google Sheet saat membuka Pusat Laporan
+  // Auto-sync Google Sheet & perbarui tanggal live secara otomatis saat berada di Pusat Laporan
   useEffect(() => {
     if (onSyncDailyLogFromSheet) {
       onSyncDailyLogFromSheet().catch(e => console.warn('[Reports] GSheet auto-sync info:', e));
     }
+    const refreshLiveState = () => {
+      const todayIso = new Date().toISOString().split('T')[0];
+      setCurrentIsoDate(todayIso);
+      if (onSyncDailyLogFromSheet) {
+        onSyncDailyLogFromSheet().catch(() => {});
+      }
+    };
+    const interval = setInterval(refreshLiveState, 30 * 1000);
+    window.addEventListener('focus', refreshLiveState);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', refreshLiveState);
+    };
   }, []);
 
   useEffect(() => {
@@ -70,12 +85,13 @@ export default function Reports({
   // Update targetMonth when activeMonth changes
   useEffect(() => {
     setTargetMonth(effectiveMonth);
+    setIsSingleDateFilter(false);
   }, [effectiveMonth]);
 
   // Latest date ONLY within effectiveMonth — prevents cross-month date leakage
   // MUST be declared before useState and useEffect that reference it
   const latestDateInActiveMonth = React.useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = currentIsoDate;
     const dates = [
       ...dailyReports.filter(r => r.date && r.date.startsWith(effectiveMonth)).map(r => r.date),
       ...logbookEntries.filter(e => e.date && e.date.startsWith(effectiveMonth)).map(e => e.date)
@@ -83,28 +99,34 @@ export default function Reports({
     if (dates.length > 0) return dates[dates.length - 1];
     if (today.startsWith(effectiveMonth)) return today;
     return `${effectiveMonth}-01`;
-  }, [dailyReports, logbookEntries, effectiveMonth]);
+  }, [dailyReports, logbookEntries, effectiveMonth, currentIsoDate]);
+
+  const liveDisplayDate = currentIsoDate.startsWith(effectiveMonth) ? currentIsoDate : latestDateInActiveMonth;
 
   const [targetDate, setTargetDate] = useState(() => latestDateInActiveMonth);
   const [targetStartDate, setTargetStartDate] = useState(() => `${effectiveMonth}-01`);
   const [targetEndDate, setTargetEndDate] = useState(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return today.startsWith(effectiveMonth) ? today : `${effectiveMonth}-01`;
+    return currentIsoDate.startsWith(effectiveMonth) ? currentIsoDate : latestDateInActiveMonth;
   });
 
-  // Sync date pickers when effectiveMonth changes — prevents data locking to previous month
+  // Sync date pickers when effectiveMonth or latestDateInActiveMonth updates — prevents data locking to old date
   useEffect(() => {
-    setTargetDate(latestDateInActiveMonth);
+    if (!isSingleDateFilter) {
+      setTargetDate(latestDateInActiveMonth);
+    }
     setTargetStartDate(`${effectiveMonth}-01`);
-    const today = new Date().toISOString().split('T')[0];
-    setTargetEndDate(today.startsWith(effectiveMonth) ? today : `${effectiveMonth}-01`);
-  }, [effectiveMonth, latestDateInActiveMonth]);
+    setTargetEndDate(currentIsoDate.startsWith(effectiveMonth) ? currentIsoDate : latestDateInActiveMonth);
+  }, [effectiveMonth, latestDateInActiveMonth, currentIsoDate, isSingleDateFilter]);
 
   const isAllMonths = activeMonth === 'all' && targetMonth === 'all';
 
   // Dynamic filter for active daily reports based on Harian / Mingguan / Bulanan (Urutan Tanggal Terbaru di Atas)
+  // Pada mode Harian default (!isSingleDateFilter), seluruh laporan berjalan pada bulan aktif ditampilkan otomatis (auto-update)
+  // dengan tanggal terbaru di urutan paling atas agar data tidak pernah stuck hanya di 1 hari.
   const activeDailyReports = dailyReports.filter(r => {
-    if (reportType === 'Harian') return r.date === targetDate;
+    if (reportType === 'Harian') {
+      return isSingleDateFilter ? r.date === targetDate : (isAllMonths || Boolean(r.date?.startsWith(effectiveMonth)));
+    }
     if (reportType === 'Mingguan') return Boolean(r.date && r.date >= targetStartDate && r.date <= targetEndDate);
     if (reportType === 'Bulanan') return isAllMonths || Boolean(r.date?.startsWith(targetMonth));
     return true;
@@ -112,7 +134,9 @@ export default function Reports({
 
   // Filter logbook entries based on report type (Harian vs Mingguan vs Bulanan - Urutan Tanggal Terbaru di Atas)
   const activeLogbookEntries = logbookEntries.filter(e => {
-    if (reportType === 'Harian') return e.date === targetDate;
+    if (reportType === 'Harian') {
+      return isSingleDateFilter ? e.date === targetDate : (isAllMonths || Boolean(e.date?.startsWith(effectiveMonth)));
+    }
     if (reportType === 'Mingguan') return Boolean(e.date && e.date >= targetStartDate && e.date <= targetEndDate);
     if (reportType === 'Bulanan') return isAllMonths || Boolean(e.date?.startsWith(targetMonth));
     return true;
@@ -120,7 +144,11 @@ export default function Reports({
 
   // Filter findings based on report type (Urutan Tanggal Terbaru di Atas)
   const activeFindings = findings.filter(f => {
-    if (reportType === 'Harian') return f.dateCreated === targetDate || (f as any).date === targetDate || f.targetDate === targetDate;
+    if (reportType === 'Harian') {
+      return isSingleDateFilter
+        ? (f.dateCreated === targetDate || (f as any).date === targetDate || f.targetDate === targetDate)
+        : (isAllMonths || Boolean(f.dateCreated?.startsWith(effectiveMonth) || (f as any).date?.startsWith(effectiveMonth) || f.targetDate?.startsWith(effectiveMonth)));
+    }
     if (reportType === 'Mingguan') return Boolean((f.dateCreated && f.dateCreated >= targetStartDate && f.dateCreated <= targetEndDate) || (f.targetDate && f.targetDate >= targetStartDate && f.targetDate <= targetEndDate));
     if (reportType === 'Bulanan') return isAllMonths || Boolean(f.dateCreated?.startsWith(targetMonth) || (f as any).date?.startsWith(targetMonth) || f.targetDate?.startsWith(targetMonth));
     return true;
@@ -128,7 +156,11 @@ export default function Reports({
 
   // P3.1: Filter workOrders by report period (Urutan Tanggal Terbaru di Atas)
   const activeWorkOrders = workOrders.filter(w => {
-    if (reportType === 'Harian') return w.dateCreated === targetDate || (w as any).date === targetDate || w.deadline === targetDate;
+    if (reportType === 'Harian') {
+      return isSingleDateFilter
+        ? (w.dateCreated === targetDate || (w as any).date === targetDate || w.deadline === targetDate)
+        : (isAllMonths || Boolean(w.dateCreated?.startsWith(effectiveMonth) || (w as any).date?.startsWith(effectiveMonth) || w.deadline?.startsWith(effectiveMonth)));
+    }
     if (reportType === 'Mingguan') return Boolean((w.dateCreated && w.dateCreated >= targetStartDate && w.dateCreated <= targetEndDate) || (w.deadline && w.deadline >= targetStartDate && w.deadline <= targetEndDate));
     if (reportType === 'Bulanan') return isAllMonths || Boolean(w.dateCreated?.startsWith(targetMonth) || (w as any).date?.startsWith(targetMonth) || w.deadline?.startsWith(targetMonth));
     return true;
@@ -556,11 +588,30 @@ export default function Reports({
           {/* Date Selector */}
           {reportType === 'Harian' && (
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Pilih Tanggal</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  {isSingleDateFilter ? 'Filter Tanggal Spesifik' : 'Mode Auto-Update (Semua Hari)'}
+                </label>
+                {isSingleDateFilter && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSingleDateFilter(false);
+                      setTargetDate(latestDateInActiveMonth);
+                    }}
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                  >
+                    Semua Hari (Auto-Update)
+                  </button>
+                )}
+              </div>
               <input
                 type="date"
-                value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
+                value={isSingleDateFilter ? targetDate : liveDisplayDate}
+                onChange={(e) => {
+                  setTargetDate(e.target.value);
+                  setIsSingleDateFilter(Boolean(e.target.value));
+                }}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-mono"
               />
             </div>
@@ -969,20 +1020,20 @@ export default function Reports({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-sans">
               <div className="p-3 border border-slate-200 rounded">
                 <span className="text-slate-400 block font-bold text-[9px] uppercase">Total QC</span>
-                <strong className="text-lg text-slate-800">{logbookEntries.length} Pemeriksaan</strong>
+                <strong className="text-lg text-slate-800">{activeLogbookEntries.length} Pemeriksaan</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-emerald-50/20 rounded">
                 <span className="text-emerald-500 block font-bold text-[9px] uppercase">OK (Lulus QC)</span>
-                <strong className="text-lg text-emerald-700">{logbookEntries.filter(e => e.result === 'OK').length} Unit</strong>
+                <strong className="text-lg text-emerald-700">{activeLogbookEntries.filter(e => e.result === 'OK').length} Unit</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-rose-50/20 rounded">
                 <span className="text-rose-500 block font-bold text-[9px] uppercase">NG (Not Good)</span>
-                <strong className="text-lg text-rose-700">{logbookEntries.filter(e => e.result === 'NG').length} Unit</strong>
+                <strong className="text-lg text-rose-700">{activeLogbookEntries.filter(e => e.result === 'NG').length} Unit</strong>
               </div>
               <div className="p-3 border border-slate-200 bg-indigo-50/20 rounded">
                 <span className="text-indigo-600 block font-bold text-[9px] uppercase">Persentase Kelulusan</span>
                 <strong className="text-lg text-indigo-700">
-                  {logbookEntries.length > 0 ? Math.round((logbookEntries.filter(e => e.result === 'OK').length / logbookEntries.length) * 100) : 100}%
+                  {activeLogbookEntries.length > 0 ? Math.round((activeLogbookEntries.filter(e => e.result === 'OK').length / activeLogbookEntries.length) * 100) : 100}%
                 </strong>
               </div>
             </div>
@@ -992,15 +1043,15 @@ export default function Reports({
               <div className="h-6 w-full rounded bg-rose-500 overflow-hidden flex font-mono text-white text-[10px] font-bold">
                 <div
                   className="h-full bg-emerald-500 flex items-center justify-center transition-all"
-                  style={{ width: `${logbookEntries.length > 0 ? Math.round((logbookEntries.filter(e => e.result === 'OK').length / logbookEntries.length) * 100) : 100}%` }}
+                  style={{ width: `${activeLogbookEntries.length > 0 ? Math.round((activeLogbookEntries.filter(e => e.result === 'OK').length / activeLogbookEntries.length) * 100) : 100}%` }}
                 >
-                  OK ({logbookEntries.length > 0 ? Math.round((logbookEntries.filter(e => e.result === 'OK').length / logbookEntries.length) * 100) : 100}%)
+                  OK ({activeLogbookEntries.length > 0 ? Math.round((activeLogbookEntries.filter(e => e.result === 'OK').length / activeLogbookEntries.length) * 100) : 100}%)
                 </div>
                 <div
                   className="h-full flex items-center justify-center"
-                  style={{ width: `${logbookEntries.length > 0 ? 100 - Math.round((logbookEntries.filter(e => e.result === 'OK').length / logbookEntries.length) * 100) : 0}%` }}
+                  style={{ width: `${activeLogbookEntries.length > 0 ? 100 - Math.round((activeLogbookEntries.filter(e => e.result === 'OK').length / activeLogbookEntries.length) * 100) : 0}%` }}
                 >
-                  NG ({logbookEntries.length > 0 ? 100 - Math.round((logbookEntries.filter(e => e.result === 'OK').length / logbookEntries.length) * 100) : 0}%)
+                  NG ({activeLogbookEntries.length > 0 ? 100 - Math.round((activeLogbookEntries.filter(e => e.result === 'OK').length / activeLogbookEntries.length) * 100) : 0}%)
                 </div>
               </div>
             </div>
@@ -1261,7 +1312,7 @@ export default function Reports({
             <div className="text-right sm:text-right text-xs space-y-1">
               <h2 className="text-md font-bold text-slate-800 uppercase font-display">Logbook QC Harian Staff Inhouse</h2>
               <div className="font-mono text-slate-500">
-                <div>Tanggal: {targetDate}</div>
+                <div>Tanggal: {reportType === 'Harian' ? (isSingleDateFilter ? targetDate : `${liveDisplayDate} (${effectiveMonth}-01 s/d ${latestDateInActiveMonth})`) : `${targetStartDate} s/d ${targetEndDate}`}</div>
                 <div>Tanggal Cetak: {new Date().toLocaleDateString('id-ID')}</div>
               </div>
             </div>
@@ -1270,7 +1321,7 @@ export default function Reports({
           {/* LOGBOOK TABLE */}
           <div className="space-y-4">
             <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">
-              I. LOGBOOK QC {reportType === 'Harian' ? 'HARIAN' : reportType === 'Bulanan' ? 'BULANAN' : 'MINGGUAN'} STAFF INHOUSE
+              I. LOGBOOK QC {reportType === 'Harian' ? 'HARIAN' : reportType === 'Bulanan' ? 'BULANAN' : 'MINGGUAN'} STAFF INHOUSE ({reportType === 'Harian' ? (isSingleDateFilter ? targetDate : `${effectiveMonth}-01 s/d ${latestDateInActiveMonth}`) : `${targetStartDate} s/d ${targetEndDate}`})
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border border-slate-300 text-xs">
@@ -1322,7 +1373,7 @@ export default function Reports({
                   {activeLogbookEntries.length === 0 && (
                     <tr>
                       <td colSpan={8} className="p-4 text-center text-slate-400 italic">
-                        Tidak ada logbook QC terisi pada periode {reportType === 'Harian' ? targetDate : targetMonth}.
+                        Tidak ada logbook QC terisi pada periode {reportType === 'Harian' ? (isSingleDateFilter ? targetDate : effectiveMonth) : targetMonth}.
                       </td>
                     </tr>
                   )}
@@ -1334,7 +1385,7 @@ export default function Reports({
           {/* DAILY REPORT STAFF SECTION */}
           <div className="space-y-4">
             <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">
-              I.B. LAPORAN DAILY REPORT STAFF HARIAN ({reportType === 'Harian' ? targetDate : targetMonth})
+              I.B. LAPORAN DAILY REPORT STAFF HARIAN ({reportType === 'Harian' ? (isSingleDateFilter ? targetDate : `${effectiveMonth}-01 s/d ${latestDateInActiveMonth}`) : targetMonth})
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border border-slate-300 text-xs">
@@ -1368,7 +1419,7 @@ export default function Reports({
                   {activeDailyReports.length === 0 && (
                     <tr>
                       <td colSpan={7} className="p-4 text-center text-slate-400 italic">
-                        Tidak ada daily report staff terisi pada periode {reportType === 'Harian' ? targetDate : targetMonth}.
+                        Tidak ada daily report staff terisi pada periode {reportType === 'Harian' ? (isSingleDateFilter ? targetDate : effectiveMonth) : targetMonth}.
                       </td>
                     </tr>
                   )}
@@ -1380,7 +1431,7 @@ export default function Reports({
           {/* REKAP HARIAN SECTION */}
           <div className="space-y-4">
             <div className="text-xs uppercase font-bold text-slate-400 font-mono tracking-wider">
-              II. REKAP {reportType === 'Harian' ? 'HARIAN' : reportType === 'Bulanan' ? 'BULANAN' : 'MINGGUAN'} ({reportType === 'Harian' ? targetDate : targetMonth})
+              II. REKAP {reportType === 'Harian' ? 'HARIAN' : reportType === 'Bulanan' ? 'BULANAN' : 'MINGGUAN'} ({reportType === 'Harian' ? (isSingleDateFilter ? targetDate : `${effectiveMonth}-01 s/d ${latestDateInActiveMonth}`) : targetMonth})
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs text-slate-700 font-sans">
               <div className="p-3 border border-slate-300 bg-slate-50/50 rounded flex flex-col justify-between">

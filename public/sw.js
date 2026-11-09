@@ -1,7 +1,7 @@
 // Active Network-First Service Worker for RIZ-PRO LOG PWA Installation (Android WebAPK, iOS & Desktop Apps)
 // Clears legacy Cache Storage on activation so mobile & desktop always load live data without stale bundles.
 
-const SW_VERSION = 'riz-prolog-pwa-v2';
+const SW_VERSION = 'riz-prolog-pwa-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -24,10 +24,13 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+  // Never intercept cross-origin API/CSV requests (Google Sheets, Apps Script, Supabase)
+  if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
+    fetch(event.request).catch(async () => {
+      const cached = await caches.match(event.request);
+      return cached || new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
     })
   );
 });

@@ -838,6 +838,58 @@ export const INITIAL_DAILY_TASKS: DailyTask[] = [
     dueDate: '2026-11-05',
     createdAt: '2026-11-05',
     createdBy: 'Mulyadi'
+  },
+  {
+    id: 'dt-20261106-01',
+    title: 'Pembuatan Colase Kkuwa & Pesantren Darul Ilmi',
+    description: 'buat colase kkuwa\nbuat colase pesantren darul ilmi\nREMARK:\ndone\ndone',
+    division: 'Multimedia',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-mulyadi',
+    assignedName: 'Mulyadi',
+    dueDate: '2026-11-06',
+    createdAt: '2026-11-06',
+    createdBy: 'Mulyadi'
+  },
+  {
+    id: 'dt-20261107-01',
+    title: 'Pembuatan Colase TMII, Dufan, Velodrome & Ajinomoto',
+    description: 'buat colase TMii\ncolase dufan\ncolase velodrome\najinamoto',
+    division: 'Multimedia',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-mulyadi',
+    assignedName: 'Mulyadi',
+    dueDate: '2026-11-07',
+    createdAt: '2026-11-07',
+    createdBy: 'Mulyadi'
+  },
+  {
+    id: 'dt-20261108-01',
+    title: 'Cek dan Maintenance Snake Cable 16 Channel',
+    description: 'Cek dan Maintenance Snake Cable 16 channel\nREMARK:\nSemua Aman',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-ramdani',
+    assignedName: 'Ramdani',
+    dueDate: '2026-11-08',
+    createdAt: '2026-11-08',
+    createdBy: 'Ramdani'
+  },
+  {
+    id: 'dt-20261108-02',
+    title: 'Cek dan Maintenance Snake Cable 8 Channel & Snake Aux',
+    description: 'Cek dan Maintenance snake cable 8 channel\nCek dan Maintenance snake Aux\nREMARK:\nSemua Aman\nAman',
+    division: 'Audio',
+    priority: 'Sedang',
+    status: 'Done',
+    assignedTo: 'staff-rahmat',
+    assignedName: 'Muhamad Rahmat',
+    dueDate: '2026-11-08',
+    createdAt: '2026-11-08',
+    createdBy: 'Muhamad Rahmat'
   }
 ];
 
