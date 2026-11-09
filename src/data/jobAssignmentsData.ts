@@ -13006,14 +13006,264 @@ const RAW_INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = [
   },
 ];
 
+const ALL_INHOUSE_FIELD_STAFF_POOL: Array<{ rawName: string; roleNote: string; division: JobDivisionSection['division'] }> = [
+  { rawName: 'Mboh', roleNote: 'Team Leader & Koordinator Sound', division: 'Audio' },
+  { rawName: 'Unyim', roleNote: 'Operator Monitor & Instalasi Sound', division: 'Audio' },
+  { rawName: 'Dani', roleNote: 'Teknisi FOH & Backline Audio', division: 'Audio' },
+  { rawName: 'Iwan', roleNote: 'Teknisi Sistem Speaker & Power Audio', division: 'Audio' },
+  { rawName: 'Yudis', roleNote: 'Teknisi Stage & Mic Wireless Audio', division: 'Audio' },
+  { rawName: 'Opik', roleNote: 'Operator & Teknisi Sound System', division: 'Audio' },
+  { rawName: 'Buluk', roleNote: 'Instalasi Kabel & Rigging Sound', division: 'Audio' },
+  { rawName: 'Heri', roleNote: 'Team Leader & Koordinator Lighting', division: 'Lighting' },
+  { rawName: 'Jay', roleNote: 'Team Leader & Koordinator Multimedia', division: 'Multimedia' },
+  { rawName: 'Ayong', roleNote: 'Team Leader & Koordinator LED Videotron', division: 'Videotron' },
+  { rawName: 'Wigi', roleNote: 'Operator NovaStar & Konstruksi LED', division: 'Videotron' },
+  { rawName: 'Irvan', roleNote: 'Teknisi Panel Kabinet & Power LED', division: 'Videotron' },
+  { rawName: 'Kharo', roleNote: 'Teknisi Modul LED & Service', division: 'Videotron' },
+  { rawName: 'Mang Ube', roleNote: 'Team Leader Gudang & Logistik Event', division: 'Produksi' },
+  { rawName: 'Gatot', roleNote: 'Staff Gudang & Loading Alat Event', division: 'Produksi' },
+  { rawName: 'Subur', roleNote: 'Staff Gudang & Mobilisasi Event', division: 'Produksi' },
+  { rawName: 'Damri', roleNote: 'Team Leader Service & Kontrol Kelistrikan', division: 'Produksi' },
+];
+
+/**
+ * Mengembalikan identitas kanonikal unik untuk seorang personil (Staff Inhouse maupun Kru Freelance)
+ */
+export function getCrewPersonKey(member: JobCrewMember): string {
+  if (member.staffId) return member.staffId.toLowerCase().trim();
+  return (member.canonicalName || member.name || '').toUpperCase().trim();
+}
+
+/**
+ * Mengecek apakah seorang Staff/Crew sudah ditugaskan pada Job/Event LAIN di tanggal yang sama (`targetJob.date`).
+ * Mengembalikan detail konflik apabila ditemukan penumpukan jadwal pada tanggal yang sama, atau `null` bila aman.
+ */
+export function findCrewSameDateConflict(
+  allJobs: JobAssignment[],
+  targetJob: Pick<JobAssignment, 'id' | 'date' | 'endDate'>,
+  crewCandidate: string | JobCrewMember,
+  defaultDivision = 'Umum'
+): { conflictingJob: JobAssignment; crewMember: JobCrewMember; conflictDate: string } | null {
+  const resolvedCandidate =
+    typeof crewCandidate === 'string'
+      ? resolveCrewMember(crewCandidate, defaultDivision)
+      : crewCandidate;
+  const candidateKey = getCrewPersonKey(resolvedCandidate);
+  if (!candidateKey) return null;
+
+  const targetDate = String(targetJob.date || '').slice(0, 10);
+  if (!targetDate) return null;
+
+  for (const otherJob of allJobs || []) {
+    if (!otherJob || otherJob.id === targetJob.id) continue;
+    const otherDate = String(otherJob.date || '').slice(0, 10);
+    if (otherDate !== targetDate) continue;
+
+    for (const sec of otherJob.sections || []) {
+      for (const existingMember of sec.crew || []) {
+        if (getCrewPersonKey(existingMember) === candidateKey) {
+          return {
+            conflictingJob: otherJob,
+            crewMember: resolvedCandidate,
+            conflictDate: targetDate,
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Menjamin TIDAK ADA Nama Staff / Crew bertugas di lebih dari 1 Job/Event pada tanggal yang sama (`job.date`),
+ * serta tidak ada duplikasi nama personil di antar-divisi pada event yang sama.
+ * Jika pada tanggal yang sama terdapat beberapa Job/Event, sistem merotasi penugasan secara otomatis ke
+ * Staff Inhouse dan Kru Freelance lain yang belum memiliki jadwal pada tanggal tersebut.
+ */
+export function enforceNoSameDateCrewOverlap(jobs: JobAssignment[]): JobAssignment[] {
+  if (!Array.isArray(jobs) || jobs.length === 0) return [];
+
+  const sortedJobs = [...jobs].sort((a, b) => {
+    const cmp = String(a.date || '').localeCompare(String(b.date || ''));
+    if (cmp !== 0) return cmp;
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
+
+  // Lacak personil yang sudah bertugas per tanggal (YYYY-MM-DD -> Set<personKey>)
+  const occupiedByDate = new Map<string, Set<string>>();
+  // Lacak jumlah penugasan bulanan per staff inhouse agar distribusi seluruh 17 staf merata tanpa penumpukan di hari yang sama
+  const monthlyStaffCount = new Map<string, number>();
+
+  const getOccupiedSet = (dateIso: string): Set<string> => {
+    const clean = String(dateIso || '').slice(0, 10);
+    let set = occupiedByDate.get(clean);
+    if (!set) {
+      set = new Set<string>();
+      occupiedByDate.set(clean, set);
+    }
+    return set;
+  };
+
+  const getMonthStaffCount = (monthKey: string, staffId: string): number => {
+    return monthlyStaffCount.get(`${monthKey}:${staffId}`) || 0;
+  };
+
+  const incrementMonthStaffCount = (monthKey: string, staffId?: string) => {
+    if (!staffId) return;
+    const key = `${monthKey}:${staffId}`;
+    monthlyStaffCount.set(key, (monthlyStaffCount.get(key) || 0) + 1);
+  };
+
+  return sortedJobs.map((rawJob, jobIdx) => {
+    const enrichedBase = enrichJobAssignmentCrewLinkage(rawJob);
+    const dateIso = String(enrichedBase.date || '').slice(0, 10);
+    const monthKey = enrichedBase.monthKey || dateIso.slice(0, 7);
+    const occupiedToday = getOccupiedSet(dateIso);
+
+    // Deteksi nama kru eksplisit yang tertulis langsung di venue / notes Google Calendar event ini
+    const explicitText = `${rawJob.venue || ''} | ${rawJob.notes || ''}`;
+    const explicitKeysForThisJob = new Set<string>();
+    for (const pat of EXPLICIT_CREW_DETECTION_PATTERNS) {
+      if (pat.regex.test(explicitText)) {
+        const resolved = resolveCrewMember(pat.rawName, 'Umum', pat.roleNote);
+        explicitKeysForThisJob.add(getCrewPersonKey(resolved));
+      }
+    }
+
+    const updatedSections: JobDivisionSection[] = (enrichedBase.sections || []).map((sec, secIdx) => {
+      const cleanCrew: JobCrewMember[] = [];
+
+      // 1. Pertahankan kru eksplisit / hasil edit user selama BELUM bertugas di event lain pada tanggal yang sama
+      for (const c of sec.crew || []) {
+        const pKey = getCrewPersonKey(c);
+        if (!pKey || occupiedToday.has(pKey)) {
+          continue;
+        }
+        const isExplicitOrUserEdited = Boolean(rawJob._userEdited) || explicitKeysForThisJob.has(pKey);
+        if (isExplicitOrUserEdited) {
+          occupiedToday.add(pKey);
+          if (c.personnelType === 'Staff') {
+            incrementMonthStaffCount(monthKey, c.staffId);
+          }
+          cleanCrew.push(c);
+        }
+      }
+
+      // 2. Pastikan setiap seksi memiliki Staff Inhouse & Kru Freelance yang BELUM bertugas di event lain pada tanggal ini
+      const hasStaff = cleanCrew.some(c => c.personnelType === 'Staff');
+      const hasFreelance = cleanCrew.some(c => c.personnelType === 'Freelance');
+      const seedHash = computeJobDeterministicHash(`${enrichedBase.id}-${dateIso}-${sec.division}-${secIdx}-${jobIdx}`);
+
+      if (!hasStaff) {
+        const leaderDef =
+          DIVISION_DEFAULT_TEAM_LEADER[sec.division] || DIVISION_DEFAULT_TEAM_LEADER.Produksi;
+        const divStaffPool =
+          DIVISION_ROTATION_INHOUSE_STAFF[sec.division] || DIVISION_ROTATION_INHOUSE_STAFF.Produksi;
+
+        // Gabungkan kandidat divisi utama lalu lintas divisi, urutkan berdasarkan beban bulanan paling rendah agar merata
+        const primaryCandidates = [leaderDef, ...divStaffPool].map(item =>
+          resolveCrewMember(item.rawName, sec.division, item.roleNote)
+        );
+        const crossDivCandidates = ALL_INHOUSE_FIELD_STAFF_POOL.map((item, idx) =>
+          resolveCrewMember(
+            ALL_INHOUSE_FIELD_STAFF_POOL[(seedHash + idx) % ALL_INHOUSE_FIELD_STAFF_POOL.length].rawName,
+            sec.division,
+            ALL_INHOUSE_FIELD_STAFF_POOL[(seedHash + idx) % ALL_INHOUSE_FIELD_STAFF_POOL.length].roleNote
+          )
+        );
+
+        const availablePrimary = primaryCandidates
+          .filter(cand => !occupiedToday.has(getCrewPersonKey(cand)))
+          .sort((a, b) => {
+            const cntA = getMonthStaffCount(monthKey, a.staffId || '');
+            const cntB = getMonthStaffCount(monthKey, b.staffId || '');
+            return cntA - cntB;
+          });
+
+        const availableCross = crossDivCandidates
+          .filter(cand => !occupiedToday.has(getCrewPersonKey(cand)))
+          .sort((a, b) => {
+            const cntA = getMonthStaffCount(monthKey, a.staffId || '');
+            const cntB = getMonthStaffCount(monthKey, b.staffId || '');
+            return cntA - cntB;
+          });
+
+        const chosenStaff = availablePrimary[0] || availableCross[0];
+        if (chosenStaff) {
+          const pKey = getCrewPersonKey(chosenStaff);
+          occupiedToday.add(pKey);
+          incrementMonthStaffCount(monthKey, chosenStaff.staffId);
+          cleanCrew.push(chosenStaff);
+        }
+      }
+
+      if (!hasFreelance) {
+        const divFlPool =
+          DIVISION_ROTATION_FREELANCE_CREW[sec.division] || DIVISION_ROTATION_FREELANCE_CREW.Produksi;
+        const rotatedDivFl = divFlPool.map((_, i) => {
+          const pick = divFlPool[(seedHash + i) % divFlPool.length];
+          return resolveCrewMember(pick.rawName, sec.division, pick.roleNote);
+        });
+        const rotatedAllFl = OFFICIAL_FREELANCE_CREW_LIST.map((_, i) => {
+          const pick = OFFICIAL_FREELANCE_CREW_LIST[(seedHash + i) % OFFICIAL_FREELANCE_CREW_LIST.length];
+          return resolveCrewMember(pick.name, sec.division, `Kru Freelance ${sec.division}`);
+        });
+
+        const chosenFl =
+          rotatedDivFl.find(cand => !occupiedToday.has(getCrewPersonKey(cand))) ||
+          rotatedAllFl.find(cand => !occupiedToday.has(getCrewPersonKey(cand)));
+
+        if (chosenFl) {
+          occupiedToday.add(getCrewPersonKey(chosenFl));
+          cleanCrew.push(chosenFl);
+        }
+      }
+
+      const sectionPicName =
+        cleanCrew.length > 0
+          ? cleanCrew.map(c => c.name).slice(0, 2).join(' & ')
+          : sec.sectionPic;
+
+      return {
+        ...sec,
+        crew: cleanCrew,
+        ...(sectionPicName ? { sectionPic: sectionPicName } : {}),
+      };
+    });
+
+    const allAssignedNames: string[] = [];
+    for (const s of updatedSections) {
+      for (const c of s.crew) {
+        if (!allAssignedNames.includes(c.name)) {
+          allAssignedNames.push(c.name);
+        }
+      }
+    }
+
+    const updatedPic =
+      allAssignedNames.length > 0
+        ? allAssignedNames.slice(0, 3).join(', ')
+        : enrichedBase.pic;
+
+    return {
+      ...enrichedBase,
+      pic: updatedPic,
+      sections: updatedSections,
+    };
+  });
+}
+
 /**
  * Dataset Resmi Job/Event yang telah difilter ketat (HANYA Job/Event produksi,
  * mengecualikan Meeting, Tech Meeting, Rapat, Survey/Survei, Visit Kantor, Pajak, Loan/KUR/KGS, Izin, Hampers, Undangan, Training)
- * serta dihubungkan otomatis dengan penugasan kerja Crew Freelance & Staff Inhouse per divisi.
+ * serta dihubungkan otomatis dengan penugasan kerja Crew Freelance & Staff Inhouse per divisi TANPA penumpukan nama pada tanggal yang sama.
  */
-export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = RAW_INITIAL_JOB_ASSIGNMENTS.filter(item =>
-  isStrictJobOrEventCalendarEntry(item.venue || item.dateLabel || '', item.notes)
-).map(enrichJobAssignmentCrewLinkage);
+export const INITIAL_JOB_ASSIGNMENTS: JobAssignment[] = enforceNoSameDateCrewOverlap(
+  RAW_INITIAL_JOB_ASSIGNMENTS.filter(item =>
+    isStrictJobOrEventCalendarEntry(item.venue || item.dateLabel || '', item.notes)
+  )
+);
 
 /**
  * Normalisasi & Sinkronisasi Master Jadwal Event Google Calendar (rizproduction78@gmail.com)
@@ -13083,7 +13333,9 @@ export function normalizeJobAssignmentsMaster(rawItems?: JobAssignment[] | null)
     }
   }
 
-  return Array.from(canonicalMap.values()).sort((a, b) =>
-    String(a.date || '').localeCompare(String(b.date || ''))
+  return enforceNoSameDateCrewOverlap(
+    Array.from(canonicalMap.values()).sort((a, b) =>
+      String(a.date || '').localeCompare(String(b.date || ''))
+    )
   );
 }

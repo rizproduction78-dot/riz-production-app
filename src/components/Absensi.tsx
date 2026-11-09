@@ -30,6 +30,10 @@ import {
   normalizeJobAssignmentsMaster
 } from '../data';
 import {
+  findCrewSameDateConflict,
+  getCrewPersonKey
+} from '../data/jobAssignmentsData';
+import {
   SHIFT_LEGEND,
   SCHEDULE_NOTE,
   StaffScheduleRow,
@@ -714,6 +718,43 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       nextCrew = sec.crew.filter((_, idx) => idx !== existingIndex);
       actionLabel = `Menghapus ${resolved.name} dari jadwal ${job.dateLabel} (${sec.division})`;
     } else {
+      // Blokir jika personil sudah bertugas di Job/Event lain pada tanggal yang sama
+      const sameDateConflict = findCrewSameDateConflict(
+        jobAssignments,
+        job,
+        resolved,
+        sec.division
+      );
+      if (sameDateConflict) {
+        const conflictMsg = `PENUMPUKAN JADWAL DITOLAK: ${sameDateConflict.crewMember.canonicalName} sudah bertugas di event "${sameDateConflict.conflictingJob.venue}" pada tanggal yang sama (${sameDateConflict.conflictDate}). Nama Staff/Crew bertugas tidak diizinkan ada di lebih dari 1 Job/Event pada tanggal yang sama.`;
+        setGcalSyncFeedback({
+          type: 'warning',
+          text: conflictMsg
+        });
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          window.alert(conflictMsg);
+        }
+        return;
+      }
+
+      // Blokir duplikasi di divisi lain pada event yang sama
+      const inOtherSectionOfSameJob = job.sections.some(
+        (otherSec, idx) =>
+          idx !== sectionIdx &&
+          otherSec.crew.some(c => getCrewPersonKey(c) === getCrewPersonKey(resolved))
+      );
+      if (inOtherSectionOfSameJob) {
+        const sameJobMsg = `PENUMPUKAN DIVISI DITOLAK: ${resolved.canonicalName} sudah terdaftar pada seksi divisi lain di event "${job.venue}" (${job.date}).`;
+        setGcalSyncFeedback({
+          type: 'warning',
+          text: sameJobMsg
+        });
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          window.alert(sameJobMsg);
+        }
+        return;
+      }
+
       nextCrew = [
         ...sec.crew,
         {
@@ -765,6 +806,23 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       sec.division,
       nextRoleNote.trim() || undefined
     );
+    const sameDateConflict = findCrewSameDateConflict(
+      jobAssignments,
+      job,
+      resolved,
+      sec.division
+    );
+    if (sameDateConflict) {
+      const conflictMsg = `PENUMPUKAN JADWAL DITOLAK: ${sameDateConflict.crewMember.canonicalName} sudah bertugas di event "${sameDateConflict.conflictingJob.venue}" pada tanggal yang sama (${sameDateConflict.conflictDate}).`;
+      setGcalSyncFeedback({
+        type: 'warning',
+        text: conflictMsg
+      });
+      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert(conflictMsg);
+      }
+      return;
+    }
     const updatedMember: JobCrewMember = {
       ...prevMember,
       ...resolved,
@@ -1262,6 +1320,21 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       const base = t.replace(/\([^)]*\)/g, '').trim().toLowerCase();
       return base === lowerTarget;
     });
+    if (!exists) {
+      const sameDateConflict = findCrewSameDateConflict(
+        jobAssignments,
+        { id: editingJobId || '__new_modal_job__', date: jobFormDate },
+        personName,
+        jobFormDivision
+      );
+      if (sameDateConflict) {
+        const conflictMsg = `PENUMPUKAN JADWAL DITOLAK: ${sameDateConflict.crewMember.canonicalName} sudah bertugas di event "${sameDateConflict.conflictingJob.venue}" pada tanggal yang sama (${sameDateConflict.conflictDate}).`;
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          window.alert(conflictMsg);
+        }
+        return;
+      }
+    }
     const nextTokens = exists
       ? tokens.filter(t => t.replace(/\([^)]*\)/g, '').trim().toLowerCase() !== lowerTarget)
       : [...tokens, personName];
@@ -5173,6 +5246,9 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                                   c.name.toLowerCase().trim() === primaryNick.toLowerCase() ||
                                                   c.name.toLowerCase().trim() === st.name.toLowerCase()
                                               );
+                                              const sameDateConflict = !isAssigned
+                                                ? findCrewSameDateConflict(jobAssignments, job, primaryNick, sec.division)
+                                                : null;
                                               return (
                                                 <button
                                                   key={st.id}
@@ -5185,20 +5261,31 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                                       crewPickerRoleNote
                                                     )
                                                   }
+                                                  title={
+                                                    sameDateConflict
+                                                      ? `Tidak diizinkan: sudah bertugas di event "${sameDateConflict.conflictingJob.venue}" pada tanggal ${sameDateConflict.conflictDate}`
+                                                      : undefined
+                                                  }
                                                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border ${
                                                     isAssigned
                                                       ? 'bg-indigo-600 text-white border-indigo-700 shadow-2xs'
-                                                      : 'bg-slate-50 hover:bg-indigo-50 text-slate-800 border-slate-300 hover:border-indigo-400'
+                                                      : sameDateConflict
+                                                        ? 'bg-rose-50 text-rose-700 border-rose-200 opacity-75'
+                                                        : 'bg-slate-50 hover:bg-indigo-50 text-slate-800 border-slate-300 hover:border-indigo-400'
                                                   }`}
                                                 >
-                                                  <span>{isAssigned ? '✓' : '+'}</span>
+                                                  <span>{isAssigned ? '✓' : sameDateConflict ? '⛔' : '+'}</span>
                                                   <span>{st.nickname ? `${st.nickname} (${st.name.split(' ')[0]})` : st.name}</span>
                                                   <span
                                                     className={`text-[9px] font-mono px-1 rounded ${
-                                                      isAssigned ? 'bg-indigo-800 text-indigo-100' : 'bg-slate-200 text-slate-600'
+                                                      isAssigned
+                                                        ? 'bg-indigo-800 text-indigo-100'
+                                                        : sameDateConflict
+                                                          ? 'bg-rose-200 text-rose-900'
+                                                          : 'bg-slate-200 text-slate-600'
                                                     }`}
                                                   >
-                                                    {st.division}
+                                                    {sameDateConflict ? 'Sudah Tugas Tgl Ini' : st.division}
                                                   </span>
                                                 </button>
                                               );
@@ -5224,6 +5311,9 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                                 c.name.toLowerCase().trim() === fl.name.toLowerCase() ||
                                                 (c.canonicalName || '').toLowerCase() === fl.canonicalName.toLowerCase()
                                             );
+                                            const sameDateConflict = !isAssigned
+                                              ? findCrewSameDateConflict(jobAssignments, job, fl.name, sec.division)
+                                              : null;
                                             return (
                                               <button
                                                 key={fl.id}
@@ -5236,20 +5326,31 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                                     crewPickerRoleNote
                                                   )
                                                 }
+                                                title={
+                                                  sameDateConflict
+                                                    ? `Tidak diizinkan: sudah bertugas di event "${sameDateConflict.conflictingJob.venue}" pada tanggal ${sameDateConflict.conflictDate}`
+                                                    : undefined
+                                                }
                                                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border ${
                                                   isAssigned
                                                     ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
-                                                    : 'bg-slate-50 hover:bg-emerald-50 text-slate-800 border-slate-300 hover:border-emerald-400'
+                                                    : sameDateConflict
+                                                      ? 'bg-rose-50 text-rose-700 border-rose-200 opacity-75'
+                                                      : 'bg-slate-50 hover:bg-emerald-50 text-slate-800 border-slate-300 hover:border-emerald-400'
                                                 }`}
                                               >
-                                                <span>{isAssigned ? '✓' : '+'}</span>
+                                                <span>{isAssigned ? '✓' : sameDateConflict ? '⛔' : '+'}</span>
                                                 <span>{fl.name}</span>
                                                 <span
                                                   className={`text-[9px] font-mono px-1 rounded ${
-                                                    isAssigned ? 'bg-emerald-800 text-emerald-100' : 'bg-slate-200 text-slate-600'
+                                                    isAssigned
+                                                      ? 'bg-emerald-800 text-emerald-100'
+                                                      : sameDateConflict
+                                                        ? 'bg-rose-200 text-rose-900'
+                                                        : 'bg-slate-200 text-slate-600'
                                                   }`}
                                                 >
-                                                  {fl.division}
+                                                  {sameDateConflict ? 'Sudah Tugas Tgl Ini' : fl.division}
                                                 </span>
                                               </button>
                                             );
@@ -5936,6 +6037,30 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                                       sec.division,
                                       (assessmentModalAddCrewRole[sIdx] || '').trim() || undefined
                                     );
+                                    if (assessmentModalJob) {
+                                      const sameDateConflict = findCrewSameDateConflict(
+                                        jobAssignments,
+                                        assessmentModalJob,
+                                        resolved,
+                                        sec.division
+                                      );
+                                      if (sameDateConflict) {
+                                        const conflictMsg = `PENUMPUKAN JADWAL DITOLAK: ${sameDateConflict.crewMember.canonicalName} sudah bertugas di event "${sameDateConflict.conflictingJob.venue}" pada tanggal yang sama (${sameDateConflict.conflictDate}).`;
+                                        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+                                          window.alert(conflictMsg);
+                                        }
+                                        return;
+                                      }
+                                      const alreadyInModalJob = assessmentModalJob.sections.some(s =>
+                                        s.crew.some(c => getCrewPersonKey(c) === getCrewPersonKey(resolved))
+                                      );
+                                      if (alreadyInModalJob) {
+                                        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+                                          window.alert(`${resolved.canonicalName} sudah terdaftar pada event ini.`);
+                                        }
+                                        return;
+                                      }
+                                    }
                                     setAssessmentModalJob(prev => {
                                       if (!prev) return prev;
                                       const nextSecs = prev.sections.map((s, i) =>

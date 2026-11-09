@@ -2,6 +2,8 @@ import {
   INITIAL_JOB_ASSIGNMENTS,
   normalizeJobAssignmentsMaster,
   isStrictJobOrEventCalendarEntry,
+  findCrewSameDateConflict,
+  getCrewPersonKey,
 } from '../src/data/jobAssignmentsData';
 import { INITIAL_DAILY_TASKS } from '../src/data';
 import { normalizeCollectionItems } from '../src/lib/cloudSync';
@@ -319,6 +321,50 @@ assert(
 );
 console.log(
   `✅ Auto-update Tanggal Penugasan sesuai Kalender (${sampleReferenceDate}): ${upcomingJobs.length} jadwal akan dilalui di urutan teratas (${upcomingJobs[0].date}), ${workLogs.length} tanggal terlewat dijadikan Data Log Pekerjaan Selesai.`
+);
+
+// 11. Verify NO Staff or Freelance Crew is ever assigned to more than 1 Job/Event on the same date
+const dateCrewMap = new Map<string, Map<string, string>>();
+for (const job of INITIAL_JOB_ASSIGNMENTS) {
+  const d = job.date;
+  if (!dateCrewMap.has(d)) {
+    dateCrewMap.set(d, new Map<string, string>());
+  }
+  const seenOnDate = dateCrewMap.get(d)!;
+  const seenInThisJob = new Set<string>();
+
+  for (const sec of job.sections || []) {
+    for (const c of sec.crew || []) {
+      const pKey = getCrewPersonKey(c);
+      assert(
+        !seenInThisJob.has(pKey),
+        `Personil ${c.canonicalName} (${pKey}) duplikat di dalam satu Job/Event yang sama (${job.venue} pada ${d})`
+      );
+      seenInThisJob.add(pKey);
+
+      assert(
+        !seenOnDate.has(pKey),
+        `PENUMPUKAN JADWAL DITEMUKAN PADA TANGGAL ${d}: ${c.canonicalName} (${pKey}) muncul di "${seenOnDate.get(pKey)}" DAN "${job.venue}"`
+      );
+      seenOnDate.set(pKey, job.venue);
+    }
+  }
+}
+
+// Verify findCrewSameDateConflict detects any attempt to assign an already-assigned crew member to a second job on the same date
+const sampleJobForConflict = INITIAL_JOB_ASSIGNMENTS[0];
+const sampleAssignedCrew = sampleJobForConflict.sections[0].crew[0];
+const detectedConflict = findCrewSameDateConflict(
+  INITIAL_JOB_ASSIGNMENTS,
+  { id: 'job-second-event-same-date', date: sampleJobForConflict.date },
+  sampleAssignedCrew
+);
+assert(
+  Boolean(detectedConflict) && detectedConflict!.conflictingJob.id === sampleJobForConflict.id,
+  'findCrewSameDateConflict wajib mendeteksi dan menolak penumpukan nama Staff/Crew pada tanggal yang sama'
+);
+console.log(
+  `✅ Verifikasi Anti-Penumpukan Jadwal: 0 bentrok nama Staff/Crew di seluruh ${INITIAL_JOB_ASSIGNMENTS.length} Job/Event pada tanggal yang sama.`
 );
 
 console.log('=== SEMUA TEST LULUS 100% ===');
