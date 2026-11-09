@@ -1496,5 +1496,204 @@ export function syncJobAssignmentsToCrewDailyTasks(
     } catch {}
   }
 
+  // Arsipkan otomatis setiap Job/Event yang tanggalnya sudah terlewat menjadi Data Log Pekerjaan yang Sudah Dilakukan
+  splitAndSortJobAssignmentsByCalendar(validJobs);
+
   return generatedJobTasks;
+}
+
+export interface CompletedJobWorkLog {
+  id: string;
+  jobId: string;
+  date: string;
+  endDate?: string;
+  dateLabel: string;
+  monthKey: string;
+  venue: string;
+  pic: string;
+  loadingSchedule: string;
+  packageSummary: string;
+  divisions: JobDivisionSection['division'][];
+  staffNames: string[];
+  freelanceNames: string[];
+  equipmentSummary: string[];
+  crewList: JobCrewMember[];
+  vehicles: string[];
+  notes?: string;
+  completedStatus: 'Selesai Dikerjakan';
+  archivedAtDate: string;
+}
+
+const COMPLETED_JOB_WORK_LOGS_STORAGE_KEY = 'riz_completed_job_work_logs_v1';
+
+/**
+ * Mengembalikan tanggal kalender aktual hari ini (YYYY-MM-DD) sesuai zona waktu Asia/Jakarta.
+ */
+export function getCurrentCalendarDateIso(): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Jakarta',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(new Date());
+    const y = parts.find(p => p.type === 'year')?.value;
+    const m = parts.find(p => p.type === 'month')?.value;
+    const d = parts.find(p => p.type === 'day')?.value;
+    if (y && m && d) {
+      return `${y}-${m}-${d}`;
+    }
+  } catch {}
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Mengecek apakah suatu jadwal penugasan Job/Event sudah melewati tanggal kalender hari ini (`< referenceDateIso`).
+ */
+export function isJobAssignmentPastDate(
+  job: JobAssignment,
+  referenceDateIso: string = getCurrentCalendarDateIso()
+): boolean {
+  const effectiveEndDate = String(job.endDate || job.date || '').slice(0, 10);
+  if (!effectiveEndDate || effectiveEndDate.length < 10) return false;
+  return effectiveEndDate < referenceDateIso;
+}
+
+/**
+ * Memisahkan & mengurutkan jadwal penugasan berdasarkan kalender hari ini:
+ * 1. `upcomingJobs`: Hanya tanggal yang akan dilalui (`>= referenceDateIso` dan belum berstatus `Selesai`),
+ *    diurutkan dari tanggal terdekat di urutan paling atas (ascending).
+ * 2. `completedPastJobs`: Tanggal yang sudah terlewat (`< referenceDateIso`) atau berstatus `Selesai`,
+ *    otomatis ditandai `status: 'Selesai'` dan tidak lagi dimunculkan di daftar penugasan aktif.
+ * 3. `workLogs`: Konversi otomatis seluruh `completedPastJobs` menjadi Data Log Pekerjaan yang Sudah Dilakukan / Dikerjakan.
+ */
+export function splitAndSortJobAssignmentsByCalendar(
+  jobs: JobAssignment[],
+  referenceDateIso: string = getCurrentCalendarDateIso()
+): {
+  upcomingJobs: JobAssignment[];
+  completedPastJobs: JobAssignment[];
+  workLogs: CompletedJobWorkLog[];
+} {
+  const upcomingJobs: JobAssignment[] = [];
+  const completedPastJobs: JobAssignment[] = [];
+
+  for (const rawJob of jobs || []) {
+    if (!rawJob || !rawJob.date) continue;
+    if (!isStrictJobOrEventCalendarEntry(rawJob.venue || rawJob.dateLabel || '', rawJob.notes)) {
+      continue;
+    }
+    const isPast = isJobAssignmentPastDate(rawJob, referenceDateIso);
+    if (isPast || rawJob.status === 'Selesai') {
+      completedPastJobs.push({
+        ...rawJob,
+        status: 'Selesai'
+      });
+    } else {
+      upcomingJobs.push(rawJob);
+    }
+  }
+
+  // Tanggal yang akan dilalui menjadi urutan teratas (ascending mulai dari hari ini / terdekat)
+  upcomingJobs.sort((a, b) => {
+    const cmp = String(a.date || '').localeCompare(String(b.date || ''));
+    if (cmp !== 0) return cmp;
+    return String(a.venue || '').localeCompare(String(b.venue || ''));
+  });
+
+  // Pekerjaan yang sudah terlewat / selesai diurutkan dari yang terbaru selesai (descending)
+  completedPastJobs.sort((a, b) => {
+    const cmp = String(b.date || '').localeCompare(String(a.date || ''));
+    if (cmp !== 0) return cmp;
+    return String(a.venue || '').localeCompare(String(b.venue || ''));
+  });
+
+  const workLogs: CompletedJobWorkLog[] = completedPastJobs.map(job => {
+    const divisions: JobDivisionSection['division'][] = [];
+    const packageLabels: string[] = [];
+    const staffNameSet = new Set<string>();
+    const freelanceNameSet = new Set<string>();
+    const equipmentSummary: string[] = [];
+    const crewMap = new Map<string, JobCrewMember>();
+    const vehicleSet = new Set<string>();
+
+    (job.sections || []).forEach(sec => {
+      if (sec.division && !divisions.includes(sec.division)) {
+        divisions.push(sec.division);
+      }
+      if (sec.packageLabel) {
+        packageLabels.push(sec.packageLabel);
+      }
+      if (Array.isArray(sec.equipment) && sec.equipment.length > 0) {
+        equipmentSummary.push(`${sec.division}: ${sec.equipment.join(', ')}`);
+      } else if (sec.packageLabel) {
+        equipmentSummary.push(`${sec.division}: ${sec.packageLabel}`);
+      }
+      (sec.crew || []).forEach(c => {
+        if (c && c.name) {
+          crewMap.set(c.canonicalName || c.name.toUpperCase(), c);
+          const displayLabel = c.canonicalName && c.canonicalName !== c.name
+            ? `${c.name} (${c.canonicalName})`
+            : c.name;
+          if (c.personnelType === 'Staff') {
+            staffNameSet.add(displayLabel);
+          } else {
+            freelanceNameSet.add(displayLabel);
+          }
+        }
+      });
+      (sec.vehicles || []).forEach(v => {
+        if (v && v !== '-') vehicleSet.add(formatFleetVehicleBadge(v));
+      });
+    });
+
+    return {
+      id: `joblog-${job.id}`,
+      jobId: job.id,
+      date: job.date,
+      endDate: job.endDate,
+      dateLabel: job.dateLabel,
+      monthKey: job.monthKey,
+      venue: job.venue,
+      pic: job.pic,
+      loadingSchedule: job.loadingSchedule,
+      packageSummary: packageLabels.join(' • '),
+      divisions,
+      staffNames: Array.from(staffNameSet),
+      freelanceNames: Array.from(freelanceNameSet),
+      equipmentSummary,
+      crewList: Array.from(crewMap.values()),
+      vehicles: Array.from(vehicleSet),
+      notes: job.notes,
+      completedStatus: 'Selesai Dikerjakan',
+      archivedAtDate: referenceDateIso
+    };
+  });
+
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(COMPLETED_JOB_WORK_LOGS_STORAGE_KEY, JSON.stringify(workLogs));
+    } catch {}
+  }
+
+  return { upcomingJobs, completedPastJobs, workLogs };
+}
+
+export function getCompletedJobWorkLogs(): CompletedJobWorkLog[] {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(COMPLETED_JOB_WORK_LOGS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {}
+  }
+  return splitAndSortJobAssignmentsByCalendar(INITIAL_JOB_ASSIGNMENTS).workLogs;
 }

@@ -11,6 +11,7 @@ import {
   buildDailyTasksFromJobAssignment,
   syncJobAssignmentsToCrewDailyTasks,
   mergeLiveGoogleCalendarJobs,
+  splitAndSortJobAssignmentsByCalendar,
 } from '../src/lib/googleCalendarSync';
 
 function assert(condition: boolean, message: string) {
@@ -285,6 +286,39 @@ assert(
 );
 console.log(
   '✅ Auto-update 30 detik (30s) & perubahan langsung oleh Admin dari Google Calendar terbukti sinkron otomatis ke seluruh user.'
+);
+
+// 10. Verify Auto-Update Calendar Date Sorting & Completed Work Log Conversion for Past Dates
+const sampleReferenceDate = '2026-11-09';
+const { upcomingJobs, completedPastJobs, workLogs } = splitAndSortJobAssignmentsByCalendar(
+  INITIAL_JOB_ASSIGNMENTS,
+  sampleReferenceDate
+);
+
+assert(
+  upcomingJobs.length > 0,
+  'Harus ada jadwal penugasan yang akan dilalui (>= 2026-11-09)'
+);
+assert(
+  upcomingJobs.every(j => (j.endDate || j.date) >= sampleReferenceDate && j.status !== 'Selesai'),
+  'Seluruh jadwal aktif yang ditampilkan wajib memiliki tanggal >= tanggal kalender berjalan (tidak ada tanggal terlewat)'
+);
+for (let i = 1; i < upcomingJobs.length; i++) {
+  assert(
+    upcomingJobs[i - 1].date <= upcomingJobs[i].date,
+    `Tanggal yang akan dilalui wajib diurutkan dari yang paling dekat di urutan teratas (${upcomingJobs[i - 1].date} vs ${upcomingJobs[i].date})`
+  );
+}
+assert(
+  completedPastJobs.length > 0 && workLogs.length === completedPastJobs.length,
+  'Tanggal penugasan yang sudah terlewat (< 2026-11-09) wajib dikonversi menjadi Data Log Pekerjaan yang Sudah Dilakukan / Dikerjakan'
+);
+assert(
+  workLogs.every(l => l.completedStatus === 'Selesai Dikerjakan'),
+  'Seluruh log pekerjaan dari tanggal yang sudah terlewat wajib berstatus Selesai Dikerjakan'
+);
+console.log(
+  `✅ Auto-update Tanggal Penugasan sesuai Kalender (${sampleReferenceDate}): ${upcomingJobs.length} jadwal akan dilalui di urutan teratas (${upcomingJobs[0].date}), ${workLogs.length} tanggal terlewat dijadikan Data Log Pekerjaan Selesai.`
 );
 
 console.log('=== SEMUA TEST LULUS 100% ===');

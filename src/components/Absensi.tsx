@@ -88,7 +88,9 @@ import {
   syncAllJobAssignmentsToGoogleCalendar,
   pullJobAssignmentsFromGoogleCalendarLive,
   mergeLiveGoogleCalendarJobs,
-  syncJobAssignmentsToCrewDailyTasks
+  syncJobAssignmentsToCrewDailyTasks,
+  getCurrentCalendarDateIso,
+  splitAndSortJobAssignmentsByCalendar
 } from '../lib/googleCalendarSync';
 import {
   startUniversalCameraStream,
@@ -538,6 +540,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
   const [gcalConfig, setGcalConfig] = useState<GoogleCalendarConnectionConfig>(() =>
     getGoogleCalendarSyncConfig()
   );
+  const [liveCalendarDateIso, setLiveCalendarDateIso] = useState<string>(() =>
+    getCurrentCalendarDateIso()
+  );
+  const [showCompletedWorkLogArchive, setShowCompletedWorkLogArchive] = useState<boolean>(false);
   const [showGcalSyncPanel, setShowGcalSyncPanel] = useState<boolean>(false);
   const [showGcalVisualCalendar, setShowGcalVisualCalendar] = useState<boolean>(false);
   const [isSyncingGcal, setIsSyncingGcal] = useState<boolean>(false);
@@ -584,6 +590,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
     // Apabila Admin merubah jadwal langsung dari Google Calendar, perubahan otomatis ditarik, digabungkan, dan disebarkan ke seluruh user.
     let isCancelled = false;
     const runSilentAutoPullGcal = async () => {
+      const currentCalIso = getCurrentCalendarDateIso();
+      setLiveCalendarDateIso(currentCalIso);
       try {
         const res = await pullJobAssignmentsFromGoogleCalendarLive();
         if (isCancelled || !res.ok || res.jobs.length === 0) return;
@@ -2706,9 +2714,61 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
               }
             };
 
-            const monthFilteredJobs = jobAssignments.filter(job =>
-              jobMonthFilter === 'ALL' ? true : job.monthKey === jobMonthFilter
+            const {
+              upcomingJobs: calendarUpcomingJobs,
+              workLogs: completedWorkLogs
+            } = splitAndSortJobAssignmentsByCalendar(jobAssignments, liveCalendarDateIso);
+
+            const currentCalendarMonthKey = liveCalendarDateIso.slice(0, 7);
+            const effectiveJobMonthFilter =
+              jobMonthFilter !== 'ALL' && jobMonthFilter < currentCalendarMonthKey
+                ? currentCalendarMonthKey
+                : jobMonthFilter;
+
+            const monthFilteredJobs = calendarUpcomingJobs.filter(job =>
+              effectiveJobMonthFilter === 'ALL' ? true : job.monthKey === effectiveJobMonthFilter
             );
+
+            // Filter Data Log Pekerjaan yang Sudah Dilakukan / Dikerjakan (tanggal yang sudah terlewat)
+            const filteredCompletedWorkLogs = completedWorkLogs.filter(log => {
+              if (selectedStaffObj) {
+                const targetNick = (selectedStaffObj.nickname || '').toLowerCase();
+                const targetFull = selectedStaffObj.name.toLowerCase();
+                const inStaff = log.staffNames.some(s => {
+                  const sl = s.toLowerCase();
+                  return sl.includes(targetFull) || (targetNick && sl.includes(targetNick));
+                });
+                const inPic =
+                  log.pic.toLowerCase().includes(targetFull) ||
+                  (targetNick && log.pic.toLowerCase().includes(targetNick));
+                if (!inStaff && !inPic) return false;
+              }
+              if (jobSelectedFreelanceName !== 'ALL') {
+                const flTarget = jobSelectedFreelanceName.toLowerCase();
+                const inFl = log.freelanceNames.some(f => f.toLowerCase().includes(flTarget));
+                if (!inFl) return false;
+              }
+              if (jobDivisionFilter !== 'All') {
+                if (!log.divisions.includes(jobDivisionFilter as JobDivisionSection['division'])) {
+                  return false;
+                }
+              }
+              if (jobSearchQuery.trim()) {
+                const q = jobSearchQuery.toLowerCase().trim();
+                const matchLog =
+                  log.date.toLowerCase().includes(q) ||
+                  log.dateLabel.toLowerCase().includes(q) ||
+                  log.venue.toLowerCase().includes(q) ||
+                  log.pic.toLowerCase().includes(q) ||
+                  log.packageSummary.toLowerCase().includes(q) ||
+                  log.staffNames.some(s => s.toLowerCase().includes(q)) ||
+                  log.freelanceNames.some(f => f.toLowerCase().includes(q)) ||
+                  log.equipmentSummary.some(eq => eq.toLowerCase().includes(q)) ||
+                  log.vehicles.some(v => v.toLowerCase().includes(q));
+                if (!matchLog) return false;
+              }
+              return true;
+            });
 
             // Jobs matching month + staff/freelance + division + crewType + search (used to count per-week tabs)
             const baseFilteredJobs = monthFilteredJobs.filter(job => {
@@ -3264,17 +3324,33 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                 {/* Per 1 Minggu (Weekly) Selector Bar */}
                 <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs space-y-2.5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Calendar className="w-4 h-4 text-emerald-600" />
                       <span className="text-xs font-black text-slate-900 uppercase tracking-wide">
-                        Jadwal Penugasan Kerja Per 1 Minggu (7 Hari):
+                        Jadwal Penugasan Aktif (Mulai Tanggal {liveCalendarDateIso} — Urutan Teratas):
                       </span>
                       <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-full text-xs font-black">
                         {jobWeekFilter === 'ALL'
-                          ? `Semua Minggu (${filteredJobs.length} Job)`
-                          : `${getWeekRangeLabel(jobWeekFilter, jobMonthFilter)} — ${filteredJobs.length} Job`}
+                          ? `Tanggal Akan Dilalui (${filteredJobs.length} Job)`
+                          : `${getWeekRangeLabel(jobWeekFilter, effectiveJobMonthFilter)} — ${filteredJobs.length} Job`}
                       </span>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCompletedWorkLogArchive(prev => !prev)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer border transition-colors self-start sm:self-center ${
+                        showCompletedWorkLogArchive
+                          ? 'bg-slate-900 text-white border-slate-900'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                      }`}
+                      title="Tampilkan atau sembunyikan Data Log Pekerjaan yang Sudah Dilakukan / Dikerjakan (tanggal yang sudah terlewat)"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>
+                        {showCompletedWorkLogArchive ? 'Tutup' : 'Lihat'} Data Log Pekerjaan Selesai ({filteredCompletedWorkLogs.length} Log)
+                      </span>
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -5158,6 +5234,118 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                     </div>
                   )}
                 </div>
+
+                {/* Data Log Pekerjaan yang Sudah Dilakukan / Dikerjakan (Otomatis dari Tanggal yang Sudah Terlewat < liveCalendarDateIso) */}
+                {showCompletedWorkLogArchive && (
+                  <div className="bg-white border-2 border-slate-300 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="p-4 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="px-2.5 py-0.5 bg-emerald-500 text-slate-950 rounded-md text-[10px] font-mono font-black uppercase">
+                            DATA LOG PEKERJAAN SELESAI
+                          </span>
+                          <h4 className="text-sm font-black tracking-tight text-white">
+                            Data Log Pekerjaan yang Sudah Dilakukan / Dikerjakan (Tanggal Sebelum {liveCalendarDateIso})
+                          </h4>
+                        </div>
+                        <p className="text-[11px] text-slate-300">
+                          Jadwal penugasan kerja yang tanggalnya sudah terlewat otomatis dipindahkan dari daftar penugasan aktif menjadi Data Log Pekerjaan Selesai.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="px-3 py-1 bg-slate-800 text-emerald-300 border border-slate-700 rounded-lg text-xs font-mono font-black">
+                          {filteredCompletedWorkLogs.length} Pekerjaan Selesai
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowCompletedWorkLogArchive(false)}
+                          className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold cursor-pointer"
+                        >
+                          Sembunyikan
+                        </button>
+                      </div>
+                    </div>
+
+                    {filteredCompletedWorkLogs.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-slate-500">
+                        Belum ada data log pekerjaan selesai yang sesuai dengan filter saat ini.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-slate-100 border-b border-slate-200 text-[10px] font-mono uppercase text-slate-600">
+                              <th className="py-2.5 px-3 font-black">Tanggal</th>
+                              <th className="py-2.5 px-3 font-black">Venue / Lokasi & Paket</th>
+                              <th className="py-2.5 px-3 font-black">Divisi</th>
+                              <th className="py-2.5 px-3 font-black">PIC & Personil Bertugas</th>
+                              <th className="py-2.5 px-3 font-black">Unit Alat & Armada</th>
+                              <th className="py-2.5 px-3 font-black">Status Pekerjaan</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {filteredCompletedWorkLogs.map(log => (
+                              <tr key={log.id} className="hover:bg-slate-50/80 align-top">
+                                <td className="py-2.5 px-3 whitespace-nowrap">
+                                  <div className="font-mono font-black text-slate-900">{log.date}</div>
+                                  <div className="text-[11px] text-slate-500">{log.dateLabel}</div>
+                                </td>
+                                <td className="py-2.5 px-3 min-w-[200px]">
+                                  <div className="font-black text-slate-900">📍 {log.venue}</div>
+                                  <div className="text-[11px] text-slate-600 mt-0.5">{log.packageSummary || '-'}</div>
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <div className="flex flex-wrap gap-1">
+                                    {log.divisions.map(div => (
+                                      <span
+                                        key={div}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-black border ${getDivisionBadgeStyle(div)}`}
+                                      >
+                                        {div}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 min-w-[220px]">
+                                  <div className="font-bold text-slate-800">PIC: {log.pic}</div>
+                                  {log.staffNames.length > 0 && (
+                                    <div className="text-[11px] text-indigo-800 mt-0.5">
+                                      <span className="font-bold">Staff:</span> {log.staffNames.join(', ')}
+                                    </div>
+                                  )}
+                                  {log.freelanceNames.length > 0 && (
+                                    <div className="text-[11px] text-emerald-800 mt-0.5">
+                                      <span className="font-bold">Freelance:</span> {log.freelanceNames.join(', ')}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-2.5 px-3 min-w-[200px]">
+                                  {log.equipmentSummary.length > 0 && (
+                                    <div className="text-[11px] text-slate-700 line-clamp-2">
+                                      {log.equipmentSummary.slice(0, 4).join(' • ')}
+                                      {log.equipmentSummary.length > 4 ? ` (+${log.equipmentSummary.length - 4} item)` : ''}
+                                    </div>
+                                  )}
+                                  {log.vehicles.length > 0 && (
+                                    <div className="text-[11px] font-mono font-bold text-amber-800 mt-0.5">
+                                      🚚 {log.vehicles.map(v => formatFleetVehicleBadge(v)).join(', ')}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-2.5 px-3 whitespace-nowrap">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-full text-[10px] font-black uppercase">
+                                    <CheckCircle className="w-3 h-3 text-emerald-700" />
+                                    <span>{log.completedStatus}</span>
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Admin Assessment Modal: Unit Alat / Spesifikasi Teknis & Penugasan Staff / Crew Freelance */}
                 {assessmentModalJob && (
