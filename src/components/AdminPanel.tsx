@@ -44,6 +44,9 @@ import {
   stripInventoryNominalText,
   calculateInventoryAssetAvailability,
   calculateInventorySummaryMetrics,
+  getDefaultAssetReportAndProgress,
+  formatAssetReportDateLabel,
+  formatAssetReportMonthLabel,
   INITIAL_JOB_ASSIGNMENTS
 } from '../data';
 import { getScheduleByKey, StaffScheduleRow, getActiveMonthKey, ALL_MONTHLY_SCHEDULES } from '../data/staffSchedules';
@@ -948,25 +951,59 @@ export default function AdminPanel({
     serialNumber: '-',
     division: 'Audio',
     location: 'Gudang Utama - Rak A1',
-    condition: 'Baik'
+    condition: 'Baik',
+    reportDate: '2026-11-01',
+    reportMonth: '2026-11',
+    reportedBy: 'Tim Gudang & Teknis',
+    progressStatus: 'Aman / Siap Pakai (100% Normal)',
+    progressPercent: 100,
+    progressNotes: 'Unit lolos pemeriksaan fisik dan siap operasional.'
   });
 
   const handleOpenEditAsset = (a: Asset) => {
+    const def = getDefaultAssetReportAndProgress(a);
+    const reportDate = a.reportDate || def.reportDate;
+    const reportMonth = a.reportMonth || (reportDate ? reportDate.slice(0, 7) : def.reportMonth);
     setActiveAssetForEdit(a);
-    setAssetFormData({ ...a });
+    setAssetFormData({
+      ...a,
+      reportDate,
+      reportMonth,
+      reportedBy: a.reportedBy || def.reportedBy,
+      progressStatus: a.progressStatus || def.progressStatus,
+      progressPercent: typeof a.progressPercent === 'number' ? a.progressPercent : def.progressPercent,
+      progressNotes: a.progressNotes || def.progressNotes
+    });
     setShowEditAssetModal(true);
   };
 
   const handleSaveEditAsset = () => {
     if (!activeAssetForEdit) return;
-    onUpdateAsset(activeAssetForEdit.id, assetFormData);
-    onLogActivity(currentUser.name, currentUser.role, `Mengubah data aset gudang: ${assetFormData.name}`);
+    const normalizedReportDate = (assetFormData.reportDate || '').trim() || '2026-11-01';
+    const normalizedReportMonth = (assetFormData.reportMonth || '').trim() || normalizedReportDate.slice(0, 7);
+    onUpdateAsset(activeAssetForEdit.id, {
+      ...assetFormData,
+      reportDate: normalizedReportDate,
+      reportMonth: normalizedReportMonth,
+      reportedBy: (assetFormData.reportedBy || '').trim() || currentUser.name,
+      progressStatus: (assetFormData.progressStatus || '').trim() || 'Dalam Penanganan Divisi Service (On Progress)',
+      progressPercent: Math.max(0, Math.min(100, Number(assetFormData.progressPercent ?? 100))),
+      progressNotes: (assetFormData.progressNotes || '').trim(),
+      _userEdited: true
+    });
+    onLogActivity(
+      currentUser.name,
+      currentUser.role,
+      `Mengubah data aset gudang: ${assetFormData.name} (Pelaporan: ${formatAssetReportDateLabel(normalizedReportDate)} • Progress: ${assetFormData.progressPercent ?? 100}%)`
+    );
     setShowEditAssetModal(false);
     setActiveAssetForEdit(null);
   };
 
   const handleCreateAsset = () => {
     if (!assetFormData.name || !assetFormData.code) return;
+    const normalizedReportDate = (assetFormData.reportDate || '').trim() || new Date().toISOString().split('T')[0];
+    const normalizedReportMonth = (assetFormData.reportMonth || '').trim() || normalizedReportDate.slice(0, 7);
     onAddAsset({
       name: assetFormData.name,
       code: assetFormData.code,
@@ -974,7 +1011,14 @@ export default function AdminPanel({
       serialNumber: assetFormData.serialNumber || '-',
       division: (assetFormData.division as Division) || 'Audio',
       location: assetFormData.location || 'Gudang Utama',
-      condition: (assetFormData.condition as any) || 'Baik'
+      condition: (assetFormData.condition as any) || 'Baik',
+      reportDate: normalizedReportDate,
+      reportMonth: normalizedReportMonth,
+      reportedBy: (assetFormData.reportedBy || '').trim() || currentUser.name,
+      progressStatus: (assetFormData.progressStatus || '').trim() || 'Aman / Siap Pakai (100% Normal)',
+      progressPercent: Math.max(0, Math.min(100, Number(assetFormData.progressPercent ?? 100))),
+      progressNotes: (assetFormData.progressNotes || '').trim() || 'Unit baru didaftarkan pada inventaris gudang.',
+      _userEdited: true
     });
     onLogActivity(currentUser.name, currentUser.role, `Menambahkan aset gudang baru: ${assetFormData.name}`);
     setShowAddAssetModal(false);
@@ -2978,6 +3022,12 @@ export default function AdminPanel({
                                   }`}>
                                     {a.condition}
                                   </span>
+                                  <div className="mt-1.5 text-[10px] font-mono text-slate-600">
+                                    Lapor: <span className="font-bold text-slate-800">{avail.reportDateLabel}</span> ({avail.reportMonthLabel})
+                                  </div>
+                                  <div className="text-[10px] text-slate-500">
+                                    Progress: <span className="font-bold text-indigo-700">{avail.progressPercent}%</span> — {avail.progressStatus}
+                                  </div>
                                 </td>
                                 <td className="p-3.5 text-slate-500 font-mono text-[11px]">
                                   {a.repairHistory?.length || 0} servis
@@ -5501,6 +5551,92 @@ export default function AdminPanel({
                   <option value="Rusak Ringan">Rusak Ringan (Perlu Perawatan)</option>
                   <option value="Rusak Berat">Rusak Berat (Off / Perbaikan)</option>
                 </select>
+              </div>
+
+              {/* Tanggal / Bulan Pelaporan & Progress Penanganan */}
+              <div className="p-3.5 bg-indigo-50/50 border border-indigo-200/80 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-indigo-100">
+                  <span className="font-extrabold text-indigo-950 text-xs">
+                    Tanggal / Bulan Pelaporan & Progress Penanganan
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800">
+                    {formatAssetReportMonthLabel(assetFormData.reportMonth, assetFormData.reportDate)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Tanggal Pelaporan</label>
+                    <input
+                      type="date"
+                      value={assetFormData.reportDate || ''}
+                      onChange={(e) => {
+                        const nextDate = e.target.value;
+                        setAssetFormData({
+                          ...assetFormData,
+                          reportDate: nextDate,
+                          reportMonth: nextDate ? nextDate.slice(0, 7) : assetFormData.reportMonth
+                        });
+                      }}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Bulan Pelaporan</label>
+                    <input
+                      type="month"
+                      value={assetFormData.reportMonth || ''}
+                      onChange={(e) => setAssetFormData({ ...assetFormData, reportMonth: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">PIC Pelapor / Teknisi</label>
+                    <input
+                      type="text"
+                      value={assetFormData.reportedBy || ''}
+                      onChange={(e) => setAssetFormData({ ...assetFormData, reportedBy: e.target.value })}
+                      placeholder="Contoh: Heri / Damri / Rahmat"
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Persentase Progress (%)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={assetFormData.progressPercent ?? 100}
+                      onChange={(e) => setAssetFormData({ ...assetFormData, progressPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Status Tahapan Progress</label>
+                  <input
+                    type="text"
+                    value={assetFormData.progressStatus || ''}
+                    onChange={(e) => setAssetFormData({ ...assetFormData, progressStatus: e.target.value })}
+                    placeholder="Contoh: Belum Ditangani / Off (Mati Suri) atau Sedang Dikerjakan"
+                    className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Rincian Progress Sejauh Apa</label>
+                  <textarea
+                    rows={2}
+                    value={assetFormData.progressNotes || ''}
+                    onChange={(e) => setAssetFormData({ ...assetFormData, progressNotes: e.target.value })}
+                    placeholder="Jelaskan sejauh mana progress penanganan unit..."
+                    className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                  />
+                </div>
               </div>
             </div>
 

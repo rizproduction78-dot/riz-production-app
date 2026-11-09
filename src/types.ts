@@ -274,13 +274,21 @@ export interface Asset {
   division: Division;
   location: string;
   condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat';
+  reportDate?: string; // Tanggal pelaporan / pengecekan (YYYY-MM-DD)
+  reportMonth?: string; // Bulan pelaporan (YYYY-MM)
+  reportedBy?: string; // PIC / Staf pelapor atau pemeriksa
+  progressStatus?: string; // Tahapan status progress penanganan sejauh apa
+  progressPercent?: number; // Persentase progress penanganan (0 - 100)
+  progressNotes?: string; // Rincian sejauh apa progress penanganan / tindak lanjut unit
   repairHistory: { date: string; description: string; cost: number; PIC: string }[];
+  _userEdited?: boolean;
   _syncMeta?: {
     updatedAt: string;
     updatedBy: string;
     deviceOS?: string;
     deviceType?: string;
     browser?: string;
+    _userEdited?: boolean;
   };
 }
 

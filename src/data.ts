@@ -16,7 +16,11 @@ import {
   groupInventoryAssetsByType,
   stripInventoryNominalText,
   calculateInventoryAssetAvailability,
-  calculateInventorySummaryMetrics
+  calculateInventorySummaryMetrics,
+  getDefaultAssetReportAndProgress,
+  formatAssetReportDateLabel,
+  formatAssetReportMonthLabel,
+  CANONICAL_ASSET_REPORT_PROGRESS
 } from './data/inventoryAssetsData';
 export type {
   InventoryAssetTypeInfo,
@@ -24,14 +28,19 @@ export type {
   InventoryTypeIconKey,
   InventoryAssetAvailability,
   InventorySummaryMetrics,
-  InventoryCalculationContext
+  InventoryCalculationContext,
+  CanonicalAssetReportProgress
 } from './data/inventoryAssetsData';
 export {
   getInventoryAssetTypeInfo,
   groupInventoryAssetsByType,
   stripInventoryNominalText,
   calculateInventoryAssetAvailability,
-  calculateInventorySummaryMetrics
+  calculateInventorySummaryMetrics,
+  getDefaultAssetReportAndProgress,
+  formatAssetReportDateLabel,
+  formatAssetReportMonthLabel,
+  CANONICAL_ASSET_REPORT_PROGRESS
 };
 
 export const STAFF_LIST: Staff[] = [
@@ -3048,6 +3057,8 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
       if (canonical) {
         const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);
         const isLegacyAstCode = /^AST-(AUD|LGT|MM|LED)-\d+$/i.test(itemCode);
+        const resolvedReportDate = (isUserEdited && item.reportDate) ? item.reportDate : (canonical.reportDate || item.reportDate);
+        const resolvedReportMonth = (isUserEdited && item.reportMonth) ? item.reportMonth : (canonical.reportMonth || item.reportMonth || (resolvedReportDate ? String(resolvedReportDate).slice(0, 7) : undefined));
         resultById.set(canonical.id, {
           ...canonical,
           ...item,
@@ -3059,6 +3070,14 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
           division: isUserEdited && item.division ? item.division : canonical.division,
           location: item.location || canonical.location,
           condition: isUserEdited && item.condition ? item.condition : canonical.condition,
+          reportDate: resolvedReportDate,
+          reportMonth: resolvedReportMonth,
+          reportedBy: (isUserEdited && item.reportedBy) ? item.reportedBy : (canonical.reportedBy || item.reportedBy),
+          progressStatus: (isUserEdited && item.progressStatus) ? item.progressStatus : (canonical.progressStatus || item.progressStatus),
+          progressPercent: (isUserEdited && typeof item.progressPercent === 'number')
+            ? item.progressPercent
+            : (typeof canonical.progressPercent === 'number' ? canonical.progressPercent : item.progressPercent),
+          progressNotes: (isUserEdited && item.progressNotes) ? item.progressNotes : (canonical.progressNotes || item.progressNotes),
           repairHistory: Array.isArray(item.repairHistory) && item.repairHistory.length > 0
             ? item.repairHistory
             : canonical.repairHistory
@@ -3069,12 +3088,22 @@ export function normalizeAssetsMaster(rawList: any[]): Asset[] {
           return;
         }
         const key = itemId || `ast-custom-${itemCode}`;
-        resultById.set(key, {
+        const customAsset: Asset = {
           ...(item as Asset),
           id: key,
           code: itemCode || key.toUpperCase(),
           serialNumber: stripInventoryNominalText(item.serialNumber || '-'),
           repairHistory: Array.isArray(item.repairHistory) ? item.repairHistory : []
+        };
+        const defProgress = getDefaultAssetReportAndProgress(customAsset);
+        resultById.set(key, {
+          ...customAsset,
+          reportDate: customAsset.reportDate || defProgress.reportDate,
+          reportMonth: customAsset.reportMonth || defProgress.reportMonth,
+          reportedBy: customAsset.reportedBy || defProgress.reportedBy,
+          progressStatus: customAsset.progressStatus || defProgress.progressStatus,
+          progressPercent: typeof customAsset.progressPercent === 'number' ? customAsset.progressPercent : defProgress.progressPercent,
+          progressNotes: customAsset.progressNotes || defProgress.progressNotes
         });
       }
     });

@@ -33,6 +33,9 @@ import {
   stripInventoryNominalText,
   calculateInventoryAssetAvailability,
   calculateInventorySummaryMetrics,
+  getDefaultAssetReportAndProgress,
+  formatAssetReportDateLabel,
+  formatAssetReportMonthLabel,
   InventoryTypeIconKey
 } from '../data';
 import {
@@ -327,6 +330,12 @@ export default function Gudang({
     division: import('../types').Division;
     location: string;
     condition: 'Baik' | 'Rusak Ringan' | 'Rusak Berat';
+    reportDate: string;
+    reportMonth: string;
+    reportedBy: string;
+    progressStatus: string;
+    progressPercent: number;
+    progressNotes: string;
   }>({
     code: '',
     name: '',
@@ -334,8 +343,35 @@ export default function Gudang({
     serialNumber: '',
     division: 'Audio',
     location: 'Gudang Utama RIZ - Zona Audio',
-    condition: 'Baik'
+    condition: 'Baik',
+    reportDate: '2026-11-01',
+    reportMonth: '2026-11',
+    reportedBy: currentUser.name,
+    progressStatus: 'Selesai Dicek / Siap Operasi',
+    progressPercent: 100,
+    progressNotes: ''
   });
+
+  const openEditAssetModal = (asset: Asset) => {
+    const avail = calculateInventoryAssetAvailability(asset, inventoryCalcCtx);
+    setEditingAssetItem(asset);
+    setAssetFormState({
+      code: asset.code,
+      name: asset.name,
+      brand: asset.brand,
+      serialNumber: asset.serialNumber,
+      division: asset.division,
+      location: asset.location,
+      condition: asset.condition,
+      reportDate: avail.reportDate || asset.reportDate || '2026-11-01',
+      reportMonth: avail.reportMonth || asset.reportMonth || (avail.reportDate ? avail.reportDate.slice(0, 7) : '2026-11'),
+      reportedBy: avail.reportedBy || asset.reportedBy || currentUser.name,
+      progressStatus: avail.progressStatus || asset.progressStatus || (asset.condition === 'Baik' ? 'Selesai Dicek / Siap Operasi' : asset.condition === 'Rusak Berat' ? 'Belum Ditangani / Off (Mati Suri)' : 'Dalam Pengecekan / Perbaikan Service'),
+      progressPercent: typeof avail.progressPercent === 'number' ? avail.progressPercent : (asset.condition === 'Baik' ? 100 : asset.condition === 'Rusak Berat' ? 0 : 40),
+      progressNotes: avail.progressNotes || asset.progressNotes || ''
+    });
+    setShowAssetFormModal(true);
+  };
 
   const handleSaveAssetInventory = (e: React.FormEvent) => {
     e.preventDefault();
@@ -343,6 +379,10 @@ export default function Gudang({
       alert('Kode Aset dan Nama Unit wajib diisi!');
       return;
     }
+
+    const normalizedReportDate = assetFormState.reportDate.trim() || new Date().toISOString().split('T')[0];
+    const normalizedReportMonth = assetFormState.reportMonth.trim() || normalizedReportDate.slice(0, 7);
+    const normalizedProgressPercent = Math.max(0, Math.min(100, Math.round(Number(assetFormState.progressPercent) || 0)));
 
     if (editingAssetItem) {
       const updatedAsset: Asset = {
@@ -354,9 +394,17 @@ export default function Gudang({
         division: assetFormState.division,
         location: assetFormState.location.trim() || 'Gudang Utama RIZ',
         condition: assetFormState.condition,
+        reportDate: normalizedReportDate,
+        reportMonth: normalizedReportMonth,
+        reportedBy: assetFormState.reportedBy.trim() || currentUser.name,
+        progressStatus: assetFormState.progressStatus.trim() || 'Selesai Dicek / Siap Operasi',
+        progressPercent: normalizedProgressPercent,
+        progressNotes: assetFormState.progressNotes.trim(),
+        _userEdited: true,
         _syncMeta: {
           updatedAt: new Date().toISOString(),
-          updatedBy: currentUser.name
+          updatedBy: currentUser.name,
+          _userEdited: true
         }
       };
       const next = localAssets.map(a => a.id === editingAssetItem.id ? updatedAsset : a);
@@ -364,7 +412,11 @@ export default function Gudang({
       localStorage.setItem('riz_assets', JSON.stringify(next));
       saveCloudDoc('assets', editingAssetItem.id, updatedAsset, currentUser.name);
       if (onUpdateAsset) onUpdateAsset(editingAssetItem.id, updatedAsset);
-      onLogActivity(currentUser.name, currentUser.role, `Memperbarui unit inventaris gudang: ${updatedAsset.code} - ${updatedAsset.name}`);
+      onLogActivity(
+        currentUser.name,
+        currentUser.role,
+        `Memperbarui unit inventaris gudang: ${updatedAsset.code} - ${updatedAsset.name} (Pelaporan: ${formatAssetReportDateLabel(normalizedReportDate)} • Progress: ${normalizedProgressPercent}% - ${updatedAsset.progressStatus})`
+      );
     } else {
       const newAsset: Asset = {
         id: 'ast-custom-' + Date.now(),
@@ -375,10 +427,18 @@ export default function Gudang({
         division: assetFormState.division,
         location: assetFormState.location.trim() || 'Gudang Utama RIZ',
         condition: assetFormState.condition,
+        reportDate: normalizedReportDate,
+        reportMonth: normalizedReportMonth,
+        reportedBy: assetFormState.reportedBy.trim() || currentUser.name,
+        progressStatus: assetFormState.progressStatus.trim() || 'Selesai Dicek / Siap Operasi',
+        progressPercent: normalizedProgressPercent,
+        progressNotes: assetFormState.progressNotes.trim(),
         repairHistory: [],
+        _userEdited: true,
         _syncMeta: {
           updatedAt: new Date().toISOString(),
-          updatedBy: currentUser.name
+          updatedBy: currentUser.name,
+          _userEdited: true
         }
       };
       const next = [newAsset, ...localAssets];
@@ -393,7 +453,13 @@ export default function Gudang({
           serialNumber: newAsset.serialNumber,
           division: newAsset.division,
           location: newAsset.location,
-          condition: newAsset.condition
+          condition: newAsset.condition,
+          reportDate: newAsset.reportDate,
+          reportMonth: newAsset.reportMonth,
+          reportedBy: newAsset.reportedBy,
+          progressStatus: newAsset.progressStatus,
+          progressPercent: newAsset.progressPercent,
+          progressNotes: newAsset.progressNotes
         });
       }
       onLogActivity(currentUser.name, currentUser.role, `Menambahkan unit inventaris gudang baru: ${newAsset.code} - ${newAsset.name}`);
@@ -2423,6 +2489,42 @@ export default function Gudang({
                           </div>
                         )}
 
+                        <div className="p-2 rounded-lg bg-white border border-rose-100 space-y-1.5 text-[10px]">
+                          <div className="flex flex-wrap items-center justify-between gap-1 font-mono">
+                            <span className="text-slate-600 font-semibold">
+                              📅 Pelaporan: <strong className="text-slate-900">{avail.reportDateLabel}</strong> ({avail.reportMonthLabel})
+                            </span>
+                            <span className="text-slate-500">
+                              PIC: <strong className="text-slate-800">{avail.reportedBy}</strong>
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="font-bold text-rose-800">{avail.progressStatus}</span>
+                              <span className="font-mono font-extrabold text-indigo-700">{avail.progressPercent}%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  avail.progressPercent >= 100
+                                    ? 'bg-emerald-500'
+                                    : avail.progressPercent >= 50
+                                    ? 'bg-indigo-600'
+                                    : avail.progressPercent > 0
+                                    ? 'bg-amber-500'
+                                    : 'bg-rose-500'
+                                }`}
+                                style={{ width: `${Math.max(4, avail.progressPercent)}%` }}
+                              />
+                            </div>
+                            {avail.progressNotes && (
+                              <p className="text-[10px] text-slate-600 leading-snug pt-0.5">
+                                {avail.progressNotes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
                         <div className="flex justify-between items-center text-[10px] text-slate-500 pt-1 border-t border-rose-100/80 font-mono">
                           <span>Ready/Ada: <strong className="text-slate-800">{avail.totalUnits}</strong></span>
                           <span>Terjadwal: <strong className="text-amber-700">{avail.assignedUnits}</strong></span>
@@ -2729,9 +2831,17 @@ export default function Gudang({
                                       {avail.damageReasons.slice(0, 2).join('; ')}
                                     </div>
                                   )}
+                                  <div className="text-[9px] text-slate-600 font-mono max-w-[190px] mx-auto pt-0.5">
+                                    Lapor: {avail.reportDateLabel} ({avail.reportMonthLabel}) • Progress: <span className="font-bold text-rose-800">{avail.progressPercent}%</span> ({avail.progressStatus})
+                                  </div>
                                 </div>
                               ) : (
-                                <span className="text-[11px] font-mono text-slate-400">0 {avail.unitLabel}</span>
+                                <div className="space-y-0.5">
+                                  <span className="text-[11px] font-mono text-slate-400">0 {avail.unitLabel}</span>
+                                  <div className="text-[9px] font-mono text-slate-400">
+                                    Cek: {avail.reportMonthLabel} ({avail.progressPercent}%)
+                                  </div>
+                                </div>
                               )}
                             </td>
 
@@ -2811,6 +2921,7 @@ export default function Gudang({
                     type="button"
                     onClick={() => {
                       setEditingAssetItem(null);
+                      const todayIso = new Date().toISOString().split('T')[0];
                       setAssetFormState({
                         code: `AST-AUD-${String(localAssets.length + 1).padStart(3, '0')}`,
                         name: '',
@@ -2818,7 +2929,13 @@ export default function Gudang({
                         serialNumber: 'QTY: 1 Unit',
                         division: inventoryDivisionFilter === 'ALL' ? 'Audio' : inventoryDivisionFilter,
                         location: 'Gudang Utama RIZ',
-                        condition: 'Baik'
+                        condition: 'Baik',
+                        reportDate: todayIso,
+                        reportMonth: todayIso.slice(0, 7),
+                        reportedBy: currentUser.name,
+                        progressStatus: 'Aman / Siap Pakai (100% Normal)',
+                        progressPercent: 100,
+                        progressNotes: 'Unit baru didaftarkan pada inventaris gudang dan telah lolos pemeriksaan fisik awal.'
                       });
                       setShowAssetFormModal(true);
                     }}
@@ -3202,6 +3319,59 @@ export default function Gudang({
                                         </span>
                                       </div>
                                     </div>
+
+                                    {/* Tanggal / Bulan Pelaporan & Progress Penanganan Sejauh Apa */}
+                                    <div className={`p-2.5 rounded-lg border space-y-1.5 text-[11px] ${
+                                      asset.condition === 'Rusak Berat' || avail.progressPercent === 0
+                                        ? 'bg-rose-50/70 border-rose-200'
+                                        : asset.condition === 'Rusak Ringan' || avail.totalDamagedUnits > 0 || avail.progressPercent < 100
+                                        ? 'bg-amber-50/70 border-amber-200'
+                                        : 'bg-indigo-50/40 border-indigo-100'
+                                    }`}>
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                                          <Calendar className="w-3 h-3 text-indigo-600 shrink-0" />
+                                          <span>Tgl / Bulan Pelaporan:</span>
+                                        </span>
+                                        <span className="font-mono text-[10px] font-extrabold text-slate-800 text-right">
+                                          {avail.reportDateLabel} ({avail.reportMonthLabel})
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center justify-between gap-2 text-[10px]">
+                                        <span className="text-slate-500 font-medium">PIC Pelapor / Pemeriksa:</span>
+                                        <span className="font-bold text-slate-700 text-right">{avail.reportedBy}</span>
+                                      </div>
+                                      <div className="pt-1 border-t border-slate-200/60 space-y-1">
+                                        <div className="flex items-center justify-between gap-2 text-[10px]">
+                                          <span className="font-bold text-slate-700 truncate">{avail.progressStatus}</span>
+                                          <span className={`font-mono font-extrabold px-1.5 py-0.5 rounded ${
+                                            avail.progressPercent >= 100
+                                              ? 'bg-emerald-100 text-emerald-800'
+                                              : avail.progressPercent > 0
+                                              ? 'bg-amber-100 text-amber-800'
+                                              : 'bg-rose-100 text-rose-800'
+                                          }`}>
+                                            {avail.progressPercent}%
+                                          </span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden">
+                                          <div
+                                            className={`h-full rounded-full transition-all ${
+                                              avail.progressPercent >= 100
+                                                ? 'bg-emerald-500'
+                                                : avail.progressPercent >= 50
+                                                ? 'bg-amber-500'
+                                                : 'bg-rose-500'
+                                            }`}
+                                            style={{ width: `${Math.max(4, avail.progressPercent)}%` }}
+                                          />
+                                        </div>
+                                        <p className="text-[10px] text-slate-600 leading-snug pt-0.5">
+                                          <span className="font-bold text-slate-700">Progress: </span>
+                                          {avail.progressNotes}
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
 
                                   {/* Card Footer Actions */}
@@ -3232,19 +3402,7 @@ export default function Gudang({
                                     <div className="flex items-center gap-1">
                                       <button
                                         type="button"
-                                        onClick={() => {
-                                          setEditingAssetItem(asset);
-                                          setAssetFormState({
-                                            code: asset.code,
-                                            name: asset.name,
-                                            brand: asset.brand,
-                                            serialNumber: asset.serialNumber,
-                                            division: asset.division,
-                                            location: asset.location,
-                                            condition: asset.condition
-                                          });
-                                          setShowAssetFormModal(true);
-                                        }}
+                                        onClick={() => openEditAssetModal(asset)}
                                         className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
                                       >
                                         <Edit2 className="w-3 h-3" />
@@ -6164,6 +6322,164 @@ export default function Gudang({
                   placeholder="Gudang Utama RIZ - Zona Audio"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800"
                 />
+              </div>
+
+              {/* TANGGAL / BULAN PELAPORAN & PROGRESS PENANGANAN SEJAUH APA */}
+              <div className="p-3.5 bg-indigo-50/50 border border-indigo-200/80 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-indigo-100">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span className="font-extrabold text-indigo-950 text-xs">
+                      Tanggal / Bulan Pelaporan & Progress Penanganan
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800">
+                    {formatAssetReportMonthLabel(assetFormState.reportMonth, assetFormState.reportDate)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Tanggal Pelaporan</label>
+                    <input
+                      type="date"
+                      value={assetFormState.reportDate}
+                      onChange={(e) => {
+                        const nextDate = e.target.value;
+                        setAssetFormState({
+                          ...assetFormState,
+                          reportDate: nextDate,
+                          reportMonth: nextDate ? nextDate.slice(0, 7) : assetFormState.reportMonth
+                        });
+                      }}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-slate-800"
+                    />
+                    <span className="text-[10px] text-slate-500 block mt-0.5 font-mono">
+                      Tercatat: {formatAssetReportDateLabel(assetFormState.reportDate)}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Bulan Pelaporan</label>
+                    <input
+                      type="month"
+                      value={assetFormState.reportMonth}
+                      onChange={(e) => setAssetFormState({ ...assetFormState, reportMonth: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-mono font-bold text-slate-800"
+                    />
+                    <span className="text-[10px] text-slate-500 block mt-0.5 font-mono">
+                      Periode: {formatAssetReportMonthLabel(assetFormState.reportMonth, assetFormState.reportDate)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">PIC Pelapor / Teknisi</label>
+                    <input
+                      type="text"
+                      value={assetFormState.reportedBy}
+                      onChange={(e) => setAssetFormState({ ...assetFormState, reportedBy: e.target.value })}
+                      placeholder="Contoh: Heri / Damri / Rahmat"
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Status Tahapan Progress</label>
+                    <select
+                      value={assetFormState.progressStatus}
+                      onChange={(e) => {
+                        const statusVal = e.target.value;
+                        let autoPct = assetFormState.progressPercent;
+                        if (statusVal.includes('Belum Ditangani')) autoPct = 0;
+                        else if (statusVal.includes('Diagnosa Awal')) autoPct = 25;
+                        else if (statusVal.includes('Menunggu Komponen')) autoPct = 40;
+                        else if (statusVal.includes('Sedang Dikerjakan')) autoPct = 60;
+                        else if (statusVal.includes('Tahap Uji Coba')) autoPct = 80;
+                        else if (statusVal.includes('100% Normal') || statusVal.includes('Selesai Perbaikan')) autoPct = 100;
+                        setAssetFormState({
+                          ...assetFormState,
+                          progressStatus: statusVal,
+                          progressPercent: autoPct
+                        });
+                      }}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-800"
+                    >
+                      <option value="Belum Ditangani / Off (Mati Suri)">0% - Belum Ditangani / Off (Mati Suri)</option>
+                      <option value="Diagnosa Awal & Pengecekan Kerusakan">25% - Diagnosa Awal & Pengecekan</option>
+                      <option value="Menunggu Komponen / Sparepart Pengganti">40% - Menunggu Komponen / Sparepart</option>
+                      <option value="Dalam Penanganan Divisi Service (On Progress)">50% - Dalam Penanganan Divisi Service</option>
+                      <option value="Sedang Dikerjakan / Perbaikan Aktif">60% - Sedang Dikerjakan / Perbaikan Aktif</option>
+                      <option value="Sebagian Selesai & Dalam Antrian Kalibrasi">75% - Sebagian Selesai & Kalibrasi</option>
+                      <option value="Tahap Uji Coba / Running Test QC">80% - Tahap Uji Coba / Running Test QC</option>
+                      <option value="Operasional Terbatas (Catatan Minor)">85% - Operasional Terbatas (Catatan Minor)</option>
+                      <option value="Aman / Siap Pakai (100% Normal)">100% - Aman / Siap Pakai (100% Normal)</option>
+                      <option value="Selesai Perbaikan & Kembali ke Gudang">100% - Selesai Perbaikan & Kembali ke Gudang</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">Capaian Progress Penanganan (%)</label>
+                    <span className={`font-mono font-extrabold text-xs px-2 py-0.5 rounded-md ${
+                      assetFormState.progressPercent >= 100
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : assetFormState.progressPercent > 0
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-rose-100 text-rose-800'
+                    }`}>
+                      {assetFormState.progressPercent}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={assetFormState.progressPercent}
+                      onChange={(e) => setAssetFormState({ ...assetFormState, progressPercent: Number(e.target.value) })}
+                      className="w-full accent-indigo-600 cursor-pointer"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={assetFormState.progressPercent}
+                      onChange={(e) => setAssetFormState({ ...assetFormState, progressPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
+                      className="w-16 bg-white border border-slate-200 rounded-lg p-1.5 text-center font-mono font-bold text-xs text-slate-800"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {[0, 25, 50, 75, 85, 100].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setAssetFormState({ ...assetFormState, progressPercent: pct })}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer transition-colors ${
+                          assetFormState.progressPercent === pct
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Rincian Progress Sejauh Apa (Keterangan Tindak Lanjut)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={assetFormState.progressNotes}
+                    onChange={(e) => setAssetFormState({ ...assetFormState, progressNotes: e.target.value })}
+                    placeholder="Jelaskan tanggal/bulan pelaporan awal, kendala teknis, dan sejauh mana progress penanganan oleh tim..."
+                    className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 leading-relaxed"
+                  />
+                </div>
               </div>
             </div>
 

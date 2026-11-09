@@ -409,7 +409,7 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet & Google Calendar reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v113_live_auto_update_sheet_nov9';
+  const REF_SYNC_KEY = 'riz_ref_synced_v114_asset_report_date_month_progress';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
     const staleJobTaskIds: string[] = [];
     try {

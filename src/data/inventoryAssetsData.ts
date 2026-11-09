@@ -2291,6 +2291,307 @@ const CANONICAL_ASSET_BASE_COUNTS: Record<
   'ast-led-009': { total: 77, sheetDamaged: 1, sheetDamageNote: '1 Unit Panel Listrik 12 Port Check R (Sheet LED 2026)' }
 };
 
+export interface CanonicalAssetReportProgress {
+  reportDate: string; // YYYY-MM-DD
+  reportMonth: string; // YYYY-MM
+  reportedBy: string;
+  progressStatus: string;
+  progressPercent: number;
+  progressNotes: string;
+}
+
+const INDONESIAN_MONTH_LABELS: Record<string, string> = {
+  '01': 'Januari',
+  '02': 'Februari',
+  '03': 'Maret',
+  '04': 'April',
+  '05': 'Mei',
+  '06': 'Juni',
+  '07': 'Juli',
+  '08': 'Agustus',
+  '09': 'September',
+  '10': 'Oktober',
+  '11': 'November',
+  '12': 'Desember'
+};
+
+export function formatAssetReportDateLabel(reportDate?: string): string {
+  if (!reportDate) return '-';
+  const clean = reportDate.trim().slice(0, 10);
+  const parts = clean.split('-');
+  if (parts.length !== 3) return reportDate;
+  const [year, month, day] = parts;
+  const monthName = INDONESIAN_MONTH_LABELS[month] || month;
+  return `${ parseInt(day, 10) || day } ${monthName} ${year}`;
+}
+
+export function formatAssetReportMonthLabel(reportMonthOrDate?: string, fallbackDate?: string): string {
+  const raw = (reportMonthOrDate || fallbackDate || '').trim();
+  if (!raw) return '-';
+  const clean = raw.slice(0, 7);
+  const parts = clean.split('-');
+  if (parts.length < 2) return raw;
+  const [year, month] = parts;
+  const monthName = INDONESIAN_MONTH_LABELS[month] || month;
+  return `${monthName} ${year}`;
+}
+
+export const CANONICAL_ASSET_REPORT_PROGRESS: Record<string, CanonicalAssetReportProgress> = {
+  // 1. Divisi Lighting (Sheet: Inventory LIGHTING 2026 • Check by Heri 30 Juni 2026 + Temuan QC Sept–Nov 2026)
+  'ast-lgt-018': {
+    reportDate: '2026-06-30',
+    reportMonth: '2026-06',
+    reportedBy: 'Heri',
+    progressStatus: 'Belum Ditangani / Off (Mati Suri)',
+    progressPercent: 0,
+    progressNotes: 'Dilaporkan pada Rekap Inventaris Lighting (30 Juni 2026 oleh Heri): 1 Unit kondisi Mati Suri di Gudang Utama Zona Lighting. Belum ada tindak lanjut perbaikan aktif / unit di-off-kan dari penugasan.'
+  },
+  'ast-lgt-008': {
+    reportDate: '2026-06-30',
+    reportMonth: '2026-06',
+    reportedBy: 'Heri',
+    progressStatus: 'Dalam Pengecekan / Isolasi Unit Error',
+    progressPercent: 25,
+    progressNotes: 'Rekap Inventaris Lighting (30 Juni 2026 oleh Heri): 30 Unit siap pakai, 2 Unit Stormy status ERROR dipisahkan untuk pengecekan servis.'
+  },
+  'ast-lgt-012': {
+    reportDate: '2026-10-08',
+    reportMonth: '2026-10',
+    reportedBy: 'Heri',
+    progressStatus: 'Sebagian Selesai Diperbaiki (4 Ready, 1 Servis)',
+    progressPercent: 60,
+    progressNotes: 'Smoke No. 1 telah selesai ganti pompa pada 8 Oktober 2026 oleh Heri (Kondisi Normal/OKE). Smoke No. 3 (dilaporkan 16 Sep 2026) masih antrean perbaikan (Ready 4 dari 5 Unit).'
+  },
+  'ast-lgt-007': {
+    reportDate: '2026-11-03',
+    reportMonth: '2026-11',
+    reportedBy: 'Heri',
+    progressStatus: 'Dalam Antrean Perbaikan Service',
+    progressPercent: 20,
+    progressNotes: 'Temuan QC 3 November 2026 oleh Heri: Cleaning All Parled TRF A64 No. 1-48 bersih & normal, kecuali 4 unit error (No. 5 Warm Separo, No. 12 Red Mati 1 Mata, No. 19 Warm Separo, No. 33 Red Separo).'
+  },
+  'ast-lgt-020': {
+    reportDate: '2026-10-03',
+    reportMonth: '2026-10',
+    reportedBy: 'Heri',
+    progressStatus: 'Dalam Pengecekan Kelengkapan',
+    progressPercent: 30,
+    progressNotes: 'Temuan QC 3 Oktober 2026 oleh Heri: 1 Unit Tripot Custom keadaan tidak komplit, sedang dilengkapi komponen penguncinya.'
+  },
+
+  // 2. Divisi Audio / Sound (Sheet: Inventory SOUND 2026 + Temuan QC & WO Sept–Nov 2026)
+  'ast-aud-012': {
+    reportDate: '2026-11-04',
+    reportMonth: '2026-11',
+    reportedBy: 'Iwan Kurniawan (Butonk)',
+    progressStatus: 'Dalam Proses Perbaikan Service',
+    progressPercent: 75,
+    progressNotes: 'Laporan 4 November 2026 oleh Butonk: Ganti tweeter & speaker DB No. 5 & DB No. 18 selesai (Kondisi OK). Unit DB No. 15 rekon-kit tweeter masih suara kecil, sedang proses service ulang.'
+  },
+  'ast-aud-013': {
+    reportDate: '2026-10-26',
+    reportMonth: '2026-10',
+    reportedBy: 'Muhamad Rahmat (Mboh) & Damri',
+    progressStatus: 'Dalam Proses Perbaikan Service',
+    progressPercent: 50,
+    progressNotes: 'Laporan 26 Oktober 2026 oleh Mboh: 1 Unit LVX 15 mesin modul mati, saat ini sedang dalam pengecekan & perbaikan oleh Mang Damri (Divisi Service).'
+  },
+  'ast-aud-039': {
+    reportDate: '2026-09-16',
+    reportMonth: '2026-09',
+    reportedBy: 'Ramdani (Dani)',
+    progressStatus: 'Tercatat di Rekap Inventaris (18 Aktif, 4 Hilang)',
+    progressPercent: 40,
+    progressNotes: 'Laporan inventaris mic oleh Ramdani (16 September 2026): 18 Unit SM58 aktif siap pakai, 4 Unit tercatat hilang pada rekap Sheet Sound 2026.'
+  },
+  'ast-aud-060': {
+    reportDate: '2026-11-05',
+    reportMonth: '2026-11',
+    reportedBy: 'Ramdani (Dani)',
+    progressStatus: 'Dalam Pengecekan & Perbaikan',
+    progressPercent: 30,
+    progressNotes: 'Laporan 5 November 2026 oleh Ramdani: Maintenance kabel extension 5 meter, ditemukan 2 kabel rusak (lainnya aman) untuk perbaikan konektor.'
+  },
+  'ast-aud-070': {
+    reportDate: '2026-09-17',
+    reportMonth: '2026-09',
+    reportedBy: 'Wahyudin (Unyim) & Mulyana',
+    progressStatus: 'Dalam Proses Perbaikan Service',
+    progressPercent: 40,
+    progressNotes: 'Temuan QC 17 September 2026 oleh Unyim: 1 Unit Takel 1 Ton mengalami LOS, dipisahkan dari operasional untuk perbaikan mekanis oleh Mulyana.'
+  },
+
+  // 3. Divisi Multimedia / Streaming (Sheet: INVENTORY STREEMING 2026 • Check 29 Juli 2026 + Temuan QC Sept–Nov 2026)
+  'ast-mm-007': {
+    reportDate: '2026-07-29',
+    reportMonth: '2026-07',
+    reportedBy: 'Mulyadi (Jay) / Uloh & Chandra',
+    progressStatus: 'Dalam Pengecekan Teknisi (1 Aktif, 1 Rusak)',
+    progressPercent: 25,
+    progressNotes: 'Rekap Inventaris Streaming (29 Juli 2026): 1 Unit aktif siap pakai, 1 Unit Hardwell Optimus 4 Channel tercatat rusak.'
+  },
+  'ast-mm-021': {
+    reportDate: '2026-07-29',
+    reportMonth: '2026-07',
+    reportedBy: 'Mulyadi (Jay) / Uloh & Chandra',
+    progressStatus: 'Dalam Pengecekan Teknisi (10 Aktif, 2 Rusak)',
+    progressPercent: 35,
+    progressNotes: 'Rekap Inventaris Streaming (29 Juli 2026): 10 Unit siap pakai, 2 Unit Eartec UL5D (1 dari set 5-Person & 1 dari set 4-Person) tercatat rusak.'
+  },
+  'ast-mm-022': {
+    reportDate: '2026-11-02',
+    reportMonth: '2026-11',
+    reportedBy: 'Mulyadi (Jay)',
+    progressStatus: 'Dalam Pengecekan / Perbaikan Baterai UPS',
+    progressPercent: 25,
+    progressNotes: 'Temuan QC 2 November 2026 oleh Mulyadi (Jay): 1 Unit UPS APC 1200VA tidak bisa mengisi daya baterai (2 Unit Switch Hub TP-Link kondisi baik).'
+  },
+  'ast-mm-024': {
+    reportDate: '2026-07-29',
+    reportMonth: '2026-07',
+    reportedBy: 'Mulyadi (Jay) / Uloh & Chandra',
+    progressStatus: 'Unit Rusak Dipisahkan (28 Aktif, 4 Rusak)',
+    progressPercent: 30,
+    progressNotes: 'Rekap Inventaris Streaming (29 Juli 2026): 28 Unit siap pakai, 1 Unit DP-HDMI & 3 Unit MPOW Isolator tercatat rusak.'
+  },
+  'ast-mm-025': {
+    reportDate: '2026-09-17',
+    reportMonth: '2026-09',
+    reportedBy: 'Mulyadi (Jay)',
+    progressStatus: 'Dalam Perbaikan Konektor (94 Aktif, 12 Rusak/Hilang)',
+    progressPercent: 50,
+    progressNotes: 'Rekap Streaming (29 Juli 2026) & Temuan QC (17 Sep 2026 oleh Mulyadi): 94 Unit siap pakai; 6 HDMI FO/Vention rusak, 6 LAN Cat6 rusak/hilang, 1 SDI 50M ganti konektor.'
+  },
+  'ast-mm-026': {
+    reportDate: '2026-07-29',
+    reportMonth: '2026-07',
+    reportedBy: 'Mulyadi (Jay) / Uloh & Chandra',
+    progressStatus: 'Dalam Pengecekan Panel TV (19 Aktif, 3 Rusak)',
+    progressPercent: 30,
+    progressNotes: 'Rekap Inventaris Streaming (29 Juli 2026): 19 Unit TV & Standing siap pakai; 1 Unit Coocaa 50" & 2 Unit Coocaa 42" tercatat rusak.'
+  },
+
+  // 4. Divisi Videotron / LED (Sheet: INVENTORY LED 2026 • Update 30 September 2026 + Temuan QC Oct–Nov 2026)
+  'ast-led-001': {
+    reportDate: '2026-11-05',
+    reportMonth: '2026-11',
+    reportedBy: 'Mulyana (Kharo)',
+    progressStatus: 'Dalam Proses Perbaikan Service',
+    progressPercent: 75,
+    progressNotes: 'Update 3–5 November 2026 oleh Mulyana (Kharo): Service 6 kabinet LED (1 ngacing, 5 ganti jalur) selesai 100%; service 8 kabinet LED (6 dead pixel, 1 IC warna, 1 jalur) on progress 75% (2 unit minta ganti receiving card).'
+  },
+  'ast-led-004': {
+    reportDate: '2026-09-30',
+    reportMonth: '2026-09',
+    reportedBy: 'Ayong Sumarsih',
+    progressStatus: 'Tercatat di Rekap Inventaris (79 Layak, 1 Kurang Penyodok)',
+    progressPercent: 50,
+    progressNotes: 'Rekap Inventaris LED (30 September 2026): 79 Unit layak pakai, 1 Unit Bracket LED kehilangan penyodok.'
+  },
+  'ast-led-005': {
+    reportDate: '2026-09-30',
+    reportMonth: '2026-09',
+    reportedBy: 'Ayong Sumarsih',
+    progressStatus: 'Dalam Perbaikan Las / Rigging (326 Aktif, 1 Patah)',
+    progressPercent: 50,
+    progressNotes: 'Rekap Inventaris LED (30 September 2026): 326 Unit siap pakai, 1 Unit Tiang Frame 1M patah dipisahkan untuk pengelasan.'
+  },
+  'ast-led-007': {
+    reportDate: '2026-09-30',
+    reportMonth: '2026-09',
+    reportedBy: 'Ayong Sumarsih',
+    progressStatus: 'Unit Rusak Dipisahkan (22 Aktif, 2 Rusak)',
+    progressPercent: 35,
+    progressNotes: 'Rekap Inventaris LED (30 September 2026): 22 Unit siap pakai, 2 Unit Kabel HDMI Armored 100M tercatat rusak.'
+  },
+  'ast-led-008': {
+    reportDate: '2026-09-30',
+    reportMonth: '2026-09',
+    reportedBy: 'Ayong Sumarsih',
+    progressStatus: 'Tercatat di Rekap Inventaris (58 Aktif, 1 Hilang)',
+    progressPercent: 50,
+    progressNotes: 'Rekap Inventaris LED (30 September 2026): 58 Unit siap pakai, 1 Unit Kabel LAN Neutrik Cat6a 100M tercatat hilang.'
+  },
+  'ast-led-009': {
+    reportDate: '2026-09-30',
+    reportMonth: '2026-09',
+    reportedBy: 'Ayong Sumarsih & Mulyana',
+    progressStatus: 'Dalam Pengecekan Phase R (76 Aktif, 1 Check R)',
+    progressPercent: 60,
+    progressNotes: 'Rekap Inventaris LED (30 September 2026): 76 Unit siap pakai, 1 Unit Panel Listrik 12 Port sedang pengecekan jalur Phase R (Check R).'
+  }
+};
+
+export function getDefaultAssetReportAndProgress(asset: Asset): CanonicalAssetReportProgress {
+  const known = CANONICAL_ASSET_REPORT_PROGRESS[asset.id];
+  if (known) {
+    return {
+      reportDate: asset.reportDate || known.reportDate,
+      reportMonth: asset.reportMonth || (asset.reportDate ? asset.reportDate.slice(0, 7) : known.reportMonth),
+      reportedBy: asset.reportedBy || known.reportedBy,
+      progressStatus: asset.progressStatus || known.progressStatus,
+      progressPercent: typeof asset.progressPercent === 'number' ? asset.progressPercent : known.progressPercent,
+      progressNotes: asset.progressNotes || known.progressNotes
+    };
+  }
+
+  const divDefaults: Record<string, { date: string; month: string; pic: string }> = {
+    Lighting: { date: '2026-06-30', month: '2026-06', pic: 'Heri' },
+    Audio: { date: '2026-10-31', month: '2026-10', pic: 'Muhamad Rahmat (Mboh)' },
+    Multimedia: { date: '2026-07-29', month: '2026-07', pic: 'Mulyadi (Jay)' },
+    Videotron: { date: '2026-09-30', month: '2026-09', pic: 'Ayong Sumarsih' },
+    Gudang: { date: '2026-11-01', month: '2026-11', pic: 'Udin Saepudin (Mang Ube)' },
+    Service: { date: '2026-11-01', month: '2026-11', pic: 'Damri & Mulyana' }
+  };
+
+  const def = divDefaults[asset.division] || { date: '2026-11-01', month: '2026-11', pic: 'Tim Teknis RIZ' };
+  const reportDate = asset.reportDate || def.date;
+  const reportMonth = asset.reportMonth || reportDate.slice(0, 7);
+  const reportedBy = asset.reportedBy || def.pic;
+
+  if (asset.condition === 'Rusak Berat') {
+    return {
+      reportDate,
+      reportMonth,
+      reportedBy,
+      progressStatus: asset.progressStatus || 'Belum Ditangani / Menunggu Perbaikan Berat',
+      progressPercent: typeof asset.progressPercent === 'number' ? asset.progressPercent : 0,
+      progressNotes: asset.progressNotes || `Kondisi unit tercatat Rusak Berat / Off (${stripInventoryNominalText(asset.serialNumber)}). Menunggu diagnosa dan tindak lanjut Divisi Service.`
+    };
+  }
+
+  if (asset.condition === 'Rusak Ringan' || asset.location.includes('SERVICE')) {
+    return {
+      reportDate,
+      reportMonth,
+      reportedBy,
+      progressStatus: asset.progressStatus || 'Dalam Pengecekan / Perbaikan Service',
+      progressPercent: typeof asset.progressPercent === 'number' ? asset.progressPercent : 40,
+      progressNotes: asset.progressNotes || `Unit tercatat memerlukan perawatan/servis ringan (${stripInventoryNominalText(asset.serialNumber)}).`
+    };
+  }
+
+  return {
+    reportDate,
+    reportMonth,
+    reportedBy,
+    progressStatus: asset.progressStatus || 'Selesai Dicek / Siap Operasi',
+    progressPercent: typeof asset.progressPercent === 'number' ? asset.progressPercent : 100,
+    progressNotes: asset.progressNotes || `Kondisi fisik baik & siap operasional sesuai pengecekan inventaris gudang (${formatAssetReportDateLabel(reportDate)}).`
+  };
+}
+
+// Enrich INITIAL_INVENTORY_ASSETS in-place so all default assets carry reportDate, reportMonth & progress fields
+for (const item of INITIAL_INVENTORY_ASSETS) {
+  const def = getDefaultAssetReportAndProgress(item);
+  item.reportDate = def.reportDate;
+  item.reportMonth = def.reportMonth;
+  item.reportedBy = def.reportedBy;
+  item.progressStatus = def.progressStatus;
+  item.progressPercent = def.progressPercent;
+  item.progressNotes = def.progressNotes;
+}
+
 export interface InventoryAssetAvailability {
   totalUnits: number;
   unitLabel: string;
@@ -2301,6 +2602,14 @@ export interface InventoryAssetAvailability {
   availableUnits: number;
   damageReasons: string[];
   assignedReasons: string[];
+  reportDate: string;
+  reportDateLabel: string;
+  reportMonth: string;
+  reportMonthLabel: string;
+  reportedBy: string;
+  progressStatus: string;
+  progressPercent: number;
+  progressNotes: string;
 }
 
 export interface InventoryCalculationContext {
@@ -2656,6 +2965,53 @@ export function calculateInventoryAssetAvailability(
     ? unitLabelMatch[1].charAt(0).toUpperCase() + unitLabelMatch[1].slice(1).toLowerCase()
     : 'Unit';
 
+  const baseReportProgress = getDefaultAssetReportAndProgress(asset);
+  let resolvedReportDate = baseReportProgress.reportDate;
+  let resolvedReportMonth = baseReportProgress.reportMonth;
+  let resolvedReportedBy = baseReportProgress.reportedBy;
+  let resolvedProgressStatus = baseReportProgress.progressStatus;
+  let resolvedProgressPercent = baseReportProgress.progressPercent;
+  let resolvedProgressNotes = baseReportProgress.progressNotes;
+
+  const isExplicitlyEdited = Boolean(asset._userEdited || asset._syncMeta?._userEdited);
+  if (!isExplicitlyEdited && codeLower) {
+    const matchedWO = rawWorkOrders.find(
+      w => w && `${w.equipment || ''} ${w.title} ${w.description || ''}`.toLowerCase().includes(codeLower)
+    );
+    const matchedFinding = rawFindings.find(
+      f => f && `${f.equipment || ''} ${f.issue || ''}`.toLowerCase().includes(codeLower)
+    );
+    if (matchedWO) {
+      resolvedReportDate = matchedWO.dateCreated || resolvedReportDate;
+      resolvedReportMonth = resolvedReportDate.slice(0, 7);
+      resolvedReportedBy = matchedWO.pic || resolvedReportedBy;
+      resolvedProgressPercent = typeof matchedWO.progress === 'number'
+        ? matchedWO.progress
+        : matchedWO.status === 'Completed'
+        ? 100
+        : matchedWO.status === 'In Progress'
+        ? 50
+        : 0;
+      resolvedProgressStatus =
+        matchedWO.status === 'Completed'
+          ? 'Selesai Diperbaiki / Siap Operasi'
+          : matchedWO.status === 'In Progress'
+          ? 'Dalam Proses Perbaikan Service'
+          : 'Menunggu Tindak Lanjut Work Order';
+      resolvedProgressNotes = matchedWO.description || matchedWO.title || resolvedProgressNotes;
+    } else if (matchedFinding) {
+      resolvedReportDate = matchedFinding.dateCreated || matchedFinding.date || resolvedReportDate;
+      resolvedReportMonth = resolvedReportDate.slice(0, 7);
+      resolvedReportedBy = matchedFinding.pic || resolvedReportedBy;
+      resolvedProgressPercent = matchedFinding.status === 'Close' ? 100 : 15;
+      resolvedProgressStatus =
+        matchedFinding.status === 'Close'
+          ? 'Selesai Diperbaiki / Siap Operasi'
+          : 'Dilaporkan Temuan QC (Menunggu Perbaikan)';
+      resolvedProgressNotes = matchedFinding.issue || resolvedProgressNotes;
+    }
+  }
+
   return {
     totalUnits,
     unitLabel,
@@ -2665,7 +3021,15 @@ export function calculateInventoryAssetAvailability(
     assignedUnits: clampedAssigned,
     availableUnits,
     damageReasons,
-    assignedReasons
+    assignedReasons,
+    reportDate: resolvedReportDate,
+    reportDateLabel: formatAssetReportDateLabel(resolvedReportDate),
+    reportMonth: resolvedReportMonth,
+    reportMonthLabel: formatAssetReportMonthLabel(resolvedReportMonth || resolvedReportDate),
+    reportedBy: resolvedReportedBy,
+    progressStatus: resolvedProgressStatus,
+    progressPercent: Math.max(0, Math.min(100, Math.round(Number(resolvedProgressPercent) || 0))),
+    progressNotes: resolvedProgressNotes
   };
 }
 
