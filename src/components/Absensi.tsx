@@ -2873,91 +2873,104 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
             return (
               <div className="space-y-5">
                 {/* Functional Header Bar Jadwal Penugasan & Google Calendar */}
-                <div className="p-3.5 bg-slate-900 text-white rounded-xl border border-slate-800 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-black tracking-tight text-white">
-                      Jadwal Penugasan Kerja / Job Event (Staff/Crew, Unit Alat, Armada, Lokasi/Venue & PIC)
-                    </h3>
-                    <p className="text-[11px] text-slate-300 mt-0.5">
-                      Sinkronisasi Google Calendar ({gcalConfig.calendarId}) & Assessment Spesifikasi Teknis / Crew
-                    </p>
-                  </div>
+                <div className="p-4 sm:p-5 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white rounded-2xl border border-slate-800 shadow-md space-y-3.5 overflow-hidden w-full">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-800/90">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shrink-0 mt-0.5">
+                        <Briefcase className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm sm:text-base font-black tracking-tight text-white leading-snug">
+                          Jadwal Penugasan Kerja / Job Event (Staff/Crew, Unit Alat, Armada, Lokasi/Venue & PIC)
+                        </h3>
+                        <p className="text-[11px] sm:text-xs text-slate-300 mt-0.5 leading-relaxed break-words">
+                          Sinkronisasi Google Calendar (<span className="font-mono text-indigo-300 font-semibold">{gcalConfig.calendarId}</span>) & Assessment Spesifikasi Teknis / Crew
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      disabled={isSyncingGcal}
-                      onClick={() => handleSyncAllToGoogleCalendar(filteredJobs)}
-                      className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-60"
-                      title={`Sinkronkan seluruh ${filteredJobs.length} jadwal event ke Google Calendar (${gcalConfig.calendarId})`}
-                    >
-                      <Calendar className={`w-3.5 h-3.5 text-slate-950 ${isSyncingGcal ? 'animate-spin' : ''}`} />
-                      <span>
-                        {isSyncingGcal
-                          ? 'Menyinkronkan...'
-                          : `Sync ke Google Calendar (${filteredJobs.length} Job)`}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isSyncingGcal}
-                      onClick={handlePullLiveFromGoogleCalendar}
-                      className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-60"
-                      title={`Tarik jadwal event live dari Google Calendar (${gcalConfig.calendarId})`}
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 text-slate-950 ${isSyncingGcal ? 'animate-spin' : ''}`} />
-                      <span>Tarik dari Google Calendar</span>
-                    </button>
-                    {canManageJobSchedule && (
-                      <label
-                        className="px-3 py-2 bg-white/15 hover:bg-white/25 text-white border border-white/25 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
-                        title="Impor jadwal penugasan dari file Google Calendar (.ics)"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5 text-amber-300" />
-                        <span>Impor File (.ics)</span>
-                        <input
-                          type="file"
-                          accept=".ics,text/calendar"
-                          onChange={handleImportGoogleCalendarIcs}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setShowGcalVisualCalendar(prev => !prev)}
-                      className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors border ${
-                        showGcalVisualCalendar
-                          ? 'bg-sky-500 text-slate-950 border-sky-300 font-black'
-                          : 'bg-sky-600/40 hover:bg-sky-600/60 text-sky-100 border-sky-400/50'
-                      }`}
-                      title="Tampilkan Kalender Bulanan Event & Embed Google Calendar"
-                    >
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{showGcalVisualCalendar ? 'Tutup Kalender Visual' : 'Lihat Kalender Event'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowGcalSyncPanel(prev => !prev)}
-                      className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors border ${
-                        showGcalSyncPanel
-                          ? 'bg-white text-indigo-950 border-white font-black'
-                          : 'bg-white/10 hover:bg-white/20 text-indigo-100 border-white/20'
-                      }`}
-                      title="Pengaturan Akun & Auto-Sync Google Calendar"
-                    >
-                      <span>⚙️ Koneksi GCal ({gcalConfig.calendarId.split('@')[0]})</span>
-                    </button>
                     {canManageJobSchedule && (
                       <button
                         type="button"
                         onClick={handleOpenAddJobModal}
-                        className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all shrink-0 self-start sm:self-center"
                       >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="w-4 h-4" />
                         <span>Tambah Jadwal Job</span>
                       </button>
                     )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        disabled={isSyncingGcal}
+                        onClick={() => handleSyncAllToGoogleCalendar(filteredJobs)}
+                        className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-60"
+                        title={`Sinkronkan seluruh ${filteredJobs.length} jadwal event ke Google Calendar (${gcalConfig.calendarId})`}
+                      >
+                        <Calendar className={`w-3.5 h-3.5 text-slate-950 shrink-0 ${isSyncingGcal ? 'animate-spin' : ''}`} />
+                        <span>
+                          {isSyncingGcal
+                            ? 'Menyinkronkan...'
+                            : `Sync ke Google Calendar (${filteredJobs.length} Job)`}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSyncingGcal}
+                        onClick={handlePullLiveFromGoogleCalendar}
+                        className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-60"
+                        title={`Tarik jadwal event live dari Google Calendar (${gcalConfig.calendarId})`}
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 text-slate-950 shrink-0 ${isSyncingGcal ? 'animate-spin' : ''}`} />
+                        <span>Tarik dari Google Calendar</span>
+                      </button>
+                      {canManageJobSchedule && (
+                        <label
+                          className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                          title="Impor jadwal penugasan dari file Google Calendar (.ics)"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                          <span>Impor File (.ics)</span>
+                          <input
+                            type="file"
+                            accept=".ics,text/calendar"
+                            onChange={handleImportGoogleCalendarIcs}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => setShowGcalVisualCalendar(prev => !prev)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors border ${
+                          showGcalVisualCalendar
+                            ? 'bg-sky-500 text-slate-950 border-sky-300 font-black'
+                            : 'bg-sky-600/35 hover:bg-sky-600/55 text-sky-100 border-sky-400/40'
+                        }`}
+                        title="Tampilkan Kalender Bulanan Event & Embed Google Calendar"
+                      >
+                        <Calendar className="w-3.5 h-3.5 shrink-0" />
+                        <span>{showGcalVisualCalendar ? 'Tutup Kalender Visual' : 'Lihat Kalender Event'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowGcalSyncPanel(prev => !prev)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors border ${
+                          showGcalSyncPanel
+                            ? 'bg-white text-indigo-950 border-white font-black'
+                            : 'bg-white/10 hover:bg-white/20 text-indigo-100 border-white/20'
+                        }`}
+                        title="Pengaturan Akun & Auto-Sync Google Calendar"
+                      >
+                        <span>⚙️ Koneksi GCal ({gcalConfig.calendarId.split('@')[0]})</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -3506,12 +3519,12 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
 
                   {/* Admin Quick-Schedule Bar when a Staff or Freelance is selected */}
                   {canManageJobSchedule && (selectedStaffObj || selectedFreelanceObj) && effectiveQuickAssignJob && (
-                    <div className="pt-2.5 border-t border-indigo-200/80 bg-white/90 p-3 rounded-xl border flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
-                      <div className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-mono font-black uppercase">
+                    <div className="pt-2.5 border-t border-indigo-200/80 bg-white/90 p-3 rounded-xl border flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 overflow-hidden">
+                      <div className="text-xs font-bold text-slate-800 flex flex-wrap items-center gap-2 min-w-0">
+                        <span className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-mono font-black uppercase shrink-0">
                           ADMIN QUICK SCHEDULE
                         </span>
-                        <span>
+                        <span className="min-w-0 break-words">
                           Jadwalkan{' '}
                           <strong className="text-indigo-700">
                             {selectedStaffObj
@@ -3522,14 +3535,14 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                         </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
                         <select
                           value={effectiveQuickAssignJob.id}
                           onChange={(e) => {
                             setQuickAssignJobId(e.target.value);
                             setQuickAssignSectionIdx(0);
                           }}
-                          className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 outline-none"
+                          className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 outline-none max-w-full"
                         >
                           {monthFilteredJobs.map(j => (
                             <option key={j.id} value={j.id}>
@@ -3541,7 +3554,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                         <select
                           value={effectiveQuickAssignSecIdx}
                           onChange={(e) => setQuickAssignSectionIdx(Number(e.target.value))}
-                          className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 outline-none"
+                          className="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-800 outline-none max-w-full"
                         >
                           {effectiveQuickAssignJob.sections.map((s, idx) => (
                             <option key={idx} value={idx}>
@@ -3555,7 +3568,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                           value={quickAssignRoleNote}
                           onChange={(e) => setQuickAssignRoleNote(e.target.value)}
                           placeholder="Catatan tugas (opsional, misal: Campers / Pasang)"
-                          className="text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-medium text-slate-800 w-56 outline-none focus:border-indigo-500"
+                          className="text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-medium text-slate-800 w-full sm:w-56 outline-none focus:border-indigo-500"
                         />
 
                         <button
@@ -3584,8 +3597,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                 </div>
 
                 {/* Filters Bar */}
-                <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-col xl:flex-row gap-3 items-stretch xl:items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
                     <div className="flex flex-wrap items-center bg-white border border-slate-200 rounded-lg p-0.5 text-xs font-bold">
                       <button
                         type="button"
@@ -3635,7 +3648,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                           onActiveMonthChange(val);
                         }
                       }}
-                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-indigo-900 outline-none cursor-pointer"
+                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-indigo-900 outline-none cursor-pointer max-w-full"
                       title="Pilih Bulan Jadwal Google Calendar (Januari - Desember 2026)"
                     >
                       <option value="ALL">📅 Semua Bulan Google Calendar ({jobAssignments.length} Event)</option>
@@ -3656,7 +3669,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                     <select
                       value={jobDivisionFilter}
                       onChange={(e) => setJobDivisionFilter(e.target.value)}
-                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 outline-none cursor-pointer"
+                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 outline-none cursor-pointer max-w-full"
                     >
                       <option value="All">Semua Divisi Alat</option>
                       <option value="Audio">Audio / Sound</option>
@@ -3678,7 +3691,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                           setJobSelectedFreelanceName('ALL');
                         }
                       }}
-                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 outline-none cursor-pointer"
+                      className="text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 outline-none cursor-pointer max-w-full"
                     >
                       <option value="All">Semua Personil (Staff + Freelance)</option>
                       <option value="Staff">Hanya Staff Inhouse</option>
@@ -3686,7 +3699,7 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                     </select>
                   </div>
 
-                  <div className="relative flex-1 max-w-md">
+                  <div className="relative flex-1 xl:max-w-md min-w-[220px]">
                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
@@ -3729,218 +3742,226 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                       className="bg-white border border-slate-200 rounded-xl shadow-2xs hover:shadow-md transition-shadow overflow-hidden"
                     >
                       {/* Top Bar: Date, Venue, Loading, PIC, Status & Actions */}
-                      <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="px-2.5 py-1 bg-slate-900 text-white rounded-md text-xs font-mono font-black">
-                              {job.date}
-                            </span>
-                            <h4 className="text-sm md:text-base font-black text-slate-900 tracking-tight">
-                              {job.dateLabel}
-                            </h4>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-full text-[11px] font-bold">
-                              <MapPin className="w-3 h-3 text-indigo-600" />
-                              {job.venue}
-                            </span>
+                      <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+                          <div className="space-y-1.5 min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="px-2.5 py-1 bg-slate-900 text-white rounded-md text-xs font-mono font-black shrink-0">
+                                {job.date}
+                              </span>
+                              <h4 className="text-sm md:text-base font-black text-slate-900 tracking-tight break-words">
+                                {job.dateLabel}
+                              </h4>
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-full text-[11px] font-bold">
+                                <MapPin className="w-3 h-3 text-indigo-600 shrink-0" />
+                                <span>{job.venue}</span>
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-600">
+                              {job.loadingSchedule && (
+                                <span className="inline-flex items-center gap-1 font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-md">
+                                  <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                                  <span>Loading / Berangkat: {job.loadingSchedule}</span>
+                                </span>
+                              )}
+
+                              {/* Editable PIC Badge for Admin */}
+                              {editingPicJobId === job.id && canManageJobSchedule ? (
+                                <div className="inline-flex flex-wrap items-center gap-1.5 bg-white border border-indigo-300 p-1 rounded-lg shadow-xs">
+                                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 ml-1" />
+                                  <span className="text-[11px] font-bold text-slate-700">PIC:</span>
+                                  <select
+                                    value=""
+                                    onChange={(e) => {
+                                      if (e.target.value) setEditingPicValue(e.target.value);
+                                    }}
+                                    className="text-[11px] px-1.5 py-0.5 bg-indigo-50 border border-indigo-200 rounded font-bold text-indigo-900 outline-none cursor-pointer"
+                                  >
+                                    <option value="">-- Pilih Staff / Freelance --</option>
+                                    <optgroup label="Staff Inhouse">
+                                      {staffList.map(st => {
+                                        const label = st.nickname ? `${st.nickname} (${st.name})` : st.name;
+                                        return (
+                                          <option key={st.id} value={label}>
+                                            {label} — {st.division}
+                                          </option>
+                                        );
+                                      })}
+                                    </optgroup>
+                                    <optgroup label="Kru Freelance">
+                                      {OFFICIAL_FREELANCE_CREW_LIST.map(fl => (
+                                        <option key={fl.id} value={fl.name}>
+                                          {fl.name} ({fl.division})
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  </select>
+                                  <input
+                                    type="text"
+                                    value={editingPicValue}
+                                    onChange={(e) => setEditingPicValue(e.target.value)}
+                                    className="text-xs px-2 py-0.5 border border-slate-300 rounded font-bold text-slate-800 w-44 outline-none focus:border-indigo-500"
+                                    placeholder="Nama PIC..."
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateJobPic(job, editingPicValue)}
+                                    className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[11px] font-black cursor-pointer"
+                                  >
+                                    Simpan
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingPicJobId(null)}
+                                    className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[11px] font-bold cursor-pointer"
+                                  >
+                                    Batal
+                                  </button>
+                                </div>
+                              ) : (
+                                <span
+                                  onClick={() => {
+                                    if (canManageJobSchedule) {
+                                      setEditingPicJobId(job.id);
+                                      setEditingPicValue(job.pic || '');
+                                    }
+                                  }}
+                                  className={`inline-flex items-center gap-1 font-bold text-slate-800 bg-white border border-slate-200 px-2.5 py-0.5 rounded-md shadow-2xs ${
+                                    canManageJobSchedule ? 'cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/40' : ''
+                                  }`}
+                                  title={canManageJobSchedule ? 'Klik untuk ubah / pilih Person in Charge (PIC)' : undefined}
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                  <span>Person in Charge (PIC): <span className="text-indigo-700 uppercase">{job.pic || '-'}</span></span>
+                                  {canManageJobSchedule && (
+                                    <Edit className="w-3 h-3 text-slate-400 ml-1 shrink-0" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 pt-0.5">
-                            {job.loadingSchedule && (
-                              <span className="inline-flex items-center gap-1 font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
-                                <Clock className="w-3 h-3 text-amber-600" />
-                                Loading / Berangkat: {job.loadingSchedule}
-                              </span>
-                            )}
+                          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                            {/* Google Calendar Sync Status Badge */}
+                            <span
+                              className="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-mono font-black flex items-center gap-1"
+                              title={
+                                job.gcalLastSyncedAt
+                                  ? `Tersinkron ke Google Calendar (${gcalConfig.calendarId}) pada ${new Date(job.gcalLastSyncedAt).toLocaleString('id-ID')}`
+                                  : `Tersedia di Feed Sinkronisasi Google Calendar (${gcalConfig.calendarId})`
+                              }
+                            >
+                              <CheckCircle className="w-3 h-3 text-emerald-600 shrink-0" />
+                              <span>Synced GCal</span>
+                            </span>
 
-                            {/* Editable PIC Badge for Admin */}
-                            {editingPicJobId === job.id && canManageJobSchedule ? (
-                              <div className="inline-flex flex-wrap items-center gap-1.5 bg-white border border-indigo-300 p-1 rounded-lg shadow-xs">
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 ml-1" />
-                                <span className="text-[11px] font-bold text-slate-700">PIC:</span>
-                                <select
-                                  value=""
-                                  onChange={(e) => {
-                                    if (e.target.value) setEditingPicValue(e.target.value);
-                                  }}
-                                  className="text-[11px] px-1.5 py-0.5 bg-indigo-50 border border-indigo-200 rounded font-bold text-indigo-900 outline-none cursor-pointer"
-                                >
-                                  <option value="">-- Pilih Staff / Freelance --</option>
-                                  <optgroup label="Staff Inhouse">
-                                    {staffList.map(st => {
-                                      const label = st.nickname ? `${st.nickname} (${st.name})` : st.name;
-                                      return (
-                                        <option key={st.id} value={label}>
-                                          {label} — {st.division}
-                                        </option>
-                                      );
-                                    })}
-                                  </optgroup>
-                                  <optgroup label="Kru Freelance">
-                                    {OFFICIAL_FREELANCE_CREW_LIST.map(fl => (
-                                      <option key={fl.id} value={fl.name}>
-                                        {fl.name} ({fl.division})
-                                      </option>
-                                    ))}
-                                  </optgroup>
-                                </select>
-                                <input
-                                  type="text"
-                                  value={editingPicValue}
-                                  onChange={(e) => setEditingPicValue(e.target.value)}
-                                  className="text-xs px-2 py-0.5 border border-slate-300 rounded font-bold text-slate-800 w-44 outline-none focus:border-indigo-500"
-                                  placeholder="Nama PIC..."
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateJobPic(job, editingPicValue)}
-                                  className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[11px] font-black cursor-pointer"
-                                >
-                                  Simpan
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingPicJobId(null)}
-                                  className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[11px] font-bold cursor-pointer"
-                                >
-                                  Batal
-                                </button>
-                              </div>
-                            ) : (
-                              <span
-                                onClick={() => {
-                                  if (canManageJobSchedule) {
-                                    setEditingPicJobId(job.id);
-                                    setEditingPicValue(job.pic || '');
-                                  }
-                                }}
-                                className={`inline-flex items-center gap-1 font-bold text-slate-800 bg-white border border-slate-200 px-2.5 py-0.5 rounded shadow-2xs ${
-                                  canManageJobSchedule ? 'cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/40' : ''
-                                }`}
-                                title={canManageJobSchedule ? 'Klik untuk ubah / pilih Person in Charge (PIC)' : undefined}
-                              >
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                Person in Charge (PIC): <span className="text-indigo-700 uppercase">{job.pic || '-'}</span>
-                                {canManageJobSchedule && (
-                                  <Edit className="w-3 h-3 text-slate-400 ml-1" />
-                                )}
-                              </span>
-                            )}
+                            {/* Admin Assessment Status Badge */}
+                            <span
+                              className={`px-2 py-1 rounded-lg text-[10px] font-mono font-black border flex items-center gap-1 ${
+                                job.adminAssessmentStatus === 'Perlu Revisi Teknis/Kru'
+                                  ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                  : job.adminAssessmentStatus === 'Selesai & Dievaluasi'
+                                    ? 'bg-purple-100 text-purple-900 border-purple-300'
+                                    : 'bg-indigo-50 text-indigo-900 border-indigo-200'
+                              }`}
+                              title={
+                                job.adminAssessedBy
+                                  ? `Di-assessment oleh ${job.adminAssessedBy}${job.adminAssessedAt ? ` (${new Date(job.adminAssessedAt).toLocaleString('id-ID')})` : ''}`
+                                  : 'Status Assessment Admin untuk Unit Alat/Spesifikasi Teknis & Penugasan Kru'
+                              }
+                            >
+                              <ShieldCheck className="w-3 h-3 text-indigo-600 shrink-0" />
+                              <span>{job.adminAssessmentStatus || 'Terverifikasi Admin (Approved)'}</span>
+                            </span>
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2 self-start lg:self-center">
-                          {/* Google Calendar Sync Status Badge */}
-                          <span
-                            className="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-mono font-black flex items-center gap-1"
-                            title={
-                              job.gcalLastSyncedAt
-                                ? `Tersinkron ke Google Calendar (${gcalConfig.calendarId}) pada ${new Date(job.gcalLastSyncedAt).toLocaleString('id-ID')}`
-                                : `Tersedia di Feed Sinkronisasi Google Calendar (${gcalConfig.calendarId})`
-                            }
-                          >
-                            <CheckCircle className="w-3 h-3 text-emerald-600" />
-                            <span>Synced GCal</span>
-                          </span>
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-slate-200/80 w-full">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {canManageJobSchedule && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAssessmentModal(job)}
+                                  className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                                  title="Buka Panel Assessment Admin: Verifikasi Unit Alat / Spesifikasi Teknis & Penugasan Staff / Crew Freelance"
+                                >
+                                  <ClipboardList className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+                                  <span>📋 Assessment Admin (Alat & Crew)</span>
+                                </button>
 
-                          {/* Admin Assessment Status Badge */}
-                          <span
-                            className={`px-2 py-1 rounded-lg text-[10px] font-mono font-black border flex items-center gap-1 ${
-                              job.adminAssessmentStatus === 'Perlu Revisi Teknis/Kru'
-                                ? 'bg-amber-100 text-amber-900 border-amber-300'
-                                : job.adminAssessmentStatus === 'Selesai & Dievaluasi'
-                                  ? 'bg-purple-100 text-purple-900 border-purple-300'
-                                  : 'bg-indigo-50 text-indigo-900 border-indigo-200'
-                            }`}
-                            title={
-                              job.adminAssessedBy
-                                ? `Di-assessment oleh ${job.adminAssessedBy}${job.adminAssessedAt ? ` (${new Date(job.adminAssessedAt).toLocaleString('id-ID')})` : ''}`
-                                : 'Status Assessment Admin untuk Unit Alat/Spesifikasi Teknis & Penugasan Kru'
-                            }
-                          >
-                            <ShieldCheck className="w-3 h-3 text-indigo-600" />
-                            <span>{job.adminAssessmentStatus || 'Terverifikasi Admin (Approved)'}</span>
-                          </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickApproveEventAssessment(job, false)}
+                                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black flex items-center gap-1 cursor-pointer shadow-2xs transition-colors"
+                                  title="1-Klik Approve Assessment Spesifikasi Teknis & Penugasan Kru + Auto-Sync Google Calendar"
+                                >
+                                  <Check className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Approve Spek & Crew</span>
+                                </button>
+                              </>
+                            )}
 
-                          {canManageJobSchedule && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenAssessmentModal(job)}
-                                className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
-                                title="Buka Panel Assessment Admin: Verifikasi Unit Alat / Spesifikasi Teknis & Penugasan Staff / Crew Freelance"
-                              >
-                                <ClipboardList className="w-3.5 h-3.5 text-slate-950" />
-                                <span>📋 Assessment Admin (Alat & Crew)</span>
-                              </button>
+                            <a
+                              href={buildGoogleCalendarEventUrl(job, {
+                                filterPersonName: selectedStaffObj
+                                  ? selectedStaffObj.name
+                                  : selectedFreelanceObj
+                                    ? selectedFreelanceObj.name
+                                    : 'ALL',
+                                filterPersonType: selectedStaffObj
+                                  ? 'Staff'
+                                  : selectedFreelanceObj
+                                    ? 'Freelance'
+                                    : undefined,
+                                filterDivision: jobDivisionFilter
+                              })}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
+                              title="Tambahkan / sinkronkan jadwal penugasan job ini (lengkap dengan hasil assessment kru, alat, armada, venue & PIC) ke Google Calendar"
+                            >
+                              <Calendar className="w-3.5 h-3.5 shrink-0" />
+                              <span>Sync ke Google Calendar ↗</span>
+                            </a>
+                          </div>
 
-                              <button
-                                type="button"
-                                onClick={() => handleQuickApproveEventAssessment(job, false)}
-                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black flex items-center gap-1 cursor-pointer shadow-2xs transition-colors"
-                                title="1-Klik Approve Assessment Spesifikasi Teknis & Penugasan Kru + Auto-Sync Google Calendar"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                                <span>Approve Spek & Crew</span>
-                              </button>
-                            </>
-                          )}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <select
+                              value={job.status || 'Terjadwal'}
+                              onChange={(e) => handleUpdateJobStatus(job, e.target.value as JobAssignment['status'])}
+                              className={`text-xs font-extrabold px-2.5 py-1.5 rounded-lg border outline-none cursor-pointer ${getJobStatusBadgeStyle(job.status)}`}
+                            >
+                              <option value="Terjadwal">📅 Terjadwal</option>
+                              <option value="Loading / Setup">🚚 Loading / Setup</option>
+                              <option value="Berlangsung (Show)">🎬 Berlangsung (Show)</option>
+                              <option value="Bongkaran">📦 Bongkaran</option>
+                              <option value="Selesai">✅ Selesai</option>
+                            </select>
 
-                          <a
-                            href={buildGoogleCalendarEventUrl(job, {
-                              filterPersonName: selectedStaffObj
-                                ? selectedStaffObj.name
-                                : selectedFreelanceObj
-                                  ? selectedFreelanceObj.name
-                                  : 'ALL',
-                              filterPersonType: selectedStaffObj
-                                ? 'Staff'
-                                : selectedFreelanceObj
-                                  ? 'Freelance'
-                                  : undefined,
-                              filterDivision: jobDivisionFilter
-                            })}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
-                            title="Tambahkan / sinkronkan jadwal penugasan job ini (lengkap dengan hasil assessment kru, alat, armada, venue & PIC) ke Google Calendar"
-                          >
-                            <Calendar className="w-3.5 h-3.5" />
-                            <span>Sync ke Google Calendar ↗</span>
-                          </a>
-
-                          <select
-                            value={job.status || 'Terjadwal'}
-                            onChange={(e) => handleUpdateJobStatus(job, e.target.value as JobAssignment['status'])}
-                            className={`text-xs font-extrabold px-2.5 py-1.5 rounded-lg border outline-none cursor-pointer ${getJobStatusBadgeStyle(job.status)}`}
-                          >
-                            <option value="Terjadwal">📅 Terjadwal</option>
-                            <option value="Loading / Setup">🚚 Loading / Setup</option>
-                            <option value="Berlangsung (Show)">🎬 Berlangsung (Show)</option>
-                            <option value="Bongkaran">📦 Bongkaran</option>
-                            <option value="Selesai">✅ Selesai</option>
-                          </select>
-
-                          {canManageJobSchedule && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEditJobModal(job, 0)}
-                                className="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
-                                title="Edit Jadwal Penugasan"
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                                <span>Edit Job</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteJobAssignment(job)}
-                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold cursor-pointer"
-                                title="Hapus Jadwal Penugasan"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
-                          )}
+                            {canManageJobSchedule && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditJobModal(job, 0)}
+                                  className="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                                  title="Edit Jadwal Penugasan"
+                                >
+                                  <Edit className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Edit Job</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteJobAssignment(job)}
+                                  className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold cursor-pointer"
+                                  title="Hapus Jadwal Penugasan"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
 
