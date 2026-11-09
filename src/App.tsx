@@ -140,7 +140,9 @@ export default function App() {
   const [staffList, setStaffList] = useState<Staff[]>(() => getMasterStaffList());
 
   // PWA Install Prompt State
-  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(() =>
+    typeof window !== 'undefined' ? (window as any).__rizDeferredPwaPrompt || null : null
+  );
   const [isAppInstalled, setIsAppInstalled] = useState(false);
   const [showIOSInstallGuide, setShowIOSInstallGuide] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
@@ -150,10 +152,17 @@ export default function App() {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOSDevice(isIOS);
 
-    // Check if already launched as standalone PWA (iOS Safari / Android Chrome)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+    // Check if already launched as standalone PWA (iOS Safari / Android Chrome / Desktop App)
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: window-controls-overlay)').matches ||
+      (navigator as any).standalone === true;
     if (isStandalone) {
       setIsAppInstalled(true);
+    }
+
+    if ((window as any).__rizDeferredPwaPrompt) {
+      setDeferredInstallPrompt((window as any).__rizDeferredPwaPrompt);
     }
 
     const unsubStaff = subscribeCloudCollection<Staff>(
@@ -165,33 +174,55 @@ export default function App() {
 
     const handleBeforeInstall = (e: any) => {
       e.preventDefault();
+      (window as any).__rizDeferredPwaPrompt = e;
       setDeferredInstallPrompt(e);
+    };
+
+    const handlePromptReady = (e: any) => {
+      const promptEvt = e?.detail || (window as any).__rizDeferredPwaPrompt;
+      if (promptEvt) {
+        setDeferredInstallPrompt(promptEvt);
+      }
     };
 
     const handleAppInstalled = () => {
       setIsAppInstalled(true);
       setDeferredInstallPrompt(null);
+      (window as any).__rizDeferredPwaPrompt = null;
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('riz-pwa-prompt-ready', handlePromptReady);
     window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener('riz-pwa-installed', handleAppInstalled);
 
     return () => {
       unsubStaff();
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('riz-pwa-prompt-ready', handlePromptReady);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('riz-pwa-installed', handleAppInstalled);
     };
   }, []);
 
   const handleInstallPWA = async () => {
-    if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      const { outcome } = await deferredInstallPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setIsAppInstalled(true);
-      }
+    const promptEvent =
+      deferredInstallPrompt ||
+      (typeof window !== 'undefined' ? (window as any).__rizDeferredPwaPrompt : null);
+
+    if (promptEvent && typeof promptEvent.prompt === 'function') {
+      try {
+        await promptEvent.prompt();
+        const { outcome } = await promptEvent.userChoice;
+        if (outcome === 'accepted') {
+          setIsAppInstalled(true);
+        }
+      } catch (_err) {}
       setDeferredInstallPrompt(null);
-    } else if (isIOSDevice && !isAppInstalled) {
+      if (typeof window !== 'undefined') {
+        (window as any).__rizDeferredPwaPrompt = null;
+      }
+    } else if (!isAppInstalled) {
       setShowIOSInstallGuide(true);
     }
   };

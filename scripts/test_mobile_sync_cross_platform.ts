@@ -95,14 +95,23 @@ async function runTests() {
   assert(viteConfigContent.includes("host: '0.0.0.0'"), 'Vite server dikonfigurasi host 0.0.0.0 untuk menerima koneksi ponsel');
   assert(viteConfigContent.includes("allowedHosts: true as const"), 'Vite server dikonfigurasi allowedHosts true agar IP ponsel tidak diblokir Vite 6');
 
-  // Test 5: Verifikasi pembersihan Cache Storage di index.html dan public/sw.js
+  // Test 5: Verifikasi pembersihan Cache Storage & kesiapan instalasi PWA / WebAPK di index.html, manifest.json, dan public/sw.js
   const indexHtmlContent = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf8');
   assert(indexHtmlContent.includes("caches.delete"), 'index.html memiliki script penghapusan Cache Storage untuk ponsel');
-  assert(indexHtmlContent.includes("serviceWorker"), 'index.html melakukan unregister service worker lama');
+  assert(indexHtmlContent.includes("serviceWorker.register('/sw.js'"), 'index.html meregistrasi Service Worker aktif (/sw.js) untuk instalasi PWA/WebAPK');
+  assert(indexHtmlContent.includes("beforeinstallprompt"), 'index.html menangkap event beforeinstallprompt sejak awal pemuatan halaman');
 
   const swContent = fs.readFileSync(path.resolve(process.cwd(), 'public/sw.js'), 'utf8');
   assert(swContent.includes("caches.delete"), 'public/sw.js secara aktif membersihkan cache storage');
-  assert(swContent.includes("registration.unregister()"), 'public/sw.js secara otomatis meng-unregister dirinya sendiri');
+  assert(swContent.includes("addEventListener('fetch'"), 'public/sw.js memiliki fetch handler Network-First untuk syarat mutlak install PWA di Android & Desktop');
+
+  const manifestContent = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'public/manifest.json'), 'utf8'));
+  const has192Png = Array.isArray(manifestContent.icons) && manifestContent.icons.some((ic: any) => ic.sizes === '192x192' && ic.type === 'image/png');
+  const has512Png = Array.isArray(manifestContent.icons) && manifestContent.icons.some((ic: any) => ic.sizes === '512x512' && ic.type === 'image/png');
+  assert(has192Png && has512Png, 'public/manifest.json menyediakan ikon PNG 192x192 & 512x512 untuk instalasi WebAPK ponsel & aplikasi desktop');
+  assert(fs.existsSync(path.resolve(process.cwd(), 'public/icon-192.png')), 'File ikon public/icon-192.png tersedia');
+  assert(fs.existsSync(path.resolve(process.cwd(), 'public/icon-512.png')), 'File ikon public/icon-512.png tersedia');
+  assert(fs.existsSync(path.resolve(process.cwd(), 'public/apple-touch-icon.png')), 'File ikon public/apple-touch-icon.png tersedia untuk iOS Safari');
 
   console.log('================================================================');
   console.log(`  HASIL: SEMUA PENGUJIAN LULUS (${passed}/${total} - 100%)`);

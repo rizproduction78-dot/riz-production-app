@@ -33,8 +33,108 @@ export default function LoginScreen({
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showMobileInstallGuide, setShowMobileInstallGuide] = useState(false);
+  const [localPromptEvent, setLocalPromptEvent] = useState<any>(() =>
+    typeof window !== 'undefined' ? (window as any).__rizDeferredPwaPrompt || null : null
+  );
 
-  const handleTriggerInstall = () => {
+  useEffect(() => {
+    const syncPrompt = (e?: any) => {
+      const promptObj = e?.detail || (typeof window !== 'undefined' ? (window as any).__rizDeferredPwaPrompt : null) || e;
+      if (promptObj && typeof promptObj.prompt === 'function') {
+        setLocalPromptEvent(promptObj);
+      }
+    };
+    syncPrompt();
+    window.addEventListener('beforeinstallprompt', syncPrompt);
+    window.addEventListener('riz-pwa-prompt-ready', syncPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', syncPrompt);
+      window.removeEventListener('riz-pwa-prompt-ready', syncPrompt);
+    };
+  }, []);
+
+  const isAndroidDevice =
+    typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
+
+  const handleDownloadAppLauncher = () => {
+    try {
+      const targetOrigin =
+        typeof window !== 'undefined' && window.location?.origin
+          ? window.location.origin
+          : 'https://log-task-book-riz-production-app.vercel.app';
+      const launcherHtml = `<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RIZ-PROLOG" />
+  <link rel="icon" type="image/png" href="${targetOrigin}/icon-192.png" />
+  <link rel="apple-touch-icon" href="${targetOrigin}/apple-touch-icon.png" />
+  <title>RIZ-PRO LOG — App Launcher</title>
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; }
+    .box { text-align: center; padding: 24px; max-width: 360px; }
+    .logo { width: 72px; height: 72px; border-radius: 16px; margin-bottom: 16px; border: 1px solid #334155; }
+    .title { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+    .sub { font-size: 12px; color: #94a3b8; margin-bottom: 20px; }
+    .btn { display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 13px; padding: 12px 20px; border-radius: 10px; }
+  </style>
+  <script>
+    window.location.replace("${targetOrigin}/?source=pwa_launcher");
+  </script>
+</head>
+<body>
+  <div class="box">
+    <img class="logo" src="${targetOrigin}/icon-192.png" alt="RIZ-PRO LOG" />
+    <div class="title">RIZ-PRO LOG</div>
+    <div class="sub">Membuka Sistem Operasional & QC PT. Riz Production Multi Kreasi...</div>
+    <a class="btn" href="${targetOrigin}/?source=pwa_launcher">Buka Aplikasi Sekarang</a>
+  </div>
+</body>
+</html>`;
+      const blob = new Blob([launcherHtml], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'RIZ-PROLOG-App.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (_e) {}
+  };
+
+  const handleOpenInAndroidChrome = () => {
+    try {
+      const hostAndPath = `${window.location.host}${window.location.pathname}${window.location.search}`;
+      const scheme = window.location.protocol.replace(':', '') || 'https';
+      window.location.href = `intent://${hostAndPath}#Intent;scheme=${scheme};package=com.android.chrome;end`;
+    } catch (_e) {}
+  };
+
+  const handleTriggerInstall = async () => {
+    const promptEvt =
+      localPromptEvent ||
+      (typeof window !== 'undefined' ? (window as any).__rizDeferredPwaPrompt : null);
+
+    if (promptEvt && typeof promptEvt.prompt === 'function') {
+      try {
+        await promptEvt.prompt();
+        const choice = await promptEvt.userChoice;
+        setLocalPromptEvent(null);
+        if (typeof window !== 'undefined') {
+          (window as any).__rizDeferredPwaPrompt = null;
+        }
+        if (choice && choice.outcome === 'accepted') {
+          return;
+        }
+      } catch (_err) {}
+    }
+
     if (canInstallPWA && onInstallPWA) {
       onInstallPWA();
     } else {
@@ -906,12 +1006,18 @@ export default function LoginScreen({
             </div>
 
             <div className="space-y-3 text-xs text-slate-300">
-              {canInstallPWA && onInstallPWA && (
+              {(canInstallPWA || Boolean(localPromptEvent)) && (
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     setShowMobileInstallGuide(false);
-                    onInstallPWA();
+                    if (localPromptEvent && typeof localPromptEvent.prompt === 'function') {
+                      try {
+                        await localPromptEvent.prompt();
+                      } catch (_e) {}
+                    } else if (onInstallPWA) {
+                      onInstallPWA();
+                    }
                   }}
                   className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
                 >
@@ -919,6 +1025,26 @@ export default function LoginScreen({
                   <span>Install Otomatis Sekarang</span>
                 </button>
               )}
+
+              {isAndroidDevice && (
+                <button
+                  type="button"
+                  onClick={handleOpenInAndroidChrome}
+                  className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-500/20"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>Buka di Google Chrome & Install (Android)</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleDownloadAppLauncher}
+                className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Pemasang Aplikasi (Ponsel / Desktop)</span>
+              </button>
 
               <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
                 <div className="font-bold text-blue-400 text-xs flex items-center gap-1.5">

@@ -2,48 +2,66 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>RIZ-PROLOG — Warehouse Log-Book & Daily Task</title>
-    <meta name="description" content="Sistem Manajemen Log-Book, Daily Task, QC dan Inventaris Warehouse Multi-Divisi RIZ-PRODUCTION" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="RIZ-PROLOG" />
     <meta name="application-name" content="RIZ-PROLOG" />
-    <meta name="format-detection" content="telephone=no" />
-    <meta name="msapplication-TileColor" content="#0f172a" />
-    <meta name="msapplication-tap-highlight" content="no" />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icon.svg" />
+    <meta name="description" content="Sistem Operasional, Quality Control, Maintenance & Logistik PT. Riz Production Multi Kreasi" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="manifest" href="/manifest.json" />
-  </head>
-  <body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-500 selection:text-white">
-    <div id="root"></div>
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <title>RIZ-PRO LOG — Sistem Operasional & QC</title>
     <script>
-      // Clear legacy service worker registrations and Cache Storage
-      // to ensure mobile devices (Android/iOS) always pull the latest assets from Vercel and localhost
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          var hasUnregistered = false;
-          for (var i = 0; i < registrations.length; i++) {
-            registrations[i].unregister();
-            hasUnregistered = true;
-          }
+      // Tangkap event beforeinstallprompt sedini mungkin (sebelum React selesai mount)
+      // agar tombol Install Aplikasi di layar Login dan di dalam aplikasi langsung berfungsi.
+      (function() {
+        try {
+          window.__rizDeferredPwaPrompt = null;
+          window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            window.__rizDeferredPwaPrompt = e;
+            try {
+              window.dispatchEvent(new CustomEvent('riz-pwa-prompt-ready', { detail: e }));
+            } catch (_err) {}
+          });
+          window.addEventListener('appinstalled', function() {
+            window.__rizDeferredPwaPrompt = null;
+            try {
+              window.dispatchEvent(new CustomEvent('riz-pwa-installed'));
+            } catch (_err) {}
+          });
+
+          // Bersihkan Cache Storage lama agar bundle selalu terbaru
           if ('caches' in window) {
             caches.keys().then(function(names) {
               for (var j = 0; j < names.length; j++) {
                 caches.delete(names[j]);
               }
-              if (hasUnregistered && !window.location.search.includes('v_updated=')) {
-                window.location.replace(window.location.pathname + '?v_updated=' + Date.now());
-              }
             });
           }
-        });
-      }
+
+          // Registrasi Service Worker Network-First (/sw.js) untuk syarat mutlak install PWA / WebAPK di Android & Desktop
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(reg) {
+                reg.update().catch(function() {});
+              }).catch(function() {});
+            });
+          }
+        } catch (e) {}
+      })();
     </script>
+  </head>
+  <body>
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
