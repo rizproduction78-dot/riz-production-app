@@ -9,6 +9,14 @@ import { Staff } from '../types';
 import { LogIn, Shield, User, Key, ClipboardList, Package, Award, LayoutDashboard, X, Lock, CheckCircle, RotateCcw, AlertCircle, Smartphone, Download, Share } from 'lucide-react';
 import { subscribeCloudCollection, saveCloudDoc } from '../lib/cloudSync';
 import { pullCollectionFromSupabase, syncStaffPasswordVault } from '../lib/supabaseSync';
+import {
+  detectIsIOSOrIPadOS,
+  detectIsAndroidDevice,
+  triggerNativeAndroidPrompt,
+  openInAndroidChromeForHomeScreen,
+  triggerNativeShareSheetForHomeScreen,
+  downloadIOSWebClipProfile,
+} from '../utils/mobileHomeScreenInstaller';
 
 interface LoginScreenProps {
   onLogin: (staff: Staff) => void;
@@ -33,6 +41,9 @@ export default function LoginScreen({
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showMobileInstallGuide, setShowMobileInstallGuide] = useState(false);
+  const [installGuideTab, setInstallGuideTab] = useState<'android' | 'ios'>(() =>
+    detectIsIOSOrIPadOS() || isIOSDevice ? 'ios' : 'android'
+  );
   const [localPromptEvent, setLocalPromptEvent] = useState<any>(() =>
     typeof window !== 'undefined' ? (window as any).__rizDeferredPwaPrompt || null : null
   );
@@ -47,99 +58,40 @@ export default function LoginScreen({
     syncPrompt();
     window.addEventListener('beforeinstallprompt', syncPrompt);
     window.addEventListener('riz-pwa-prompt-ready', syncPrompt);
+
+    // Jika dibuka kembali melalui intent Chrome dengan ?install_homescreen=android, buka panduan / prompt otomatis
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('install_homescreen') === 'android') {
+        setInstallGuideTab('android');
+        setShowMobileInstallGuide(true);
+      } else if (params.get('install_homescreen') === 'ios') {
+        setInstallGuideTab('ios');
+        setShowMobileInstallGuide(true);
+      }
+    } catch (_e) {}
+
     return () => {
       window.removeEventListener('beforeinstallprompt', syncPrompt);
       window.removeEventListener('riz-pwa-prompt-ready', syncPrompt);
     };
   }, []);
 
-  const isAndroidDevice =
-    typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
+  const isAndroidDevice = detectIsAndroidDevice();
 
-  const handleDownloadAppLauncher = () => {
-    try {
-      const targetOrigin =
-        typeof window !== 'undefined' && window.location?.origin
-          ? window.location.origin
-          : 'https://log-task-book-riz-production-app.vercel.app';
-      const launcherHtml = `<!doctype html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f172a" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="RIZ-PROLOG" />
-  <link rel="icon" type="image/png" href="${targetOrigin}/icon-192.png" />
-  <link rel="apple-touch-icon" href="${targetOrigin}/apple-touch-icon.png" />
-  <title>RIZ-PRO LOG — App Launcher</title>
-  <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; }
-    .box { text-align: center; padding: 24px; max-width: 360px; }
-    .logo { width: 72px; height: 72px; border-radius: 16px; margin-bottom: 16px; border: 1px solid #334155; }
-    .title { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
-    .sub { font-size: 12px; color: #94a3b8; margin-bottom: 20px; }
-    .btn { display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 13px; padding: 12px 20px; border-radius: 10px; }
-  </style>
-  <script>
-    window.location.replace("${targetOrigin}/?source=pwa_launcher");
-  </script>
-</head>
-<body>
-  <div class="box">
-    <img class="logo" src="${targetOrigin}/logo.png" alt="RIZ-PRO LOG" style="background:#ffffff;padding:6px;object-fit:contain;width:auto;height:56px;" />
-    <div class="title">RIZ-PRO LOG</div>
-    <div class="sub">Membuka Sistem Operasional & QC PT. Riz Production Multi Kreasi...</div>
-    <a class="btn" href="${targetOrigin}/?source=pwa_launcher">Buka Aplikasi Sekarang</a>
-  </div>
-</body>
-</html>`;
-      const blob = new Blob([launcherHtml], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'RIZ-PROLOG-App.html';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    } catch (_e) {}
+  const handleSelectAndroidHomeScreen = async () => {
+    setInstallGuideTab('android');
+    const accepted = await triggerNativeAndroidPrompt(localPromptEvent);
+    if (accepted) {
+      setLocalPromptEvent(null);
+      return;
+    }
+    setShowMobileInstallGuide(true);
   };
 
-  const handleOpenInAndroidChrome = () => {
-    try {
-      const hostAndPath = `${window.location.host}${window.location.pathname}${window.location.search}`;
-      const scheme = window.location.protocol.replace(':', '') || 'https';
-      window.location.href = `intent://${hostAndPath}#Intent;scheme=${scheme};package=com.android.chrome;end`;
-    } catch (_e) {}
-  };
-
-  const handleTriggerInstall = async () => {
-    const promptEvt =
-      localPromptEvent ||
-      (typeof window !== 'undefined' ? (window as any).__rizDeferredPwaPrompt : null);
-
-    if (promptEvt && typeof promptEvt.prompt === 'function') {
-      try {
-        await promptEvt.prompt();
-        const choice = await promptEvt.userChoice;
-        setLocalPromptEvent(null);
-        if (typeof window !== 'undefined') {
-          (window as any).__rizDeferredPwaPrompt = null;
-        }
-        if (choice && choice.outcome === 'accepted') {
-          return;
-        }
-      } catch (_err) {}
-    }
-
-    if (canInstallPWA && onInstallPWA) {
-      onInstallPWA();
-    } else {
-      setShowMobileInstallGuide(true);
-    }
+  const handleSelectIOSHomeScreen = () => {
+    setInstallGuideTab('ios');
+    setShowMobileInstallGuide(true);
   };
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -708,20 +660,31 @@ export default function LoginScreen({
               </button>
 
               {!isAppInstalled && (
-                <button
-                  type="button"
-                  onClick={handleTriggerInstall}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
-                  title="Install aplikasi RIZ-PRO LOG ke layar utama ponsel (Android / iOS)"
-                >
-                  <Smartphone className="w-4 h-4 text-indigo-600 shrink-0" />
-                  <span>
-                    {isIOSDevice
-                      ? 'Install Aplikasi ke Ponsel (iPhone / iOS)'
-                      : 'Install Aplikasi ke Ponsel (Android / iOS)'}
-                  </span>
-                  <Download className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                </button>
+                <div className="pt-2 border-t border-slate-100 space-y-2">
+                  <div className="text-[11px] font-bold text-slate-600 text-center">
+                    Tampilkan Aplikasi pada Layar Utama (Ponsel / Tablet):
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSelectAndroidHomeScreen}
+                      className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+                      title="Tampilkan ikon RIZ-PRO LOG pada layar utama ponsel atau tablet Android"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Layar Utama Android</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSelectIOSHomeScreen}
+                      className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-[11px] font-bold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
+                      title="Tampilkan ikon RIZ-PRO LOG pada layar utama iPhone atau iPad (iOS/iPadOS)"
+                    >
+                      <Share className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      <span>Layar Utama iOS / iPad</span>
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
             <div className="text-center mt-4 flex items-center justify-center gap-3 text-xs">
@@ -980,7 +943,7 @@ export default function LoginScreen({
         </div>
       )}
 
-      {/* Mobile App Install Instructions Modal (Accessible directly from Login Screen) */}
+      {/* Mobile & Tablet Home Screen Install Modal (Android & iOS/iPadOS) */}
       {showMobileInstallGuide && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50">
           <div className="bg-[#0f172a] text-white border border-slate-700 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
@@ -990,8 +953,8 @@ export default function LoginScreen({
                   <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-6 w-auto object-contain" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Install Aplikasi RIZ-PRO LOG di Ponsel</h3>
-                  <p className="text-[11px] text-slate-400">Pasang di layar utama Android atau iPhone/iPad (iOS)</p>
+                  <h3 className="text-sm font-bold text-white">Tampilkan RIZ-PRO LOG di Layar Utama</h3>
+                  <p className="text-[11px] text-slate-400">Pilih sistem operasi Ponsel / Tablet Anda di bawah ini</p>
                 </div>
               </div>
               <button
@@ -1003,78 +966,130 @@ export default function LoginScreen({
               </button>
             </div>
 
-            <div className="space-y-3 text-xs text-slate-300">
-              {(canInstallPWA || Boolean(localPromptEvent)) && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setShowMobileInstallGuide(false);
-                    if (localPromptEvent && typeof localPromptEvent.prompt === 'function') {
-                      try {
-                        await localPromptEvent.prompt();
-                      } catch (_e) {}
-                    } else if (onInstallPWA) {
-                      onInstallPWA();
-                    }
-                  }}
-                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Install Otomatis Sekarang</span>
-                </button>
-              )}
+            {/* Platform Switcher Tabs */}
+            <div className="grid grid-cols-2 gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => setInstallGuideTab('android')}
+                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  installGuideTab === 'android'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Android (HP / Tab)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInstallGuideTab('ios')}
+                className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  installGuideTab === 'ios'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Share className="w-3.5 h-3.5" />
+                <span>iOS (iPhone / iPad)</span>
+              </button>
+            </div>
 
-              {isAndroidDevice && (
+            {installGuideTab === 'android' ? (
+              <div className="space-y-3 text-xs text-slate-300">
+                {(canInstallPWA || Boolean(localPromptEvent)) && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const accepted = await triggerNativeAndroidPrompt(localPromptEvent);
+                      if (accepted) {
+                        setShowMobileInstallGuide(false);
+                      } else if (onInstallPWA) {
+                        onInstallPWA();
+                      }
+                    }}
+                    className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>1. Tambahkan ke Layar Utama Sekarang (Otomatis)</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  onClick={handleOpenInAndroidChrome}
+                  onClick={openInAndroidChromeForHomeScreen}
                   className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-500/20"
                 >
                   <Smartphone className="w-4 h-4" />
-                  <span>Buka di Google Chrome & Install (Android)</span>
+                  <span>Buka di Chrome &amp; Tampilkan di Layar Utama (Android)</span>
                 </button>
-              )}
 
-              <button
-                type="button"
-                onClick={handleDownloadAppLauncher}
-                className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download Pemasang Aplikasi (Ponsel / Desktop)</span>
-              </button>
-
-              <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
-                <div className="font-bold text-blue-400 text-xs flex items-center gap-1.5">
-                  <Smartphone className="w-3.5 h-3.5" />
-                  <span>Ponsel Android (Chrome):</span>
-                </div>
-                <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-300">
-                  <li>Ketuk ikon menu <strong>Titik Tiga (⋮)</strong> di pojok kanan atas browser Chrome.</li>
-                  <li>Pilih menu <strong>"Install aplikasi"</strong> atau <strong>"Tambahkan ke layar utama" (Add to Home screen)</strong>.</li>
-                  <li>Tekan <strong>Install / Tambah</strong> untuk menyelesaikan pemasangan.</li>
-                </ol>
-              </div>
-
-              <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
-                <div className="font-bold text-indigo-400 text-xs flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerNativeShareSheetForHomeScreen();
+                  }}
+                  className="w-full py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
                   <Share className="w-3.5 h-3.5" />
-                  <span>iPhone / iPad (iOS Safari):</span>
+                  <span>Buka Menu Share / Layar Utama Browser</span>
+                </button>
+
+                <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
+                  <div className="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Cara Tampilkan di Layar Utama Android (HP / Tablet):</span>
+                  </div>
+                  <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-300 leading-relaxed">
+                    <li>Jika dibuka dari WhatsApp, ketuk tombol biru <strong>"Buka di Chrome &amp; Tampilkan di Layar Utama"</strong> di atas.</li>
+                    <li>Di pojok kanan atas browser Chrome, ketuk ikon <strong>Titik Tiga (⋮)</strong>.</li>
+                    <li>Pilih menu <strong>"Tambahkan ke layar utama" (Add to Home screen)</strong> atau <strong>"Instal aplikasi"</strong>.</li>
+                    <li>Ketuk <strong>Tambah / Instal</strong> — ikon resmi <strong>RIZ-PROLOG</strong> langsung tampil di layar utama.</li>
+                  </ol>
                 </div>
-                <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-300">
-                  <li>Buka halaman ini di browser <strong>Safari</strong>.</li>
-                  <li>Ketuk tombol <strong>Bagikan / Share</strong> (ikon kotak dengan panah ke atas) di bagian bawah layar.</li>
-                  <li>Pilih <strong>"Tambah ke Layar Utama" (Add to Home Screen)</strong> lalu ketuk <strong>Tambah / Add</strong>.</li>
-                </ol>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3 text-xs text-slate-300">
+                <button
+                  type="button"
+                  onClick={() => {
+                    downloadIOSWebClipProfile();
+                  }}
+                  className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>1. Pasang Ikon ke Layar Utama iOS / iPad (Profil WebClip)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerNativeShareSheetForHomeScreen();
+                  }}
+                  className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-500/20"
+                >
+                  <Share className="w-4 h-4" />
+                  <span>2. Buka Menu &quot;Tambah ke Layar Utama&quot; Safari</span>
+                </button>
+
+                <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
+                  <div className="font-bold text-indigo-400 text-xs flex items-center gap-1.5">
+                    <Share className="w-3.5 h-3.5" />
+                    <span>Cara Tampilkan di Layar Utama iPhone &amp; iPad (iOS):</span>
+                  </div>
+                  <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-300 leading-relaxed">
+                    <li><strong>Metode Cepat (Tombol 2):</strong> Ketuk tombol <strong>&quot;Buka Menu Tambah ke Layar Utama Safari&quot;</strong> di atas (atau ikon <strong>Share [↑]</strong> di bar Safari), lalu pilih <strong>&quot;Tambah ke Layar Utama&quot; (Add to Home Screen)</strong> dan ketuk <strong>Tambah</strong>.</li>
+                    <li><strong>Metode Profil (Tombol 1):</strong> Jika opsi <em>Tambah ke Layar Utama</em> tidak muncul di browser Anda, ketuk <strong>&quot;1. Pasang Ikon ke Layar Utama iOS / iPad&quot;</strong>, pilih <strong>Izinkan (Allow)</strong>, lalu buka <strong>Pengaturan (Settings) &rarr; Profil Diunduh &rarr; Install</strong>.</li>
+                  </ol>
+                </div>
+              </div>
+            )}
 
             <button
               type="button"
               onClick={() => setShowMobileInstallGuide(false)}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-lg shadow-blue-500/20"
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer border border-slate-700"
             >
-              Saya Mengerti
+              Tutup
             </button>
           </div>
         </div>
