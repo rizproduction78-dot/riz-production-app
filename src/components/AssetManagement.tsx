@@ -629,6 +629,9 @@ export default function AssetManagement({
           <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 p-6 md:p-8 rounded-3xl text-white shadow-xl border border-indigo-900/60 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2">
+                <span className="bg-white/95 px-2 py-0.5 rounded-lg flex items-center justify-center shrink-0">
+                  <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-5 w-auto object-contain" />
+                </span>
                 <span className="px-2.5 py-1 bg-red-600 text-white font-black text-[10px] tracking-wider uppercase rounded-lg">
                   RIZ-PROLOG
                 </span>

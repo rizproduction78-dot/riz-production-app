@@ -1948,24 +1948,28 @@ export default function App() {
       {/* Sidebar for Desktop - Hidden on Print */}
       <aside className={`no-print hidden md:flex flex-col bg-[#0f172a] text-[#f8fafc] shrink-0 h-screen sticky top-0 border-r border-[#1e293b] z-30 select-none shadow-xl transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-64'}`}>
         {/* Brand Header */}
-        <div className="flex-none px-4 py-4 border-b border-[#1e293b] bg-[#0c1322] flex items-center justify-between">
-          {!isSidebarCollapsed && (
+        <div className={`flex-none px-4 py-4 border-b border-[#1e293b] bg-[#0c1322] flex ${isSidebarCollapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'}`}>
+          {!isSidebarCollapsed ? (
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
+                <div className="bg-white/95 px-2 py-0.5 rounded shadow-xs flex items-center justify-center shrink-0">
+                  <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-6 w-auto object-contain" />
+                </div>
                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-[10px] tracking-widest px-2 py-0.5 rounded shadow-sm">
                   RIZ-PRO
                 </div>
                 <div className="bg-emerald-500 text-white font-bold text-[8px] tracking-wider px-1.5 py-0.5 rounded">
                   LOG
                 </div>
-                <div className="border border-emerald-500/30 text-emerald-400 font-bold text-[8px] tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 hidden lg:block">
-                  RIZ-PROD
-                </div>
               </div>
               <div className="mt-1.5 flex items-center justify-between">
                 <span className="text-[9px] font-bold text-slate-400 tracking-wider">QC & OPS SYSTEM V2.0</span>
                 <span className="text-[8px] font-mono font-bold text-blue-400/80">workspace</span>
               </div>
+            </div>
+          ) : (
+            <div className="bg-white/95 px-1.5 py-0.5 rounded shadow-xs flex items-center justify-center">
+              <img src="/logo.png" alt="RIZ Production" className="h-4 w-auto object-contain" />
             </div>
           )}
           <button
@@ -2077,6 +2081,9 @@ export default function App() {
       <header className="no-print md:hidden bg-[#0f172a] text-white flex items-center justify-between px-3.5 py-2.5 pt-[max(env(safe-area-inset-top),0.75rem)] sticky top-0 z-50 shadow-md border-b border-[#1e293b]">
         <div className="flex items-center gap-2">
           <div className="font-extrabold text-sm tracking-tight flex items-center gap-1.5">
+            <span className="bg-white/95 px-1.5 py-0.5 rounded flex items-center justify-center shrink-0">
+              <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-5 w-auto object-contain" />
+            </span>
             <span>RIZ-PRO</span>
             <span className="bg-blue-600 text-white text-[9px] font-mono px-1.5 py-0.5 rounded font-bold">LOG</span>
           </div>
@@ -2125,6 +2132,9 @@ export default function App() {
         {/* Drawer Header */}
         <div className="flex-none px-4 py-3.5 pt-[max(env(safe-area-inset-top),1rem)] border-b border-[#1e293b] bg-[#0c1322] flex items-center justify-between">
           <div className="font-extrabold text-sm tracking-tight flex items-center gap-1.5">
+            <span className="bg-white/95 px-1.5 py-0.5 rounded flex items-center justify-center shrink-0">
+              <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-5 w-auto object-contain" />
+            </span>
             <span className="text-white">RIZ-PRO</span>
             <span className="bg-blue-600 text-white text-[9px] font-mono px-1.5 py-0.5 rounded font-bold">LOG</span>
           </div>

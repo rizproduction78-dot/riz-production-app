@@ -818,8 +818,13 @@ export default function CareerCompetencyModule({
             {/* 3. Core Values & Slogan */}
             <div className="bg-gradient-to-br from-slate-900 to-indigo-950 p-6 rounded-3xl text-white border border-indigo-900 shadow-xs space-y-4 flex flex-col justify-between">
               <div>
-                <div className="text-[10px] font-mono tracking-widest text-amber-400 uppercase font-bold">
-                  PT. RIZ PRODUCTION MULTI KREASI
+                <div className="flex items-center gap-2.5 mb-2">
+                  <div className="bg-white/95 px-2 py-1 rounded-lg shrink-0">
+                    <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-5 w-auto object-contain" />
+                  </div>
+                  <div className="text-[10px] font-mono tracking-widest text-amber-400 uppercase font-bold">
+                    PT. RIZ PRODUCTION MULTI KREASI
+                  </div>
                 </div>
                 <h4 className="text-sm font-black uppercase text-white mt-1">
                   Core Values Perusahaan
@@ -1045,8 +1050,8 @@ export default function CareerCompetencyModule({
                 {/* Passport Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-700/80">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-2xl shadow-inner">
-                      🛂
+                    <div className="px-2.5 py-2 rounded-2xl bg-white/95 border border-slate-200/40 flex items-center justify-center shadow-inner shrink-0">
+                      <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-8 w-auto object-contain" />
                     </div>
                     <div>
                       <div className="text-[10px] font-mono tracking-widest text-amber-400 uppercase font-bold">

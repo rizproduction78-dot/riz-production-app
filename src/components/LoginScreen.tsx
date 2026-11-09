@@ -89,7 +89,7 @@ export default function LoginScreen({
 </head>
 <body>
   <div class="box">
-    <img class="logo" src="${targetOrigin}/icon-192.png" alt="RIZ-PRO LOG" />
+    <img class="logo" src="${targetOrigin}/logo.png" alt="RIZ-PRO LOG" style="background:#ffffff;padding:6px;object-fit:contain;width:auto;height:56px;" />
     <div class="title">RIZ-PRO LOG</div>
     <div class="sub">Membuka Sistem Operasional & QC PT. Riz Production Multi Kreasi...</div>
     <a class="btn" href="${targetOrigin}/?source=pwa_launcher">Buka Aplikasi Sekarang</a>
@@ -526,8 +526,8 @@ export default function LoginScreen({
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-900/40 via-slate-900 to-slate-900 pointer-events-none" />
         
         <div className="relative z-10">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/20 text-indigo-400 mb-8 border border-indigo-500/30">
-            <Shield className="w-6 h-6" />
+          <div className="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl bg-white/95 mb-6 shadow-md border border-slate-700/40">
+            <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-12 w-auto object-contain" />
           </div>
           <h1 className="text-4xl xl:text-5xl font-display font-extrabold tracking-tight mb-4 leading-tight">
             RIZ-PRODUCTION
@@ -591,16 +591,19 @@ export default function LoginScreen({
       {/* Right Column: Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 relative">
         {/* Mobile-only header since left column is hidden */}
-        <div className="lg:hidden absolute top-8 left-8 right-8 text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 text-white mb-3">
-            <Shield className="w-6 h-6" />
+        <div className="lg:hidden absolute top-6 left-8 right-8 text-center mb-6">
+          <div className="inline-flex items-center justify-center px-3.5 py-2 rounded-xl bg-white border border-slate-200 shadow-xs mb-2">
+            <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-9 w-auto object-contain" />
           </div>
           <h2 className="text-2xl font-display font-bold text-slate-900 tracking-tight">RIZ-PRODUCTION</h2>
           <p className="text-xs text-slate-500 mt-1">Sistem Logbook QC & Laporan Harian Terpusat.</p>
         </div>
 
-        <div className="max-w-sm w-full space-y-8 bg-white p-8 sm:p-10 rounded-2xl border border-slate-200 shadow-sm mt-24 lg:mt-0">
+        <div className="max-w-sm w-full space-y-8 bg-white p-8 sm:p-10 rounded-2xl border border-slate-200 shadow-sm mt-28 lg:mt-0">
           <div className="text-center lg:text-left">
+            <div className="mb-3 flex justify-center lg:justify-start">
+              <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-10 w-auto object-contain" />
+            </div>
             <h2 className="text-3xl font-display font-bold text-slate-900 tracking-tight">
               Masuk
             </h2>
@@ -775,8 +778,8 @@ export default function LoginScreen({
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-100">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <h3 className="font-display font-bold text-slate-800 flex items-center gap-2 text-sm">
-                <Lock className="w-4 h-4 text-indigo-500" />
-                {modalMode === 'change' ? 'Ganti Password Akun' : 'Lupa Password / Reset'}
+                <img src="/logo.png" alt="RIZ Production" className="h-5 w-auto object-contain" />
+                <span>{modalMode === 'change' ? 'Ganti Password Akun' : 'Lupa Password / Reset'}</span>
               </h3>
               <button
                 type="button"
@@ -988,8 +991,8 @@ export default function LoginScreen({
           <div className="bg-[#0f172a] text-white border border-slate-700 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg">
-                  <Smartphone className="w-5 h-5" />
+                <div className="px-2 py-1.5 bg-white/95 rounded-lg shrink-0">
+                  <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-6 w-auto object-contain" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-white">Install Aplikasi RIZ-PRO LOG di Ponsel</h3>

@@ -737,9 +737,12 @@ export default function Dashboard({
         <>
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="header-title">
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">Dashboard Logbook Harian</h1>
-              <p className="text-xs text-slate-500 mt-1">PT RIZ-PRODUCTION • {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <div className="header-title flex items-center gap-3">
+              <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-10 w-auto object-contain shrink-0" />
+              <div>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Dashboard Logbook Harian</h1>
+                <p className="text-xs text-slate-500 mt-1">PT RIZ-PRODUCTION • {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              </div>
             </div>
             <div className="flex gap-2">
               <button
@@ -1139,14 +1142,17 @@ export default function Dashboard({
         <div id="monthly-operation-report-view" className="space-y-8 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200">
           {/* Title Header */}
           <div className="border-b-2 border-slate-100 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                {reportBadgeText}
-              </span>
-              <h1 className="text-2xl font-extrabold text-slate-950 mt-1.5 tracking-tight font-sans">
-                {reportMainTitle}
-              </h1>
-              <p className="text-xs text-slate-500 mt-1 font-medium">PT RIZ-PRODUCTION • Sistem Informasi Manajemen Operational QC & Maintenance</p>
+            <div className="flex items-center gap-3.5">
+              <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-12 w-auto object-contain shrink-0" />
+              <div>
+                <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  {reportBadgeText}
+                </span>
+                <h1 className="text-2xl font-extrabold text-slate-950 mt-1.5 tracking-tight font-sans">
+                  {reportMainTitle}
+                </h1>
+                <p className="text-xs text-slate-500 mt-1 font-medium">PT RIZ-PRODUCTION • Sistem Informasi Manajemen Operational QC & Maintenance</p>
+              </div>
             </div>
             <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
               <label className="text-xs font-bold text-slate-700 font-mono">PERIODE :</label>
