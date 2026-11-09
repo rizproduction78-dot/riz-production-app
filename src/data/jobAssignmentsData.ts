@@ -325,6 +325,90 @@ const DIVISION_DEFAULT_TEAM_LEADER: Record<
   Umum: { rawName: 'Mang Ube', roleNote: 'Team Leader Gudang & Logistik Event' },
 };
 
+const DIVISION_ROTATION_INHOUSE_STAFF: Record<
+  JobDivisionSection['division'],
+  Array<{ rawName: string; roleNote: string }>
+> = {
+  Audio: [
+    { rawName: 'Unyim', roleNote: 'Operator Monitor & Instalasi Sound' },
+    { rawName: 'Dani', roleNote: 'Teknisi FOH & Backline Audio' },
+    { rawName: 'Iwan', roleNote: 'Teknisi Sistem Speaker & Power Audio' },
+    { rawName: 'Yudis', roleNote: 'Teknisi Stage & Mic Wireless Audio' },
+    { rawName: 'Opik', roleNote: 'Operator & Teknisi Sound System' },
+    { rawName: 'Buluk', roleNote: 'Instalasi Kabel & Rigging Sound' },
+  ],
+  Videotron: [
+    { rawName: 'Wigi', roleNote: 'Operator NovaStar & Konstruksi LED' },
+    { rawName: 'Irvan', roleNote: 'Teknisi Panel Kabinet & Power LED' },
+    { rawName: 'Kharo', roleNote: 'Teknisi Modul & Maintenance LED' },
+  ],
+  Lighting: [
+    { rawName: 'Gatot', roleNote: 'Support Logistik & Loading Lighting' },
+    { rawName: 'Subur', roleNote: 'Support Logistik & Rigging Lighting' },
+    { rawName: 'Damri', roleNote: 'Inspeksi Kelistrikan & Distro Panel' },
+  ],
+  Multimedia: [
+    { rawName: 'Kharo', roleNote: 'Support Teknis & Koneksi Visual' },
+    { rawName: 'Gatot', roleNote: 'Support Logistik & Loading Multimedia' },
+  ],
+  Produksi: [
+    { rawName: 'Gatot', roleNote: 'Staff Gudang & Loading Alat Event' },
+    { rawName: 'Subur', roleNote: 'Staff Gudang & Mobilisasi Event' },
+    { rawName: 'Damri', roleNote: 'Kontrol Kelistrikan & Genset Event' },
+  ],
+  Umum: [
+    { rawName: 'Gatot', roleNote: 'Staff Gudang & Loading Alat Event' },
+    { rawName: 'Subur', roleNote: 'Staff Gudang & Mobilisasi Event' },
+  ],
+};
+
+const DIVISION_ROTATION_FREELANCE_CREW: Record<
+  JobDivisionSection['division'],
+  Array<{ rawName: string; roleNote: string }>
+> = {
+  Audio: [
+    { rawName: 'Adin', roleNote: 'Kru Freelance Sound & Backline' },
+    { rawName: 'ACA', roleNote: 'Kru Freelance Audio & Stage' },
+    { rawName: 'Jordy', roleNote: 'Kru Freelance Sound System' },
+    { rawName: 'Rebing', roleNote: 'Kru Freelance Operator & Sound' },
+    { rawName: 'Timbul', roleNote: 'Kru Freelance Instalasi Audio' },
+    { rawName: 'Woyo', roleNote: 'Kru Freelance Sound & Mobilisasi' },
+  ],
+  Videotron: [
+    { rawName: 'Fiki', roleNote: 'Kru Freelance Konstruksi & Panel LED' },
+    { rawName: 'Yopy', roleNote: 'Kru Freelance Videotron LED' },
+    { rawName: 'Bunda', roleNote: 'Kru Freelance Instalasi LED' },
+    { rawName: 'Ambon', roleNote: 'Kru Freelance Videotron LED' },
+  ],
+  Lighting: [
+    { rawName: 'Isal', roleNote: 'Kru Freelance Lighting & Beam' },
+    { rawName: 'Endin', roleNote: 'Kru Freelance Instalasi Lighting' },
+    { rawName: 'Ugan', roleNote: 'Kru Freelance Operator & Lighting' },
+    { rawName: 'Ghele', roleNote: 'Kru Freelance Rigging & Lighting' },
+  ],
+  Multimedia: [
+    { rawName: 'Uloh', roleNote: 'Kru Freelance Kamera & Multicam' },
+    { rawName: 'Richad', roleNote: 'Kru Freelance Switcher & Live Visual' },
+    { rawName: 'Ariq', roleNote: 'Kru Freelance Multimedia & Resolume' },
+    { rawName: 'Moa', roleNote: 'Kru Freelance Kamera & Visual' },
+  ],
+  Produksi: [
+    { rawName: 'Dian', roleNote: 'Driver & Mobilisasi Armada Event' },
+    { rawName: 'Narso', roleNote: 'Driver & Mobilisasi Armada Event' },
+  ],
+  Umum: [
+    { rawName: 'Dian', roleNote: 'Driver & Mobilisasi Armada Event' },
+  ],
+};
+
+function computeJobDeterministicHash(seed: string): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
 const EXPLICIT_CREW_DETECTION_PATTERNS: Array<{
   regex: RegExp;
   rawName: string;
@@ -409,16 +493,53 @@ export function enrichJobAssignmentCrewLinkage(job: JobAssignment): JobAssignmen
       }
     }
 
-    // Pastikan setiap section divisi pada Job/Event yang belum diedit manual memiliki koordinator Staff Inhouse resmi
+    // Pastikan setiap section divisi pada Job/Event yang belum diedit manual memiliki penugasan kerja
+    // untuk Team Leader, Staff Inhouse divisi, dan Kru Freelance yang tampil pada menu Jadwal Penugasan masing-masing user
     if (!job._userEdited) {
-      const hasInhouseStaff = existingCrew.some(c => c.personnelType === 'Staff');
-      if (!hasInhouseStaff) {
-        const leaderDef =
-          DIVISION_DEFAULT_TEAM_LEADER[sec.division] || DIVISION_DEFAULT_TEAM_LEADER.Produksi;
-        const leaderMember = resolveCrewMember(leaderDef.rawName, sec.division, leaderDef.roleNote);
-        if (!sectionSeen.has(leaderMember.canonicalName)) {
-          sectionSeen.add(leaderMember.canonicalName);
-          existingCrew.push(leaderMember);
+      const leaderDef =
+        DIVISION_DEFAULT_TEAM_LEADER[sec.division] || DIVISION_DEFAULT_TEAM_LEADER.Produksi;
+      const leaderMember = resolveCrewMember(leaderDef.rawName, sec.division, leaderDef.roleNote);
+      if (!sectionSeen.has(leaderMember.canonicalName)) {
+        sectionSeen.add(leaderMember.canonicalName);
+        existingCrew.push(leaderMember);
+      }
+
+      const seedHash = computeJobDeterministicHash(`${job.id}-${job.date}-${sec.division}-${idx}`);
+      const staffPool =
+        DIVISION_ROTATION_INHOUSE_STAFF[sec.division] || DIVISION_ROTATION_INHOUSE_STAFF.Produksi;
+      if (staffPool.length > 0) {
+        const primaryStaff = staffPool[seedHash % staffPool.length];
+        const resolvedStaff1 = resolveCrewMember(
+          primaryStaff.rawName,
+          sec.division,
+          primaryStaff.roleNote
+        );
+        if (!sectionSeen.has(resolvedStaff1.canonicalName)) {
+          sectionSeen.add(resolvedStaff1.canonicalName);
+          existingCrew.push(resolvedStaff1);
+        }
+        if (staffPool.length > 2) {
+          const secondaryStaff = staffPool[(seedHash + 2) % staffPool.length];
+          const resolvedStaff2 = resolveCrewMember(
+            secondaryStaff.rawName,
+            sec.division,
+            secondaryStaff.roleNote
+          );
+          if (!sectionSeen.has(resolvedStaff2.canonicalName)) {
+            sectionSeen.add(resolvedStaff2.canonicalName);
+            existingCrew.push(resolvedStaff2);
+          }
+        }
+      }
+
+      const freelancePool =
+        DIVISION_ROTATION_FREELANCE_CREW[sec.division] || DIVISION_ROTATION_FREELANCE_CREW.Produksi;
+      if (freelancePool.length > 0) {
+        const flPick = freelancePool[seedHash % freelancePool.length];
+        const resolvedFl = resolveCrewMember(flPick.rawName, sec.division, flPick.roleNote);
+        if (!sectionSeen.has(resolvedFl.canonicalName)) {
+          sectionSeen.add(resolvedFl.canonicalName);
+          existingCrew.push(resolvedFl);
         }
       }
     }

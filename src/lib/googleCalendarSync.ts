@@ -1208,20 +1208,19 @@ export function buildDailyTasksFromJobAssignment(rawJob: JobAssignment): DailyTa
 }
 
 /**
- * Menyinkronkan seluruh penugasan Crew & Staff dari daftar JobAssignment ke dalam
- * daftar tugas operasional (`DailyTask` di `riz_daily_tasks_v2` & Cloud `daily_tasks`).
- * Hanya memproses Job/Event pada bulan aktif atau yang telah di-assessment/diedit.
+ * Menghasilkan daftar penugasan Crew & Staff dari daftar JobAssignment (khusus untuk modul Jadwal Penugasan),
+ * serta membersihkan secara otomatis apabila terdapat entri `jobtask-*` / `[PENUGASAN JOB]` yang sempat masuk
+ * ke penyimpanan `DailyTask` (`riz_daily_tasks_v2` / `daily_tasks`) agar Pusat Notifikasi 100% murni berisi Daily Log/Task.
  */
 export function syncJobAssignmentsToCrewDailyTasks(
   jobs: JobAssignment[],
-  updatedBy = 'Google Calendar Auto-Sync',
-  pushToCloud = false
+  _updatedBy = 'Google Calendar Auto-Sync',
+  _pushToCloud = false
 ): DailyTask[] {
   const validJobs = (jobs || []).filter(j =>
     isStrictJobOrEventCalendarEntry(j.venue || j.dateLabel || '', j.notes)
   );
 
-  // Bila menerima dataset tahunan penuh (>50 jadwal), fokuskan pembentukan DailyTask aktif pada periode operasional berjalan (Nov-Des 2026) atau jadwal yang telah di-assessment manual oleh Admin
   const scopedJobs =
     validJobs.length > 50
       ? validJobs.filter(
@@ -1239,70 +1238,39 @@ export function syncJobAssignmentsToCrewDailyTasks(
     generatedJobTasks.push(...jobTasks);
   }
 
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-    return generatedJobTasks;
-  }
-
-  try {
-    const rawExisting = localStorage.getItem('riz_daily_tasks_v2') || localStorage.getItem('riz_daily_tasks');
-    const existingTasks: DailyTask[] = rawExisting ? JSON.parse(rawExisting) : [];
-    const generatedMap = new Map<string, DailyTask>(generatedJobTasks.map(t => [t.id, t]));
-    const nextMap = new Map<string, DailyTask>();
-
-    const removedJobTaskIds: string[] = [];
-    if (Array.isArray(existingTasks)) {
-      for (const item of existingTasks) {
-        if (!item || !item.id) continue;
-        if (String(item.id).startsWith('jobtask-')) {
-          if (!generatedMap.has(item.id)) {
-            removedJobTaskIds.push(item.id);
-            continue;
-          }
-          const fresh = generatedMap.get(item.id)!;
-          // Pertahankan status Done bila staff sudah menyelesaikan tugas
-          nextMap.set(item.id, {
-            ...fresh,
-            status: item.status === 'Done' ? 'Done' : fresh.status
+  // Bersihkan segala entri `jobtask-*` atau `[PENUGASAN JOB]` dari `riz_daily_tasks_v2` & Cloud `daily_tasks`
+  // karena jadwal Job/Event HANYA boleh tampil di Jadwal Penugasan pada masing-masing user setelah log-in.
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const rawExisting =
+        localStorage.getItem('riz_daily_tasks_v2') || localStorage.getItem('riz_daily_tasks');
+      if (rawExisting) {
+        const existingTasks: DailyTask[] = JSON.parse(rawExisting);
+        if (Array.isArray(existingTasks)) {
+          const jobTaskIdsToRemove: string[] = [];
+          const cleanDailyTasks = existingTasks.filter(item => {
+            if (!item || !item.id) return false;
+            const isJobTask =
+              String(item.id).startsWith('jobtask-') ||
+              String(item.title || '').trim().startsWith('[PENUGASAN JOB]');
+            if (isJobTask) {
+              jobTaskIdsToRemove.push(String(item.id));
+              return false;
+            }
+            return true;
           });
-        } else {
-          nextMap.set(item.id, item);
+          if (jobTaskIdsToRemove.length > 0) {
+            localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(cleanDailyTasks));
+            localStorage.setItem('riz_daily_tasks', JSON.stringify(cleanDailyTasks));
+            jobTaskIdsToRemove.forEach(id => {
+              deleteCloudDoc('daily_tasks', id).catch(() => {});
+            });
+            window.dispatchEvent(new CustomEvent('riz-daily-tasks-synced', { detail: cleanDailyTasks }));
+          }
         }
       }
-    }
-
-    const changedOrNewTasks: DailyTask[] = [];
-    for (const [id, task] of generatedMap.entries()) {
-      const prev = nextMap.get(id);
-      if (
-        !prev ||
-        prev.title !== task.title ||
-        prev.description !== task.description ||
-        prev.assignedTo !== task.assignedTo ||
-        prev.dueDate !== task.dueDate
-      ) {
-        changedOrNewTasks.push(task);
-      }
-      if (!nextMap.has(id)) {
-        nextMap.set(id, task);
-      }
-    }
-
-    const mergedList = Array.from(nextMap.values());
-    localStorage.setItem('riz_daily_tasks_v2', JSON.stringify(mergedList));
-    localStorage.setItem('riz_daily_tasks', JSON.stringify(mergedList));
-
-    if (pushToCloud) {
-      changedOrNewTasks.forEach(t => {
-        saveCloudDoc('daily_tasks', t.id, t, updatedBy).catch(() => {});
-      });
-      removedJobTaskIds.forEach(id => {
-        deleteCloudDoc('daily_tasks', id).catch(() => {});
-      });
-    }
-
-    window.dispatchEvent(new CustomEvent('riz-daily-tasks-synced', { detail: mergedList }));
-    return mergedList;
-  } catch {
-    return generatedJobTasks;
+    } catch {}
   }
+
+  return generatedJobTasks;
 }

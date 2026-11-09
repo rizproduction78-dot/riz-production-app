@@ -2752,6 +2752,11 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
             });
 
             const handleSelectStaffPill = (targetStaff: Staff) => {
+              if (!isManagementOrOwner) {
+                setJobSelectedStaffId(currentUser.id);
+                setJobSelectedFreelanceName('ALL');
+                return;
+              }
               if (jobSelectedStaffId === targetStaff.id) {
                 setJobSelectedStaffId('ALL');
                 return;
@@ -3361,35 +3366,40 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                       >
                         👤 Jadwal Saya ({currentUser.nickname || currentUser.name.split(' ')[0]}: {monthStaffJobCounts.get(currentUser.id) || 0})
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowFreelanceFilterPills(prev => !prev)}
-                        className={`px-3 py-1 rounded-lg text-xs font-black cursor-pointer transition-all border ${
-                          showFreelanceFilterPills || jobCrewTypeFilter === 'Freelance' || jobSelectedFreelanceName !== 'ALL'
-                            ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
-                            : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
-                        }`}
-                      >
-                        🤝 Pilih Kru Freelance ({OFFICIAL_FREELANCE_CREW_LIST.length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setJobSelectedStaffId('ALL');
-                          setJobSelectedFreelanceName('ALL');
-                        }}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all border ${
-                          jobSelectedStaffId === 'ALL' && jobSelectedFreelanceName === 'ALL'
-                            ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        📋 Semua Jadwal ({weekScopedMonthJobs.length})
-                      </button>
+                      {isManagementOrOwner && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setShowFreelanceFilterPills(prev => !prev)}
+                            className={`px-3 py-1 rounded-lg text-xs font-black cursor-pointer transition-all border ${
+                              showFreelanceFilterPills || jobCrewTypeFilter === 'Freelance' || jobSelectedFreelanceName !== 'ALL'
+                                ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
+                                : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                            }`}
+                          >
+                            🤝 Pilih Kru Freelance ({OFFICIAL_FREELANCE_CREW_LIST.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setJobSelectedStaffId('ALL');
+                              setJobSelectedFreelanceName('ALL');
+                            }}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all border ${
+                              jobSelectedStaffId === 'ALL' && jobSelectedFreelanceName === 'ALL'
+                                ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            📋 Semua Jadwal ({weekScopedMonthJobs.length})
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  {/* Quick Staff Inhouse Pills — All 21 Staff Always Active & Selectable */}
+                  {/* Quick Staff Inhouse Pills — Shown to Management/Admin to inspect or assign per user */}
+                  {isManagementOrOwner && (
                   <div className="space-y-1">
                     <div className="text-[10px] font-mono font-bold uppercase text-indigo-900">
                       Daftar Staff Inhouse (Klik nama staff untuk melihat / menjadwalkan penugasan):
@@ -3436,9 +3446,10 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
                         })}
                     </div>
                   </div>
+                  )}
 
                   {/* Quick Freelance Crew Pills (Shown when toggled or when Hanya Kru Freelance is selected) */}
-                  {(showFreelanceFilterPills || jobCrewTypeFilter === 'Freelance' || jobSelectedFreelanceName !== 'ALL') && (
+                  {isManagementOrOwner && (showFreelanceFilterPills || jobCrewTypeFilter === 'Freelance' || jobSelectedFreelanceName !== 'ALL') && (
                     <div className="pt-2 border-t border-indigo-200/70 space-y-1.5">
                       <div className="text-[10px] font-mono font-bold uppercase text-emerald-900 flex items-center justify-between">
                         <span>Daftar Kru Freelance Resmi (Klik nama freelance untuk melihat / menjadwalkan penugasan):</span>

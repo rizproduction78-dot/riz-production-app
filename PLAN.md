@@ -27,7 +27,9 @@
      - **WHO (Siapa):** Person in Charge (`pic`) & daftar kru/staf per divisi (`JobCrewMember`: `name`, `canonicalName`, `personnelType`: `'Staff' | 'Freelance'`, `staffId`, `division`, `roleNote` seperti `FOH`, `Monitor`, `Operator LED`, `VJ & Zoom`, `Campers`, `Pasang`, `Bongkaran`).
      - **WHAT (Apa):** Paket pekerjaan divisi (`Audio`, `Lighting`, `Videotron`, `Multimedia`, `Produksi`), daftar unit alat (`equipment`), dan unit armada mobilisasi (`vehicles`).
      - **WHY (Mengapa):** Catatan order / SOP venue / riders (`notes`, `adminAssessmentNote`).
-   - Penugasan kru/staf pada setiap Job/Event otomatis disinkronkan menjadi item penugasan kerja terstruktur (`DailyTask` dengan ID deterministik `jobtask-{jobId}-{division}-{personId}`) sehingga langsung tampil pada daftar tugas personel yang bersangkutan dan terhitung pada indikator beban kerja mingguan/bulanan.
+   - **ISOLASI MUTLAK DARI PUSAT NOTIFIKASI & DAILY TASK:**
+     - **Pusat Notifikasi (`QCNotificationCenter`)** dan modul **Daily Task (`LogTaskModule.tsx`)** HANYA diperuntukkan bagi **Daily Log / Daily Task** harian gudang/workshop (serta Temuan Unit Bermasalah & Mutasi Unit Gudang), **BUKAN** untuk daftar Job/Event Google Calendar.
+     - **Jadwal Job / Event** HANYA muncul di menu **Jadwal Penugasan (`job_schedule` di `Absensi.tsx`)** pada masing-masing akun user setelah log-in.
 
 ---
 
@@ -84,22 +86,13 @@ Setiap entri `JobAssignment` yang lolos filter Job/Event memiliki keterkaitan la
      - `division`: Divisi penugasan pada event (`Audio`, `Lighting`, `Videotron`, `Multimedia`, `Produksi`)
      - `roleNote`: Bentuk penugasan/peran spesifik di lapangan (contoh: `FOH`, `Monitor`, `Operator LED`, `VJ & Zoom`, `Campers`, `Pasang`, `Bongkaran`, `Standby`).
 
-2. **Generator Penugasan Kerja Operasional 5W per Crew/Staff (`buildCrewWorkTasksFromJobAssignments` & `syncJobAssignmentToDailyTasks`)**
-   - Setiap kru/staf yang tercantum di dalam `job.sections[].crew` (serta `job.pic` apabila merupakan personel internal/freelance) secara otomatis menghasilkan objek penugasan kerja `DailyTask` dengan format 5W:
-     - **ID Deterministik:** `jobtask-{job.id}-{sec.division}-{personKey}`
-     - **Judul Tugas (`title`):** `[PENUGASAN JOB] {job.venue} — {sec.packageLabel} ({member.roleNote || 'Kru ' + sec.division})`
-     - **Deskripsi 5W (`description`):**
-       - `WHEN`: `{job.dateLabel} ({job.date}) | Loading: {job.loadingSchedule}`
-       - `WHERE`: `{job.venue}`
-       - `WHO`: `{member.canonicalName} ({member.personnelType}) | PIC Event: {job.pic}`
-       - `WHAT`: `Divisi {sec.division} ({sec.packageLabel}) | Alat: {sec.equipment.join(', ')} | Armada: {sec.vehicles.join(', ')}`
-       - `WHY`: `{job.notes || 'Eksekusi produksi event sesuai standar QC PT. Riz Production Multi Kreasi'}`
-     - **Status Otomatis:** Mengikuti siklus hidup status Job (`Terjadwal` &rarr; `Pending`, `Loading / Setup` / `Berlangsung (Show)` / `Bongkaran` &rarr; `In Progress`, `Selesai` &rarr; `Done`).
-   - Disimpan secara sinkron ke `riz_daily_tasks_v2`, `riz_daily_tasks`, dan koleksi Cloud `daily_tasks` sehingga personel langsung menerima notifikasi di `QCNotificationCenter` (Sumber #1: *Daily Task*) dan melihat rincian tugasnya di papan *Daily Task*.
+2. **Isolasi Penuh dari Pusat Notifikasi (`QCNotificationCenter`) & Modul Daily Task**
+   - Entri Job/Event (`jobtask-*` / `[PENUGASAN JOB]`) dilarang masuk ke `riz_daily_tasks_v2`, koleksi Cloud `daily_tasks`, maupun `QCNotificationCenter`.
+   - Fungsi `normalizeCollectionItems('daily_tasks', ...)` di `src/lib/cloudSync.ts` dan filter di `src/components/QCNotificationCenter.tsx` memblokir serta membersihkan setiap item `jobtask-*` / `[PENUGASAN JOB]` secara otomatis.
 
-3. **Tampilan & Filter Penugasan Kerja Individu di Modul Jadwal Penugasan (`Absensi.tsx`)**
-   - Setiap personel memiliki tombol filter cepat (*Quick Pill* Staff Inhouse & Kru Freelance) yang menampilkan jumlah penugasan Job pada minggu berjalan (`W1`–`W5`) dan bulan berjalan.
-   - Saat nama seorang Staff atau Crew dipilih, sistem menampilkan seluruh kartu Job/Event tempat personel tersebut bertugas, menyorot (*highlight*) badge penugasan personel tersebut beserta peran teknisnya (`roleNote`), unit alat yang menjadi tanggung jawab divisinya, jadwal loading, dan armada mobilisasinya.
+3. **Tampilan Penugasan Kerja Spesifik per User di Modul Jadwal Penugasan (`Absensi.tsx`) Setelah Log-in**
+   - Saat seorang Staff atau Team Leader log-in dan membuka menu **Jadwal Penugasan (`job_schedule`)**, sistem secara otomatis mengunci dan menampilkan daftar Job/Event yang ditugaskan khusus kepada akun user yang sedang log-in (`jobSelectedStaffId = currentUser.id`), lengkap dengan peran teknisnya (`roleNote`), unit alat divisinya, jadwal loading, dan armada mobilisasinya.
+   - Akun Admin / Management tetap dapat memantau dan menjadwalkan penugasan untuk seluruh Staff Inhouse maupun Kru Freelance.
 
 4. **Auto-Update Latar Belakang (`autoPullGoogleCalendarJobAssignments`)**
    - Saat pengguna membuka tab **Jadwal Penugasan Kerja** atau saat aplikasi melakukan sinkronisasi berkala, sistem otomatis memanggil `pullJobAssignmentsFromGoogleCalendarLive`, memfilter hanya Job/Event (`isStrictJobOrEventCalendarEntry`), menggabungkannya dengan penugasan kru yang ada tanpa merusak editan Admin, dan menyinkronkan penugasan kerja kru/staf ke `daily_tasks`.

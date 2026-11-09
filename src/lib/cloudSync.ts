@@ -329,6 +329,16 @@ export function normalizeCollectionItems<T = any>(collectionName: string, rawIte
       if (!item || !item.id) return;
       const rawId = String(item.id);
       if (deletedIds.has(rawId)) return;
+
+      // Blokir mutlak entri Job/Event Google Calendar (jobtask-* / [PENUGASAN JOB]) dari Daily Task & Pusat Notifikasi.
+      // Jadwal Job/Event HANYA boleh tampil pada modul Jadwal Penugasan Kerja (Absensi.tsx).
+      if (
+        rawId.startsWith('jobtask-') ||
+        String(item.title || '').trim().startsWith('[PENUGASAN JOB]')
+      ) {
+        return;
+      }
+
       const canonical = canonicalMap.get(rawId);
       const idDate = extractDateFromRecordId(rawId);
       const isUserEdited = Boolean(item._userEdited || item._syncMeta?._userEdited);

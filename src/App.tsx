@@ -366,8 +366,27 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   // Forced one-time re-sync for all official data from Google Sheet & Google Calendar reference while preserving 100% of user edits
-  const REF_SYNC_KEY = 'riz_ref_synced_v111_gcal_crew_work_linkage_2026';
+  const REF_SYNC_KEY = 'riz_ref_synced_v112_clean_notification_job_schedule_only';
   if (typeof window !== 'undefined' && !localStorage.getItem(REF_SYNC_KEY)) {
+    const staleJobTaskIds: string[] = [];
+    try {
+      const rawExistingTasks =
+        localStorage.getItem('riz_daily_tasks_v2') || localStorage.getItem('riz_daily_tasks');
+      if (rawExistingTasks) {
+        const parsedTasks = JSON.parse(rawExistingTasks);
+        if (Array.isArray(parsedTasks)) {
+          parsedTasks.forEach((t: any) => {
+            if (
+              t?.id &&
+              (String(t.id).startsWith('jobtask-') ||
+                String(t.title || '').trim().startsWith('[PENUGASAN JOB]'))
+            ) {
+              staleJobTaskIds.push(String(t.id));
+            }
+          });
+        }
+      }
+    } catch {}
     const mergeById = <T extends { id: string }>(canonical: T[], storageKey: string): T[] => {
       try {
         const raw = localStorage.getItem(storageKey);
@@ -435,8 +454,10 @@ export default function App() {
 
     localStorage.setItem(REF_SYNC_KEY, 'true');
 
-    // Hapus ID duplikat/usang dari penyimpanan Cloud
-    ['dt-20261101-02', 'dt-20261101-03', 'task-test-777'].forEach(id => deleteCloudDoc('daily_tasks', id).catch(() => {}));
+    // Hapus ID duplikat/usang serta jobtask-* dari penyimpanan Cloud daily_tasks
+    ['dt-20261101-02', 'dt-20261101-03', 'task-test-777', ...staleJobTaskIds].forEach(id =>
+      deleteCloudDoc('daily_tasks', id).catch(() => {})
+    );
     deleteCloudDoc('logbook_entries', 'lg-test-888').catch(() => {});
     [
       'find-20261101-kharo-2',
@@ -683,7 +704,20 @@ export default function App() {
     const unsubTasks = subscribeCloudCollection<DailyTask>(
       'daily_tasks',
       'riz_daily_tasks_v2',
-      setDailyTasks,
+      (items) => {
+        const cleaned = (items || []).filter(t => {
+          if (!t || !t.id) return false;
+          if (
+            String(t.id).startsWith('jobtask-') ||
+            String(t.title || '').trim().startsWith('[PENUGASAN JOB]')
+          ) {
+            deleteCloudDoc('daily_tasks', String(t.id)).catch(() => {});
+            return false;
+          }
+          return true;
+        });
+        setDailyTasks(cleaned);
+      },
       INITIAL_DAILY_TASKS
     );
 

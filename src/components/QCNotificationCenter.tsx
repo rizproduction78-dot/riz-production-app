@@ -817,9 +817,16 @@ export default function QCNotificationCenter({
     });
 
     // 2. INPUT DAILY TASK (Jika berasal dari tanggal & staf yang sama dengan Daily Log, gabungkan tanpa duplikasi kartu!)
+    // CATATAN MUTLAK: Pusat Notifikasi HANYA untuk Daily Log / Daily Task (bukan untuk daftar Job/Event Google Calendar).
     dailyTasks.forEach(task => {
       if (!task || !task.title) return;
       const id = task.id || `task-${task.createdAt || Date.now()}-${task.title}`;
+      if (
+        String(id).startsWith('jobtask-') ||
+        String(task.title).trim().startsWith('[PENUGASAN JOB]')
+      ) {
+        return;
+      }
       const idDate = extractDateFromId(id);
       const dueDateClean = task.dueDate ? String(task.dueDate).split('T')[0] : '';
       const createdDateClean = task.createdAt ? String(task.createdAt).split('T')[0] : '';

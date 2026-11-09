@@ -3,6 +3,8 @@ import {
   normalizeJobAssignmentsMaster,
   isStrictJobOrEventCalendarEntry,
 } from '../src/data/jobAssignmentsData';
+import { INITIAL_DAILY_TASKS } from '../src/data';
+import { normalizeCollectionItems } from '../src/lib/cloudSync';
 import {
   parseGoogleCalendarIcsToJobAssignments,
   buildDailyTasksFromJobAssignment,
@@ -184,6 +186,56 @@ assert(opikTask!.division === 'Audio', `Divisi tugas Opik harus Audio, dapat: ${
 assert(opikTask!.title.includes('Keanu Bucketlist'), 'Judul tugas harus mencantumkan nama Job/Event');
 console.log(
   `✅ Seluruh ${INITIAL_JOB_ASSIGNMENTS.length} Job/Event memiliki penugasan Crew/Staff terstruktur & menghasilkan ${activeSyncedTasks.length} DailyTask 5W aktif.`
+);
+
+// 7. Verify Pusat Notifikasi & Daily Task STRICTLY block Job/Event (jobtask-* / [PENUGASAN JOB])
+const pollutedDailyTasks = [
+  ...INITIAL_DAILY_TASKS,
+  ...generatedFromIcsJob,
+];
+const cleanedDailyTasks = normalizeCollectionItems('daily_tasks', pollutedDailyTasks);
+assert(
+  !cleanedDailyTasks.some(
+    t => String(t.id).startsWith('jobtask-') || String(t.title || '').startsWith('[PENUGASAN JOB]')
+  ),
+  'Daily Task & Pusat Notifikasi WAJIB memblokir mutlak seluruh item jobtask-* / [PENUGASAN JOB]'
+);
+console.log(
+  '✅ Pusat Notifikasi & Daily Task 100% bersih dari daftar Job/Event (hanya untuk Daily Log/Task).'
+);
+
+// 8. Verify every technical & warehouse staff has assigned Job/Events in Jadwal Penugasan after log-in
+const requiredStaffIds = [
+  'staff-rahmat',
+  'staff-unyin',
+  'staff-ramdani',
+  'staff-iwan',
+  'staff-yudish',
+  'staff-taufik',
+  'staff-suryana',
+  'staff-heri',
+  'staff-mulyadi',
+  'staff-ayong',
+  'staff-dedi',
+  'staff-irvan',
+  'staff-mulyana',
+  'staff-udin',
+  'staff-gatot',
+  'staff-absobur',
+  'staff-damri',
+];
+const nov2026Jobs = INITIAL_JOB_ASSIGNMENTS.filter(j => j.monthKey === '2026-11');
+for (const stId of requiredStaffIds) {
+  const assignedInNov = nov2026Jobs.filter(j =>
+    j.sections.some(s => s.crew.some(c => c.staffId === stId))
+  );
+  assert(
+    assignedInNov.length > 0,
+    `Staff ${stId} wajib memiliki Jadwal Penugasan Job/Event pada bulan berjalan setelah log-in`
+  );
+}
+console.log(
+  `✅ Seluruh ${requiredStaffIds.length} Staff memiliki Jadwal Penugasan Job/Event pada masing-masing akun user setelah log-in.`
 );
 
 console.log('=== SEMUA TEST LULUS 100% ===');
