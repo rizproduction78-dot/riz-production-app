@@ -13046,8 +13046,17 @@ export function normalizeJobAssignmentsMaster(rawItems?: JobAssignment[] | null)
         continue;
       }
       if (canonicalMap.has(idStr)) {
-        // Pertahankan jika sudah di-assessment / diedit oleh Admin
+        const canonicalItem = canonicalMap.get(idStr)!;
+        const isChangedInGcal =
+          Boolean((raw as any)._fromLiveGcal) ||
+          (raw.date && raw.date !== canonicalItem.date) ||
+          (raw.venue && raw.venue !== canonicalItem.venue) ||
+          (raw.notes !== undefined && raw.notes !== canonicalItem.notes) ||
+          (raw.loadingSchedule && raw.loadingSchedule !== canonicalItem.loadingSchedule) ||
+          (raw.pic && raw.pic !== canonicalItem.pic);
+        // Pertahankan jika sudah di-assessment / diedit oleh Admin baik dari aplikasi maupun langsung dari Google Calendar
         if (
+          isChangedInGcal ||
           raw._userEdited ||
           raw.adminAssessmentStatus ||
           raw.adminAssessedBy ||
@@ -13062,13 +13071,13 @@ export function normalizeJobAssignmentsMaster(rawItems?: JobAssignment[] | null)
           canonicalMap.set(
             idStr,
             enrichJobAssignmentCrewLinkage({
-              ...canonicalMap.get(idStr)!,
+              ...canonicalItem,
               ...raw,
               gcalSynced: true,
             })
           );
         }
-      } else if (raw._userEdited || idStr.startsWith('gcal-') || idStr.startsWith('job-custom-')) {
+      } else if ((raw as any)._fromLiveGcal || raw._userEdited || idStr.startsWith('gcal-') || idStr.startsWith('job-custom-')) {
         canonicalMap.set(idStr, enrichJobAssignmentCrewLinkage({ ...raw, gcalSynced: true }));
       }
     }

@@ -6,9 +6,11 @@ import {
 import { INITIAL_DAILY_TASKS } from '../src/data';
 import { normalizeCollectionItems } from '../src/lib/cloudSync';
 import {
+  GOOGLE_CALENDAR_AUTO_SYNC_INTERVAL_MS,
   parseGoogleCalendarIcsToJobAssignments,
   buildDailyTasksFromJobAssignment,
   syncJobAssignmentsToCrewDailyTasks,
+  mergeLiveGoogleCalendarJobs,
 } from '../src/lib/googleCalendarSync';
 
 function assert(condition: boolean, message: string) {
@@ -236,6 +238,53 @@ for (const stId of requiredStaffIds) {
 }
 console.log(
   `✅ Seluruh ${requiredStaffIds.length} Staff memiliki Jadwal Penugasan Job/Event pada masing-masing akun user setelah log-in.`
+);
+
+// 9. Verify 30-second auto-sync interval & direct Admin edits from Google Calendar propagate accurately
+assert(
+  GOOGLE_CALENDAR_AUTO_SYNC_INTERVAL_MS === 30 * 1000,
+  `Interval auto-update Google Calendar wajib 30 detik (30000 ms), dapat: ${GOOGLE_CALENDAR_AUTO_SYNC_INTERVAL_MS}`
+);
+
+const existingAssessedKeanu = {
+  ...keanuJob,
+  adminAssessmentStatus: 'Terverifikasi Admin (Approved)' as const,
+  adminAssessedBy: 'M. Fahrulyana . A',
+  _userEdited: true,
+};
+const adminEditedInGcalIcs = [
+  'BEGIN:VCALENDAR',
+  'BEGIN:VEVENT',
+  'UID:5abeh08spshtjrg0age00r2lkj@google.com',
+  'DTSTART;VALUE=DATE:20261121',
+  'SUMMARY:Keanu Bucketlist Hall Utama Bogor',
+  'LOCATION:Keanu Bucketlist Hall Utama Bogor',
+  'DESCRIPTION:Sound 10000 Watt Upgrade\\nLED P2.9 Indoor\\nMboh, Opik, Ayong',
+  'END:VEVENT',
+  'END:VCALENDAR',
+].join('\r\n');
+const parsedAdminGcalEdit = parseGoogleCalendarIcsToJobAssignments(adminEditedInGcalIcs);
+const { merged: mergedAfterAdminGcalEdit, changedJobs } = mergeLiveGoogleCalendarJobs(
+  [existingAssessedKeanu],
+  parsedAdminGcalEdit,
+  { isAuthoritativeRemoteFeed: true }
+);
+const updatedKeanu = mergedAfterAdminGcalEdit.find(j => j.id === 'gcal-5abeh08spshtjrg0age00r2lkj')!;
+assert(Boolean(updatedKeanu), 'Event Keanu yang diedit langsung di Google Calendar harus tetap ada');
+assert(
+  updatedKeanu.date === '2026-11-21' && updatedKeanu.venue === 'Keanu Bucketlist Hall Utama Bogor',
+  `Perubahan tanggal & venue langsung dari Google Calendar oleh Admin wajib ter-update otomatis (dapat: ${updatedKeanu.date} / ${updatedKeanu.venue})`
+);
+assert(
+  updatedKeanu.adminAssessmentStatus === 'Terverifikasi Admin (Approved)',
+  'Status Assessment Admin yang sudah ada wajib tetap terjaga saat event diupdate dari Google Calendar'
+);
+assert(
+  changedJobs.some(j => j.id === 'gcal-5abeh08spshtjrg0age00r2lkj'),
+  'Event yang diubah Admin di Google Calendar wajib masuk ke daftar changedJobs untuk di-push ke seluruh user'
+);
+console.log(
+  '✅ Auto-update 30 detik (30s) & perubahan langsung oleh Admin dari Google Calendar terbukti sinkron otomatis ke seluruh user.'
 );
 
 console.log('=== SEMUA TEST LULUS 100% ===');

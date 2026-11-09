@@ -76,6 +76,7 @@ import {
   OFFICIAL_GOOGLE_CALENDAR_ID,
   OFFICIAL_GOOGLE_CALENDAR_IMPORT_URL,
   OFFICIAL_GOOGLE_CALENDAR_EMBED_URL,
+  GOOGLE_CALENDAR_AUTO_SYNC_INTERVAL_MS,
   GoogleCalendarConnectionConfig,
   getGoogleCalendarSyncConfig,
   saveGoogleCalendarSyncConfig,
@@ -86,6 +87,7 @@ import {
   pushJobAssignmentToGoogleCalendarLive,
   syncAllJobAssignmentsToGoogleCalendar,
   pullJobAssignmentsFromGoogleCalendarLive,
+  mergeLiveGoogleCalendarJobs,
   syncJobAssignmentsToCrewDailyTasks
 } from '../lib/googleCalendarSync';
 import {
@@ -578,7 +580,8 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       INITIAL_ASSETS
     );
 
-    // Auto-Update Google Calendar (khusus Job/Event) saat modul dibuka, saat fokus kembali, dan berkala tiap 5 menit
+    // Auto-Update Google Calendar (khusus Job/Event) saat modul dibuka, saat fokus/visibilitas kembali, dan berkala tiap 30 detik (30s)
+    // Apabila Admin merubah jadwal langsung dari Google Calendar, perubahan otomatis ditarik, digabungkan, dan disebarkan ke seluruh user.
     let isCancelled = false;
     const runSilentAutoPullGcal = async () => {
       try {
@@ -586,34 +589,50 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
         if (isCancelled || !res.ok || res.jobs.length === 0) return;
         setGcalConfig(getGoogleCalendarSyncConfig());
         setJobAssignments(prev => {
-          const map = new Map<string, JobAssignment>(prev.map(j => [j.id, j]));
-          res.jobs.forEach(imp => {
-            const existing = map.get(imp.id);
-            if (!existing || !existing._userEdited) {
-              map.set(imp.id, imp);
-            }
+          const { merged, changedJobs } = mergeLiveGoogleCalendarJobs(prev, res.jobs, {
+            isAuthoritativeRemoteFeed: res.isLiveRemote,
+            cancelledIds: res.cancelledIds
           });
-          const sorted = normalizeJobAssignmentsMaster(Array.from(map.values()));
           try {
-            localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(sorted));
+            localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(merged));
           } catch {}
-          syncJobAssignmentsToCrewDailyTasks(sorted);
-          return sorted;
+          if (changedJobs.length > 0) {
+            changedJobs.forEach(job => {
+              saveCloudDoc('job_assignments_gcal', job.id, job, 'Google Calendar Auto-Sync').catch(() => {});
+            });
+          }
+          syncJobAssignmentsToCrewDailyTasks(merged);
+          return merged;
         });
       } catch {}
     };
 
     runSilentAutoPullGcal();
-    const intervalId = window.setInterval(runSilentAutoPullGcal, 5 * 60 * 1000);
-    const handleWindowFocus = () => {
-      runSilentAutoPullGcal();
+    const intervalId = window.setInterval(runSilentAutoPullGcal, GOOGLE_CALENDAR_AUTO_SYNC_INTERVAL_MS);
+    const handleWindowFocusOrVisible = () => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        runSilentAutoPullGcal();
+      }
     };
-    window.addEventListener('focus', handleWindowFocus);
+    const handleExternalGcalSynced = (ev: Event) => {
+      const customEv = ev as CustomEvent<JobAssignment[]>;
+      if (Array.isArray(customEv.detail) && customEv.detail.length > 0) {
+        setJobAssignments(customEv.detail);
+        setGcalConfig(getGoogleCalendarSyncConfig());
+      }
+    };
+    window.addEventListener('focus', handleWindowFocusOrVisible);
+    window.addEventListener('visibilitychange', handleWindowFocusOrVisible);
+    window.addEventListener('online', runSilentAutoPullGcal);
+    window.addEventListener('riz-gcal-jobs-synced', handleExternalGcalSynced);
 
     return () => {
       isCancelled = true;
       window.clearInterval(intervalId);
-      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('focus', handleWindowFocusOrVisible);
+      window.removeEventListener('visibilitychange', handleWindowFocusOrVisible);
+      window.removeEventListener('online', runSilentAutoPullGcal);
+      window.removeEventListener('riz-gcal-jobs-synced', handleExternalGcalSynced);
       unsubJobs();
       unsubAssets();
     };
@@ -1384,19 +1403,18 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
       setGcalConfig(getGoogleCalendarSyncConfig());
       if (res.ok && res.jobs.length > 0) {
         setJobAssignments(prev => {
-          const map = new Map<string, JobAssignment>(prev.map(j => [j.id, j]));
-          res.jobs.forEach(imp => {
-            const existing = map.get(imp.id);
-            if (!existing || !existing._userEdited) {
-              map.set(imp.id, imp);
-            }
+          const { merged, changedJobs } = mergeLiveGoogleCalendarJobs(prev, res.jobs, {
+            isAuthoritativeRemoteFeed: true,
+            cancelledIds: res.cancelledIds
           });
-          const sorted = normalizeJobAssignmentsMaster(Array.from(map.values()));
           try {
-            localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(sorted));
+            localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(merged));
           } catch {}
-          syncJobAssignmentsToCrewDailyTasks(sorted, currentUser.name, true);
-          return sorted;
+          changedJobs.forEach(job => {
+            saveCloudDoc('job_assignments_gcal', job.id, job, currentUser.name).catch(() => {});
+          });
+          syncJobAssignmentsToCrewDailyTasks(merged, currentUser.name, true);
+          return merged;
         });
         setGcalSyncFeedback({
           type: 'success',

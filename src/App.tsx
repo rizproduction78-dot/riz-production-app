@@ -101,6 +101,10 @@ import {
   appendDailyReportToGoogleSheet,
   isFindingRemark
 } from './lib/googleSheetSync';
+import {
+  GOOGLE_CALENDAR_AUTO_SYNC_INTERVAL_MS,
+  runBackgroundGoogleCalendarAutoSync
+} from './lib/googleCalendarSync';
 
 export default function App() {
   const activeWorkspace = workspaceManager.getActiveWorkspace();
@@ -1321,39 +1325,41 @@ export default function App() {
     syncHandlerRef.current();
   }, [activeMonth]);
 
-  // Auto-sync berkala & reaktif (selalu up to date dari Google Sheet)
+  // Auto-sync berkala & reaktif setiap 30 detik (selalu up to date dari Google Sheet & Google Calendar)
   useEffect(() => {
-    const AUTO_SYNC_INTERVAL_MS = 30 * 1000; // 30 detik (agar data selalu segar dan cepat)
+    const AUTO_SYNC_INTERVAL_MS = GOOGLE_CALENDAR_AUTO_SYNC_INTERVAL_MS; // 30 detik (agar perubahan Google Sheet & Google Calendar selalu segar dan cepat)
     let lastPullTime = Date.now();
+
+    const triggerAllLiveSync = () => {
+      syncHandlerRef.current();
+      runBackgroundGoogleCalendarAutoSync(true).catch(() => {});
+      lastPullTime = Date.now();
+    };
 
     // 1. Jalankan sekali saat startup (setelah 500ms)
     const startupTimer = setTimeout(() => {
-      syncHandlerRef.current();
-      lastPullTime = Date.now();
+      triggerAllLiveSync();
     }, 500);
 
-    // 2. Kemudian ulangi setiap 3 menit
+    // 2. Kemudian ulangi setiap 30 detik (30s)
     const interval = setInterval(() => {
-      syncHandlerRef.current();
-      lastPullTime = Date.now();
+      triggerAllLiveSync();
     }, AUTO_SYNC_INTERVAL_MS);
 
     // 3. Reaktif saat tab aplikasi dibuka kembali / user kembali ke browser
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible' || document.hasFocus()) {
         const elapsed = Date.now() - lastPullTime;
-        // Jika sudah lebih dari 15 detik sejak sinkronisasi terakhir, tarik data baru
-        if (elapsed > 15 * 1000) {
-          syncHandlerRef.current();
-          lastPullTime = Date.now();
+        // Jika sudah lebih dari 10 detik sejak sinkronisasi terakhir, tarik data baru
+        if (elapsed > 10 * 1000) {
+          triggerAllLiveSync();
         }
       }
     };
 
     // 4. Reaktif saat koneksi internet pulih (online)
     const handleOnline = () => {
-      syncHandlerRef.current();
-      lastPullTime = Date.now();
+      triggerAllLiveSync();
     };
 
     window.addEventListener('visibilitychange', handleVisibilityOrFocus);

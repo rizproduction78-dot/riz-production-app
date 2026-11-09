@@ -38,6 +38,7 @@ export const OFFICIAL_GOOGLE_CALENDAR_EMBED_URL =
   'https://calendar.google.com/calendar/embed?src=rizproduction78%40gmail.com&ctz=Asia%2FJakarta';
 export const DEFAULT_GOOGLE_CALENDAR_ICAL_URL =
   'https://calendar.google.com/calendar/ical/rizproduction78%40gmail.com/public/basic.ics';
+export const GOOGLE_CALENDAR_AUTO_SYNC_INTERVAL_MS = 30 * 1000; // 30 detik auto-update dari Google Calendar
 
 export interface GoogleCalendarConnectionConfig {
   calendarId: string;
@@ -509,6 +510,8 @@ export function parseGoogleCalendarIcsToJobAssignments(icsText: string): JobAssi
     let location = '';
     let description = '';
     let dtStartRaw = '';
+    let eventStatus = '';
+    let lastModified = '';
 
     lines.forEach(line => {
       const colonIdx = line.indexOf(':');
@@ -525,8 +528,14 @@ export function parseGoogleCalendarIcsToJobAssignments(icsText: string): JobAssi
         description = unescapeIcsText(valPart);
       } else if (keyPart === 'DTSTART' || keyPart.startsWith('DTSTART;')) {
         dtStartRaw = valPart.trim();
+      } else if (keyPart === 'STATUS' || keyPart.startsWith('STATUS;')) {
+        eventStatus = valPart.trim().toUpperCase();
+      } else if (keyPart === 'LAST-MODIFIED' || keyPart.startsWith('LAST-MODIFIED;')) {
+        lastModified = valPart.trim();
       }
     });
+
+    if (eventStatus === 'CANCELLED') return;
 
     const dateMatch = dtStartRaw.match(/(\d{4})(\d{2})(\d{2})/);
     if (!dateMatch) return;
@@ -783,8 +792,10 @@ export function parseGoogleCalendarIcsToJobAssignments(icsText: string): JobAssi
         status: 'Terjadwal',
         notes: description || undefined,
         sections,
-        gcalSynced: true
-      })
+        gcalSynced: true,
+        ...(lastModified ? { gcalLastModified: lastModified } : {}),
+        _fromLiveGcal: true
+      } as JobAssignment)
     );
   });
 
@@ -1005,7 +1016,146 @@ export async function syncAllJobAssignmentsToGoogleCalendar(
 }
 
 /**
+ * Menggabungkan jadwal yang baru ditarik dari Google Calendar (termasuk perubahan yang dilakukan
+ * Admin langsung dari aplikasi Google Calendar) ke dalam state jadwal aplikasi tanpa menghapus
+ * hasil Assessment Admin yang sudah ada.
+ */
+export function mergeLiveGoogleCalendarJobs(
+  currentJobs: JobAssignment[],
+  incomingGcalJobs: JobAssignment[],
+  options?: { isAuthoritativeRemoteFeed?: boolean; cancelledIds?: string[] }
+): { merged: JobAssignment[]; changedJobs: JobAssignment[] } {
+  const canonicalById = new Map<string, JobAssignment>(
+    INITIAL_JOB_ASSIGNMENTS.map(j => [j.id, j])
+  );
+  const map = new Map<string, JobAssignment>(
+    (currentJobs || []).map(j => [j.id, j])
+  );
+  const changedJobs: JobAssignment[] = [];
+
+  if (Array.isArray(options?.cancelledIds) && options.cancelledIds.length > 0) {
+    options.cancelledIds.forEach(cid => {
+      if (map.has(cid)) {
+        map.delete(cid);
+      }
+    });
+  }
+
+  for (const imp of incomingGcalJobs || []) {
+    if (!imp || !imp.id) continue;
+    const existing = map.get(imp.id);
+    const canonical = canonicalById.get(imp.id);
+
+    if (!existing) {
+      const added = enrichJobAssignmentCrewLinkage({
+        ...imp,
+        gcalSynced: true,
+        _fromLiveGcal: true
+      } as JobAssignment);
+      map.set(imp.id, added);
+      changedJobs.push(added);
+      continue;
+    }
+
+    const isDirectGcalChangeVsCanonical =
+      !canonical ||
+      imp.date !== canonical.date ||
+      imp.venue !== canonical.venue ||
+      (imp.notes || '') !== (canonical.notes || '') ||
+      imp.loadingSchedule !== canonical.loadingSchedule ||
+      imp.pic !== canonical.pic;
+
+    const isDirectGcalChangeVsExisting =
+      imp.date !== existing.date ||
+      imp.venue !== existing.venue ||
+      (imp.notes || '') !== (existing.notes || '') ||
+      imp.loadingSchedule !== existing.loadingSchedule ||
+      imp.pic !== existing.pic;
+
+    if (!existing._userEdited) {
+      const updated = enrichJobAssignmentCrewLinkage({
+        ...existing,
+        ...imp,
+        status: existing.status || imp.status,
+        gcalSynced: true,
+        _fromLiveGcal: true
+      } as JobAssignment);
+      map.set(imp.id, updated);
+      if (isDirectGcalChangeVsExisting) {
+        changedJobs.push(updated);
+      }
+    } else if (options?.isAuthoritativeRemoteFeed || isDirectGcalChangeVsCanonical) {
+      // Apabila Admin merubah jadwal langsung dari Google Calendar (tanggal, venue, catatan/spek, jam loading, PIC),
+      // terapkan perubahan dari Google Calendar sembari tetap menjaga badge Assessment Admin di aplikasi.
+      const mergedSections: JobDivisionSection[] =
+        Array.isArray(imp.sections) && imp.sections.length > 0
+          ? imp.sections.map((impSec, idx) => {
+              const prevSec =
+                existing.sections.find(s => s.division === impSec.division) ||
+                existing.sections[idx];
+              if (!prevSec) return impSec;
+              const mergedCrewMap = new Map<string, JobCrewMember>();
+              (prevSec.crew || []).forEach(c => {
+                if (c?.name) mergedCrewMap.set(c.name.toLowerCase(), c);
+              });
+              (impSec.crew || []).forEach(c => {
+                if (c?.name && !mergedCrewMap.has(c.name.toLowerCase())) {
+                  mergedCrewMap.set(c.name.toLowerCase(), c);
+                }
+              });
+              return {
+                ...prevSec,
+                ...impSec,
+                equipment:
+                  isDirectGcalChangeVsCanonical && impSec.equipment?.length
+                    ? impSec.equipment
+                    : prevSec.equipment?.length
+                      ? prevSec.equipment
+                      : impSec.equipment,
+                crew: Array.from(mergedCrewMap.values()),
+                vehicles:
+                  prevSec.vehicles && prevSec.vehicles.length > 0
+                    ? prevSec.vehicles
+                    : impSec.vehicles,
+                specAssessmentStatus: prevSec.specAssessmentStatus,
+                specAssessmentNote: prevSec.specAssessmentNote,
+                equipmentAssessments: prevSec.equipmentAssessments,
+                crewAssessmentStatus: prevSec.crewAssessmentStatus,
+                crewAssessmentNote: prevSec.crewAssessmentNote,
+                assessedBy: prevSec.assessedBy,
+                assessedAt: prevSec.assessedAt
+              };
+            })
+          : existing.sections;
+
+      const updated = enrichJobAssignmentCrewLinkage({
+        ...existing,
+        date: isDirectGcalChangeVsCanonical ? imp.date : existing.date,
+        monthKey: isDirectGcalChangeVsCanonical ? imp.monthKey : existing.monthKey,
+        dateLabel: isDirectGcalChangeVsCanonical ? imp.dateLabel : existing.dateLabel,
+        venue: isDirectGcalChangeVsCanonical ? imp.venue : existing.venue,
+        loadingSchedule: isDirectGcalChangeVsCanonical ? imp.loadingSchedule : existing.loadingSchedule,
+        pic: isDirectGcalChangeVsCanonical ? imp.pic : existing.pic,
+        notes: isDirectGcalChangeVsCanonical ? imp.notes : existing.notes,
+        sections: mergedSections,
+        gcalSynced: true,
+        _fromLiveGcal: true
+      } as JobAssignment);
+      map.set(imp.id, updated);
+      if (isDirectGcalChangeVsExisting) {
+        changedJobs.push(updated);
+      }
+    }
+  }
+
+  const merged = normalizeJobAssignmentsMaster(Array.from(map.values()));
+  return { merged, changedJobs };
+}
+
+/**
  * Pull live events from Google Calendar (via REST API v3 or iCal .ics feed URL)
+ * Dilengkapi cache-busting (no-store & timestamp) agar perubahan yang dilakukan Admin
+ * langsung di Google Calendar terbaca dalam siklus auto-update 30 detik.
  */
 export async function pullJobAssignmentsFromGoogleCalendarLive(
   customConfig?: Partial<GoogleCalendarConnectionConfig>
@@ -1013,9 +1163,12 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
   ok: boolean;
   jobs: JobAssignment[];
   message: string;
+  isLiveRemote?: boolean;
+  cancelledIds?: string[];
 }> {
   const config = { ...getGoogleCalendarSyncConfig(), ...(customConfig || {}) };
   const calId = config.calendarId || OFFICIAL_GOOGLE_CALENDAR_ID;
+  const cacheBuster = Date.now();
 
   // 1. Try Google Calendar REST API v3 if accessToken or apiKey is configured
   if ((config.accessToken && config.accessToken.trim()) || (config.apiKey && config.apiKey.trim())) {
@@ -1025,7 +1178,8 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
         singleEvents: 'true',
         orderBy: 'startTime',
         maxResults: '250',
-        timeMin: '2026-10-01T00:00:00Z'
+        timeMin: '2026-10-01T00:00:00Z',
+        _cb: String(cacheBuster)
       });
       if (config.apiKey && config.apiKey.trim() && !config.accessToken?.trim()) {
         params.set('key', config.apiKey.trim());
@@ -1036,14 +1190,22 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
       }
       const res = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/${encodedCalId}/events?${params.toString()}`,
-        { headers }
+        { headers, cache: 'no-store' }
       );
       if (res.ok) {
         const data = await res.json();
         const items = Array.isArray(data.items) ? data.items : [];
+        const cancelledIds: string[] = [];
         const convertedIcsLines: string[] = ['BEGIN:VCALENDAR', 'VERSION:2.0'];
         items.forEach((ev: any) => {
-          if (!ev || ev.status === 'cancelled') return;
+          if (!ev) return;
+          if (ev.status === 'cancelled') {
+            const rawUid = String(ev.iCalUID || ev.id || '').split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '');
+            if (rawUid) {
+              cancelledIds.push(rawUid.startsWith('gcal-') || rawUid.startsWith('job-') ? rawUid : `gcal-${rawUid}`);
+            }
+            return;
+          }
           if (!isStrictJobOrEventCalendarEntry(ev.summary || '', ev.description || '')) return;
           const startStr = ev.start?.date
             ? `DTSTART;VALUE=DATE:${String(ev.start.date).replace(/-/g, '')}`
@@ -1054,6 +1216,9 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
           convertedIcsLines.push('BEGIN:VEVENT');
           convertedIcsLines.push(`UID:${ev.iCalUID || ev.id || ''}`);
           convertedIcsLines.push(startStr);
+          if (ev.updated) {
+            convertedIcsLines.push(`LAST-MODIFIED:${escapeIcsText(String(ev.updated))}`);
+          }
           convertedIcsLines.push(`SUMMARY:${escapeIcsText(ev.summary || 'Event Google Calendar')}`);
           convertedIcsLines.push(`LOCATION:${escapeIcsText(ev.location || '')}`);
           convertedIcsLines.push(`DESCRIPTION:${escapeIcsText(ev.description || '')}`);
@@ -1069,26 +1234,29 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
         return {
           ok: true,
           jobs,
+          isLiveRemote: true,
+          cancelledIds,
           message: `Berhasil menarik ${jobs.length} jadwal Job/Event langsung dari Google Calendar API (${calId}).`
         };
       }
     } catch {}
   }
 
-  // 2. Try fetching iCal (.ics) feed URL directly
+  // 2. Try fetching live iCal (.ics) feed URL directly with cache-buster
   const targetIcalUrl =
     config.icalFeedUrl?.trim() ||
     `https://calendar.google.com/calendar/ical/${encodeURIComponent(calId)}/public/basic.ics`;
+  const targetIcalWithCb = `${targetIcalUrl}${targetIcalUrl.includes('?') ? '&' : '?'}_cb=${cacheBuster}`;
 
-  const candidateUrls = [
-    targetIcalUrl,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetIcalUrl)}`,
-    '/jadwal-penugasan-riz-production.ics'
+  const liveCandidateUrls = [
+    { url: targetIcalWithCb, isLiveRemote: true },
+    { url: `https://api.allorigins.win/raw?url=${encodeURIComponent(targetIcalWithCb)}&_cb=${cacheBuster}`, isLiveRemote: true },
+    { url: `/jadwal-penugasan-riz-production.ics?_cb=${cacheBuster}`, isLiveRemote: false }
   ];
 
-  for (const url of candidateUrls) {
+  for (const candidate of liveCandidateUrls) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(candidate.url, { cache: 'no-store' });
       if (!res.ok) continue;
       const text = await res.text();
       if (text && text.includes('BEGIN:VCALENDAR')) {
@@ -1101,6 +1269,7 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
         return {
           ok: true,
           jobs,
+          isLiveRemote: candidate.isLiveRemote,
           message: `Berhasil menarik & menyinkronkan ${jobs.length} jadwal Job/Event langsung dari Google Calendar (${calId}).`
         };
       }
@@ -1116,8 +1285,63 @@ export async function pullJobAssignmentsFromGoogleCalendarLive(
   return {
     ok: true,
     jobs: canonicalJobs,
+    isLiveRemote: false,
     message: `Berhasil menyinkronkan ${canonicalJobs.length} jadwal Job/Event resmi dari Google Calendar (${calId}).`
   };
+}
+
+/**
+ * Menjalankan sinkronisasi otomatis Google Calendar di latar belakang (interval 30 detik),
+ * termasuk menangkap perubahan yang dilakukan Admin langsung dari Google Calendar,
+ * menyimpannya ke localStorage & Cloud Sync, serta memancarkan event ke seluruh modul aplikasi.
+ */
+export async function runBackgroundGoogleCalendarAutoSync(
+  pushChangedToCloud = false
+): Promise<{
+  ok: boolean;
+  jobs: JobAssignment[];
+  changedCount: number;
+}> {
+  const res = await pullJobAssignmentsFromGoogleCalendarLive();
+  if (!res.ok || res.jobs.length === 0) {
+    return { ok: false, jobs: [], changedCount: 0 };
+  }
+
+  let currentJobs: JobAssignment[] = INITIAL_JOB_ASSIGNMENTS;
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('riz_job_assignments_gcal_v2');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          currentJobs = parsed;
+        }
+      }
+    } catch {}
+  }
+
+  const { merged, changedJobs } = mergeLiveGoogleCalendarJobs(currentJobs, res.jobs, {
+    isAuthoritativeRemoteFeed: res.isLiveRemote,
+    cancelledIds: res.cancelledIds
+  });
+
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('riz_job_assignments_gcal_v2', JSON.stringify(merged));
+    } catch {}
+    try {
+      window.dispatchEvent(new CustomEvent('riz-gcal-jobs-synced', { detail: merged }));
+    } catch {}
+  }
+
+  if (pushChangedToCloud && changedJobs.length > 0) {
+    changedJobs.forEach(job => {
+      saveCloudDoc('job_assignments_gcal', job.id, job, 'Google Calendar Auto-Sync').catch(() => {});
+    });
+  }
+
+  syncJobAssignmentsToCrewDailyTasks(merged);
+  return { ok: true, jobs: merged, changedCount: changedJobs.length };
 }
 
 /**
