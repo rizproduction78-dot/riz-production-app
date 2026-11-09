@@ -7,7 +7,10 @@ export type Division = 'Audio' | 'Lighting' | 'Videotron' | 'Multimedia' | 'Guda
 
 export const OFFICIAL_GOOGLE_DRIVE_EVIDENCE_FOLDER_URL = "https://drive.google.com/drive/folders/1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h?usp=sharing";
 export const OFFICIAL_GOOGLE_DRIVE_FOLDER_ID = "1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h";
-export const OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL = "https://drive.google.com/drive/folders/1s_mRU4FzBm29SKvsmNWlBlz1rfL3b90h";
+
+// Folder Resmi Google Drive Bukti Absensi PT. Riz Production Multi Kreasi
+export const OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL = "https://drive.google.com/drive/folders/1opYXHR5i8daaG2g4S_9Shsp53cSgFX9H?usp=sharing";
+export const OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_ID = "1opYXHR5i8daaG2g4S_9Shsp53cSgFX9H";
 
 // Folder Resmi Google Drive Data Staff & Freelance PT. Riz Production Multi Kreasi
 export const OFFICIAL_GOOGLE_DRIVE_STAFF_FREELANCE_FOLDER_URL = "https://drive.google.com/drive/folders/1hBGpse_uG9bbeMNqc0qdbMydLTt0uDuq";

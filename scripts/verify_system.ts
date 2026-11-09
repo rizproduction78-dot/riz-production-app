@@ -4,6 +4,7 @@
  */
 
 import { STAFF_LIST, QC_ITEMS_BY_DIVISION, INITIAL_VEHICLES, INITIAL_FREELANCE_WORKERS, INITIAL_FLEET_DRIVERS, INITIAL_ASSETS, INITIAL_MAINTENANCE_SCHEDULES, INITIAL_WORK_ORDERS, INITIAL_FINDINGS, INITIAL_LOGBOOK_ENTRIES, INITIAL_DAILY_REPORTS, INITIAL_DAILY_TASKS, INITIAL_JOB_ASSIGNMENTS, resolveCrewMember, formatFleetVehicleBadge } from '../src/data';
+import { OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL, OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_ID } from '../src/types';
 import { OFFICIAL_SEPTEMBER_2026_SCHEDULE } from '../src/data/september2026Schedule';
 import { OFFICIAL_COMPETENCY_MATRICES } from '../src/data/competencyMatrixData';
 import { getDeviceOSInfo, ALL_SYNC_COLLECTIONS, SyncStatus, subscribeSyncStatus } from '../src/lib/cloudSync';
@@ -47,6 +48,11 @@ assert(Array.isArray(INITIAL_FREELANCE_WORKERS), 'Freelance workers initial list
 assert(Array.isArray(INITIAL_FLEET_DRIVERS), 'Fleet drivers initial list is a valid array', `Count: ${INITIAL_FLEET_DRIVERS.length}`);
 assert(OFFICIAL_SEPTEMBER_2026_SCHEDULE.length > 0, 'September 2026 schedule populated', `Rows: ${OFFICIAL_SEPTEMBER_2026_SCHEDULE.length}`);
 assert(Boolean(OFFICIAL_COMPETENCY_MATRICES['Audio']), 'Competency matrices contain Audio division');
+assert(
+  OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_ID === '1opYXHR5i8daaG2g4S_9Shsp53cSgFX9H' &&
+    OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL === 'https://drive.google.com/drive/folders/1opYXHR5i8daaG2g4S_9Shsp53cSgFX9H?usp=sharing',
+  'Official Google Drive Attendance Folder URL & ID match committed reference (1opYXHR5i8daaG2g4S_9Shsp53cSgFX9H)'
+);
 
 // 3b. Test Official Job Assignments (Staff & Freelance Crew Schedule via App & Google Calendar rizproduction78@gmail.com)
 assert(INITIAL_JOB_ASSIGNMENTS.length >= 490, 'Official Job Assignments populated from Google Calendar (rizproduction78@gmail.com, strict Job/Event only)', `Count: ${INITIAL_JOB_ASSIGNMENTS.length}`);

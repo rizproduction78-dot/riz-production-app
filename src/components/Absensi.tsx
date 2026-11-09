@@ -1934,15 +1934,27 @@ export default function Absensi({ currentUser, onLogActivity, forceSubTab, initi
               <span>📋 Penugasan Job & Event (Staff & Freelance)</span>
             </button>
           </div>
-          <a
-            href={OFFICIAL_GOOGLE_CALENDAR_WEB_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Buka Google Calendar Jadwal Crew ↗</span>
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href={OFFICIAL_GOOGLE_DRIVE_ATTENDANCE_FOLDER_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+              title="Buka Folder Resmi Google Drive Bukti Absensi"
+            >
+              <Camera className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Folder Bukti Absensi ↗</span>
+            </a>
+            <a
+              href={OFFICIAL_GOOGLE_CALENDAR_WEB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Buka Google Calendar Jadwal Crew ↗</span>
+            </a>
+          </div>
         </div>
       )}
 
