@@ -526,8 +526,8 @@ export default function LoginScreen({
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-900/40 via-slate-900 to-slate-900 pointer-events-none" />
         
         <div className="relative z-10">
-          <div className="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl bg-white/95 mb-6 shadow-md border border-slate-700/40">
-            <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-12 w-auto object-contain" />
+          <div className="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white mb-6 shadow-lg border border-slate-700/40">
+            <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-14 w-auto object-contain" />
           </div>
           <h1 className="text-4xl xl:text-5xl font-display font-extrabold tracking-tight mb-4 leading-tight">
             RIZ-PRODUCTION
@@ -589,30 +589,25 @@ export default function LoginScreen({
       </div>
 
       {/* Right Column: Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 relative">
-        {/* Mobile-only header since left column is hidden */}
-        <div className="lg:hidden absolute top-6 left-8 right-8 text-center mb-6">
-          <div className="inline-flex items-center justify-center px-3.5 py-2 rounded-xl bg-white border border-slate-200 shadow-xs mb-2">
-            <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-9 w-auto object-contain" />
-          </div>
-          <h2 className="text-2xl font-display font-bold text-slate-900 tracking-tight">RIZ-PRODUCTION</h2>
-          <p className="text-xs text-slate-500 mt-1">Sistem Logbook QC & Laporan Harian Terpusat.</p>
-        </div>
-
-        <div className="max-w-sm w-full space-y-8 bg-white p-8 sm:p-10 rounded-2xl border border-slate-200 shadow-sm mt-28 lg:mt-0">
-          <div className="text-center lg:text-left">
-            <div className="mb-3 flex justify-center lg:justify-start">
-              <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-10 w-auto object-contain" />
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative">
+        <div className="max-w-md w-full bg-white p-8 sm:p-10 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-900/5">
+          <div className="flex flex-col items-center text-center">
+            <div className="w-full flex items-center justify-center pb-5 mb-5 border-b border-slate-100">
+              <img
+                src="/logo.png"
+                alt="Logo Resmi PT. Riz Production Multi Kreasi"
+                className="h-16 sm:h-20 w-auto object-contain mx-auto"
+              />
             </div>
-            <h2 className="text-3xl font-display font-bold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-slate-900 tracking-tight">
               Masuk
             </h2>
-            <p className="mt-2 text-sm text-slate-500 font-sans">
+            <p className="mt-1.5 text-sm text-slate-500 font-sans max-w-xs mx-auto leading-relaxed">
               Silakan pilih profil staf Anda untuk melanjutkan.
             </p>
           </div>
 
-          <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+          <form className="mt-7 space-y-6" onSubmit={handleLogin}>
             <div className="rounded-md space-y-4">
               <div>
                 <label htmlFor="staff-select" className="block text-sm font-bold text-slate-700 mb-1">

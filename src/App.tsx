@@ -1948,33 +1948,27 @@ export default function App() {
       {/* Sidebar for Desktop - Hidden on Print */}
       <aside className={`no-print hidden md:flex flex-col bg-[#0f172a] text-[#f8fafc] shrink-0 h-screen sticky top-0 border-r border-[#1e293b] z-30 select-none shadow-xl transition-all duration-300 ${isSidebarCollapsed ? 'w-16' : 'w-64'}`}>
         {/* Brand Header */}
-        <div className={`flex-none px-4 py-4 border-b border-[#1e293b] bg-[#0c1322] flex ${isSidebarCollapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'}`}>
+        <div className={`flex-none px-3.5 py-4 border-b border-[#1e293b] bg-[#0c1322] flex ${isSidebarCollapsed ? 'flex-col items-center gap-2' : 'items-center justify-between gap-2'}`}>
           {!isSidebarCollapsed ? (
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <div className="bg-white/95 px-2 py-0.5 rounded shadow-xs flex items-center justify-center shrink-0">
-                  <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-6 w-auto object-contain" />
-                </div>
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-[10px] tracking-widest px-2 py-0.5 rounded shadow-sm">
-                  RIZ-PRO
-                </div>
-                <div className="bg-emerald-500 text-white font-bold text-[8px] tracking-wider px-1.5 py-0.5 rounded">
-                  LOG
-                </div>
+            <div className="flex-1 flex flex-col items-center text-center">
+              <div className="w-full bg-white/95 py-2 px-3 rounded-xl shadow-xs flex items-center justify-center">
+                <img src="/logo.png" alt="Logo Resmi PT. Riz Production Multi Kreasi" className="h-9 w-auto object-contain mx-auto" />
               </div>
-              <div className="mt-1.5 flex items-center justify-between">
-                <span className="text-[9px] font-bold text-slate-400 tracking-wider">QC & OPS SYSTEM V2.0</span>
-                <span className="text-[8px] font-mono font-bold text-blue-400/80">workspace</span>
+              <div className="mt-2 flex items-center justify-center gap-1.5">
+                <span className="bg-blue-600/20 text-blue-400 border border-blue-500/30 font-bold text-[8px] tracking-widest px-1.5 py-0.5 rounded">
+                  RIZ-PRO LOG
+                </span>
+                <span className="text-[9px] font-bold text-slate-400 tracking-wider">QC & OPS V2.0</span>
               </div>
             </div>
           ) : (
-            <div className="bg-white/95 px-1.5 py-0.5 rounded shadow-xs flex items-center justify-center">
-              <img src="/logo.png" alt="RIZ Production" className="h-4 w-auto object-contain" />
+            <div className="bg-white/95 p-1.5 rounded-lg shadow-xs flex items-center justify-center">
+              <img src="/logo.png" alt="RIZ Production" className="h-5 w-auto object-contain mx-auto" />
             </div>
           )}
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 transition-colors mx-auto"
+            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 transition-colors shrink-0"
             title={isSidebarCollapsed ? "Perluas Sidebar" : "Sembunyikan Sidebar"}
           >
             {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
